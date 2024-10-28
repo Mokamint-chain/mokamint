@@ -159,7 +159,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");
-		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms (target is " + targetBlockCreationTime + " ms\n");
+		builder.append("* weighted waiting time: " + getWeightedWaitingTime() + " ms (target is " + targetBlockCreationTime + " ms)\n");
 		builder.append("* next generation signature: " + Hex.toHexString(getNextGenerationSignature()) + " (" + getHashingForGenerations() + ")\n");
 		builder.append("* acceleration: " + getAcceleration());
 	}

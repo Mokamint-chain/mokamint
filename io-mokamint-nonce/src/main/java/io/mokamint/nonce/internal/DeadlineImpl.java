@@ -215,9 +215,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 		var newValueAsBytes = new BigInteger(1, value).divide(acceleration).toByteArray();
 		// we recreate an array of the same length as at the beginning
 		var dividedValueAsBytes = new byte[value.length];
-		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes,
-			dividedValueAsBytes.length - newValueAsBytes.length,
-			newValueAsBytes.length);
+		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes, dividedValueAsBytes.length - newValueAsBytes.length, newValueAsBytes.length);
 		// we take the first 8 bytes of the divided value
 		var firstEightBytes = new byte[] {
 			dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],

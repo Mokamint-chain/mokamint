@@ -170,7 +170,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis));
@@ -188,9 +188,9 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description1 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis1 = Blocks.genesis(description1, stateHash, nodeKeys.getPrivate());
-			var description2 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description2 = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")).plus(1, ChronoUnit.MILLIS), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis2 = Blocks.genesis(description2, stateHash, nodeKeys.getPrivate());
 
 			assertTrue(blockchain.add(genesis1));
@@ -218,7 +218,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var unknownPrevious = new byte[hashingForBlocks.length()];
 			for (int pos = 0; pos < unknownPrevious.length; pos++)
 				unknownPrevious[pos] = (byte) (17 + pos);
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
@@ -242,7 +242,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block = computeNextBlock(genesis);
 
@@ -263,7 +263,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, plot1);
 			var added = computeNextBlock(genesis, plot2);
@@ -299,7 +299,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis, plot1);
 			var block0 = computeNextBlock(genesis, plot2);
@@ -371,7 +371,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			NonGenesisBlock mediumPowerful, mostPowerful, leastPowerful;
 
 			do {
-				var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+				var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 				genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 				var sorted = Stream.of(computeNextBlock(genesis, plot1), computeNextBlock(genesis, plot2), computeNextBlock(genesis, plot3))
 						.sorted(Comparator.comparing(block -> block.getDescription().getPower())).toArray(NonGenesisBlock[]::new);
@@ -424,7 +424,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var block1 = computeNextBlock(genesis);
 			var block2 = computeNextBlock(block1);

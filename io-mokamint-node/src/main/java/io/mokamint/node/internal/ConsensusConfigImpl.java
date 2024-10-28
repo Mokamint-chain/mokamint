@@ -82,15 +82,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final SignatureAlgorithm signatureForDeadlines;
 
 	/**
-	 * The acceleration for the genesis block. This specifies how
-	 * quickly get blocks generated at the beginning of a chain. The less
-	 * mining power has the network at the beginning, the higher the
-	 * initial acceleration should be, or otherwise the creation of the first blocks
-	 * might take a long time. It defaults to 100000000000.
-	 */
-	public final long initialAcceleration;
-
-	/**
 	 * The target time interval, in milliseconds, between the creation of a block
 	 * and the creation of a next block. The network will strive to get close
 	 * to this time. The higher the hashing power of the network, the more precise
@@ -116,7 +107,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.hashingForTransactions = builder.hashingForTransactions;
 		this.signatureForBlocks = builder.signatureForBlocks;
 		this.signatureForDeadlines = builder.signatureForDeadlines;
-		this.initialAcceleration = builder.initialAcceleration;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 		this.maxBlockSize = builder.maxBlockSize;
 	}
@@ -127,7 +117,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			chainId.equals(otherConfig.chainId) &&
 			maxBlockSize == otherConfig.maxBlockSize &&
 			targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
-			initialAcceleration == otherConfig.initialAcceleration &&
 			hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
 			hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
 			hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
@@ -137,8 +126,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime)
-				^ Long.hashCode(initialAcceleration);
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime);
 	}
 
 	@Override
@@ -176,10 +164,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("\n");
 		sb.append("# the signature algorithm that miners use to sign the deadlines\n");
 		sb.append("signature_for_deadlines = \"" + signatureForDeadlines + "\"\n");
-		sb.append("\n");
-		sb.append("# the initial acceleration of the blockchain, at the genesis block;\n");
-		sb.append("# this might be increased if the network starts with very little mining power\n");
-		sb.append("initial_acceleration = " + initialAcceleration + "\n");
 		sb.append("\n");
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
@@ -231,11 +215,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public long getInitialAcceleration() {
-		return initialAcceleration;
-	}
-
-	@Override
 	public int getMaxBlockSize() {
 		return maxBlockSize;
 	}
@@ -253,7 +232,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private HashingAlgorithm hashingForTransactions;
 		private SignatureAlgorithm signatureForBlocks;
 		private SignatureAlgorithm signatureForDeadlines;
-		private long initialAcceleration = 100000000000L;
 		private int targetBlockCreationTime = 4 * 60 * 1000; // 4 minutes
 		private int maxBlockSize = 1_000_000; // 1 megabyte
 
@@ -304,10 +282,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (signatureForDeadlines != null)
 				setSignatureForDeadlines(signatureForDeadlines);
 
-			var initialAcceleration = toml.getLong("initial_acceleration");
-			if (initialAcceleration != null)
-				setInitialAcceleration(initialAcceleration);
-
 			var targetBlockCreationTime = toml.getLong("target_block_creation_time");
 			if (targetBlockCreationTime != null)
 				setTargetBlockCreationTime(targetBlockCreationTime);
@@ -330,7 +304,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForTransactions = config.getHashingForTransactions();
 			this.signatureForBlocks = config.getSignatureForBlocks();
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
-			this.initialAcceleration = config.getInitialAcceleration();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 			this.maxBlockSize = config.getMaxBlockSize();
 		}
@@ -399,15 +372,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		@Override
 		public B setSignatureForDeadlines(SignatureAlgorithm signatureForDeadlines) {
 			this.signatureForDeadlines = signatureForDeadlines;
-			return getThis();
-		}
-
-		@Override
-		public B setInitialAcceleration(long initialAcceleration) {
-			if (initialAcceleration < 1L)
-				throw new IllegalArgumentException("initialAcceleration must be positive");
-
-			this.initialAcceleration = initialAcceleration;
 			return getThis();
 		}
 

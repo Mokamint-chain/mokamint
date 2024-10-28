@@ -74,7 +74,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	@GuardedBy("lock")
 	private byte[] lastHash;
 
-	private final static double oblivion = 0.05; // TODO: add configuration parameter
+	private final static double oblivion = 0.2; // TODO: add configuration parameter
 
 	private final static BigInteger _100000 = BigInteger.valueOf(100000L);
 

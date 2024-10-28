@@ -603,21 +603,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		var config = node.getConfig();
 		var keys = node.getKeys();
-
-		// TODO
-		/*
-		var generationSignature = new byte[config.getHashingForGenerations().length()];
-		generationSignature[0] = (byte) 0x80;
-		var acceleration = new BigInteger(1, generationSignature).divide(BigInteger.valueOf(config.getTargetBlockCreationTime()));
-		*/
-
-		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()),
+		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")),
 				config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(),
 				config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
 
 		try {
-			var genesis = Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate());
-			addVerified(genesis);
+			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
 		}
 		catch (ApplicationException e) {
 			// this node is misbehaving because the application it is connected to is misbehaving

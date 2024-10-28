@@ -876,7 +876,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param block the mined block
 	 */
-	protected void onMined(Block block) {}
+	protected void onMined(Block block) {} // TODO: call it also for the creation of a genesis block
 
 	/**
 	 * Called when some peer has been whispered to our peers.

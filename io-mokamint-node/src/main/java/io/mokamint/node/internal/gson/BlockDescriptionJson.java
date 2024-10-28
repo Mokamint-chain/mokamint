@@ -47,13 +47,13 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private BigInteger power;
 	private Long totalWaitingTime;
 	private Long weightedWaitingTime;
-	private final BigInteger acceleration;
+	private BigInteger acceleration;
 	private Deadlines.Json deadline;
-	private int targetBlockCreationTime;
-	private String hashingForBlocks;
+	private final int targetBlockCreationTime;
+	private final String hashingForBlocks;
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
-	private String hashingForTransactions;
+	private final String hashingForTransactions;
 	private String hashOfPreviousBlock;
 	private String signatureForBlocks;
 	private String publicKey;
@@ -65,7 +65,6 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
-			this.acceleration = gbd.getAcceleration();
 			this.hashingForDeadlines = gbd.getHashingForDeadlines().getName();
 			this.hashingForGenerations = gbd.getHashingForGenerations().getName();
 			this.signatureForBlocks = gbd.getSignatureForBlock().getName();
@@ -92,7 +91,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
 				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						acceleration, targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
+						targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations),
 						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 			}
 		}

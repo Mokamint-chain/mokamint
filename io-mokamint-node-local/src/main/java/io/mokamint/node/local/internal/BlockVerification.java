@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -219,15 +218,10 @@ public class BlockVerification {
 	private void blockMatchesItsExpectedDescription(GenesisBlock block) throws VerificationException {
 		var description = block.getDescription();
 
-		var acceleration = description.getAcceleration();
-		// TODO
-		var generationSignature = new byte[config.getHashingForGenerations().length()];
-		generationSignature[0] = (byte) 0x80;
-		//var expectedAcceleration = new BigInteger(1, generationSignature).divide(BigInteger.valueOf(config.getTargetBlockCreationTime()));
-		var expectedAcceleration = BigInteger.valueOf(config.getInitialAcceleration());
-
-		if (!acceleration.equals(expectedAcceleration))
-			throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
+		var targetBlockCreationTime = description.getTargetBlockCreationTime();
+		var expectedTargetBlockCreationTime = config.getTargetBlockCreationTime();
+		if (targetBlockCreationTime != expectedTargetBlockCreationTime)
+			throw new VerificationException("Target block creation time mismatch (expected " + expectedTargetBlockCreationTime + " but found " + targetBlockCreationTime + ")");
 
 		var signatureForBlocks = description.getSignatureForBlock();
 		var expectedSignatureForBlocks = config.getSignatureForBlocks();

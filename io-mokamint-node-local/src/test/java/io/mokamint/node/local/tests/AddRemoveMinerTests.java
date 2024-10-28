@@ -111,7 +111,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var port2 = 8032;
 		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
 		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setInitialAcceleration(50000000000000L).setTargetBlockCreationTime(500).build();
+		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setTargetBlockCreationTime(500).build();
 		var config2 = config1.toBuilder().setDir(chain2).build();
 		var miningPort = 8025;
 

@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
@@ -50,13 +51,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * The moment when the block has been mined. This is the moment when the blockchain started.
 	 */
 	private final LocalDateTime startDateTimeUTC;
-
-	/**
-	 * A value used to divide the deadline to derive the time needed to wait for it.
-	 * The higher, the shorter the time. This value changes dynamically to cope with
-	 * varying mining power in the network. It is similar to Bitcoin's difficulty.
-	 */
-	private final BigInteger acceleration;
 
 	/**
 	 * The hashing algorithm used for the deadlines.
@@ -88,11 +82,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, BigInteger acceleration, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
 		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.startDateTimeUTC = startDateTimeUTC;
-		this.acceleration = acceleration;
 		this.hashingForDeadlines = hashingForDeadlines;
 		this.hashingForGenerations = hashingForGenerations;
 		this.signatureForBlock = signatureForBlock;
@@ -116,7 +109,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			this.acceleration = context.readBigInteger();
 			this.hashingForDeadlines = HashingAlgorithms.of(context.readStringShared());
 			this.hashingForGenerations = HashingAlgorithms.of(context.readStringShared());
 			this.signatureForBlock = SignatureAlgorithms.of(context.readStringUnshared());
@@ -144,7 +136,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-			this.acceleration = context.readBigInteger();
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
 			this.signatureForBlock = config.getSignatureForBlocks();
@@ -175,14 +166,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 */
 	private void verify() {
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 		Objects.requireNonNull(signatureForBlock, "signatureForBlocks cannot be null");
 		Objects.requireNonNull(publicKey, "publicKey cannot be null");
-
-		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("The acceleration must be strictly positive");
 	}
 
 	@Override
@@ -202,7 +189,25 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public BigInteger getAcceleration() {
-		return acceleration;
+		// the initial acceleration should be fast enough to start producing new blocks without delay;
+		// for that, we consider the average value of the first deadline computed for the blockchain;
+		// since we do not know how much space has been allocated initially, globally, we choose
+		// an average value for the worst case: just one nonce is available in the plots, globally;
+		// then we divide for the target block creation time. This might lead to a fast start-up of
+		// mining, but it will subsequently slow down to the target block creation time
+		var averageValue = new byte[hashingForGenerations.length()];
+		averageValue[0] = (byte) 0x80;
+		var newValueAsBytes = new BigInteger(1, averageValue).divide(BigInteger.valueOf(getTargetBlockCreationTime())).toByteArray();
+		// we recreate an array of the same length as at the beginning
+		var dividedValueAsBytes = new byte[averageValue.length];
+		System.arraycopy(newValueAsBytes, 0, dividedValueAsBytes, dividedValueAsBytes.length - newValueAsBytes.length, newValueAsBytes.length);
+		// we take the first 8 bytes of the divided value
+		var firstEightBytes = new byte[] {
+			dividedValueAsBytes[0], dividedValueAsBytes[1], dividedValueAsBytes[2], dividedValueAsBytes[3],
+			dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
+		};
+
+		return new BigInteger(1, firstEightBytes);
 	}
 
 	@Override
@@ -244,14 +249,13 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	public boolean equals(Object other) {
 		return other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
-			acceleration.equals(gbd.getAcceleration()) &&
 			publicKey.equals(gbd.getPublicKeyForSigningBlock()) &&
 			signatureForBlock.equals(gbd.getSignatureForBlock());
 	}
 
 	@Override
 	public int hashCode() {
-		return startDateTimeUTC.hashCode() ^ acceleration.hashCode();
+		return startDateTimeUTC.hashCode();
 	}
 
 	@Override
@@ -263,9 +267,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	protected byte[] getNextGenerationSignature() {
-		var generationSignature = new byte[hashingForGenerations.length()];
-		generationSignature[0] = (byte) 0x80;
-		return generationSignature;
+		return hashingForGenerations.getHasher(Function.identity()).hash(new byte[] { 13, 1, 19, 73 });
 	}
 
 	@Override
@@ -279,7 +281,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeStringShared(getHashingForBlocks().getName());
 			context.writeStringShared(getHashingForTransactions().getName());
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
-			context.writeBigInteger(acceleration);
 			context.writeStringShared(hashingForDeadlines.getName());
 			context.writeStringShared(hashingForGenerations.getName());
 			context.writeStringUnshared(signatureForBlock.getName());
@@ -298,7 +299,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			// and a non-genesis block (height > 0)
 			context.writeLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
-			context.writeBigInteger(acceleration);
 			writePublicKeyEncoding(context);
 		}
 		catch (DateTimeException | InvalidKeyException e) {

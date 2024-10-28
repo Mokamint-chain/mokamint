@@ -101,7 +101,7 @@ public class EventsTests extends AbstractLoggedTests {
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
 		prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
-		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 100, mkConfig(dir).getHashingForDeadlines(), __ -> {});
+		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 300, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
 	@AfterAll
@@ -114,7 +114,6 @@ public class EventsTests extends AbstractLoggedTests {
 			.setDir(dir)
 			.setChainId("octopus")
 			.setDeadlineWaitTimeout(1000) // a short time is OK for testing
-			.setInitialAcceleration(5000000000000000000L)
 			.build();
 	}
 
@@ -122,16 +121,15 @@ public class EventsTests extends AbstractLoggedTests {
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
 	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, IOException, URISyntaxException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException, ApplicationException {
 		var semaphore = new Semaphore(0);
-		//byte[] deadlineValue; // = new byte[] { 0, 0, 0, 0, 1, 0, 0, 0 };
 
 		var myMiner = new Miner() {
 
-			byte[] deadlineValue;
+			private byte[] deadlineValue;
 
 			@Override
-			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
+			public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					Deadline deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
+					Deadline deadline = plot.getSmallestDeadline(challenge, plotKeys.getPrivate());
 					deadlineValue = deadline.getValue();
 					onDeadlineComputed.accept(deadline);
 				}
@@ -168,7 +166,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 		}
 	}
 

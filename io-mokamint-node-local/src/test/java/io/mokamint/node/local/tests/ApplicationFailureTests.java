@@ -110,7 +110,6 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 			.setDir(chainDir)
 			.setChainId("octopus")
 			.setTargetBlockCreationTime(300)
-			.setInitialAcceleration(1000000000000000L)
 			.build();
 	}
 

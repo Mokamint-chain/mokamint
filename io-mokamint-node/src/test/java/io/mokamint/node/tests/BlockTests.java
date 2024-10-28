@@ -47,7 +47,7 @@ public class BlockTests extends AbstractLoggedTests {
 	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var keys = ed25519.getKeyPair();
-		var block1 = Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.now(), BigInteger.ONE, 4000, HashingAlgorithms.sha256(), HashingAlgorithms.sha256(), HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, keys.getPublic()), new byte[] { 1, 2, 3, 4 }, keys.getPrivate());
+		var block1 = Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.now(), 4000, HashingAlgorithms.sha256(), HashingAlgorithms.sha256(), HashingAlgorithms.shabal256(), HashingAlgorithms.shabal256(), ed25519, keys.getPublic()), new byte[] { 1, 2, 3, 4 }, keys.getPrivate());
 		String encoded = new Blocks.Encoder().encode(block1);
 		var block2 = new Blocks.Decoder().decode(encoded);
 		assertEquals(block1, block2);

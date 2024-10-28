@@ -172,7 +172,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var generationSignature = new byte[hashingForGenerations.length()];
 			for (int pos = 0; pos < generationSignature.length; pos++)
 				generationSignature[pos] = (byte) (42 + pos);
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
@@ -205,7 +205,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -232,7 +232,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -271,7 +271,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
 			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
@@ -366,7 +366,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
-			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), BigInteger.valueOf(config.getInitialAcceleration()), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
 			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
 			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
