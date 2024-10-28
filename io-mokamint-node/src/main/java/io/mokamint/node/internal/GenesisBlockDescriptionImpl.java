@@ -277,12 +277,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		try {
-			// we write the height of the block anyway, so that, by reading the first long, it is possible
-			// to distinguish between a genesis block (height == 0) and a non-genesis block (height > 0)
-			context.writeCompactLong(0L);
-			context.writeCompactInt(getTargetBlockCreationTime());
-			context.writeStringShared(getHashingForBlocks().getName());
-			context.writeStringShared(getHashingForTransactions().getName());
+			super.into(context);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeStringShared(hashingForDeadlines.getName());
 			context.writeStringShared(hashingForGenerations.getName());
@@ -297,10 +292,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		try {
-			// we write the height of the block anyway, so that, by reading the first long,
-			// it is possible to distinguish between a genesis block (height == 0)
-			// and a non-genesis block (height > 0)
-			context.writeCompactLong(0L);
+			super.intoWithoutConfigurationData(context);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			writePublicKeyEncoding(context);
 		}

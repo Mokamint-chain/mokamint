@@ -244,10 +244,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeCompactLong(height);
-		context.writeCompactInt(getTargetBlockCreationTime());
-		context.writeStringShared(getHashingForBlocks().getName());
-		context.writeStringShared(getHashingForTransactions().getName());
+		super.into(context);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeCompactLong(weightedWaitingTime);
@@ -258,7 +255,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		context.writeCompactLong(height);
+		super.intoWithoutConfigurationData(context);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeCompactLong(weightedWaitingTime);

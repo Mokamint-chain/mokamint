@@ -31,6 +31,7 @@ import java.util.function.Function;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
@@ -153,6 +154,19 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		var builder = new StringBuilder();
 		populate(builder, startDateTimeUTC);
 		return builder.toString();
+	}
+
+	@Override
+	public void into(MarshallingContext context) throws IOException {
+		context.writeCompactLong(getHeight());
+		context.writeCompactInt(targetBlockCreationTime);
+		context.writeStringShared(hashingForBlocks.getName());
+		context.writeStringShared(hashingForTransactions.getName());
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		context.writeCompactLong(getHeight());
 	}
 
 	/**
