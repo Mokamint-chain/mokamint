@@ -16,19 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.IOException;
-
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.AbstractMarshallable;
-import io.hotmoka.marshalling.api.MarshallingContext;
-import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.MempoolInfo;
 
 /**
  * An implementation of the information of the mempool of a Mokamint node.
  */
 @Immutable
-public class MempoolInfoImpl extends AbstractMarshallable implements MempoolInfo {
+public class MempoolInfoImpl implements MempoolInfo {
 
 	/**
 	 * The size of the mempool.
@@ -60,23 +55,7 @@ public class MempoolInfoImpl extends AbstractMarshallable implements MempoolInfo
 	}
 
 	@Override
-	public void into(MarshallingContext context) throws IOException {
-		context.writeLong(size);
-	}
-
-	@Override
 	public String toString() {
 		return "size = " + size;
-	}
-
-	/**
-	 * Unmarshals a transaction from the given context.
-	 * 
-	 * @param context the context
-	 * @return the mempool information object
-	 * @throws IOException if the mempool information object cannot be unmarshalled
-	 */
-	public static MempoolInfoImpl from(UnmarshallingContext context) throws IOException {
-		return new MempoolInfoImpl(context.readLong());
 	}
 }

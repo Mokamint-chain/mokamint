@@ -58,6 +58,15 @@ public class ChainInfoImpl implements ChainInfo {
 	 * @param headStateId the state identifier of the head block, if any
 	 */
 	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId) {
+		if (length < 0)
+			throw new IllegalArgumentException("length cannot be negative");
+		else if (length == 0) {
+			if (genesisHash.isPresent() || headHash.isPresent())
+				throw new IllegalArgumentException("An empty chain cannot have nor a genesis nor a head block");
+		}
+		else if (genesisHash.isEmpty() || headHash.isEmpty())
+			throw new IllegalArgumentException("A non-empty chain must have both a genesis and a head block");
+
 		this.length = length;
 		this.genesisHash = genesisHash.map(byte[]::clone);
 		this.headHash = headHash.map(byte[]::clone);
@@ -86,11 +95,17 @@ public class ChainInfoImpl implements ChainInfo {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof ChainInfo otherChainInfo &&
-			length == otherChainInfo.getLength() &&
-			same(genesisHash, otherChainInfo.getGenesisHash()) &&
-			same(headHash, otherChainInfo.getHeadHash()) &&
-			same(headStateId, otherChainInfo.getHeadStateId());
+		if (other instanceof ChainInfoImpl cii) // optimization
+			return length == cii.length &&
+				same(genesisHash, cii.genesisHash) &&
+				same(headHash, cii.headHash) &&
+				same(headStateId, cii.headStateId);
+		else
+			return other instanceof ChainInfo ci &&
+				length == ci.getLength() &&
+				same(genesisHash, ci.getGenesisHash()) &&
+				same(headHash, ci.getHeadHash()) &&
+				same(headStateId, ci.getHeadStateId());
 	}
 
 	@Override
@@ -110,8 +125,7 @@ public class ChainInfoImpl implements ChainInfo {
 	}
 
 	private static boolean same(Optional<byte[]> hash1, Optional<byte[]> hash2) {
-		return hash1.isEmpty() == hash2.isEmpty() &&
-			(hash1.isEmpty() || Arrays.equals(hash1.get(), hash2.get()));
+		return hash1.isEmpty() == hash2.isEmpty() && (hash1.isEmpty() || Arrays.equals(hash1.get(), hash2.get()));
 	}
 
 	private static String toString(Optional<byte[]> hash) {

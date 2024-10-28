@@ -16,14 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.marshalling.AbstractMarshallable;
-import io.hotmoka.marshalling.api.MarshallingContext;
-import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.MempoolEntry;
 
 /**
@@ -32,7 +28,7 @@ import io.mokamint.node.api.MempoolEntry;
  * to a block, eventually.
  */
 @Immutable
-public class MempoolEntryImpl extends AbstractMarshallable implements MempoolEntry {
+public class MempoolEntryImpl implements MempoolEntry {
 
 	/**
 	 * The hash of the transaction in the entry.
@@ -82,25 +78,5 @@ public class MempoolEntryImpl extends AbstractMarshallable implements MempoolEnt
 	@Override
 	public String toString() {
 		return Hex.toHexString(hash) + " with priority " + priority;
-	}
-
-	@Override
-	public void into(MarshallingContext context) throws IOException {
-		context.writeLengthAndBytes(hash);
-		context.writeLong(priority);
-	}
-
-	/**
-	 * Unmarshals a mempool entry from the given context.
-	 * 
-	 * @param context the context
-	 * @return the mempool entry
-	 * @throws IOException if the mempool entry cannot be unmarshalled
-	 */
-	public static MempoolEntryImpl from(UnmarshallingContext context) throws IOException {
-		return new MempoolEntryImpl(
-			context.readLengthAndBytes("Transaction hash length mismatch"),
-			context.readLong()
-		);
 	}
 }

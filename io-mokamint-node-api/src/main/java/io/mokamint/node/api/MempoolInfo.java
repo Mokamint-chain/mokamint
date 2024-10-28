@@ -17,13 +17,12 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * Information about the mempool of a Mokamint blockchain.
  */
 @Immutable
-public interface MempoolInfo extends Marshallable {
+public interface MempoolInfo {
 
 	/**
 	 * Yields the size (number of entries) of the mempool.

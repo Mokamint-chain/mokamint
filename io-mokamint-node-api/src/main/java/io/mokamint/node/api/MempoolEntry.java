@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.marshalling.api.Marshallable;
 
 /**
  * Information about an entry of the mempool of a Mokamint node.
@@ -25,7 +24,7 @@ import io.hotmoka.marshalling.api.Marshallable;
  * to a block, eventually.
  */
 @Immutable
-public interface MempoolEntry extends Marshallable {
+public interface MempoolEntry {
 
 	/**
 	 * Yields the hash of the transaction in the entry.

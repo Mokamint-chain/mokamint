@@ -41,9 +41,9 @@ public class ChainInfoTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmpty1() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.of(new byte[] { 0, 90, 91 }), Optional.of(new byte[] { 13, 17, 19 }));
+	@DisplayName("chain infos with non-empty hashes and empty state id are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForNonEmptyWithEmptyStateId() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 3, 6, 8, 11 }), Optional.of(new byte[] { 0, 90, 91 }), Optional.empty());
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
@@ -51,17 +51,8 @@ public class ChainInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmpty2() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 0, 90, 91 }), Optional.empty(), Optional.of(new byte[] { 13, 17, 19 }));
-		String encoded = new ChainInfos.Encoder().encode(info1);
-		var info2 = new ChainInfos.Decoder().decode(encoded);
-		assertEquals(info1, info2);
-	}
-
-	@Test
-	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmpty3() throws EncodeException, DecodeException, NoSuchAlgorithmException {
-		var info1 = ChainInfos.of(1317L, Optional.empty(), Optional.empty(), Optional.empty());
+	public void encodeDecodeWorksForEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var info1 = ChainInfos.of(0, Optional.empty(), Optional.empty(), Optional.empty());
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);
