@@ -23,9 +23,7 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
@@ -145,14 +143,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	@Override
 	public final String toString() {
 		var builder = new StringBuilder();
-		populate(builder, Optional.empty());
-		return builder.toString();
-	}
-
-	@Override
-	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
-		var builder = new StringBuilder();
-		populate(builder, startDateTimeUTC);
+		populate(builder);
 		return builder.toString();
 	}
 
@@ -173,9 +164,8 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * Fills the given builder with information inside this description.
 	 * 
 	 * @param builder the builder
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block, if available
 	 */
-	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
+	protected void populate(StringBuilder builder) {
 		builder.append("* height: " + getHeight() + "\n");
 		builder.append("* power: " + getPower() + "\n");
 		builder.append("* total waiting time: " + getTotalWaitingTime() + " ms\n");

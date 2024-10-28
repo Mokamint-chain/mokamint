@@ -19,8 +19,6 @@ package io.mokamint.node.api;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PublicKey;
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -157,16 +155,6 @@ public interface BlockDescription extends Marshallable {
 
 	@Override
 	String toString();
-
-	/**
-	 * Yields a string representation of this block description. This yields a more informative
-	 * representation of the block description than {@link #toString()}, with extra information
-	 * computed by using the given start time for the blockchain of the node.
-	 * 
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
-	 * @return the representation
-	 */
-	String toString(Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Marshals this object into a given stream. This method in general

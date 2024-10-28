@@ -20,11 +20,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
@@ -225,8 +222,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public boolean equals(Object other) {
-		return super.equals(other) &&
-			other instanceof NonGenesisBlockDescription ngbd &&
+		return other instanceof NonGenesisBlockDescription ngbd &&
+			super.equals(other) &&
 			height == ngbd.getHeight() &&
 			power.equals(ngbd.getPower()) &&
 			totalWaitingTime == ngbd.getTotalWaitingTime() &&
@@ -265,11 +262,9 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
-		startDateTimeUTC.ifPresent(sd -> builder.append("* creation date and time UTC: " + sd.plus(getTotalWaitingTime(), ChronoUnit.MILLIS) + "\n"));
-		super.populate(builder, startDateTimeUTC);
-		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + getHashingForBlocks() + ")");
-		builder.append("\n");
+	protected void populate(StringBuilder builder) {
+		super.populate(builder);
+		builder.append("\n* hash of previous block: " + Hex.toHexString(hashOfPreviousBlock) + " (" + getHashingForBlocks() + ")\n");
 		builder.append("* deadline:\n");
 		builder.append("  * prolog:\n");
 		var prolog = deadline.getProlog();
@@ -280,8 +275,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("  * challenge:\n");
 		var challenge = deadline.getChallenge();
 		builder.append("    * scoopNumber: " + challenge.getScoopNumber() + "\n");
-		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()) + " (" + challenge.getHashingForGenerations() + ")");
-		builder.append("\n");
+		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()) + " (" + challenge.getHashingForGenerations() + ")\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashingForDeadlines() + ")\n");
 		builder.append("  * miner's signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");

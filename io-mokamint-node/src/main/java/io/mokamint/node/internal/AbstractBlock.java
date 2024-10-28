@@ -23,10 +23,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -245,19 +243,22 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 
 	@Override
 	public final String toString() {
-		return toString(Optional.empty());
+		var builder = new StringBuilder();
+		populate(builder);
+		return builder.toString();
 	}
 
-	@Override
-	public String toString(Optional<LocalDateTime> startDateTimeUTC) {
-		var builder = new StringBuilder();
+	/**
+	 * Fills the given builder with information inside this block.
+	 * 
+	 * @param builder the builder
+	 */
+	protected void populate(StringBuilder builder) {
 		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
-		builder.append(description.toString(startDateTimeUTC));
+		builder.append(description);
 		builder.append("\n");
 		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
 		builder.append("* final state id: " + Hex.toHexString(stateId));
-
-		return builder.toString();
 	}
 
 	@Override

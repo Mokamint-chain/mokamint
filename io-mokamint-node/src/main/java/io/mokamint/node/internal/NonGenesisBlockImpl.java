@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
@@ -158,28 +156,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
-		var builder = new StringBuilder(super.toString(startDateTimeUTC));
-		builder.append("\n");
-
-		if (transactions.length == 0)
-			builder.append("* 0 transactions");
-		else if (transactions.length == 1)
-			builder.append("* 1 transaction:");
-		else
-			builder.append("* " + transactions.length + " transactions:");
-
-		int n = 0;
-		var hashingForTransactions = getDescription().getHashingForTransactions();
-		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);
-
-		for (var transaction: transactions)
-			builder.append("\n * #" + n++ + ": " + Hex.toHexString(hasher.hash(transaction)) + " (" + hashingForTransactions + ")");
-
-		return builder.toString();
-	}
-
-	@Override
 	public void into(MarshallingContext context) throws IOException {
 		super.into(context);
 		context.writeLengthAndArray(transactions);
@@ -195,6 +171,26 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		super.intoWithoutSignature(context);
 		context.writeLengthAndArray(transactions);
+	}
+
+	@Override
+	protected void populate(StringBuilder builder) {
+		super.populate(builder);
+		builder.append("\n");
+	
+		if (transactions.length == 0)
+			builder.append("* 0 transactions");
+		else if (transactions.length == 1)
+			builder.append("* 1 transaction:");
+		else
+			builder.append("* " + transactions.length + " transactions:");
+	
+		int n = 0;
+		var hashingForTransactions = getDescription().getHashingForTransactions();
+		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);
+	
+		for (var transaction: transactions)
+			builder.append("\n * #" + n++ + ": " + Hex.toHexString(hasher.hash(transaction)) + " (" + hashingForTransactions + ")");
 	}
 
 	@Override

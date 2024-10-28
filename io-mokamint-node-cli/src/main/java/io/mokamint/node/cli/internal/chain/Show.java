@@ -16,7 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.chain;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
@@ -29,6 +30,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -120,25 +122,9 @@ public class Show extends AbstractPublicRpcCommand {
     	if (json())
     		System.out.println(new BlockDescriptions.Encoder().encode(description));
 		else {
-			var info = remote.getChainInfo();
-			var genesisHash = info.getGenesisHash();
-			if (genesisHash.isPresent()) {
-				var genesis = remote.getBlockDescription(genesisHash.get());
-				if (genesis.isPresent()) {
-					var content = genesis.get();
-					if (content instanceof GenesisBlockDescription gbd) {
-						var config = remote.getConfig();
-						System.out.println("* hash: " + Hex.toHexString(hash) + " (" + config.getHashingForBlocks() + ")");
-						System.out.println(description.toString(Optional.of(gbd.getStartDateTimeUTC())));
-					}
-					else
-						throw new DatabaseException("The initial block of the chain is not a genesis block!");
-				}
-				else
-					System.out.println(description);
-			}
-			else
-				System.out.println(description);
+			System.out.println("* creation date and time UTC: " + computeStartDateTimeUTC(description, remote));
+			System.out.println("* hash: " + Hex.toHexString(hash) + " (" + description.getHashingForBlocks() + ")");
+			System.out.println(description);
 		}	
     }
 
@@ -146,24 +132,33 @@ public class Show extends AbstractPublicRpcCommand {
     	if (json())
     		System.out.println(new Blocks.Encoder().encode(block));
 		else {
-			var info = remote.getChainInfo();
-			var genesisHash = info.getGenesisHash();
-			if (genesisHash.isPresent()) {
-				var genesis = remote.getBlockDescription(genesisHash.get());
-				if (genesis.isPresent())
-					if (genesis.get() instanceof GenesisBlockDescription gbd)
-						System.out.println(block.toString(Optional.of(gbd.getStartDateTimeUTC())));
-					else
-						throw new DatabaseException("The initial block of the chain is not a genesis block!");
-				else
-					System.out.println(block);
-			}
-			else
-				System.out.println(block);
+			System.out.println("* creation date and time UTC: " + computeStartDateTimeUTC(block.getDescription(), remote));
+			System.out.println(block);
 		}	
     }
 
-    @Override
+    private LocalDateTime computeStartDateTimeUTC(BlockDescription description, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		if (description instanceof GenesisBlockDescription gbd)
+			return gbd.getStartDateTimeUTC();
+		else {
+			var info = remote.getChainInfo();
+			var genesisHash = info.getGenesisHash();
+			if (genesisHash.isEmpty())
+				throw new DatabaseException("The database contains a non-genesis block but no genesis block");
+	
+			var genesis = remote.getBlockDescription(genesisHash.get());
+			if (genesis.isEmpty())
+				throw new DatabaseException("The genesis block is set but it cannot be found in the database");
+	
+			var content = genesis.get();
+			if (content instanceof GenesisBlockDescription gbd)
+				return gbd.getStartDateTimeUTC().plus(((NonGenesisBlockDescription) description).getTotalWaitingTime(), ChronoUnit.MILLIS);
+			else
+				throw new DatabaseException("The initial block of the chain is not a genesis block");
+		}
+	}
+
+	@Override
 	protected void execute() throws CommandException {
 		execute(this::body);
 	}

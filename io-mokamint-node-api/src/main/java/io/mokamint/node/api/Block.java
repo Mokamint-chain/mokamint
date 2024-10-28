@@ -17,8 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
@@ -81,15 +79,6 @@ public interface Block extends Marshallable, Whisperable {
 
 	@Override
 	String toString();
-
-	/**
-	 * Yields a string representation of this block description. This yields a more informative
-	 * representation of the block description than {@link #toString()}.
-	 * 
-	 * @param startDateTimeUTC the creation time of the genesis block of the chain of the block description, if any
-	 * @return the representation
-	 */
-	String toString(Optional<LocalDateTime> startDateTimeUTC);
 
 	/**
 	 * Marshals this object into a given stream. This method in general

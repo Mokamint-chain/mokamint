@@ -26,7 +26,6 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
@@ -248,8 +247,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public boolean equals(Object other) {
-		return super.equals(other) &&
-			other instanceof GenesisBlockDescription gbd &&
+		return other instanceof GenesisBlockDescription gbd &&
+			super.equals(other) &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
 			publicKeyBase58.equals(gbd.getPublicKeyForSigningBlockBase58()) &&
 			signatureForBlock.equals(gbd.getSignatureForBlock()) &&
@@ -260,18 +259,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	@Override
 	public int hashCode() {
 		return super.hashCode() ^ startDateTimeUTC.hashCode() ^ publicKeyBase58.hashCode();
-	}
-
-	@Override
-	protected void populate(StringBuilder builder, Optional<LocalDateTime> startDateTimeUTC) {
-		builder.append("* creation date and time UTC: " + this.startDateTimeUTC + "\n");
-		super.populate(builder, startDateTimeUTC);
-		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
-	}
-
-	@Override
-	protected byte[] getNextGenerationSignature() {
-		return hashingForGenerations.getHasher(Function.identity()).hash(new byte[] { 13, 1, 19, 73 }); // anything would do
 	}
 
 	@Override
@@ -299,6 +286,17 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		catch (DateTimeException | InvalidKeyException e) {
 			throw new IOException(e);
 		}
+	}
+
+	@Override
+	protected void populate(StringBuilder builder) {
+		super.populate(builder);
+		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
+	}
+
+	@Override
+	protected byte[] getNextGenerationSignature() {
+		return hashingForGenerations.getHasher(Function.identity()).hash(new byte[] { 13, 1, 19, 73 }); // anything would do
 	}
 
 	private void writePublicKeyEncoding(MarshallingContext context) throws IOException, InvalidKeyException {
