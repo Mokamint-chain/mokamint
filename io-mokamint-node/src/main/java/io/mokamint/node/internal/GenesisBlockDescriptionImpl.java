@@ -90,8 +90,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		this.hashingForGenerations = hashingForGenerations;
 		this.signatureForBlock = signatureForBlock;
 		this.publicKey = publicKey;
-		byte[] publicKeyEncoding = signatureForBlock.encodingOf(publicKey);
-		this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
+		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
 
 		verify();
 	}
@@ -159,7 +158,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	/**
-	 * Checks all constraints expected from a non-genesis block.
+	 * Checks all constraints expected from a non-genesis block description.
 	 * 
 	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws IllegalArgumentException if some value is illegal
@@ -189,12 +188,12 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public BigInteger getAcceleration() {
-		// the initial acceleration should be fast enough to start producing new blocks without delay;
+		// the initial acceleration should be fast enough to start mining new blocks without delay;
 		// for that, we consider the average value of the first deadline computed for the blockchain;
 		// since we do not know how much space has been allocated initially, globally, we choose
 		// an average value for the worst case: just one nonce is available in the plots, globally;
-		// then we divide for the target block creation time. This might lead to a fast start-up of
-		// mining, but it will subsequently slow down to the target block creation time
+		// then we divide for the target block creation time. This might lead to a faster start-up of
+		// mining than expected, but it will subsequently slow down to the target block creation time
 		var averageValue = new byte[hashingForGenerations.length()];
 		averageValue[0] = (byte) 0x80;
 		var newValueAsBytes = new BigInteger(1, averageValue).divide(BigInteger.valueOf(getTargetBlockCreationTime())).toByteArray();
@@ -207,7 +206,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			dividedValueAsBytes[4], dividedValueAsBytes[5], dividedValueAsBytes[6], dividedValueAsBytes[7]
 		};
 
-		return new BigInteger(1, firstEightBytes);
+		var result = new BigInteger(1, firstEightBytes);
+		// acceleration must be strictly positive
+		return result.signum() == 0 ? BigInteger.ONE : result;
 	}
 
 	@Override
@@ -247,15 +248,18 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GenesisBlockDescription gbd &&
+		return super.equals(other) &&
+			other instanceof GenesisBlockDescription gbd &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
-			publicKey.equals(gbd.getPublicKeyForSigningBlock()) &&
-			signatureForBlock.equals(gbd.getSignatureForBlock());
+			publicKeyBase58.equals(gbd.getPublicKeyForSigningBlockBase58()) &&
+			signatureForBlock.equals(gbd.getSignatureForBlock()) &&
+			hashingForDeadlines.equals(gbd.getHashingForDeadlines()) &&
+			hashingForGenerations.equals(gbd.getHashingForGenerations());
 	}
 
 	@Override
 	public int hashCode() {
-		return startDateTimeUTC.hashCode();
+		return super.hashCode() ^ startDateTimeUTC.hashCode() ^ publicKeyBase58.hashCode();
 	}
 
 	@Override
@@ -267,16 +271,15 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 
 	@Override
 	protected byte[] getNextGenerationSignature() {
-		return hashingForGenerations.getHasher(Function.identity()).hash(new byte[] { 13, 1, 19, 73 });
+		return hashingForGenerations.getHasher(Function.identity()).hash(new byte[] { 13, 1, 19, 73 }); // anything would do
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		try {
-			// we write the height of the block anyway, so that, by reading the first long,
-			// it is possible to distinguish between a genesis block (height == 0)
-			// and a non-genesis block (height > 0)
-			context.writeLong(0L);
+			// we write the height of the block anyway, so that, by reading the first long, it is possible
+			// to distinguish between a genesis block (height == 0) and a non-genesis block (height > 0)
+			context.writeCompactLong(0L);
 			context.writeCompactInt(getTargetBlockCreationTime());
 			context.writeStringShared(getHashingForBlocks().getName());
 			context.writeStringShared(getHashingForTransactions().getName());
@@ -297,7 +300,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			// we write the height of the block anyway, so that, by reading the first long,
 			// it is possible to distinguish between a genesis block (height == 0)
 			// and a non-genesis block (height > 0)
-			context.writeLong(0L);
+			context.writeCompactLong(0L);
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			writePublicKeyEncoding(context);
 		}
@@ -307,10 +310,11 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	private void writePublicKeyEncoding(MarshallingContext context) throws IOException, InvalidKeyException {
-		var maybeLength = signatureForBlock.publicKeyLength();
-		if (maybeLength.isEmpty())
-			context.writeLengthAndBytes(signatureForBlock.encodingOf(publicKey));
+		byte[] publicKeyEncoding = signatureForBlock.encodingOf(publicKey);
+
+		if (signatureForBlock.publicKeyLength().isEmpty())
+			context.writeLengthAndBytes(publicKeyEncoding);
 		else
-			context.writeBytes(signatureForBlock.encodingOf(publicKey));
+			context.writeBytes(publicKeyEncoding);
 	}
 }

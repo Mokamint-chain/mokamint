@@ -66,7 +66,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 */
 	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 		if (targetBlockCreationTime <= 0)
-			throw new IllegalArgumentException("The target block creatoin time must be positive");
+			throw new IllegalArgumentException("The target block creation time must be positive");
 
 		this.targetBlockCreationTime = targetBlockCreationTime;
 		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
@@ -84,11 +84,8 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 */
 	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		// by reading the height, we can determine if it's a genesis block description or not
-		var height = context.readLong();
-		if (height == 0L)
-			return new GenesisBlockDescriptionImpl(context, config);
-		else
-			return new NonGenesisBlockDescriptionImpl(height, context, config);
+		var height = context.readCompactLong();
+		return height == 0L ? new GenesisBlockDescriptionImpl(context, config) : new NonGenesisBlockDescriptionImpl(height, context, config);
 	}
 
 	/**
@@ -103,11 +100,8 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 */
 	public static BlockDescription from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		// by reading the height, we can determine if it's a genesis block description or not
-		var height = context.readLong();
-		if (height == 0L)
-			return new GenesisBlockDescriptionImpl(context);
-		else
-			return new NonGenesisBlockDescriptionImpl(height, context);
+		var height = context.readCompactLong();
+		return height == 0L ? new GenesisBlockDescriptionImpl(context) : new NonGenesisBlockDescriptionImpl(height, context);
 	}
 
 	@Override
@@ -134,19 +128,31 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		return Challenges.of(nextScoopNumber, nextGenerationSignature, getHashingForDeadlines(), hashingForGenerations);
 	}
 
-	private static byte[] concat(byte[] array1, byte[] array2) {
-		var merge = new byte[array1.length + array2.length];
-		System.arraycopy(array1, 0, merge, 0, array1.length);
-		System.arraycopy(array2, 0, merge, array1.length, array2.length);
-		return merge;
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof AbstractBlockDescription abd &&
+			targetBlockCreationTime == abd.getTargetBlockCreationTime() &&
+			hashingForBlocks.equals(abd.getHashingForBlocks()) &&
+			hashingForTransactions.equals(abd.getHashingForTransactions());
 	}
 
-	private static byte[] longToBytesBE(long l) {
-		var target = new byte[8];
-		for (int i = 0; i <= 7; i++)
-			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
+	@Override
+	public int hashCode() {
+		return targetBlockCreationTime ^ hashingForBlocks.hashCode() ^ hashingForTransactions.hashCode();
+	}
 
-		return target;
+	@Override
+	public final String toString() {
+		var builder = new StringBuilder();
+		populate(builder, Optional.empty());
+		return builder.toString();
+	}
+
+	@Override
+	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
+		var builder = new StringBuilder();
+		populate(builder, startDateTimeUTC);
+		return builder.toString();
 	}
 
 	/**
@@ -171,17 +177,18 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 */
 	protected abstract byte[] getNextGenerationSignature();
 
-	@Override
-	public final String toString() {
-		var builder = new StringBuilder();
-		populate(builder, Optional.empty());
-		return builder.toString();
+	protected static byte[] concat(byte[] array1, byte[] array2) {
+		var merge = new byte[array1.length + array2.length];
+		System.arraycopy(array1, 0, merge, 0, array1.length);
+		System.arraycopy(array2, 0, merge, array1.length, array2.length);
+		return merge;
 	}
 
-	@Override
-	public final String toString(Optional<LocalDateTime> startDateTimeUTC) {
-		var builder = new StringBuilder();
-		populate(builder, startDateTimeUTC);
-		return builder.toString();
+	private static byte[] longToBytesBE(long l) {
+		var target = new byte[8];
+		for (int i = 0; i <= 7; i++)
+			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
+
+		return target;
 	}
 }

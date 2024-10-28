@@ -135,8 +135,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	/**
 	 * Unmarshals a non-genesis block. The height of the block has been already read.
-	 * It assumes that the description was marshalled by using
-	 * {@link BlockDescription#into(MarshallingContext)}.
+	 * It assumes that the description was marshalled by using {@link BlockDescription#into(MarshallingContext)}.
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
@@ -226,7 +225,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof NonGenesisBlockDescription ngbd &&
+		return super.equals(other) &&
+			other instanceof NonGenesisBlockDescription ngbd &&
 			height == ngbd.getHeight() &&
 			power.equals(ngbd.getPower()) &&
 			totalWaitingTime == ngbd.getTotalWaitingTime() &&
@@ -239,12 +239,12 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public int hashCode() {
-		return ((int) height) ^ power.hashCode() ^ ((int) totalWaitingTime) ^ ((int) weightedWaitingTime) ^ acceleration.hashCode() ^ deadline.hashCode();
+		return super.hashCode() ^ Long.hashCode(height) ^ power.hashCode() ^ Long.hashCode(totalWaitingTime) ^ Long.hashCode(weightedWaitingTime) ^ acceleration.hashCode() ^ deadline.hashCode();
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
-		context.writeLong(height);
+		context.writeCompactLong(height);
 		context.writeCompactInt(getTargetBlockCreationTime());
 		context.writeStringShared(getHashingForBlocks().getName());
 		context.writeStringShared(getHashingForTransactions().getName());
@@ -258,7 +258,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		context.writeLong(height);
+		context.writeCompactLong(height);
 		context.writeBigInteger(power);
 		context.writeLong(totalWaitingTime);
 		context.writeCompactLong(weightedWaitingTime);
@@ -327,12 +327,5 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 
 		if (hashOfPreviousBlock.length != getHashingForBlocks().length())
 			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
-	}
-
-	private static byte[] concat(byte[] array1, byte[] array2) {
-		var merge = new byte[array1.length + array2.length];
-		System.arraycopy(array1, 0, merge, 0, array1.length);
-		System.arraycopy(array2, 0, merge, array1.length, array2.length);
-		return merge;
 	}
 }
