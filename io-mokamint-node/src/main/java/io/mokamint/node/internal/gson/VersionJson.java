@@ -37,11 +37,6 @@ public abstract class VersionJson implements JsonRepresentation<Version> {
 
 	@Override
 	public Version unmap() throws InconsistentJsonException {
-		try {
-			return Versions.of(major, minor, patch);
-		}
-		catch (IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return Versions.of(major, minor, patch, InconsistentJsonException::new);
 	}
 }

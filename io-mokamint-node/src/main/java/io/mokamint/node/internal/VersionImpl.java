@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.Version;
@@ -50,9 +51,9 @@ public class VersionImpl implements Version {
 	 * @param minor the minor version component
 	 * @param patch the patch version component
 	 */
-	public VersionImpl(int major, int minor, int patch) {
+	public <E extends Exception> VersionImpl(int major, int minor, int patch, Function<String, E> ifIllegal) throws E {
 		if (major < 0 || minor < 0 || patch < 0)
-			throw new IllegalArgumentException("Version's components must be non-negative");
+			throw ifIllegal.apply("Version's components must be non-negative");
 
 		this.major = major;
 		this.minor = minor;

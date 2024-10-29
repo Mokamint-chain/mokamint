@@ -39,11 +39,6 @@ public abstract class MinerInfoJson implements JsonRepresentation<MinerInfo> {
 
 	@Override
 	public MinerInfo unmap() throws InconsistentJsonException {
-		try {
-			return MinerInfos.of(UUID.fromString(uuid), points, description);
-		}
-		catch (NullPointerException | IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return MinerInfos.of(UUID.fromString(uuid), points, description, InconsistentJsonException::new, InconsistentJsonException::new);
 	}
 }

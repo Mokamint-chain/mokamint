@@ -18,6 +18,7 @@ package io.mokamint.node.internal;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.MinerInfo;
@@ -38,12 +39,20 @@ public class MinerInfoImpl implements MinerInfo {
 	 * @param points the points of the miner
 	 * @param description the description of the miner
 	 */
-	public MinerInfoImpl(UUID uuid, long points, String description) {
-		if (points <= 0)
-			throw new IllegalArgumentException("points must be positive");
+	public <E1 extends Exception, E2 extends Exception> MinerInfoImpl(UUID uuid, long points, String description, Function<String, E1> ifNull, Function<String, E2> ifIllegal) throws E1, E2 {
+		if (uuid == null)
+			throw ifNull.apply("uuid cannot be null");
 
-		this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
-		this.description = Objects.requireNonNull(description, "description cannot be null");
+		this.uuid = uuid;
+
+		if (description == null)
+			throw ifNull.apply("description cannot be null");
+
+		this.description = description;
+
+		if (points <= 0)
+			throw ifIllegal.apply("points must be positive");
+
 		this.points = points;
 	}
 

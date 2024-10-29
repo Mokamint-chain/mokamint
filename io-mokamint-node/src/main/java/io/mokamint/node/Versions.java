@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.VersionImpl;
@@ -39,8 +40,20 @@ public abstract class Versions {
 	 * @param patch the patch version component
 	 * @return the version object
 	 */
-	public static Version of(int major, int minor, int patch) {
-		return new VersionImpl(major, minor, patch);
+	public static <E extends Exception> Version of(int major, int minor, int patch, Function<String, E> ifIllegal) throws E {
+		return new VersionImpl(major, minor, patch, ifIllegal);
+	}
+
+	/**
+	 * Yields a version object with the given components.
+	 * 
+	 * @param major the major version component
+	 * @param minor the minor version component
+	 * @param patch the patch version component
+	 * @return the version object
+	 */
+	public static Version of(int major, int minor, int patch) throws IllegalArgumentException {
+		return new VersionImpl(major, minor, patch, IllegalArgumentException::new);
 	}
 
 	/**

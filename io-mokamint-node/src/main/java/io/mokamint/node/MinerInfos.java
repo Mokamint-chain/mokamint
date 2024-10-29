@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.util.UUID;
+import java.util.function.Function;
 
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.internal.MinerInfoImpl;
@@ -40,7 +41,19 @@ public abstract class MinerInfos {
 	 * @return the miner information object
 	 */
 	public static MinerInfo of(UUID uuid, long points, String description) {
-		return new MinerInfoImpl(uuid, points, description);
+		return new MinerInfoImpl(uuid, points, description, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Yields a miner information object.
+	 * 
+	 * @param uuid the unique identifier of the miner
+	 * @param points the points of the miner
+	 * @param description the description of the miner
+	 * @return the miner information object
+	 */
+	public static <E1 extends Exception, E2 extends Exception> MinerInfo of(UUID uuid, long points, String description, Function<String, E1> ifNull, Function<String, E2> ifIllegal) throws E1, E2 {
+		return new MinerInfoImpl(uuid, points, description, ifNull, ifIllegal);
 	}
 
 	/**
