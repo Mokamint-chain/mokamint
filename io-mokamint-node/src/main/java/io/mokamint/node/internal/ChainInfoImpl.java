@@ -18,6 +18,7 @@ package io.mokamint.node.internal;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
@@ -58,19 +59,41 @@ public class ChainInfoImpl implements ChainInfo {
 	 * @param headStateId the state identifier of the head block, if any
 	 */
 	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId) {
+		this(length, genesisHash, headHash, headStateId, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Constructs a new chain information object.
+	 * 
+	 * @param length the length of the chain
+	 * @param genesisHash the hash of the genesis block, if any
+	 * @param headHash the hash of the head block, if any
+	 * @param headStateId the state identifier of the head block, if any
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		if (length < 0)
-			throw new IllegalArgumentException("length cannot be negative");
+			throw onIllegal.apply("length cannot be negative");
 		else if (length == 0) {
 			if (genesisHash.isPresent() || headHash.isPresent())
-				throw new IllegalArgumentException("An empty chain cannot have nor a genesis nor a head block");
+				throw onIllegal.apply("An empty chain cannot have nor a genesis nor a head block");
 		}
 		else if (genesisHash.isEmpty() || headHash.isEmpty())
-			throw new IllegalArgumentException("A non-empty chain must have both a genesis and a head block");
+			throw onIllegal.apply("A non-empty chain must have both a genesis and a head block");
 
 		this.length = length;
-		this.genesisHash = genesisHash.map(byte[]::clone);
-		this.headHash = headHash.map(byte[]::clone);
-		this.headStateId = headStateId.map(byte[]::clone);
+
+		try {
+			this.genesisHash = genesisHash.map(byte[]::clone);
+			this.headHash = headHash.map(byte[]::clone);
+			this.headStateId = headStateId.map(byte[]::clone);
+		}
+		catch (NullPointerException e) {
+			throw onNull.apply(e.getMessage());
+		}
 	}
 
 	@Override

@@ -113,7 +113,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
-	
+
 			verify();
 		}
 		catch (RuntimeException | InvalidKeySpecException e) {
@@ -140,7 +140,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
-	
+
 			verify();
 		}
 		catch (RuntimeException | InvalidKeySpecException e) {
@@ -156,13 +156,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			return context.readLengthAndBytes("Mismatch in the length of the public key");
 	}
 
-	/**
-	 * Checks all constraints expected from a non-genesis block description.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verify() {
+	@Override
+	protected void verify() {
+		super.verify();
+
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 		Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");

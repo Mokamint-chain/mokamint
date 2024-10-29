@@ -50,9 +50,10 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 			return ChainInfos.of(height,
 				genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash)),
 				headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
-				headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)));
+				headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)),
+				InconsistentJsonException::new, InconsistentJsonException::new);
 		}
-		catch (HexConversionException | IllegalArgumentException e) {
+		catch (HexConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

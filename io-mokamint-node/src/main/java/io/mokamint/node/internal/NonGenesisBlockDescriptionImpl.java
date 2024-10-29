@@ -289,13 +289,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		return challenge.getHashingForGenerations().getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
 	}
 
-	/**
-	 * Checks all constraints expected from a non-genesis block.
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal
-	 */
-	private void verify() {
+	@Override
+	protected void verify() {
+		super.verify();
+
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");
 		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");

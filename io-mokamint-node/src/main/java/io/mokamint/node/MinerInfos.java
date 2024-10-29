@@ -41,7 +41,7 @@ public abstract class MinerInfos {
 	 * @return the miner information object
 	 */
 	public static MinerInfo of(UUID uuid, long points, String description) {
-		return new MinerInfoImpl(uuid, points, description, NullPointerException::new, IllegalArgumentException::new);
+		return new MinerInfoImpl(uuid, points, description);
 	}
 
 	/**
@@ -50,10 +50,14 @@ public abstract class MinerInfos {
 	 * @param uuid the unique identifier of the miner
 	 * @param points the points of the miner
 	 * @param description the description of the miner
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
 	 * @return the miner information object
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	public static <E1 extends Exception, E2 extends Exception> MinerInfo of(UUID uuid, long points, String description, Function<String, E1> ifNull, Function<String, E2> ifIllegal) throws E1, E2 {
-		return new MinerInfoImpl(uuid, points, description, ifNull, ifIllegal);
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MinerInfo of(UUID uuid, long points, String description, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		return new MinerInfoImpl(uuid, points, description, onNull, onIllegal);
 	}
 
 	/**
