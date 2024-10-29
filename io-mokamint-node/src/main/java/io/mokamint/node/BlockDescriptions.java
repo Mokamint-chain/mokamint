@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -65,8 +66,49 @@ public abstract class BlockDescriptions {
 	 * @param hashingForTransactions the hashingAlgorithm used for the transactions in the block
 	 * @return the non-genesis block description
 	 */
-	public static NonGenesisBlockDescription of(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
-		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+	public static NonGenesisBlockDescription of(long height, BigInteger power,
+			long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline,
+			byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime,
+			acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks,
+			hashingForTransactions, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Yields a new non-genesis block description.
+	 * 
+	 * @param height the block height, non-negative, counting from 0, which is the genesis block
+	 * @param power the power of the block, computed as the sum, for each block from genesis to the block,
+	 *              of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
+	 *              forks and choose the one whose tip has the highest power. Intuitively, the power
+	 *              expresses the space used to compute the chain leading to the block
+	 * @param totalWaitingTime the total waiting time between the creation of the genesis block and the creation of the block
+	 * @param weightedWaitingTime the weighted waiting time between the creation of the genesis block and the creation of the block
+	 * @param acceleration a value used to divide the deadline to derive the time needed to wait for it.
+	 *                     The higher, the shorter the time. This value changes dynamically to cope with
+	 *                     varying mining power in the network. It is the inverse of Bitcoin's difficulty
+	 * @param deadline the deadline computed for the block
+	 * @param hashOfPreviousBlock the reference to the previous block
+	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForTransactions the hashingAlgorithm used for the transactions in the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @return the non-genesis block description
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockDescription of(long height, BigInteger power,
+			long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline,
+			byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions,
+			Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+
+		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime,
+			acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime,
+			hashingForBlocks, hashingForTransactions, onNull, onIllegal);
 	}
 
 	/**
@@ -83,8 +125,39 @@ public abstract class BlockDescriptions {
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey);
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines,
+			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime,
+			hashingForBlocks, hashingForTransactions, hashingForDeadlines,
+			hashingForGenerations, signatureForBlock, publicKey);
+	}
+
+	/**
+	 * Yields a new genesis block description.
+	 * 
+	 * @param startDateTimeUTC the moment when the block has been created
+	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param hashingForBlocks the hashing algorithm used for the blocks
+	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
+	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
+	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
+	 * @param signatureForBlock the signature algorithm for the block
+	 * @param publicKey the public key of the signer of the block
+	 * @return the genesis block description
+	 * @throws InvalidKeyException if the public key is invalid
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines,
+			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey,
+			Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws InvalidKeyException, ON_NULL, ON_ILLEGAL {
+
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime,
+			hashingForBlocks, hashingForTransactions, hashingForDeadlines,
+			hashingForGenerations, signatureForBlock, publicKey, onNull, onIllegal);
 	}
 
 	/**

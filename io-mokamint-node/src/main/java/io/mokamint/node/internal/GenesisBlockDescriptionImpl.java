@@ -25,6 +25,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -81,7 +82,23 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
+			SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+
+		this(startDateTimeUTC, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a genesis block description with the given keys and signature algorithm.
+	 * 
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
+			SignatureAlgorithm signatureForBlock, PublicKey publicKey, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal)
+					throws InvalidKeyException, ON_NULL, ON_ILLEGAL {
+
 		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.startDateTimeUTC = startDateTimeUTC;
@@ -91,7 +108,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		this.publicKey = publicKey;
 		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
 
-		verify();
+		verify(onNull, onIllegal);
 	}
 
 	/**
@@ -113,12 +130,12 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
-
-			verify();
 		}
-		catch (RuntimeException | InvalidKeySpecException e) {
+		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
+
+		verify(IOException::new, IOException::new);
 	}
 
 	/**
@@ -140,12 +157,12 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
-
-			verify();
 		}
-		catch (RuntimeException | InvalidKeySpecException e) {
+		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
+
+		verify(IOException::new, IOException::new);
 	}
 
 	private byte[] readPublicKeyEncoding(UnmarshallingContext context) throws IOException {
@@ -157,8 +174,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	protected void verify() {
-		super.verify();
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		super.verify(onNull, onIllegal);
 
 		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
 		Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");

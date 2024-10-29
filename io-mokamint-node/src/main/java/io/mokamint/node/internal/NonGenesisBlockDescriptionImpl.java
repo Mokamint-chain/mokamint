@@ -86,7 +86,21 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
+			Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+
+		this(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a new non-genesis block description.
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime,
+			BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions,
+			Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+
 		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.height = height;
@@ -97,7 +111,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.deadline = deadline;
 		this.hashOfPreviousBlock = hashOfPreviousBlock;
 
-		verify();
+		verify(onNull, onIllegal);
 	}
 
 	/**
@@ -114,20 +128,14 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions());
 
 		this.height = height;
+		this.power = context.readBigInteger();
+		this.totalWaitingTime = context.readLong();
+		this.weightedWaitingTime = context.readCompactLong();
+		this.acceleration = context.readBigInteger();
+		this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
+		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
 
-		try {
-			this.power = context.readBigInteger();
-			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readCompactLong();
-			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
-			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
-
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		verify(IOException::new, IOException::new);
 	}
 
 	/**
@@ -144,20 +152,14 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared()));
 
 		this.height = height;
+		this.power = context.readBigInteger();
+		this.totalWaitingTime = context.readLong();
+		this.weightedWaitingTime = context.readCompactLong();
+		this.acceleration = context.readBigInteger();
+		this.deadline = Deadlines.from(context);
+		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
 
-		try {
-			this.power = context.readBigInteger();
-			this.totalWaitingTime = context.readLong();
-			this.weightedWaitingTime = context.readCompactLong();
-			this.acceleration = context.readBigInteger();
-			this.deadline = Deadlines.from(context);
-			this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
-
-			verify();
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		verify(IOException::new, IOException::new);
 	}
 
 	@Override
@@ -290,8 +292,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	protected void verify() {
-		super.verify();
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		super.verify(onNull, onIllegal);
 
 		Objects.requireNonNull(acceleration, "acceleration cannot be null");
 		Objects.requireNonNull(deadline, "deadline cannot be null");

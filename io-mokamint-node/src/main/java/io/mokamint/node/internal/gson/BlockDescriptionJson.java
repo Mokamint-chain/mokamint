@@ -23,6 +23,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Base58ConversionException;
@@ -86,7 +87,10 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
 			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions));
+				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime,
+						acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime,
+						HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions),
+						InconsistentJsonException::new, InconsistentJsonException::new);
 			else {
 				var signature = SignatureAlgorithms.of(signatureForBlocks);
 
@@ -94,10 +98,11 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 						targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks),
 						HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines),
 						HashingAlgorithms.of(hashingForGenerations),
-						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
+						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)),
+						InconsistentJsonException::new, InconsistentJsonException::new);
 			}
 		}
-		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException | NullPointerException | IllegalArgumentException e) {
+		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException | DateTimeParseException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

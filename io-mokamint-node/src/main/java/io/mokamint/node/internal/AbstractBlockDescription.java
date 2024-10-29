@@ -23,7 +23,6 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.crypto.Hex;
@@ -158,6 +157,20 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	/**
+	 * Checks all constraints expected from a this block description.
+	 */
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (targetBlockCreationTime <= 0)
+			throw onIllegal.apply("The target block creation time must be positive");
+	
+		if (hashingForBlocks == null)
+			throw onNull.apply("hashingForBlocks cannot be null");
+
+		if (hashingForTransactions == null)
+			throw onNull.apply("hashingForTransactions cannot be null");
+	}
+
+	/**
 	 * Fills the given builder with information inside this description.
 	 * 
 	 * @param builder the builder
@@ -191,16 +204,5 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			target[7 - i] = (byte) ((l >> (8 * i)) & 0xFF);
 
 		return target;
-	}
-
-	/**
-	 * Checks all constraints expected from a this block description.
-	 */
-	protected void verify() {
-		if (targetBlockCreationTime <= 0)
-			throw new IllegalArgumentException("The target block creation time must be positive");
-
-		Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
-		Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null");
 	}
 }
