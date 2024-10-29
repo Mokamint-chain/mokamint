@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.messages.GetConfigResultMessages;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
@@ -36,7 +37,7 @@ public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonR
 	}
 
 	@Override
-	public GetConfigResultMessage unmap() throws NoSuchAlgorithmException {
+	public GetConfigResultMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		return GetConfigResultMessages.of(config.unmap(), getId());
 	}
 

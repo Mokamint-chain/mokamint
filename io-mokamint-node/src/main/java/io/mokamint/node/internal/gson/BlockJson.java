@@ -73,7 +73,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 				return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature);
 			}
 		}
-		catch (HexConversionException | InvalidKeyException | SignatureException e) {
+		catch (HexConversionException | InvalidKeyException | SignatureException | NullPointerException | IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

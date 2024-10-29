@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.api.MempoolInfo;
@@ -35,7 +36,12 @@ public abstract class MempoolInfoJson implements JsonRepresentation<MempoolInfo>
 	}
 
 	@Override
-	public MempoolInfo unmap() {
-		return MempoolInfos.of(size);
+	public MempoolInfo unmap() throws InconsistentJsonException {
+		try {
+			return MempoolInfos.of(size);
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

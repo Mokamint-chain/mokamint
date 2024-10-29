@@ -17,12 +17,13 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.api.MempoolPortion;
 
 /**
  * Implementation of information about the transactions of a sorted, sequential portion of the
@@ -43,7 +44,7 @@ public class MempoolPortionImpl implements MempoolPortion {
 	 * @param entries the mempool entries, in increasing order of transaction priority
 	 */
 	public MempoolPortionImpl(Stream<MempoolEntry> entries) {
-		this.entries = entries.toArray(MempoolEntry[]::new);
+		this.entries = entries.map(Objects::requireNonNull).toArray(MempoolEntry[]::new);
 	}
 
 	@Override

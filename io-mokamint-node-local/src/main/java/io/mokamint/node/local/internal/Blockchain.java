@@ -2394,7 +2394,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (chainHeight.isEmpty())
 				return Stream.empty();
 
-			ByteIterable[] hashes = CheckSupplier.check(NodeException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
+			ByteIterable[] hashes = CheckSupplier.check(NodeException.class, DatabaseException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
 				.map(UncheckFunction.uncheck(bi -> {
 					if (bi == null)

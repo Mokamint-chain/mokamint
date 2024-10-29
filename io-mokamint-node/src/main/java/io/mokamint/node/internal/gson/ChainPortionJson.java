@@ -44,7 +44,7 @@ public abstract class ChainPortionJson implements JsonRepresentation<ChainPortio
 				ChainPortions.of(Stream.of(hashes).map(UncheckFunction.uncheck(Hex::fromHexString)))
 			);
 		}
-		catch (HexConversionException e) {
+		catch (HexConversionException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

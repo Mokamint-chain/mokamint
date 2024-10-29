@@ -69,7 +69,7 @@ public class TransactionAddressImpl implements TransactionAddress {
 	public boolean equals(Object other) {
 		return other instanceof TransactionAddress ta &&
 			ta.getProgressive() == progressive &&
-			Arrays.equals(ta.getBlockHash(), blockHash);
+			Arrays.equals(ta instanceof TransactionAddressImpl tai ? tai.blockHash : ta.getBlockHash(), blockHash); // optimization
 	}
 
 	@Override

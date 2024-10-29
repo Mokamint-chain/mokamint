@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.TaskInfo;
@@ -31,7 +32,12 @@ public abstract class TaskInfoJson implements JsonRepresentation<TaskInfo> {
 	}
 
 	@Override
-	public TaskInfo unmap() {
-		return TaskInfos.of(description);
+	public TaskInfo unmap() throws InconsistentJsonException {
+		try {
+			return TaskInfos.of(description);
+		}
+		catch (NullPointerException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

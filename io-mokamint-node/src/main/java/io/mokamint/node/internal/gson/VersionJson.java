@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Version;
@@ -35,7 +36,12 @@ public abstract class VersionJson implements JsonRepresentation<Version> {
 	}
 
 	@Override
-	public Version unmap() {
-		return Versions.of(major, minor, patch);
+	public Version unmap() throws InconsistentJsonException {
+		try {
+			return Versions.of(major, minor, patch);
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

@@ -37,15 +37,14 @@ public abstract class AbstractConsensusConfigBuilder<C extends ConsensusConfig<C
 	 * 
 	 * @throws NoSuchAlgorithmException if the configuration refers to some unknown hashing algorithm
 	 */
-	protected AbstractConsensusConfigBuilder() throws NoSuchAlgorithmException {
-	}
+	protected AbstractConsensusConfigBuilder() throws NoSuchAlgorithmException {}
 
 	/**
 	 * Reads the properties of the given TOML file and sets them for
 	 * the corresponding fields of this builder.
 	 * 
 	 * @param toml the file
-	 * @throws NoSuchAlgorithmException if some hashing algorithm cannot be found
+	 * @throws NoSuchAlgorithmException if the toml file refers to some unknown hashing algorithm
 	 */
 	protected AbstractConsensusConfigBuilder(Toml toml) throws NoSuchAlgorithmException {
 		super(toml);

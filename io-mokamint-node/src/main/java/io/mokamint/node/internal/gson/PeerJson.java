@@ -39,7 +39,7 @@ public abstract class PeerJson implements JsonRepresentation<Peer> {
 		try {
 			return Peers.of(new URI(uri));
 		}
-		catch (URISyntaxException e) {
+		catch (URISyntaxException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

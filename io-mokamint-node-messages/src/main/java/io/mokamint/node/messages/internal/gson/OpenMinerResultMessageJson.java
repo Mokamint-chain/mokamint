@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.messages.OpenMinerResultMessages;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
@@ -36,7 +37,7 @@ public abstract class OpenMinerResultMessageJson extends AbstractRpcMessageJsonR
 	}
 
 	@Override
-	public OpenMinerResultMessage unmap() {
+	public OpenMinerResultMessage unmap() throws InconsistentJsonException {
 		return OpenMinerResultMessages.of(Optional.ofNullable(info == null ? null : info.unmap()), getId());
 	}
 

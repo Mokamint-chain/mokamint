@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.ConsensusConfig;
@@ -51,17 +52,22 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	}
 
 	@Override
-	public ConsensusConfig<?,?> unmap() throws NoSuchAlgorithmException {
-		return ConsensusConfigBuilders.defaults()
-			.setChainId(chainId)
-			.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
-			.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))
-			.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks))
-			.setHashingForTransactions(HashingAlgorithms.of(hashingForTransactions))
-			.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
-			.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
-			.setTargetBlockCreationTime(targetBlockCreationTime)
-			.setMaxBlockSize(maxBlockSize)
-			.build();
+	public ConsensusConfig<?,?> unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+		try {
+			return ConsensusConfigBuilders.defaults()
+					.setChainId(chainId)
+					.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
+					.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))
+					.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks))
+					.setHashingForTransactions(HashingAlgorithms.of(hashingForTransactions))
+					.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
+					.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
+					.setTargetBlockCreationTime(targetBlockCreationTime)
+					.setMaxBlockSize(maxBlockSize)
+					.build();
+		}
+		catch (NullPointerException | IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

@@ -39,14 +39,12 @@ public class MinerInfoImpl implements MinerInfo {
 	 * @param description the description of the miner
 	 */
 	public MinerInfoImpl(UUID uuid, long points, String description) {
-		Objects.requireNonNull(uuid, "uuid cannot be null");
-		Objects.requireNonNull(description, "description cannot be null");
 		if (points <= 0)
 			throw new IllegalArgumentException("points must be positive");
 
-		this.uuid = uuid;
+		this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
+		this.description = Objects.requireNonNull(description, "description cannot be null");
 		this.points = points;
-		this.description = description;
 	}
 
 	@Override

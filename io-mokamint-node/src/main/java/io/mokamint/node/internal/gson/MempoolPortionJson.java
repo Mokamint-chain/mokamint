@@ -18,13 +18,12 @@ package io.mokamint.node.internal.gson;
 
 import java.util.stream.Stream;
 
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MempoolEntries;
+import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.api.MempoolPortion;
 
 /**
@@ -39,13 +38,8 @@ public abstract class MempoolPortionJson implements JsonRepresentation<MempoolPo
 
 	@Override
 	public MempoolPortion unmap() throws InconsistentJsonException {
-		try {
-			return CheckSupplier.check(HexConversionException.class, () ->
-				MempoolPortions.of(Stream.of(transactions).map(UncheckFunction.uncheck(MempoolEntryJson::unmap)))
-			);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return CheckSupplier.check(InconsistentJsonException.class, () ->
+			MempoolPortions.of(Stream.of(transactions).map(UncheckFunction.uncheck(MempoolEntryJson::unmap)))
+		);
 	}
 }

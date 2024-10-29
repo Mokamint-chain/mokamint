@@ -51,12 +51,9 @@ public class NodeInfoImpl implements NodeInfo {
 	 * @param localDateTimeUTC the local date and time UTC of the node
 	 */
 	public NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
-		Objects.requireNonNull(version);
-		Objects.requireNonNull(uuid);
-		Objects.requireNonNull(localDateTimeUTC);
-		this.version = version;
-		this.uuid = uuid;
-		this.localDateTimeUTC = localDateTimeUTC;
+		this.version = Objects.requireNonNull(version);
+		this.uuid = Objects.requireNonNull(uuid);
+		this.localDateTimeUTC = Objects.requireNonNull(localDateTimeUTC);
 	}
 
 	@Override

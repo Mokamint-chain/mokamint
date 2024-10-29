@@ -55,8 +55,7 @@ public abstract class ConsensusConfigBuilders {
 	 */
 	private static class MyConsensusConfigBuilder extends AbstractConsensusConfigBuilder<MyConsensusConfig, MyConsensusConfigBuilder> {
 
-		private MyConsensusConfigBuilder() throws NoSuchAlgorithmException {
-		}
+		private MyConsensusConfigBuilder() throws NoSuchAlgorithmException {}
 
 		private MyConsensusConfigBuilder(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
 			super(readToml(path));

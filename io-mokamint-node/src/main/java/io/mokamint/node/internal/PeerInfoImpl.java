@@ -27,8 +27,20 @@ import io.mokamint.node.api.PeerInfo;
  */
 @Immutable
 public class PeerInfoImpl implements PeerInfo {
+
+	/**
+	 * The peer.
+	 */
 	private final Peer peer;
+
+	/**
+	 * The points of the peer.
+	 */
 	private final long points;
+
+	/**
+	 * True if and only if the peer is currently connected.
+	 */
 	private final boolean connected;
 
 	/**
@@ -39,11 +51,10 @@ public class PeerInfoImpl implements PeerInfo {
 	 * @param connected the connection status of the peer
 	 */
 	public PeerInfoImpl(Peer peer, long points, boolean connected) {
-		Objects.requireNonNull(peer);
 		if (points <= 0)
 			throw new IllegalArgumentException("points must be positive");
 
-		this.peer = peer;
+		this.peer = Objects.requireNonNull(peer);
 		this.points = points;
 		this.connected = connected;
 	}

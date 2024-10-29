@@ -19,8 +19,10 @@ package io.mokamint.node.internal.gson;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
@@ -41,7 +43,12 @@ public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 	}
 
 	@Override
-	public NodeInfo unmap() {
-		return NodeInfos.of(version.unmap(), UUID.fromString(uuid), LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME));
+	public NodeInfo unmap() throws InconsistentJsonException {
+		try {
+			return NodeInfos.of(version.unmap(), UUID.fromString(uuid), LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME));
+		}
+		catch (DateTimeParseException | IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

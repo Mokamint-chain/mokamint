@@ -26,6 +26,10 @@ import io.mokamint.node.api.TaskInfo;
  */
 @Immutable
 public class TaskInfoImpl implements TaskInfo {
+
+	/**
+	 * The description of the task.
+	 */
 	private final String description;
 
 	/**
@@ -34,9 +38,7 @@ public class TaskInfoImpl implements TaskInfo {
 	 * @param description the description of the task
 	 */
 	public TaskInfoImpl(String description) {
-		Objects.requireNonNull(description, "description cannot be null");
-
-		this.description = description;
+		this.description = Objects.requireNonNull(description, "description cannot be null");
 	}
 
 	@Override

@@ -36,6 +36,9 @@ public class MempoolInfoImpl implements MempoolInfo {
 	 * @param size the size of the mempool
 	 */
 	public MempoolInfoImpl(long size) {
+		if (size < 0)
+			throw new IllegalArgumentException("size cannot be negative");
+
 		this.size = size;
 	}
 

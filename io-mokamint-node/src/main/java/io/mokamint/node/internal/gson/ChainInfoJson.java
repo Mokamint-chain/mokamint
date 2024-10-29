@@ -52,7 +52,7 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 				headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
 				headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)));
 		}
-		catch (HexConversionException e) {
+		catch (HexConversionException | IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

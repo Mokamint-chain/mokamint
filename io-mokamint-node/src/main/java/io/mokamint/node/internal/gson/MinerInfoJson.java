@@ -18,6 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import java.util.UUID;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
@@ -37,7 +38,12 @@ public abstract class MinerInfoJson implements JsonRepresentation<MinerInfo> {
 	}
 
 	@Override
-	public MinerInfo unmap() {
-		return MinerInfos.of(UUID.fromString(uuid), points, description);
+	public MinerInfo unmap() throws InconsistentJsonException {
+		try {
+			return MinerInfos.of(UUID.fromString(uuid), points, description);
+		}
+		catch (NullPointerException | IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

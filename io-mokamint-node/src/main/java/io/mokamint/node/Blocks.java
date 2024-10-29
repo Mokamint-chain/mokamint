@@ -63,7 +63,7 @@ public abstract class Blocks {
 
 	/**
 	 * Yields a genesis block with the given description. It adds a signature to the resulting block,
-	 * by using the signature algorithm in the prolog of the deadline and the given private key.
+	 * by using the signature algorithm specified in the description and the given private key.
 	 * 
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block

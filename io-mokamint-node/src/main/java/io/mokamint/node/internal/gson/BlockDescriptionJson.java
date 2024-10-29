@@ -97,7 +97,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)));
 			}
 		}
-		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException e) {
+		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException | NullPointerException | IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

@@ -18,6 +18,7 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolEntry;
@@ -43,7 +44,12 @@ public abstract class MempoolEntryJson implements JsonRepresentation<MempoolEntr
 	}
 
 	@Override
-	public MempoolEntry unmap() throws HexConversionException {
-		return MempoolEntries.of(Hex.fromHexString(hash), priority);
+	public MempoolEntry unmap() throws InconsistentJsonException {
+		try {
+			return MempoolEntries.of(Hex.fromHexString(hash), priority);
+		}
+		catch (HexConversionException | NullPointerException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 }

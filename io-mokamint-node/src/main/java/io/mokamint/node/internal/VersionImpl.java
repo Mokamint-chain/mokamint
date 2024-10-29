@@ -51,6 +51,9 @@ public class VersionImpl implements Version {
 	 * @param patch the patch version component
 	 */
 	public VersionImpl(int major, int minor, int patch) {
+		if (major < 0 || minor < 0 || patch < 0)
+			throw new IllegalArgumentException("Version's components must be non-negative");
+
 		this.major = major;
 		this.minor = minor;
 		this.patch = patch;
@@ -69,6 +72,9 @@ public class VersionImpl implements Version {
 			mavenProperties.load(is);
 			// the period separates the version components, but we need an escaped escape sequence to refer to it in split
 			int[] components = Stream.of(mavenProperties.getProperty("mokamint.version").split("\\.")).mapToInt(Integer::parseInt).toArray();
+			if (components.length != 3)
+				throw new IOException("The mokamint.version property of the maven.properties file should consist of three integer components, while I found " + components.length);
+
 			major = components[0];
 			minor = components[1];
 			patch = components[2];

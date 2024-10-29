@@ -40,7 +40,7 @@ public abstract class TransactionAddressJson implements JsonRepresentation<Trans
 		try {
 			return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive);
 		}
-		catch (HexConversionException e) {
+		catch (HexConversionException | IllegalArgumentException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

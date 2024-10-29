@@ -32,6 +32,10 @@ import io.mokamint.node.api.Peer;
  */
 @Immutable
 public class PeerImpl extends AbstractMarshallable implements Peer {
+
+	/**
+	 * The URI of the peer.
+	 */
 	private final URI uri;
 
 	/**
@@ -40,8 +44,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @param uri the URI of the peer
 	 */
 	public PeerImpl(URI uri) {
-		Objects.requireNonNull(uri);
-		this.uri = uri;
+		this.uri = Objects.requireNonNull(uri);
 	}
 
 	@Override

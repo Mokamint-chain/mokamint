@@ -42,7 +42,7 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 		try {
 			return Transactions.of(Base64.fromBase64String(bytes));
 		}
-		catch (Base64ConversionException e) {
+		catch (Base64ConversionException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}
