@@ -24,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -90,8 +89,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 */
 	protected AbstractBlock(D description, byte[] stateId, byte[] signature) {
 		this.description = description;
-		this.stateId = stateId.clone();
-		this.signature = signature.clone();
+		this.stateId = stateId != null ? stateId.clone() : null;
+		this.signature = signature != null ? signature.clone() : null;
 	}
 
 	/**
@@ -107,8 +106,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 */
 	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
 		this.description = description;
-		this.stateId = stateId.clone();
-		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
+		this.stateId = stateId != null ? stateId.clone() : null;
+		this.signature = description != null && privateKey != null ? description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis())) : null;
 	}
 
 	/**
@@ -123,18 +122,13 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 */
 	protected AbstractBlock(D description, UnmarshallingContext context) throws IOException {
 		this.description = description;
+		this.stateId = context.readLengthAndBytes("State id length mismatch");
 
-		try {
-			this.stateId = context.readLengthAndBytes("State id length mismatch");
-			var maybeLength = description.getSignatureForBlock().length();
-			if (maybeLength.isPresent())
-				this.signature = context.readBytes(maybeLength.getAsInt(), "Signature length mismatch");
-			else
-				this.signature = context.readLengthAndBytes("Signature length mismatch");
-		}
-		catch (RuntimeException e) {
-			throw new IOException(e);
-		}
+		var maybeLength = description.getSignatureForBlock().length();
+		if (maybeLength.isPresent())
+			this.signature = context.readBytes(maybeLength.getAsInt(), "Signature length mismatch");
+		else
+			this.signature = context.readLengthAndBytes("Signature length mismatch");
 	}
 
 	/**
@@ -220,7 +214,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 		var hashOfPreviousBlock = getHash();
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
-			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock, description.getTargetBlockCreationTime(), description.getHashingForBlocks(), description.getHashingForTransactions());
+			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock,
+			description.getTargetBlockCreationTime(), description.getHashingForBlocks(),
+			description.getHashingForTransactions());
 	}
 
 	@Override
@@ -246,19 +242,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 		var builder = new StringBuilder();
 		populate(builder);
 		return builder.toString();
-	}
-
-	/**
-	 * Fills the given builder with information inside this block.
-	 * 
-	 * @param builder the builder
-	 */
-	protected void populate(StringBuilder builder) {
-		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
-		builder.append(description);
-		builder.append("\n");
-		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
-		builder.append("* final state id: " + Hex.toHexString(stateId));
 	}
 
 	@Override
@@ -306,6 +289,19 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	}
 
 	/**
+	 * Fills the given builder with information inside this block.
+	 * 
+	 * @param builder the builder
+	 */
+	protected void populate(StringBuilder builder) {
+		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
+		builder.append(description);
+		builder.append("\n");
+		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
+		builder.append("* final state id: " + Hex.toHexString(stateId));
+	}
+
+	/**
 	 * Marshals this block into the given context, without its signature.
 	 * 
 	 * @param context the context
@@ -320,15 +316,21 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * Checks all constraints expected from this block. This also checks the validity of
 	 * the signature and that transactions are not repeated inside the block.
 	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
 	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
 	 * @throws InvalidKeyException if the public key of the description is invalid
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	protected void verify() throws InvalidKeyException, SignatureException {
-		Objects.requireNonNull(description, "description cannot be null");
-		Objects.requireNonNull(signature, "signature cannot be null");
-		Objects.requireNonNull(stateId, "stateId cannot be null");
-	
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
+		if (description == null)
+			throw onNull.apply("description cannot be null");
+
+		if (signature == null)
+			throw onNull.apply("signature cannot be null");
+
+		if (stateId == null)
+			throw onNull.apply("stateId cannot be null");
+
 		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
 			throw new SignatureException("The block's signature is invalid");
 	}

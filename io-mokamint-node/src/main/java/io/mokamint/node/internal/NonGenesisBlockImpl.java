@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
@@ -75,7 +76,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		super(description, stateId, signature);
 
 		this.transactions = transactions.toArray(Transaction[]::new);
-		verify();	
+
+		verify(NullPointerException::new, IllegalArgumentException::new);
 	}
 
 	/**
@@ -89,11 +91,12 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
+		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
+
 		try {
-			this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
-			verify();
+			verify(IOException::new, IOException::new);
 		}
-		catch (RuntimeException | InvalidKeyException | SignatureException e) {
+		catch (InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
@@ -113,7 +116,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
 	
 		this.transactions = transactions;
-		verify();
+
+		verify(NullPointerException::new, IllegalArgumentException::new);
 	}
 
 	@Override
@@ -189,9 +193,9 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	protected void verify() throws InvalidKeyException, SignatureException {
-		super.verify();
-	
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
+		super.verify(onNull, onIllegal);
+
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))

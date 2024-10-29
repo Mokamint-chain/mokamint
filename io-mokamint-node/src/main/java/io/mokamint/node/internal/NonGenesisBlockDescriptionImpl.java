@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
@@ -295,27 +294,34 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		super.verify(onNull, onIllegal);
 
-		Objects.requireNonNull(acceleration, "acceleration cannot be null");
-		Objects.requireNonNull(deadline, "deadline cannot be null");
-		Objects.requireNonNull(hashOfPreviousBlock, "hashOfPreviousBlock cannot be null");
-		Objects.requireNonNull(power, "power cannot be null");
-	
+		if (acceleration == null)
+			throw onNull.apply("acceleration cannot be null");
+
+		if (deadline == null)
+			throw onNull.apply("deadline cannot be null");
+
+		if (hashOfPreviousBlock == null)
+			throw onNull.apply("hashOfPreviousBlock cannot be null");	
+
+		if (power == null)
+			throw onNull.apply("power cannot be null");	
+
 		if (height < 1)
-			throw new IllegalArgumentException("A non-genesis block must have positive height");
+			throw onIllegal.apply("A non-genesis block must have positive height");
 	
 		if (power.signum() < 0)
-			throw new IllegalArgumentException("The power cannot be negative");
+			throw onIllegal.apply("The power cannot be negative");
 	
 		if (acceleration.signum() <= 0)
-			throw new IllegalArgumentException("The acceleration must be strictly positive");
+			throw onIllegal.apply("The acceleration must be strictly positive");
 	
 		if (weightedWaitingTime < 0)
-			throw new IllegalArgumentException("The weighted waiting time cannot be negative");
+			throw onIllegal.apply("The weighted waiting time cannot be negative");
 	
 		if (totalWaitingTime < weightedWaitingTime)
-			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
+			throw onIllegal.apply("The total waiting time cannot be smaller than the weighted waiting time");
 
 		if (hashOfPreviousBlock.length != getHashingForBlocks().length())
-			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
+			throw onIllegal.apply("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
 	}
 }

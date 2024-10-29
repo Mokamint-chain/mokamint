@@ -26,7 +26,6 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
@@ -177,11 +176,20 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		super.verify(onNull, onIllegal);
 
-		Objects.requireNonNull(startDateTimeUTC, "startDateTimeUTC cannot be null");
-		Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
-		Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
-		Objects.requireNonNull(signatureForBlock, "signatureForBlocks cannot be null");
-		Objects.requireNonNull(publicKey, "publicKey cannot be null");
+		if (startDateTimeUTC == null)
+			throw onNull.apply("startDateTimeUTC cannot be null");
+
+		if (hashingForDeadlines == null)
+			throw onNull.apply("hashingForDeadlines cannot be null");
+
+		if (hashingForGenerations == null)
+			throw onNull.apply("hashingForGenerations cannot be null");
+
+		if (signatureForBlock == null)
+			throw onNull.apply("signatureForBlock cannot be null");
+
+		if (publicKey == null)
+			throw onNull.apply("publicKey cannot be null");
 	}
 
 	@Override
