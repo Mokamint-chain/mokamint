@@ -46,9 +46,9 @@ public abstract class MempoolEntryJson implements JsonRepresentation<MempoolEntr
 	@Override
 	public MempoolEntry unmap() throws InconsistentJsonException {
 		try {
-			return MempoolEntries.of(Hex.fromHexString(hash), priority);
+			return MempoolEntries.of(Hex.fromHexString(hash), priority, InconsistentJsonException::new, InconsistentJsonException::new);
 		}
-		catch (HexConversionException | NullPointerException e) {
+		catch (HexConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

@@ -33,11 +33,6 @@ public abstract class TaskInfoJson implements JsonRepresentation<TaskInfo> {
 
 	@Override
 	public TaskInfo unmap() throws InconsistentJsonException {
-		try {
-			return TaskInfos.of(description);
-		}
-		catch (NullPointerException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return TaskInfos.of(description, InconsistentJsonException::new, InconsistentJsonException::new);
 	}
 }

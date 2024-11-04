@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.TaskInfo;
@@ -38,7 +38,23 @@ public class TaskInfoImpl implements TaskInfo {
 	 * @param description the description of the task
 	 */
 	public TaskInfoImpl(String description) {
-		this.description = Objects.requireNonNull(description, "description cannot be null");
+		this(description, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a task information object.
+	 * 
+	 * @param description the description of the task
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TaskInfoImpl(String description, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (description == null)
+			throw onNull.apply("decription cannot be null");
+
+		this.description = description;
 	}
 
 	@Override

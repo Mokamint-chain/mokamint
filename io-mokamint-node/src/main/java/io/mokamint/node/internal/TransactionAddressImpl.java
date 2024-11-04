@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
@@ -48,8 +49,26 @@ public class TransactionAddressImpl implements TransactionAddress {
 	 *                    transactions inside the block
 	 */
 	public TransactionAddressImpl(byte[] blockHash, int progressive) {
+		this(blockHash, progressive, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a reference to a transaction inside a block.
+	 * 
+	 * @param blockHash the hash of the block containing the transaction
+	 * @param progressive the progressive number of the transaction inside the table of the
+	 *                    transactions inside the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TransactionAddressImpl(byte[] blockHash, int progressive, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		if (progressive < 0)
-			throw new IllegalArgumentException("progressive cannot be negative");
+			throw onIllegal.apply("progressive cannot be negative");
+
+		if (blockHash == null)
+			throw onNull.apply("blockHash cannot be null");
 
 		this.blockHash = blockHash.clone();
 		this.progressive = progressive;

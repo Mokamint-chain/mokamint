@@ -38,10 +38,14 @@ public abstract class Versions {
 	 * @param major the major version component
 	 * @param minor the minor version component
 	 * @param patch the patch version component
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 * @return the version object
 	 */
-	public static <E extends Exception> Version of(int major, int minor, int patch, Function<String, E> ifIllegal) throws E {
-		return new VersionImpl(major, minor, patch, ifIllegal);
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> Version of(int major, int minor, int patch, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		return new VersionImpl(major, minor, patch, onNull, onIllegal);
 	}
 
 	/**
@@ -52,8 +56,8 @@ public abstract class Versions {
 	 * @param patch the patch version component
 	 * @return the version object
 	 */
-	public static Version of(int major, int minor, int patch) throws IllegalArgumentException {
-		return new VersionImpl(major, minor, patch, IllegalArgumentException::new);
+	public static Version of(int major, int minor, int patch) {
+		return new VersionImpl(major, minor, patch, NullPointerException::new, IllegalArgumentException::new);
 	}
 
 	/**

@@ -37,9 +37,9 @@ public abstract class PeerJson implements JsonRepresentation<Peer> {
 	@Override
 	public Peer unmap() throws InconsistentJsonException {
 		try {
-			return Peers.of(new URI(uri));
+			return Peers.of(new URI(uri), InconsistentJsonException::new, InconsistentJsonException::new);
 		}
-		catch (URISyntaxException | NullPointerException e) {
+		catch (URISyntaxException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

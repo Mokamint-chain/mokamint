@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.util.function.Function;
+
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.internal.TransactionAddressImpl;
 import io.mokamint.node.internal.gson.TransactionAddressDecoder;
@@ -39,6 +41,22 @@ public abstract class TransactionAddresses {
 	 */
 	public static TransactionAddress of(byte[] blockHash, int progressive) {
 		return new TransactionAddressImpl(blockHash, progressive);
+	}
+
+	/**
+	 * Yields a new transaction address.
+	 * 
+	 * @param blockHash the hash of the block containing the transaction
+	 * @param progressive the progressive number of the transaction inside the table of the
+	 *                    transactions inside the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @return the transaction address
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TransactionAddress of(byte[] blockHash, int progressive, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		return new TransactionAddressImpl(blockHash, progressive, onNull, onIllegal);
 	}
 
 	/**

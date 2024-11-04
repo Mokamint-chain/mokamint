@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Version;
@@ -51,9 +51,35 @@ public class NodeInfoImpl implements NodeInfo {
 	 * @param localDateTimeUTC the local date and time UTC of the node
 	 */
 	public NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
-		this.version = Objects.requireNonNull(version);
-		this.uuid = Objects.requireNonNull(uuid);
-		this.localDateTimeUTC = Objects.requireNonNull(localDateTimeUTC);
+		this(version, uuid, localDateTimeUTC, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Yields a new node information object.
+	 * 
+	 * @param version the version of the node
+	 * @param uuid the UUID of the node
+	 * @param localDateTimeUTC the local date and time UTC of the node
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (version == null)
+			throw onNull.apply("version cannot be null");
+
+		this.version = version;
+
+		if (uuid == null)
+			throw onNull.apply("uuid cannot be null");
+
+		this.uuid = uuid;
+
+		if (localDateTimeUTC == null)
+			throw onNull.apply("localDateTimeUTC cannot be null");
+
+		this.localDateTimeUTC = localDateTimeUTC;
 	}
 
 	@Override

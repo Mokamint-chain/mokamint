@@ -38,9 +38,9 @@ public abstract class TransactionAddressJson implements JsonRepresentation<Trans
 	@Override
 	public TransactionAddress unmap() throws InconsistentJsonException {
 		try {
-			return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive);
+			return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive, InconsistentJsonException::new, InconsistentJsonException::new);
 		}
-		catch (HexConversionException | IllegalArgumentException | NullPointerException e) {
+		catch (HexConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

@@ -21,6 +21,7 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -54,13 +55,17 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @param description the description
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
 	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature) throws InvalidKeyException, SignatureException {
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
 		super(description, stateId, signature);
 
-		verify(NullPointerException::new, IllegalArgumentException::new);
+		verify(onNull, onIllegal);
 	}
 
 	/**

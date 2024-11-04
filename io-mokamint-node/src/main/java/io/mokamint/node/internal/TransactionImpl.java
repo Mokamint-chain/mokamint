@@ -18,6 +18,7 @@ package io.mokamint.node.internal;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
@@ -45,6 +46,22 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * @param bytes the bytes
 	 */
 	public TransactionImpl(byte[] bytes) {
+		this(bytes, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a transaction with the given bytes.
+	 * 
+	 * @param bytes the bytes
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TransactionImpl(byte[] bytes, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (bytes == null)
+			throw onNull.apply("bytes cannot be null");
+
 		this.bytes = bytes.clone();
 	}
 

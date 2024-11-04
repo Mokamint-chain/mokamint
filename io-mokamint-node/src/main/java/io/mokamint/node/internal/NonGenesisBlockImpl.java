@@ -69,15 +69,19 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @param transactions the transactions in the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature that will be put in the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
 	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature) throws InvalidKeyException, SignatureException {
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
 		super(description, stateId, signature);
 
 		this.transactions = transactions.toArray(Transaction[]::new);
 
-		verify(NullPointerException::new, IllegalArgumentException::new);
+		verify(onNull, onIllegal);
 	}
 
 	/**

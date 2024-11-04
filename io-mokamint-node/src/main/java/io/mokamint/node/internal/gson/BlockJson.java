@@ -26,14 +26,13 @@ import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.internal.GenesisBlockImpl;
-import io.mokamint.node.internal.NonGenesisBlockImpl;
 
 /**
  * The JSON representation of a {@link Block}.
@@ -46,7 +45,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
-		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new) : new Transactions.Json[0];
+		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Transactions.Json::new).toArray(Transactions.Json[]::new) : null;
 		this.stateId = Hex.toHexString(block.getStateId());
 		this.signature = Hex.toHexString(block.getSignature());
 	}
@@ -54,26 +53,38 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
-			var description = this.description.unmap();
+			if (description == null)
+				throw new InconsistentJsonException("description cannot be null");
 
+			if (stateId == null)
+				throw new InconsistentJsonException("stateId cannot be null");
+
+			if (signature == null)
+				throw new InconsistentJsonException("signature cannot be null");
+
+			var description = this.description.unmap();
 			byte[] stateId = Hex.fromHexString(this.stateId);
 			byte[] signature = Hex.fromHexString(this.signature);
 
-			if (description instanceof GenesisBlockDescription gbd) {
-				if (transactions.length != 0)
-					throw new InconsistentJsonException("A genesis block cannot contain transactions");
-
-				return new GenesisBlockImpl(gbd, stateId, signature);
-			}
+			if (description instanceof GenesisBlockDescription gbd)
+				return Blocks.genesis(gbd, stateId, signature, InconsistentJsonException::new, InconsistentJsonException::new);
 			else {
-				var unmappedTransactions = new Transaction[transactions.length];
-				for (int pos = 0; pos < unmappedTransactions.length; pos++)
-					unmappedTransactions[pos] = transactions[pos].unmap();
+				if (transactions == null)
+					throw new InconsistentJsonException("transactions cannot be null");
 
-				return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature);
+				var unmappedTransactions = new Transaction[transactions.length];
+				for (int pos = 0; pos < unmappedTransactions.length; pos++) {
+					Transactions.Json transactionJson = transactions[pos];
+					if (transactionJson == null)
+						throw new InconsistentJsonException("transactions cannot hold a null element");
+					else
+						unmappedTransactions[pos] = transactionJson.unmap();
+				}
+
+				return Blocks.of((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature, InconsistentJsonException::new, InconsistentJsonException::new);
 			}
 		}
-		catch (HexConversionException | InvalidKeyException | SignatureException | NullPointerException | IllegalArgumentException e) {
+		catch (HexConversionException | InvalidKeyException | SignatureException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

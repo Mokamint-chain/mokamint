@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.Peer;
@@ -51,10 +51,28 @@ public class PeerInfoImpl implements PeerInfo {
 	 * @param connected the connection status of the peer
 	 */
 	public PeerInfoImpl(Peer peer, long points, boolean connected) {
-		if (points <= 0)
-			throw new IllegalArgumentException("points must be positive");
+		this(peer, points, connected, NullPointerException::new, IllegalArgumentException::new);
+	}
 
-		this.peer = Objects.requireNonNull(peer);
+	/**
+	 * Creates a peer information object.
+	 * 
+	 * @param peer the peer described by the peer information
+	 * @param points the points of the peer
+	 * @param connected the connection status of the peer
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> PeerInfoImpl(Peer peer, long points, boolean connected, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (points <= 0)
+			throw onIllegal.apply("points must be positive");
+
+		if (peer == null)
+			throw onNull.apply("peer cannot be null");
+
+		this.peer = peer;
 		this.points = points;
 		this.connected = connected;
 	}

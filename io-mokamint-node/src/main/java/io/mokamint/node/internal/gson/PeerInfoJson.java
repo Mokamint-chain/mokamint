@@ -38,11 +38,6 @@ public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
 
 	@Override
 	public PeerInfo unmap() throws InconsistentJsonException {
-		try {
-			return PeerInfos.of(peer.unmap(), points, connected);
-		}
-		catch (NullPointerException | IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return PeerInfos.of(peer.unmap(), points, connected, InconsistentJsonException::new, InconsistentJsonException::new);
 	}
 }

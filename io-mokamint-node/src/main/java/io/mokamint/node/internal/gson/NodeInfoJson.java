@@ -45,7 +45,7 @@ public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 	@Override
 	public NodeInfo unmap() throws InconsistentJsonException {
 		try {
-			return NodeInfos.of(version.unmap(), UUID.fromString(uuid), LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME));
+			return NodeInfos.of(version.unmap(), UUID.fromString(uuid), LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME), InconsistentJsonException::new, InconsistentJsonException::new);
 		}
 		catch (DateTimeParseException | IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);

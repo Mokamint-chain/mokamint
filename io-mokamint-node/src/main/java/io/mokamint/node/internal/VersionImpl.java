@@ -50,10 +50,14 @@ public class VersionImpl implements Version {
 	 * @param major the major version component
 	 * @param minor the minor version component
 	 * @param patch the patch version component
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	public <E extends Exception> VersionImpl(int major, int minor, int patch, Function<String, E> ifIllegal) throws E {
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> VersionImpl(int major, int minor, int patch, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		if (major < 0 || minor < 0 || patch < 0)
-			throw ifIllegal.apply("Version's components must be non-negative");
+			throw onIllegal.apply("Version's components must be non-negative");
 
 		this.major = major;
 		this.minor = minor;
@@ -79,6 +83,9 @@ public class VersionImpl implements Version {
 			major = components[0];
 			minor = components[1];
 			patch = components[2];
+
+			if (major < 0 || minor < 0 || patch < 0)
+				throw new IOException("Version's components must be non-negative");
 		}
 	}
 

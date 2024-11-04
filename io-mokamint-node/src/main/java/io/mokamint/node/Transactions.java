@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Transaction;
@@ -39,6 +40,20 @@ public abstract class Transactions {
 	 * @return the transaction object
 	 */
 	public static Transaction of(byte[] bytes) {
+		return new TransactionImpl(bytes);
+	}
+
+	/**
+	 * Yields a new transaction object.
+	 * 
+	 * @param bytes the bytes of the transaction
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @return the transaction object
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> Transaction of(byte[] bytes, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
 		return new TransactionImpl(bytes);
 	}
 

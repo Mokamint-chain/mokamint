@@ -37,11 +37,6 @@ public abstract class MempoolInfoJson implements JsonRepresentation<MempoolInfo>
 
 	@Override
 	public MempoolInfo unmap() throws InconsistentJsonException {
-		try {
-			return MempoolInfos.of(size);
-		}
-		catch (IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return MempoolInfos.of(size, InconsistentJsonException::new, InconsistentJsonException::new);
 	}
 }

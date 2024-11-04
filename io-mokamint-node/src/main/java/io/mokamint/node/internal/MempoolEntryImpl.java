@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
@@ -47,6 +48,23 @@ public class MempoolEntryImpl implements MempoolEntry {
 	 * @param priority the priority of the transaction in the entry
 	 */
 	public MempoolEntryImpl(byte[] hash, long priority) {
+		this(hash, priority, NullPointerException::new, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates an entry of the mempool of a Mokamint node.
+	 * 
+	 * @param hash the hash of the transaction in the entry
+	 * @param priority the priority of the transaction in the entry
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MempoolEntryImpl(byte[] hash, long priority, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (hash == null)
+			throw onNull.apply("hash cannot be null");
+
 		this.hash = hash.clone();
 		this.priority = priority;
 	}

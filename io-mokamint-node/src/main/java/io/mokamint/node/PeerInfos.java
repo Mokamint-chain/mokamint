@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import java.util.function.Function;
+
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.internal.PeerInfoImpl;
@@ -40,6 +42,22 @@ public abstract class PeerInfos {
 	 */
 	public static PeerInfo of(Peer peer, long points, boolean connected) {
 		return new PeerInfoImpl(peer, points, connected);
+	}
+
+	/**
+	 * Yields peer information with the given data.
+	 * 
+	 * @param peer the peer described by the peer information
+	 * @param points the points of the peer
+	 * @param connected the connection status of the peer
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @return the peer information
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> PeerInfo of(Peer peer, long points, boolean connected, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		return new PeerInfoImpl(peer, points, connected, onNull, onIllegal);
 	}
 
 	/**

@@ -39,10 +39,13 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 
 	@Override
 	public Transaction unmap() throws InconsistentJsonException {
+		if (bytes == null)
+			throw new InconsistentJsonException("bytes cannot be null");
+
 		try {
-			return Transactions.of(Base64.fromBase64String(bytes));
+			return Transactions.of(Base64.fromBase64String(bytes), InconsistentJsonException::new, InconsistentJsonException::new);
 		}
-		catch (Base64ConversionException | NullPointerException e) {
+		catch (Base64ConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

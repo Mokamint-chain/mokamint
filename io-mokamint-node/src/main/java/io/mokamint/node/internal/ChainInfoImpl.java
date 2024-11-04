@@ -79,7 +79,7 @@ public class ChainInfoImpl implements ChainInfo {
 			throw onIllegal.apply("length cannot be negative");
 		else if (length == 0) {
 			if (genesisHash.isPresent() || headHash.isPresent())
-				throw onIllegal.apply("An empty chain cannot have nor a genesis nor a head block");
+				throw onIllegal.apply("An empty chain cannot have a genesis nor a head block");
 		}
 		else if (genesisHash.isEmpty() || headHash.isEmpty())
 			throw onIllegal.apply("A non-empty chain must have both a genesis and a head block");
