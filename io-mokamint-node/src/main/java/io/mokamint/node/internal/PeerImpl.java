@@ -19,13 +19,15 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.internal.gson.PeerJson;
 
 /**
  * An implementation of a peer.
@@ -44,21 +46,42 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @param uri the URI of the peer
 	 */
 	public PeerImpl(URI uri) {
-		this(uri, NullPointerException::new, IllegalArgumentException::new);
+		this.uri = Objects.requireNonNull(uri);
 	}
 
 	/**
-	 * Creates a peer with the given URI.
+	 * Creates a peer from the given JSON representation.
 	 * 
-	 * @param uri the URI of the peer
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @throws ON_NULL if some argument is {@code null}
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> PeerImpl(URI uri, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public PeerImpl(PeerJson json) throws InconsistentJsonException {
+		String uri = json.getUri();
 		if (uri == null)
-			throw onNull.apply("uri cannot be null");
+			throw new InconsistentJsonException("uri cannot be null");
 
-		this.uri = uri;
+		try {
+			this.uri = new URI(uri);
+		}
+		catch (URISyntaxException e) {
+			throw new InconsistentJsonException(e);
+		}
+	}
+
+	/**
+	 * Unmarshals a peer from the given context.
+	 * 
+	 * @param context the context
+	 * @return the peer
+	 * @throws IOException if the peer cannot be unmarshalled
+	 */
+	public PeerImpl(UnmarshallingContext context) throws IOException {
+		try {
+			this.uri = new URI(context.readStringUnshared());
+		}
+		catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -95,17 +118,5 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	public String toStringSanitized() {
 		String uri = toString();
 		return uri.length() > 50 ? uri.substring(0, 50) + "..." : uri;
-	}
-
-	/**
-	 * Unmarshals a peer from the given context.
-	 * 
-	 * @param context the context
-	 * @return the peer
-	 * @throws IOException if the peer cannot be unmarshalled
-	 * @throws URISyntaxException if the context contains a URI with illegal syntax
-	 */
-	public static PeerImpl from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return new PeerImpl(new URI(context.readStringUnshared()));
 	}
 }

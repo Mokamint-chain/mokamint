@@ -18,8 +18,6 @@ package io.mokamint.node;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.function.Function;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Peer;
@@ -46,27 +44,14 @@ public abstract class Peers {
 	}
 
 	/**
-	 * Yields a peer with the given URI.
-	 * 
-	 * @param uri the URI of the peer
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @return the peer
-	 * @throws ON_NULL if some argument is {@code null}
-	 */
-	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> Peer of(URI uri, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		return new PeerImpl(uri, onNull, onIllegal);
-	}
-
-	/**
 	 * Unmarshals a peer from the given context.
 	 * 
 	 * @param context the context
 	 * @return the peer
 	 * @throws IOException if the peer cannot be unmarshalled
-	 * @throws URISyntaxException if the bytes contain a URI with illegal syntax
 	 */
-	public static Peer from(UnmarshallingContext context) throws IOException, URISyntaxException {
-		return PeerImpl.from(context);
+	public static Peer from(UnmarshallingContext context) throws IOException {
+		return new PeerImpl(context);
 	}
 
 	/**
@@ -104,5 +89,5 @@ public abstract class Peers {
     	public Json(Peer peer) {
     		super(peer);
     	}
-    }
+	}
 }

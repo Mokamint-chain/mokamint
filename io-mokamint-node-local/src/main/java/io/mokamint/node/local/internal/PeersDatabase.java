@@ -23,7 +23,6 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -139,7 +138,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
-		catch (IOException | URISyntaxException | ExodusException e) {
+		catch (IOException | ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
@@ -274,9 +273,8 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		 * @param bi the byte iterable
 		 * @return the array of peers
 		 * @throws IOException if the peers cannot be unmarshalled
-		 * @throws URISyntaxException if the context contains a peer whose URI has illegal syntax
 		 */
-		private static ArrayOfPeers from(ByteIterable bi) throws IOException, URISyntaxException {
+		private static ArrayOfPeers from(ByteIterable bi) throws IOException {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				int length = context.readCompactInt();
 				var peers = new Peer[length];
@@ -310,7 +308,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 				}
 			}
 		}
-		catch (ExodusException | IOException | URISyntaxException e) {
+		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
 	}
@@ -331,7 +329,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 					return false;
 			}
 		}
-		catch (ExodusException | IOException | URISyntaxException e) {
+		catch (ExodusException | IOException e) {
 			throw new DatabaseException(e);
 		}
 	}

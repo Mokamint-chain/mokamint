@@ -16,13 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.internal.PeerImpl;
 
 /**
  * The JSON representation of a {@link Peer}.
@@ -34,13 +31,12 @@ public abstract class PeerJson implements JsonRepresentation<Peer> {
 		this.uri = peer.getURI().toString();
 	}
 
+	public String getUri() {
+		return uri;
+	}
+
 	@Override
 	public Peer unmap() throws InconsistentJsonException {
-		try {
-			return Peers.of(new URI(uri), InconsistentJsonException::new, InconsistentJsonException::new);
-		}
-		catch (URISyntaxException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new PeerImpl(this);
 	}
 }
