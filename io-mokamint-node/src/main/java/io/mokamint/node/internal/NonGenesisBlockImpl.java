@@ -77,9 +77,15 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
 	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		super(description, stateId, signature);
+		super(description, stateId, signature, onNull, onIllegal);
+
+		if (transactions == null)
+			throw onNull.apply("transactions cannot be null");
 
 		this.transactions = transactions.toArray(Transaction[]::new);
+		for (var transaction: this.transactions)
+			if (transaction == null)
+				throw onNull.apply("transactions cannot contain null elements");
 
 		verify(onNull, onIllegal);
 	}
@@ -203,7 +209,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))
-				throw new IllegalArgumentException("Repeated transaction");
+				throw onIllegal.apply("Repeated transaction");
 	}
 
 	@Override

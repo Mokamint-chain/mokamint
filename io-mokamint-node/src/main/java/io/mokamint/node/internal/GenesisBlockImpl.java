@@ -63,7 +63,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @throws InvalidKeyException if the public key of the description is invalid
 	 */
 	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		super(description, stateId, signature);
+		super(description, stateId, signature, onNull, onIllegal);
 
 		verify(onNull, onIllegal);
 	}

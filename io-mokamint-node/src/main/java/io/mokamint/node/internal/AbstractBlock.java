@@ -86,11 +86,24 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param signature the signature of the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	protected AbstractBlock(D description, byte[] stateId, byte[] signature) {
+	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> AbstractBlock(D description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+		if (description == null)
+			throw onNull.apply("description cannot be null");
+
+		if (stateId == null)
+			throw onNull.apply("stateId cannot be null");
+
+		if (signature == null)
+			throw onNull.apply("signature cannot be null");
+
 		this.description = description;
-		this.stateId = stateId != null ? stateId.clone() : null;
-		this.signature = signature != null ? signature.clone() : null;
+		this.stateId = stateId.clone();
+		this.signature = signature.clone();
 	}
 
 	/**
@@ -106,8 +119,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 */
 	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
 		this.description = description;
-		this.stateId = stateId != null ? stateId.clone() : null;
-		this.signature = description != null && privateKey != null ? description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis())) : null;
+		this.stateId = stateId.clone();
+		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
 	}
 
 	/**
