@@ -19,24 +19,18 @@ package io.mokamint.node.internal.gson;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 
-import io.hotmoka.crypto.Base58;
-import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.internal.GenesisBlockDescriptionImpl;
 import io.mokamint.nonce.Deadlines;
 
 /**
@@ -83,6 +77,38 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		}
 	}
 
+	public String getStartDateTimeUTC() {
+		return startDateTimeUTC;
+	}
+
+	public int getTargetBlockCreationTime() {
+		return targetBlockCreationTime;
+	}
+
+	public String getHashingForBlocks() {
+		return hashingForBlocks;
+	}
+
+	public String getHashingForTransactions() {
+		return hashingForTransactions;
+	}
+
+	public String getHashingForDeadlines() {
+		return hashingForDeadlines;
+	}
+
+	public String getHashingForGenerations() {
+		return hashingForGenerations;
+	}
+
+	public String getSignatureForBlocks() {
+		return signatureForBlocks;
+	}
+
+	public String getPublicKey() {
+		return publicKey;
+	}
+
 	@Override
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
@@ -91,18 +117,10 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 						acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime,
 						HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions),
 						InconsistentJsonException::new, InconsistentJsonException::new);
-			else {
-				var signature = SignatureAlgorithms.of(signatureForBlocks);
-
-				return BlockDescriptions.genesis(LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME),
-						targetBlockCreationTime, HashingAlgorithms.of(hashingForBlocks),
-						HashingAlgorithms.of(hashingForTransactions), HashingAlgorithms.of(hashingForDeadlines),
-						HashingAlgorithms.of(hashingForGenerations),
-						signature, signature.publicKeyFromEncoding(Base58.decode(publicKey)),
-						InconsistentJsonException::new, InconsistentJsonException::new);
-			}
+			else
+				return new GenesisBlockDescriptionImpl(this);
 		}
-		catch (InvalidKeySpecException | HexConversionException | InvalidKeyException | Base58ConversionException | DateTimeParseException | NullPointerException e) {
+		catch (HexConversionException | NullPointerException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}

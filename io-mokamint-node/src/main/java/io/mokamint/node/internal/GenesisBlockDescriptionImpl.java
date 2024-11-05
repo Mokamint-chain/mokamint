@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
@@ -26,19 +28,23 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.internal.gson.BlockDescriptionJson;
 
 /**
  * The implementation of the description of a genesis block of the Mokamint blockchain.
@@ -85,29 +91,72 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
 			SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
 
-		this(startDateTimeUTC, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, hashingForDeadlines, hashingForGenerations, signatureForBlock, publicKey, NullPointerException::new, IllegalArgumentException::new);
+		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+
+		this.startDateTimeUTC = Objects.requireNonNull(startDateTimeUTC);
+		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines);
+		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations);
+		this.signatureForBlock = Objects.requireNonNull(signatureForBlock);
+		this.publicKey = Objects.requireNonNull(publicKey);
+		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
 	}
 
 	/**
-	 * Creates a genesis block description with the given keys and signature algorithm.
+	 * Creates a genesis block description from the given JSON representation.
 	 * 
-	 * @throws InvalidKeyException if the private key is invalid
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown hashing algorithm
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
-			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlock, PublicKey publicKey, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal)
-					throws InvalidKeyException, ON_NULL, ON_ILLEGAL {
+	public GenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		super(json);
 
-		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+		String startDateTimeUTC = json.getStartDateTimeUTC();
+		if (startDateTimeUTC == null)
+			throw new InconsistentJsonException("startDateTimeUTC cannot be null");
 
-		this.startDateTimeUTC = startDateTimeUTC;
-		this.hashingForDeadlines = hashingForDeadlines;
-		this.hashingForGenerations = hashingForGenerations;
-		this.signatureForBlock = signatureForBlock;
-		this.publicKey = publicKey;
-		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
+		try {
+			this.startDateTimeUTC = LocalDateTime.parse(startDateTimeUTC, ISO_LOCAL_DATE_TIME);
+		}
+		catch (DateTimeParseException e) {
+			throw new InconsistentJsonException(e);
+		}
 
-		verify(onNull, onIllegal);
+		String hashingForDeadlines = json.getHashingForDeadlines();
+		if (hashingForDeadlines == null)
+			throw new InconsistentJsonException("hashingForDeadlines cannot be null");
+
+		this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines);
+
+		String hashingForGenerations = json.getHashingForGenerations();
+		if (hashingForGenerations == null)
+			throw new InconsistentJsonException("hashingForGenerations cannot be null");
+
+		this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations);
+
+		String signatureForBlocks = json.getSignatureForBlocks();
+		if (signatureForBlocks == null)
+			throw new InconsistentJsonException("signatureForBlocks cannot be null");
+
+		this.signatureForBlock = SignatureAlgorithms.of(signatureForBlocks);
+
+		String publicKey = json.getPublicKey();
+		if (publicKey == null)
+			throw new InconsistentJsonException("publicKey cannot be null");
+
+		try {
+			this.publicKey = signatureForBlock.publicKeyFromEncoding(Base58.decode(publicKey));
+		}
+		catch (Base58ConversionException | InvalidKeySpecException e) {
+			throw new InconsistentJsonException(e);
+		}
+
+		try {
+			this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(this.publicKey));
+		}
+		catch (InvalidKeyException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	/**
@@ -119,7 +168,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared()));
+		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared())); // TODO: check positive first argument
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -133,8 +182,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
-
-		verify(IOException::new, IOException::new);
 	}
 
 	/**
@@ -160,8 +207,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);
 		}
-
-		verify(IOException::new, IOException::new);
 	}
 
 	private byte[] readPublicKeyEncoding(UnmarshallingContext context) throws IOException {
@@ -170,26 +215,6 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the length of the public key");
 		else
 			return context.readLengthAndBytes("Mismatch in the length of the public key");
-	}
-
-	@Override
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		super.verify(onNull, onIllegal);
-
-		if (startDateTimeUTC == null)
-			throw onNull.apply("startDateTimeUTC cannot be null");
-
-		if (hashingForDeadlines == null)
-			throw onNull.apply("hashingForDeadlines cannot be null");
-
-		if (hashingForGenerations == null)
-			throw onNull.apply("hashingForGenerations cannot be null");
-
-		if (signatureForBlock == null)
-			throw onNull.apply("signatureForBlock cannot be null");
-
-		if (publicKey == null)
-			throw onNull.apply("publicKey cannot be null");
 	}
 
 	@Override

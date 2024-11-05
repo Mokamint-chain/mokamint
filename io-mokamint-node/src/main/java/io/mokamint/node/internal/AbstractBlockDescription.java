@@ -23,15 +23,19 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import java.util.function.Function;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.internal.gson.BlockDescriptionJson;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Challenge;
 
@@ -63,9 +67,39 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * @param hashingForTransactions the hashing algorithm used for the transactions
 	 */
 	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+		if (targetBlockCreationTime <= 0)
+			throw new IllegalArgumentException("The target block creation time must be positive");
+	
 		this.targetBlockCreationTime = targetBlockCreationTime;
-		this.hashingForBlocks = hashingForBlocks;
-		this.hashingForTransactions = hashingForTransactions;
+		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks);
+		this.hashingForTransactions = Objects.requireNonNull(hashingForTransactions);
+	}
+
+	/**
+	 * Creates a block description from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown hashing algorithm
+	 */
+	protected AbstractBlockDescription(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		int targetBlockCreationTime = json.getTargetBlockCreationTime();
+		if (targetBlockCreationTime <= 0)
+			throw new InconsistentJsonException("The target block creation time must be positive");
+	
+		this.targetBlockCreationTime = targetBlockCreationTime;
+
+		String hashingForBlocks = json.getHashingForBlocks();
+		if (hashingForBlocks == null)
+			throw new InconsistentJsonException("hashingForBlocks cannot be null");
+
+		this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks);
+
+		String hashingForTransactions = json.getHashingForTransactions();
+		if (hashingForTransactions == null)
+			throw new InconsistentJsonException("hashingForTransactions cannot be null");
+
+		this.hashingForTransactions = HashingAlgorithms.of(hashingForTransactions);
 	}
 
 	/**

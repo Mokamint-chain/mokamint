@@ -135,32 +135,6 @@ public abstract class BlockDescriptions {
 	}
 
 	/**
-	 * Yields a new genesis block description.
-	 * 
-	 * @param startDateTimeUTC the moment when the block has been created
-	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
-	 * @param hashingForBlocks the hashing algorithm used for the blocks
-	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
-	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
-	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
-	 * @param signatureForBlock the signature algorithm for the block
-	 * @param publicKey the public key of the signer of the block
-	 * @return the genesis block description
-	 * @throws InvalidKeyException if the public key is invalid
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 */
-	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
-			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines,
-			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey,
-			Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws InvalidKeyException, ON_NULL, ON_ILLEGAL {
-
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime,
-			hashingForBlocks, hashingForTransactions, hashingForDeadlines,
-			hashingForGenerations, signatureForBlock, publicKey, onNull, onIllegal);
-	}
-
-	/**
 	 * Unmarshals a block description from the given context. It assumes that the description was marshalled
 	 * by using {@link BlockDescription#intoWithoutConfigurationData(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
