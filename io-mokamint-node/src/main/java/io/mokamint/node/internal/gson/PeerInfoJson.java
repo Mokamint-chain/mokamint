@@ -18,9 +18,9 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.internal.PeerInfoImpl;
 
 /**
  * The JSON representation of a {@link PeerInfo}.
@@ -36,8 +36,20 @@ public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
 		this.connected = info.isConnected();
 	}
 
+	public Peers.Json getPeer() {
+		return peer;
+	}
+
+	public long getPoints() {
+		return points;
+	}
+
+	public boolean isConnected() {
+		return connected;
+	}
+
 	@Override
 	public PeerInfo unmap() throws InconsistentJsonException {
-		return PeerInfos.of(peer.unmap(), points, connected, InconsistentJsonException::new, InconsistentJsonException::new);
+		return new PeerInfoImpl(this);
 	}
 }

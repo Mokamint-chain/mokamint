@@ -17,11 +17,14 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.internal.gson.TransactionAddressJson;
 
 /**
  * The implementation of the address of a transaction inside a blockchain
@@ -49,28 +52,35 @@ public class TransactionAddressImpl implements TransactionAddress {
 	 *                    transactions inside the block
 	 */
 	public TransactionAddressImpl(byte[] blockHash, int progressive) {
-		this(blockHash, progressive, NullPointerException::new, IllegalArgumentException::new);
+		if (progressive < 0)
+			throw new IllegalArgumentException("progressive cannot be negative");
+
+		this.progressive = progressive;
+		this.blockHash = Objects.requireNonNull(blockHash).clone();
 	}
 
 	/**
-	 * Creates a reference to a transaction inside a block.
+	 * Creates a reference to a transaction from the given JSON representation.
 	 * 
-	 * @param blockHash the hash of the block containing the transaction
-	 * @param progressive the progressive number of the transaction inside the table of the
-	 *                    transactions inside the block
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TransactionAddressImpl(byte[] blockHash, int progressive, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public TransactionAddressImpl(TransactionAddressJson json) throws InconsistentJsonException {
+		int progressive = json.getProgressive();
 		if (progressive < 0)
-			throw onIllegal.apply("progressive cannot be negative");
+			throw new InconsistentJsonException("progressive cannot be negative");
 
+		String blockHash = json.getBlockHash();
 		if (blockHash == null)
-			throw onNull.apply("blockHash cannot be null");
+			throw new InconsistentJsonException("blockHash cannot be null");
 
-		this.blockHash = blockHash.clone();
+		try {
+			this.blockHash = Hex.fromHexString(blockHash);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
+
 		this.progressive = progressive;
 	}
 

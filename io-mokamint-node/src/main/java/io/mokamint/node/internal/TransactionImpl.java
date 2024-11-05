@@ -18,16 +18,19 @@ package io.mokamint.node.internal;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.internal.gson.TransactionJson;
 
 /**
  * An implementation of a transaction.
@@ -46,7 +49,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * @param bytes the bytes
 	 */
 	public TransactionImpl(byte[] bytes) {
-		this(bytes, NullPointerException::new, IllegalArgumentException::new);
+		this.bytes = Objects.requireNonNull(bytes).clone();
 	}
 
 	/**
@@ -58,11 +61,17 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * @throws ON_NULL if some argument is {@code null}
 	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TransactionImpl(byte[] bytes, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public TransactionImpl(TransactionJson json) throws InconsistentJsonException {
+		String bytes = json.getBytes();
 		if (bytes == null)
-			throw onNull.apply("bytes cannot be null");
+			throw new InconsistentJsonException("bytes cannot be null");
 
-		this.bytes = bytes.clone();
+		try {
+			this.bytes = Base64.fromBase64String(bytes);
+		}
+		catch (Base64ConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

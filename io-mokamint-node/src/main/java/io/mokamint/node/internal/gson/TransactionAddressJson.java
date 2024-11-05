@@ -17,11 +17,10 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.internal.TransactionAddressImpl;
 
 /**
  * The JSON representation of a {@link TransactionAddress}.
@@ -35,13 +34,16 @@ public abstract class TransactionAddressJson implements JsonRepresentation<Trans
 		this.progressive = address.getProgressive();
 	}
 
+	public String getBlockHash() {
+		return blockHash;
+	}
+
+	public int getProgressive() {
+		return progressive;
+	}
+
 	@Override
 	public TransactionAddress unmap() throws InconsistentJsonException {
-		try {
-			return TransactionAddresses.of(Hex.fromHexString(blockHash), progressive, InconsistentJsonException::new, InconsistentJsonException::new);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new TransactionAddressImpl(this);
 	}
 }

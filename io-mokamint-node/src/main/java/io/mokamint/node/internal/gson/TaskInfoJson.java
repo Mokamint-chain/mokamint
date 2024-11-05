@@ -18,8 +18,8 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.internal.TaskInfoImpl;
 
 /**
  * The JSON representation of a {@link TaskInfo}.
@@ -31,8 +31,12 @@ public abstract class TaskInfoJson implements JsonRepresentation<TaskInfo> {
 		this.description = info.getDescription();
 	}
 
+	public String getDescription() {
+		return description;
+	}
+
 	@Override
 	public TaskInfo unmap() throws InconsistentJsonException {
-		return TaskInfos.of(description, InconsistentJsonException::new, InconsistentJsonException::new);
+		return new TaskInfoImpl(this);
 	}
 }

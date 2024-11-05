@@ -18,8 +18,8 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.Versions;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.internal.VersionImpl;
 
 /**
  * The JSON representation of a {@link Version}.
@@ -35,8 +35,20 @@ public abstract class VersionJson implements JsonRepresentation<Version> {
 		this.patch = version.getPatch();
 	}
 
+	public int getMajor() {
+		return major;
+	}
+
+	public int getMinor() {
+		return minor;
+	}
+
+	public int getPatch() {
+		return patch;
+	}
+
 	@Override
 	public Version unmap() throws InconsistentJsonException {
-		return Versions.of(major, minor, patch, InconsistentJsonException::new, InconsistentJsonException::new);
+		return new VersionImpl(this);
 	}
 }

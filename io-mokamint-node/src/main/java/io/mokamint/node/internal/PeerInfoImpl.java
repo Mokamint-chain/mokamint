@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.Peers.Json;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.internal.gson.PeerInfoJson;
 
 /**
  * An implementation of peer information.
@@ -51,30 +54,32 @@ public class PeerInfoImpl implements PeerInfo {
 	 * @param connected the connection status of the peer
 	 */
 	public PeerInfoImpl(Peer peer, long points, boolean connected) {
-		this(peer, points, connected, NullPointerException::new, IllegalArgumentException::new);
+		if (points <= 0)
+			throw new IllegalArgumentException("points must be positive");
+
+		this.peer = Objects.requireNonNull(peer);
+		this.points = points;
+		this.connected = connected;
 	}
 
 	/**
-	 * Creates a peer information object.
+	 * Creates a peer info from the given JSON representation.
 	 * 
-	 * @param peer the peer described by the peer information
-	 * @param points the points of the peer
-	 * @param connected the connection status of the peer
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> PeerInfoImpl(Peer peer, long points, boolean connected, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public PeerInfoImpl(PeerInfoJson json) throws InconsistentJsonException {
+		long points = json.getPoints();
 		if (points <= 0)
-			throw onIllegal.apply("points must be positive");
+			throw new InconsistentJsonException("points must be positive");
 
+		Json peer = json.getPeer();
 		if (peer == null)
-			throw onNull.apply("peer cannot be null");
+			throw new InconsistentJsonException("peer cannot be null");
 
-		this.peer = peer;
+		this.peer = peer.unmap();
 		this.points = points;
-		this.connected = connected;
+		this.connected = json.isConnected();
 	}
 
 	@Override

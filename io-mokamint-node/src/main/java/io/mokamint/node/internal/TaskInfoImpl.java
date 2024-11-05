@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.TaskInfo;
+import io.mokamint.node.internal.gson.TaskInfoJson;
 
 /**
  * An implementation of task information.
@@ -38,21 +40,19 @@ public class TaskInfoImpl implements TaskInfo {
 	 * @param description the description of the task
 	 */
 	public TaskInfoImpl(String description) {
-		this(description, NullPointerException::new, IllegalArgumentException::new);
+		this.description = Objects.requireNonNull(description);
 	}
 
 	/**
-	 * Creates a task information object.
+	 * Creates a task info from the given JSON representation.
 	 * 
-	 * @param description the description of the task
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> TaskInfoImpl(String description, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public TaskInfoImpl(TaskInfoJson json) throws InconsistentJsonException {
+		String description = json.getDescription();
 		if (description == null)
-			throw onNull.apply("decription cannot be null");
+			throw new InconsistentJsonException("decription cannot be null");
 
 		this.description = description;
 	}

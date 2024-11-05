@@ -19,10 +19,11 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Version;
+import io.mokamint.node.internal.gson.VersionJson;
 
 /**
  * Implementation of the version of a Mokamint node.
@@ -50,14 +51,29 @@ public class VersionImpl implements Version {
 	 * @param major the major version component
 	 * @param minor the minor version component
 	 * @param patch the patch version component
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> VersionImpl(int major, int minor, int patch, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public VersionImpl(int major, int minor, int patch) {
 		if (major < 0 || minor < 0 || patch < 0)
-			throw onIllegal.apply("Version's components must be non-negative");
+			throw new IllegalArgumentException("Version's components must be non-negative");
+
+		this.major = major;
+		this.minor = minor;
+		this.patch = patch;
+	}
+
+	/**
+	 * Creates a version object from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public VersionImpl(VersionJson json) throws InconsistentJsonException {
+		int major = json.getMajor();
+		int minor = json.getMinor();
+		int patch = json.getPatch();
+
+		if (major < 0 || minor < 0 || patch < 0)
+			throw new InconsistentJsonException("Version's components must be non-negative");
 
 		this.major = major;
 		this.minor = minor;
