@@ -18,8 +18,8 @@ package io.mokamint.node.internal.gson;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.api.MempoolInfo;
+import io.mokamint.node.internal.MempoolInfoImpl;
 
 /**
  * The JSON representation of a {@link MempoolInfo}.
@@ -35,8 +35,12 @@ public abstract class MempoolInfoJson implements JsonRepresentation<MempoolInfo>
 		this.size = info.getSize();
 	}
 
+	public long getSize() {
+		return size;
+	}
+
 	@Override
 	public MempoolInfo unmap() throws InconsistentJsonException {
-		return MempoolInfos.of(size, InconsistentJsonException::new, InconsistentJsonException::new);
+		return new MempoolInfoImpl(this);
 	}
 }

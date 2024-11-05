@@ -16,11 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
+import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.internal.gson.MinerInfoJson;
 
 /**
  * An implementation of miner information.
@@ -40,33 +42,42 @@ public class MinerInfoImpl implements MinerInfo {
 	 * @return the miner information object
 	 */
 	public MinerInfoImpl(UUID uuid, long points, String description) {
-		this(uuid, points, description, NullPointerException::new, IllegalArgumentException::new);
+		this.uuid = Objects.requireNonNull(uuid);
+		this.description = Objects.requireNonNull(description);
+
+		if (points <= 0)
+			throw new IllegalArgumentException("points must be positive");
+
+		this.points = points;
 	}
 
 	/**
-	 * Creates a miner information object.
+	 * Creates a miner info from the given JSON representation.
 	 * 
-	 * @param uuid the unique identifier of the miner
-	 * @param points the points of the miner
-	 * @param description the description of the miner
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MinerInfoImpl(UUID uuid, long points, String description, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public MinerInfoImpl(MinerInfoJson json) throws InconsistentJsonException {
+		String uuid = json.getUuid();
 		if (uuid == null)
-			throw onNull.apply("uuid cannot be null");
+			throw new InconsistentJsonException("uuid cannot be null");
 
-		this.uuid = uuid;
+		try {
+			this.uuid = UUID.fromString(uuid);
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 
+		String description = json.getDescription();
 		if (description == null)
-			throw onNull.apply("description cannot be null");
+			throw new InconsistentJsonException("description cannot be null");
 
 		this.description = description;
 
+		long points = json.getPoints();
 		if (points <= 0)
-			throw onIllegal.apply("points must be positive");
+			throw new InconsistentJsonException("points must be positive");
 
 		this.points = points;
 	}

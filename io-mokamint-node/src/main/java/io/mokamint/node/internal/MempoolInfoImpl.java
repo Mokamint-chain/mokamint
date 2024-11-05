@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.internal;
 
-import java.util.function.Function;
-
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolInfo;
+import io.mokamint.node.internal.gson.MempoolInfoJson;
 
 /**
  * An implementation of the information of the mempool of a Mokamint node.
@@ -38,21 +38,22 @@ public class MempoolInfoImpl implements MempoolInfo {
 	 * @param size the size of the mempool
 	 */
 	public MempoolInfoImpl(long size) {
-		this(size, NullPointerException::new, IllegalArgumentException::new);
+		if (size < 0)
+			throw new IllegalArgumentException("size cannot be negative");
+
+		this.size = size;
 	}
 
 	/**
-	 * Creates an information object about the mempool of a Mokamint node.
+	 * Creates a mempool info from the given JSON representation.
 	 * 
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 * @param size the size of the mempool
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MempoolInfoImpl(long size, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public MempoolInfoImpl(MempoolInfoJson json) throws InconsistentJsonException {
+		long size = json.getSize();
 		if (size < 0)
-			throw onIllegal.apply("size cannot be negative");
+			throw new InconsistentJsonException("size cannot be negative");
 
 		this.size = size;
 	}

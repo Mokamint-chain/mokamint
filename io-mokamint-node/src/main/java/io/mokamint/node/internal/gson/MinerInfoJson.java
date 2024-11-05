@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.UUID;
-
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
+import io.mokamint.node.internal.MinerInfoImpl;
 
 /**
  * The JSON representation of a {@link MinerInfo}.
@@ -37,8 +35,20 @@ public abstract class MinerInfoJson implements JsonRepresentation<MinerInfo> {
 		this.description = info.getDescription();
 	}
 
+	public String getUuid() {
+		return uuid;
+	}
+
+	public long getPoints() {
+		return points;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
 	@Override
 	public MinerInfo unmap() throws InconsistentJsonException {
-		return MinerInfos.of(UUID.fromString(uuid), points, description, InconsistentJsonException::new, InconsistentJsonException::new);
+		return new MinerInfoImpl(this);
 	}
 }

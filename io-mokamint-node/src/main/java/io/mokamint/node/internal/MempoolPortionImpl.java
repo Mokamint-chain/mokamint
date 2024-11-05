@@ -17,13 +17,16 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolPortion;
+import io.mokamint.node.internal.gson.MempoolPortionJson;
 
 /**
  * Implementation of information about the transactions of a sorted, sequential portion of the
@@ -44,27 +47,30 @@ public class MempoolPortionImpl implements MempoolPortion {
 	 * @param entries the mempool entries, in increasing order of transaction priority
 	 */
 	public MempoolPortionImpl(Stream<MempoolEntry> entries) {
-		this(entries, NullPointerException::new, IllegalArgumentException::new);
+		this.entries = entries.map(Objects::requireNonNull).toArray(MempoolEntry[]::new);
 	}
 
 	/**
-	 * Constructs an object containing the entries of a sequential
-	 * portion of the mempool of a Mokamint node.
+	 * Creates an object containing the entries of a sequential
+	 * portion of the mempool of a Mokamint node, from the given JSON representation.
 	 * 
-	 * @param entries the mempool entries, in increasing order of transaction priority
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MempoolPortionImpl(Stream<MempoolEntry> entries, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public MempoolPortionImpl(MempoolPortionJson json) throws InconsistentJsonException {
+		Stream<MempoolEntries.Json> entries = json.getEntries();
 		if (entries == null)
-			throw onNull.apply("entries cannot be null");
+			throw new InconsistentJsonException("entries cannot be null");
 
-		this.entries = entries.toArray(MempoolEntry[]::new);
-		for (var entry: this.entries)
+		var entriesAsArray = entries.toArray(MempoolEntries.Json[]::new);
+		this.entries = new MempoolEntry[entriesAsArray.length];
+
+		int pos = 0;
+		for (var entry: entriesAsArray)
 			if (entry == null)
-				throw onNull.apply("entries cannot contain a null element");
+				throw new InconsistentJsonException("entries cannot contain a null element");
+			else
+				this.entries[pos++] = entry.unmap();
 	}
 
 	@Override

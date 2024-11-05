@@ -18,7 +18,6 @@ package io.mokamint.node;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.function.Function;
 
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Version;
@@ -44,22 +43,6 @@ public abstract class NodeInfos {
 	 */
 	public static NodeInfo of(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
 		return new NodeInfoImpl(version, uuid, localDateTimeUTC);
-	}
-
-	/**
-	 * Yields a node information object.
-	 * 
-	 * @param version the version of the node
-	 * @param uuid the UUID of the node
-	 * @param localDateTimeUTC the local date and time UTC of the node
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @return the node information object
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 */
-	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NodeInfo of(Version version, UUID uuid, LocalDateTime localDateTimeUTC, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		return new NodeInfoImpl(version, uuid, localDateTimeUTC, onNull, onIllegal);
 	}
 
 	/**
