@@ -18,11 +18,13 @@ package io.mokamint.node.internal;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.internal.gson.ChainInfoJson;
 
 /**
  * Implementation of the chain information of a Mokamint node.
@@ -59,40 +61,51 @@ public class ChainInfoImpl implements ChainInfo {
 	 * @param headStateId the state identifier of the head block, if any
 	 */
 	public ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId) {
-		this(length, genesisHash, headHash, headStateId, NullPointerException::new, IllegalArgumentException::new);
+		if (length < 0)
+			throw new IllegalArgumentException("length cannot be negative");
+		else if (length == 0) {
+			if (genesisHash.isPresent() || headHash.isPresent())
+				throw new IllegalArgumentException("An empty chain cannot have a genesis nor a head block");
+		}
+		else if (genesisHash.isEmpty() || headHash.isEmpty())
+			throw new IllegalArgumentException("A non-empty chain must have both a genesis and a head block");
+
+		this.length = length;
+		this.genesisHash = genesisHash.map(byte[]::clone);
+		this.headHash = headHash.map(byte[]::clone);
+		this.headStateId = headStateId.map(byte[]::clone);
 	}
 
 	/**
-	 * Constructs a new chain information object.
+	 * Creates a chain information object from the given JSON representation.
 	 * 
-	 * @param length the length of the chain
-	 * @param genesisHash the hash of the genesis block, if any
-	 * @param headHash the hash of the head block, if any
-	 * @param headStateId the state identifier of the head block, if any
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> ChainInfoImpl(long length, Optional<byte[]> genesisHash, Optional<byte[]> headHash, Optional<byte[]> headStateId, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public ChainInfoImpl(ChainInfoJson json) throws InconsistentJsonException {
+		long length = json.getLength();
+		String genesisHash = json.getGenesisHash();
+		String headHash = json.getHeadHash();
+		String headStateId = json.getHeadStateId();
+
 		if (length < 0)
-			throw onIllegal.apply("length cannot be negative");
+			throw new InconsistentJsonException("length cannot be negative");
 		else if (length == 0) {
-			if (genesisHash.isPresent() || headHash.isPresent())
-				throw onIllegal.apply("An empty chain cannot have a genesis nor a head block");
+			if (genesisHash != null || headHash != null)
+				throw new InconsistentJsonException("An empty chain cannot have a genesis nor a head block");
 		}
-		else if (genesisHash.isEmpty() || headHash.isEmpty())
-			throw onIllegal.apply("A non-empty chain must have both a genesis and a head block");
+		else if (genesisHash == null || headHash == null)
+			throw new InconsistentJsonException("A non-empty chain must have both a genesis and a head block");
 
 		this.length = length;
 
 		try {
-			this.genesisHash = genesisHash.map(byte[]::clone);
-			this.headHash = headHash.map(byte[]::clone);
-			this.headStateId = headStateId.map(byte[]::clone);
+			this.genesisHash = genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash));
+			this.headHash = headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash));
+			this.headStateId = headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId));
 		}
-		catch (NullPointerException e) {
-			throw onNull.apply(e.getMessage());
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
 		}
 	}
 

@@ -17,13 +17,16 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.internal.gson.ChainPortionJson;
 
 /**
  * Implementation of information about the hashes of a sequential portion of the
@@ -44,25 +47,35 @@ public class ChainPortionImpl implements ChainPortion {
 	 * @param hashes the hashes
 	 */
 	public ChainPortionImpl(Stream<byte[]> hashes) {
-		this(hashes, NullPointerException::new, IllegalArgumentException::new);
+		this.hashes = hashes.map(byte[]::clone).toArray(byte[][]::new);
 	}
 
 	/**
-	 * Constructs an object containing the hashes of a sequential
-	 * portion of the current best chain of a Mokamint node.
+	 * Creates an object containing the hashes of a sequential
+	 * portion of the current best chain of a Mokamint node, from the given JSON representation.
 	 * 
-	 * @param hashes the hashes
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> ChainPortionImpl(Stream<byte[]> hashes, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		try {
-			this.hashes = hashes.map(byte[]::clone).toArray(byte[][]::new);
-		}
-		catch (NullPointerException e) {
-			throw onNull.apply(e.getMessage());
+	public ChainPortionImpl(ChainPortionJson json) throws InconsistentJsonException {
+		Optional<Stream<String>> maybeHashes = json.getHashes();
+		if (maybeHashes.isEmpty())
+			throw new InconsistentJsonException("Missing hashes in chain portion");
+
+		String[] hashes = maybeHashes.get().toArray(String[]::new);
+		this.hashes = new byte[hashes.length][];
+
+		for (int pos = 0; pos < hashes.length; pos++) {
+			String hash = hashes[pos];
+			if (hash == null)
+				throw new InconsistentJsonException("hashes cannot contain a null element");
+
+			try {
+				this.hashes[pos] = Hex.fromHexString(hashes[pos]);
+			}
+			catch (HexConversionException e) {
+				throw new InconsistentJsonException(e);
+			}
 		}
 	}
 

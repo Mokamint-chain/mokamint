@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.mokamint.node.api.ChainPortion;
@@ -42,21 +41,6 @@ public abstract class ChainPortions {
 	 */
 	public static ChainPortion of(Stream<byte[]> hashes) {
 		return new ChainPortionImpl(hashes);
-	}
-
-	/**
-	 * Yields the container of the hashes of a sequential
-	 * portion of the current best chain of a Mokamint node.
-	 * 
-	 * @param hashes the hashes, in increasing order of height
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @return the object containing the sequential hashes
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 */
-	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> ChainPortion of(Stream<byte[]> hashes, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		return new ChainPortionImpl(hashes, onNull, onIllegal);
 	}
 
 	/**

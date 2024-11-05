@@ -17,11 +17,14 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.internal.gson.MempoolEntryJson;
 
 /**
  * An implementation of an entry of the mempool of a Mokamint node.
@@ -48,25 +51,29 @@ public class MempoolEntryImpl implements MempoolEntry {
 	 * @param priority the priority of the transaction in the entry
 	 */
 	public MempoolEntryImpl(byte[] hash, long priority) {
-		this(hash, priority, NullPointerException::new, IllegalArgumentException::new);
+		this.hash = Objects.requireNonNull(hash).clone();
+		this.priority = priority;
 	}
 
 	/**
-	 * Creates an entry of the mempool of a Mokamint node.
+	 * Creates an entry of the mempool of a Mokamint node, from the given JSON representation.
 	 * 
-	 * @param hash the hash of the transaction in the entry
-	 * @param priority the priority of the transaction in the entry
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> MempoolEntryImpl(byte[] hash, long priority, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+	public MempoolEntryImpl(MempoolEntryJson json) throws InconsistentJsonException {
+		String hash = json.getHash();
 		if (hash == null)
-			throw onNull.apply("hash cannot be null");
+			throw new InconsistentJsonException("hash cannot be null");
 
-		this.hash = hash.clone();
-		this.priority = priority;
+		try {
+			this.hash = Hex.fromHexString(hash);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
+
+		this.priority = json.getPriority();
 	}
 
 	@Override

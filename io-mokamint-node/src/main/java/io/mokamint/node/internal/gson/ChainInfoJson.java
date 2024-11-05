@@ -16,45 +16,46 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.Optional;
-
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.ChainInfos;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.internal.ChainInfoImpl;
 
 /**
  * The JSON representation of a {@link ChainInfo}.
  */
 public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
-	private final long height;
+	private final long length;
 	private final String genesisHash;
 	private final String headHash;
 	private final String headStateId;
 
 	protected ChainInfoJson(ChainInfo info) {
-		this.height = info.getLength();
-		var genesisHash = info.getGenesisHash();
-		this.genesisHash = genesisHash.isEmpty() ? null : Hex.toHexString(genesisHash.get());
-		var headHash = info.getHeadHash();
-		this.headHash = headHash.isEmpty() ? null : Hex.toHexString(headHash.get());
-		var headStateId = info.getHeadStateId();
-		this.headStateId = headStateId.isEmpty() ? null : Hex.toHexString(headStateId.get());
+		this.length = info.getLength();
+		this.genesisHash = info.getGenesisHash().map(Hex::toHexString).orElse(null);
+		this.headHash = info.getHeadHash().map(Hex::toHexString).orElse(null);
+		this.headStateId = info.getHeadStateId().map(Hex::toHexString).orElse(null);
+	}
+
+	public long getLength() {
+		return length;
+	}
+
+	public String getGenesisHash() {
+		return genesisHash;
+	}
+
+	public String getHeadHash() {
+		return headHash;
+	}
+
+	public String getHeadStateId() {
+		return headStateId;
 	}
 
 	@Override
 	public ChainInfo unmap() throws InconsistentJsonException {
-		try {
-			return ChainInfos.of(height,
-				genesisHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(genesisHash)),
-				headHash == null ? Optional.empty() : Optional.of(Hex.fromHexString(headHash)),
-				headStateId == null ? Optional.empty() : Optional.of(Hex.fromHexString(headStateId)),
-				InconsistentJsonException::new, InconsistentJsonException::new);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new ChainInfoImpl(this);
 	}
 }

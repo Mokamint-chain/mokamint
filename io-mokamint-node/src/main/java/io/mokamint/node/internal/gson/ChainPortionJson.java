@@ -16,14 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.ChainPortions;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.internal.ChainPortionImpl;
 
 /**
  * The JSON representation of a {@link ChainPortion}.
@@ -35,19 +35,12 @@ public abstract class ChainPortionJson implements JsonRepresentation<ChainPortio
 		this.hashes = chain.getHashes().map(Hex::toHexString).toArray(String[]::new);
 	}
 
+	public Optional<Stream<String>> getHashes() {
+		return Optional.ofNullable(hashes).map(Stream::of);
+	}
+
 	@Override
 	public ChainPortion unmap() throws InconsistentJsonException {
-		String[] hashes = this.hashes;
-		var hashesAsBytes = new byte[hashes.length][];
-
-		try {
-			for (int pos = 0; pos < hashes.length; pos++)
-				hashesAsBytes[pos] = Hex.fromHexString(hashes[pos]);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
-
-		return ChainPortions.of(Stream.of(hashesAsBytes), InconsistentJsonException::new, InconsistentJsonException::new);
+		return new ChainPortionImpl(this);
 	}
 }

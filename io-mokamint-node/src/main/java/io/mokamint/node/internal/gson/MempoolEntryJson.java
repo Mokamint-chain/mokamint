@@ -17,11 +17,10 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.internal.MempoolEntryImpl;
 
 /**
  * The JSON representation of a {@link MempoolEntry}.
@@ -43,13 +42,16 @@ public abstract class MempoolEntryJson implements JsonRepresentation<MempoolEntr
 		this.priority = entry.getPriority();
 	}
 
+	public String getHash() {
+		return hash;
+	}
+
+	public long getPriority() {
+		return priority;
+	}
+
 	@Override
 	public MempoolEntry unmap() throws InconsistentJsonException {
-		try {
-			return MempoolEntries.of(Hex.fromHexString(hash), priority, InconsistentJsonException::new, InconsistentJsonException::new);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new MempoolEntryImpl(this);
 	}
 }
