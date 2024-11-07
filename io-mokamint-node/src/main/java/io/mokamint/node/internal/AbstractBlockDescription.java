@@ -76,6 +76,34 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	/**
+	 * Unmarshals a block description. It assumes that the description was marshalled
+	 * by using {@link BlockDescription#into(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @throws IOException if unmarshalling failed
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
+	 */
+	protected AbstractBlockDescription(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		this.targetBlockCreationTime = context.readCompactInt();
+		if (targetBlockCreationTime <= 0)
+			throw new IOException("The target block creation time must be positive");
+
+		this.hashingForBlocks = HashingAlgorithms.of(context.readStringShared());
+		this.hashingForTransactions = HashingAlgorithms.of(context.readStringShared());
+	}
+
+	/**
+	 * Creates a block description from the given consensus configuration.
+	 * 
+	 * @param config the consensus configuration
+	 */
+	protected AbstractBlockDescription(ConsensusConfig<?,?> config) {
+		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
+		this.hashingForBlocks = config.getHashingForBlocks();
+		this.hashingForTransactions = config.getHashingForTransactions();
+	}
+
+	/**
 	 * Creates a block description from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
@@ -188,20 +216,6 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		context.writeCompactLong(getHeight());
-	}
-
-	/**
-	 * Checks all constraints expected from a this block description.
-	 */
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		if (targetBlockCreationTime <= 0)
-			throw onIllegal.apply("The target block creation time must be positive");
-	
-		if (hashingForBlocks == null)
-			throw onNull.apply("hashingForBlocks cannot be null");
-
-		if (hashingForTransactions == null)
-			throw onNull.apply("hashingForTransactions cannot be null");
 	}
 
 	/**

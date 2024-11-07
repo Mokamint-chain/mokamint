@@ -63,6 +63,25 @@ public abstract class Blocks {
 	}
 
 	/**
+	 * Yields a non-genesis block with the given description and signature.
+	 * 
+	 * @param description the description
+	 * @param transactions the transactions in the block
+	 * @param stateId the identifier of the state of the application at the end of this block
+	 * @param signature the signature that will be put in the block
+	 * @param onNull the generator of the exception to throw if some argument is {@code null}
+	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
+	 * @return the non-genesis block
+	 * @throws ON_NULL if some argument is {@code null}
+	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
+	 * @throws InvalidKeyException if the public key of the description is invalid
+	 */
+	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(description, transactions, stateId, signature, onNull, onIllegal);
+	}
+
+	/**
 	 * Yields a genesis block with the given description. It adds a signature to the resulting block,
 	 * by using the signature algorithm specified in the description and the given private key.
 	 * 
@@ -93,25 +112,6 @@ public abstract class Blocks {
 	 */
 	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlock genesis(GenesisBlockDescription description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
 		return new GenesisBlockImpl(description, stateId, signature, onNull, onIllegal);
-	}
-
-	/**
-	 * Yields a non-genesis block with the given description and signature.
-	 * 
-	 * @param description the description
-	 * @param transactions the transactions in the block
-	 * @param stateId the identifier of the state of the application at the end of this block
-	 * @param signature the signature that will be put in the block
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @return the non-genesis block
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
-	 * @throws InvalidKeyException if the public key of the description is invalid
-	 */
-	public static <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(description, transactions, stateId, signature, onNull, onIllegal);
 	}
 
 	/**

@@ -165,10 +165,10 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @param context the unmarshalling context
 	 * @throws IOException if unmarshalling failed
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared())); // TODO: check positive first argument
+		super(context);
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -193,7 +193,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws IOException if unmarshalling failed
 	 */
 	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions());
+		super(config);
 
 		try {
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);

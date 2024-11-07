@@ -21,18 +21,21 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.internal.gson.BlockDescriptionJson;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
 
@@ -85,56 +88,108 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	/**
 	 * Creates a new non-genesis block description.
 	 */
-	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration,
-			Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
-			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
-
-		this(height, power, totalWaitingTime, weightedWaitingTime, acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks, hashingForTransactions, NullPointerException::new, IllegalArgumentException::new);
-	}
-
-	/**
-	 * Creates a new non-genesis block description.
-	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime,
+	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime,
 			BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
-			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions,
-			Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
+			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 
 		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.height = height;
-		this.power = power;
+		this.power = Objects.requireNonNull(power);
 		this.totalWaitingTime = totalWaitingTime;
 		this.weightedWaitingTime = weightedWaitingTime;
-		this.acceleration = acceleration;
-		this.deadline = deadline;
-		this.hashOfPreviousBlock = hashOfPreviousBlock;
+		this.acceleration = Objects.requireNonNull(acceleration);
+		this.deadline = Objects.requireNonNull(deadline);
+		this.hashOfPreviousBlock = Objects.requireNonNull(hashOfPreviousBlock).clone();
 
-		verify(onNull, onIllegal);
+		if (height < 1)
+			throw new IllegalArgumentException("A non-genesis block must have positive height");
+	
+		if (power.signum() < 0)
+			throw new IllegalArgumentException("power cannot be negative");
+	
+		if (acceleration.signum() <= 0)
+			throw new IllegalArgumentException("acceleration must be strictly positive");
+	
+		if (weightedWaitingTime < 0)
+			throw new IllegalArgumentException("weightedWaitingTime cannot be negative");
+	
+		if (totalWaitingTime < weightedWaitingTime)
+			throw new IllegalArgumentException("The total waiting time cannot be smaller than the weighted waiting time");
+
+		if (hashOfPreviousBlock.length != getHashingForBlocks().length())
+			throw new IllegalArgumentException("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
 	}
 
 	/**
-	 * Unmarshals a non-genesis block. The height of the block has been already read.
-	 * It assumes that the description was marshalled by using
-	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
+	 * Creates a genesis block description from the given JSON representation.
 	 * 
-	 * @param height the height of the block
-	 * @param context the unmarshalling context
-	 * @param config the consensus configuration of the node storing the block description
-	 * @throws IOException if unmarshalling failed
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown hashing algorithm
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		super(config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions());
-
+	public NonGenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		super(json);
+	
+		Long height = json.getHeight();
+		if (height == null)
+			throw new InconsistentJsonException("height cannot be null");
+	
 		this.height = height;
-		this.power = context.readBigInteger();
-		this.totalWaitingTime = context.readLong();
-		this.weightedWaitingTime = context.readCompactLong();
-		this.acceleration = context.readBigInteger();
-		this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
-		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
-
-		verify(IOException::new, IOException::new);
+		if (this.height <= 0)
+			throw new InconsistentJsonException("A non-genesis block must have positive height");
+	
+		this.acceleration = json.getAcceleration();
+		if (acceleration == null)
+			throw new InconsistentJsonException("acceleration cannot be null");
+	
+		if (acceleration.signum() <= 0)
+			throw new InconsistentJsonException("acceleration must be strictly positive");
+	
+		this.power = json.getPower();
+		if (power == null)
+			throw new InconsistentJsonException("power cannot be null");	
+	
+		if (power.signum() < 0)
+			throw new InconsistentJsonException("power cannot be negative");
+	
+		String hashOfPreviousBlock = json.getHashOfPreviousBlock();
+		if (hashOfPreviousBlock == null)
+			throw new InconsistentJsonException("hashOfPreviousBlock cannot be null");	
+	
+		try {
+			this.hashOfPreviousBlock = Hex.fromHexString(hashOfPreviousBlock);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
+	
+		if (this.hashOfPreviousBlock.length != getHashingForBlocks().length())
+			throw new InconsistentJsonException("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + this.hashOfPreviousBlock.length);
+	
+		Long weightedWaitingTime = json.getWeightedWaitingTime();
+		if (weightedWaitingTime == null)
+			throw new InconsistentJsonException("weightedWaitingTime cannot be null");
+	
+		this.weightedWaitingTime = weightedWaitingTime;
+	
+		if (this.weightedWaitingTime < 0)
+			throw new InconsistentJsonException("weightedWaitingTime cannot be negative");
+	
+		var deadline = json.getDeadline();
+		if (deadline == null)
+			throw new InconsistentJsonException("deadline cannot be null");
+	
+		this.deadline = deadline.unmap();
+	
+		Long totalWaitingTime = json.getTotalWaitingTime();
+		if (totalWaitingTime == null)
+			throw new InconsistentJsonException("totalWaitingTime cannot be null");
+	
+		this.totalWaitingTime = totalWaitingTime;
+	
+		if (this.totalWaitingTime < this.weightedWaitingTime)
+			throw new InconsistentJsonException("The total waiting time cannot be smaller than the weighted waiting time");
 	}
 
 	/**
@@ -148,8 +203,8 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
 	 */
 	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		super(context.readCompactInt(), HashingAlgorithms.of(context.readStringShared()), HashingAlgorithms.of(context.readStringShared()));
-
+		super(context);
+	
 		this.height = height;
 		this.power = context.readBigInteger();
 		this.totalWaitingTime = context.readLong();
@@ -157,8 +212,58 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.acceleration = context.readBigInteger();
 		this.deadline = Deadlines.from(context);
 		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
+	
+		if (height < 1)
+			throw new IOException("A non-genesis block must have positive height");
+	
+		if (power.signum() < 0)
+			throw new IOException("power cannot be negative");
+	
+		if (acceleration.signum() <= 0)
+			throw new IOException("acceleration must be strictly positive");
+	
+		if (weightedWaitingTime < 0)
+			throw new IOException("weightedWaitingTime cannot be negative");
+	
+		if (totalWaitingTime < weightedWaitingTime)
+			throw new IOException("The total waiting time cannot be smaller than the weighted waiting time");
+	}
 
-		verify(IOException::new, IOException::new);
+	/**
+	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * It assumes that the description was marshalled by using
+	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
+	 * 
+	 * @param height the height of the block
+	 * @param context the unmarshalling context
+	 * @param config the consensus configuration of the node storing the block description
+	 * @throws IOException if unmarshalling failed
+	 */
+	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+		super(config);
+
+		this.height = height;
+		this.power = context.readBigInteger();
+		this.totalWaitingTime = context.readLong();
+		this.weightedWaitingTime = context.readCompactLong();
+		this.acceleration = context.readBigInteger();
+		this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
+		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
+
+		if (height < 1)
+			throw new IOException("A non-genesis block must have positive height");
+	
+		if (power.signum() < 0)
+			throw new IOException("power cannot be negative");
+	
+		if (acceleration.signum() <= 0)
+			throw new IOException("acceleration must be strictly positive");
+	
+		if (weightedWaitingTime < 0)
+			throw new IOException("weightedWaitingTime cannot be negative");
+	
+		if (totalWaitingTime < weightedWaitingTime)
+			throw new IOException("The total waiting time cannot be smaller than the weighted waiting time");
 	}
 
 	@Override
@@ -288,40 +393,5 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		byte[] previousGenerationSignature = challenge.getGenerationSignature();
 		byte[] previousProlog = deadline.getProlog().toByteArray();
 		return challenge.getHashingForGenerations().getHasher(Function.identity()).hash(concat(previousGenerationSignature, previousProlog));
-	}
-
-	@Override
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		super.verify(onNull, onIllegal);
-
-		if (acceleration == null)
-			throw onNull.apply("acceleration cannot be null");
-
-		if (deadline == null)
-			throw onNull.apply("deadline cannot be null");
-
-		if (hashOfPreviousBlock == null)
-			throw onNull.apply("hashOfPreviousBlock cannot be null");	
-
-		if (power == null)
-			throw onNull.apply("power cannot be null");	
-
-		if (height < 1)
-			throw onIllegal.apply("A non-genesis block must have positive height");
-	
-		if (power.signum() < 0)
-			throw onIllegal.apply("The power cannot be negative");
-	
-		if (acceleration.signum() <= 0)
-			throw onIllegal.apply("The acceleration must be strictly positive");
-	
-		if (weightedWaitingTime < 0)
-			throw onIllegal.apply("The weighted waiting time cannot be negative");
-	
-		if (totalWaitingTime < weightedWaitingTime)
-			throw onIllegal.apply("The total waiting time cannot be smaller than the weighted waiting time");
-
-		if (hashOfPreviousBlock.length != getHashingForBlocks().length())
-			throw onIllegal.apply("Length mismatch in the hash of the previous block: expected " + getHashingForBlocks().length() + " but found " + hashOfPreviousBlock.length);
 	}
 }

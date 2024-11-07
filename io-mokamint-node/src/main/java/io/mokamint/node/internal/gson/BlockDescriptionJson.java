@@ -21,16 +21,14 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.internal.GenesisBlockDescriptionImpl;
+import io.mokamint.node.internal.NonGenesisBlockDescriptionImpl;
 import io.mokamint.nonce.Deadlines;
 
 /**
@@ -77,6 +75,34 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		}
 	}
 
+	public Long getHeight() {
+		return height;
+	}
+
+	public BigInteger getPower() {
+		return power;
+	}
+
+	public Long getTotalWaitingTime() {
+		return totalWaitingTime;
+	}
+
+	public Long getWeightedWaitingTime() {
+		return weightedWaitingTime;
+	}
+
+	public BigInteger getAcceleration() {
+		return acceleration;
+	}
+
+	public Deadlines.Json getDeadline() {
+		return deadline;
+	}
+
+	public String getHashOfPreviousBlock() {
+		return hashOfPreviousBlock;
+	}
+
 	public String getStartDateTimeUTC() {
 		return startDateTimeUTC;
 	}
@@ -111,17 +137,6 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 	@Override
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		try {
-			if (startDateTimeUTC == null)
-				return BlockDescriptions.of(height, power, totalWaitingTime, weightedWaitingTime,
-						acceleration, deadline.unmap(), Hex.fromHexString(hashOfPreviousBlock), targetBlockCreationTime,
-						HashingAlgorithms.of(hashingForBlocks), HashingAlgorithms.of(hashingForTransactions),
-						InconsistentJsonException::new, InconsistentJsonException::new);
-			else
-				return new GenesisBlockDescriptionImpl(this);
-		}
-		catch (HexConversionException | NullPointerException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return startDateTimeUTC == null ? new NonGenesisBlockDescriptionImpl(this) : new GenesisBlockDescriptionImpl(this);
 	}
 }
