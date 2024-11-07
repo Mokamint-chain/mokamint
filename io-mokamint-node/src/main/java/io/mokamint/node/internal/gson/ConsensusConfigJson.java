@@ -54,7 +54,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	@Override
 	public ConsensusConfig<?,?> unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
 		try {
-			return ConsensusConfigBuilders.defaults()
+			return ConsensusConfigBuilders.defaults() // TODO: maybe add constructor with JSON
 					.setChainId(chainId)
 					.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
 					.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))

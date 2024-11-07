@@ -86,7 +86,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	private final byte[] hashOfPreviousBlock;
 
 	/**
-	 * Creates a new non-genesis block description.
+	 * Creates a non-genesis block description.
 	 */
 	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime,
 			BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
@@ -122,7 +122,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	/**
-	 * Creates a genesis block description from the given JSON representation.
+	 * Creates a non-genesis block description from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
@@ -193,12 +193,11 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	/**
-	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * Unmarshals a non-genesis block description. The height of the block has been already unmarshalled.
 	 * It assumes that the description was marshalled by using {@link BlockDescription#into(MarshallingContext)}.
 	 * 
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
-	 * @param config the consensus configuration of the node storing the block description
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
 	 */
@@ -230,7 +229,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	/**
-	 * Unmarshals a non-genesis block. The height of the block has been already read.
+	 * Unmarshals a non-genesis block description. The height of the block has been already unmarshalled.
 	 * It assumes that the description was marshalled by using
 	 * {@link BlockDescription#intoWithoutConfigurationData(MarshallingContext)}.
 	 * 
@@ -302,7 +301,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	}
 
 	@Override
-	public SignatureAlgorithm getSignatureForBlock() {
+	public SignatureAlgorithm getSignatureForBlocks() {
 		return deadline.getProlog().getSignatureForBlocks();
 	}
 

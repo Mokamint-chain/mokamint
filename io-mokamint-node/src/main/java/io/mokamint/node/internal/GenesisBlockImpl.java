@@ -36,7 +36,7 @@ import io.mokamint.node.internal.gson.BlockJson;
 public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescription, GenesisBlockImpl> implements GenesisBlock {
 
 	/**
-	 * Creates a genesis block with the given description and signs it with the given keys and signature algorithm.
+	 * Creates a genesis block with the given description and signs it with the given key.
 	 * 
 	 * @param description the description
 	 * @param stateId the identifier of the state of the application at the end of this block
@@ -51,7 +51,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	/**
 	 * Creates a genesis block from the given JSON representation.
 	 * 
-	 * @param description the description of the block
+	 * @param description the description of the block, already extracted from {@code json}
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
@@ -67,7 +67,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	}
 
 	/**
-	 * Unmarshals a genesis block from the given context. The description of the block has been already read.
+	 * Unmarshals a genesis block from the given context. The description of the block has been already unmarshalled.
 	 * 
 	 * @param description the description of the block
 	 * @param context the context

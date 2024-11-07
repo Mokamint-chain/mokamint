@@ -64,21 +64,37 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	/**
+	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
+	 * by using the signature algorithm in the prolog of the deadline and the given private key.
+	 * 
+	 * @param description the description
+	 * @param transactions the transactions in the block
+	 * @param stateId the identifier of the state of the application at the end of this block
+	 * @param privateKey the private key for signing the block
+	 * @throws SignatureException if the signature of the block failed
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
+	
+		this.transactions = transactions;
+	
+		ensureSignatureIsCorrect();
+		ensureTransactionsAreNotRepeated();
+	}
+
+	/**
 	 * Creates a non-genesis block from the given JSON representation.
 	 * 
-	 * @param description the description of the block
+	 * @param description the description of the block, already extracted from {@code json}
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
 		super(description, json);
 
-		var maybeTransactions = json.getTransactions();
-		if (maybeTransactions.isEmpty())
-			throw new InconsistentJsonException("transactions cannot be null");
-
-		var transactionsJson = maybeTransactions.get().toArray(Transactions.Json[]::new);
-		this.transactions = new Transaction[transactionsJson.length];
+		var transactionsJson = json.getTransactions().toArray(Transactions.Json[]::new);
+		transactions = new Transaction[transactionsJson.length];
 
 		for (int pos = 0; pos < transactionsJson.length; pos++) {
 			Transactions.Json transactionJson = transactionsJson[pos];
@@ -98,7 +114,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	/**
-	 * Unmarshals a non-genesis block from the given context. The description of the block has been already read.
+	 * Unmarshals a non-genesis block from the given context. The description of the block has been already unmarshalled.
 	 * 
 	 * @param description the description of the block
 	 * @param context the context
@@ -119,27 +135,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		}
 	}
 
-	/**
-	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
-	 * by using the signature algorithm in the prolog of the deadline and the given private key.
-	 * 
-	 * @param description the description
-	 * @param transactions the transactions in the block
-	 * @param stateId the identifier of the state of the application at the end of this block
-	 * @param privateKey the private key for signing the block
-	 * @throws SignatureException if the signature of the block failed
-	 * @throws InvalidKeyException if the private key is invalid
-	 */
-	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
-	
-		this.transactions = transactions;
-
-		ensureSignatureIsCorrect();
-		ensureTransactionsAreNotRepeated();
-	}
-
-	private void ensureTransactionsAreNotRepeated() {
+	private void ensureTransactionsAreNotRepeated() throws IllegalArgumentException {
 		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))

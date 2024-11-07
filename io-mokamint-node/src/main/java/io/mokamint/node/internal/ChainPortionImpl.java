@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,11 +57,7 @@ public class ChainPortionImpl implements ChainPortion {
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public ChainPortionImpl(ChainPortionJson json) throws InconsistentJsonException {
-		Optional<Stream<String>> maybeHashes = json.getHashes();
-		if (maybeHashes.isEmpty())
-			throw new InconsistentJsonException("Missing hashes in chain portion");
-
-		String[] hashes = maybeHashes.get().toArray(String[]::new);
+		String[] hashes = json.getHashes().toArray(String[]::new);
 		this.hashes = new byte[hashes.length][];
 
 		for (int pos = 0; pos < hashes.length; pos++) {

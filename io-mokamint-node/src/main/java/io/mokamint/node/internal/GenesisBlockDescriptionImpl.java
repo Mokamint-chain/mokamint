@@ -70,7 +70,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	/**
 	 * The signature algorithm used to sign this block.
 	 */
-	private final SignatureAlgorithm signatureForBlock;
+	private final SignatureAlgorithm signatureForBlocks;
 
 	/**
 	 * The public key of the node that signed this block.
@@ -83,22 +83,22 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	private final String publicKeyBase58;
 
 	/**
-	 * Creates a genesis block description with the given keys and signature algorithm.
+	 * Creates a genesis block description.
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+			SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 
 		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
 
 		this.startDateTimeUTC = Objects.requireNonNull(startDateTimeUTC);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines);
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations);
-		this.signatureForBlock = Objects.requireNonNull(signatureForBlock);
+		this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks);
 		this.publicKey = Objects.requireNonNull(publicKey);
-		this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(publicKey));
+		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
 	}
 
 	/**
@@ -138,21 +138,21 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		if (signatureForBlocks == null)
 			throw new InconsistentJsonException("signatureForBlocks cannot be null");
 
-		this.signatureForBlock = SignatureAlgorithms.of(signatureForBlocks);
+		this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks);
 
 		String publicKey = json.getPublicKey();
 		if (publicKey == null)
 			throw new InconsistentJsonException("publicKey cannot be null");
 
 		try {
-			this.publicKey = signatureForBlock.publicKeyFromEncoding(Base58.decode(publicKey));
+			this.publicKey = this.signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKey));
 		}
 		catch (Base58ConversionException | InvalidKeySpecException e) {
 			throw new InconsistentJsonException(e);
 		}
 
 		try {
-			this.publicKeyBase58 = Base58.encode(signatureForBlock.encodingOf(this.publicKey));
+			this.publicKeyBase58 = Base58.encode(this.signatureForBlocks.encodingOf(this.publicKey));
 		}
 		catch (InvalidKeyException e) {
 			throw new InconsistentJsonException(e);
@@ -174,9 +174,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.hashingForDeadlines = HashingAlgorithms.of(context.readStringShared());
 			this.hashingForGenerations = HashingAlgorithms.of(context.readStringShared());
-			this.signatureForBlock = SignatureAlgorithms.of(context.readStringUnshared());
+			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringUnshared());
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
-			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
+			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 		}
 		catch (DateTimeParseException | InvalidKeySpecException e) {
@@ -199,9 +199,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.startDateTimeUTC = LocalDateTime.parse(context.readStringUnshared(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
-			this.signatureForBlock = config.getSignatureForBlocks();
+			this.signatureForBlocks = config.getSignatureForBlocks();
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
-			this.publicKey = signatureForBlock.publicKeyFromEncoding(publicKeyEncoding);
+			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
 			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
 		}
 		catch (DateTimeParseException | InvalidKeySpecException e) {
@@ -210,7 +210,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	private byte[] readPublicKeyEncoding(UnmarshallingContext context) throws IOException {
-		var maybeLength = signatureForBlock.publicKeyLength();
+		var maybeLength = signatureForBlocks.publicKeyLength();
 		if (maybeLength.isPresent())
 			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the length of the public key");
 		else
@@ -273,8 +273,8 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	@Override
-	public SignatureAlgorithm getSignatureForBlock() {
-		return signatureForBlock;
+	public SignatureAlgorithm getSignatureForBlocks() {
+		return signatureForBlocks;
 	}
 
 	@Override
@@ -298,7 +298,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			super.equals(other) &&
 			startDateTimeUTC.equals(gbd.getStartDateTimeUTC()) &&
 			publicKeyBase58.equals(gbd.getPublicKeyForSigningBlockBase58()) &&
-			signatureForBlock.equals(gbd.getSignatureForBlock()) &&
+			signatureForBlocks.equals(gbd.getSignatureForBlocks()) &&
 			hashingForDeadlines.equals(gbd.getHashingForDeadlines()) &&
 			hashingForGenerations.equals(gbd.getHashingForGenerations());
 	}
@@ -315,7 +315,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			context.writeStringUnshared(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(startDateTimeUTC));
 			context.writeStringShared(hashingForDeadlines.getName());
 			context.writeStringShared(hashingForGenerations.getName());
-			context.writeStringUnshared(signatureForBlock.getName());
+			context.writeStringUnshared(signatureForBlocks.getName());
 			writePublicKeyEncoding(context);
 		}
 		catch (DateTimeException | InvalidKeyException e) {
@@ -338,7 +338,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	@Override
 	protected void populate(StringBuilder builder) {
 		super.populate(builder);
-		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlock + ", base58)");
+		builder.append("\n* public key of the peer that signed the block: " + publicKeyBase58 + " (" + signatureForBlocks + ", base58)");
 	}
 
 	@Override
@@ -347,9 +347,9 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	}
 
 	private void writePublicKeyEncoding(MarshallingContext context) throws IOException, InvalidKeyException {
-		byte[] publicKeyEncoding = signatureForBlock.encodingOf(publicKey);
+		byte[] publicKeyEncoding = signatureForBlocks.encodingOf(publicKey);
 
-		if (signatureForBlock.publicKeyLength().isEmpty())
+		if (signatureForBlocks.publicKeyLength().isEmpty())
 			context.writeLengthAndBytes(publicKeyEncoding);
 		else
 			context.writeBytes(publicKeyEncoding);

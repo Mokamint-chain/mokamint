@@ -58,11 +58,7 @@ public class MempoolPortionImpl implements MempoolPortion {
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public MempoolPortionImpl(MempoolPortionJson json) throws InconsistentJsonException {
-		Stream<MempoolEntries.Json> entries = json.getEntries();
-		if (entries == null)
-			throw new InconsistentJsonException("entries cannot be null");
-
-		var entriesAsArray = entries.toArray(MempoolEntries.Json[]::new);
+		var entriesAsArray = json.getEntries().toArray(MempoolEntries.Json[]::new);
 		this.entries = new MempoolEntry[entriesAsArray.length];
 
 		int pos = 0;

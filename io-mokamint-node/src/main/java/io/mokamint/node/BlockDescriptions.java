@@ -48,7 +48,7 @@ public abstract class BlockDescriptions {
 	/**
 	 * Yields a new non-genesis block description.
 	 * 
-	 * @param height the block height, non-negative, counting from 0, which is the genesis block
+	 * @param height the block height, positive, since 0 is the height of the genesis block
 	 * @param power the power of the block, computed as the sum, for each block from genesis to the block,
 	 *              of 2^(hashing bits) / (value of the deadline in the block + 1). This allows one to compare
 	 *              forks and choose the one whose tip has the highest power. Intuitively, the power
@@ -62,7 +62,7 @@ public abstract class BlockDescriptions {
 	 * @param hashOfPreviousBlock the reference to the previous block
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
-	 * @param hashingForTransactions the hashingAlgorithm used for the transactions in the block
+	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
 	 * @return the non-genesis block description
 	 */
 	public static NonGenesisBlockDescription of(long height, BigInteger power,
@@ -83,18 +83,18 @@ public abstract class BlockDescriptions {
 	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
 	 * @param hashingForGenerations the hashing algorithm used for the generation signatures
-	 * @param signatureForBlock the signature algorithm for the block
+	 * @param signatureForBlocks the signature algorithm for the blocks
 	 * @param publicKey the public key of the signer of the block
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
 	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines,
-			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlock, PublicKey publicKey) throws InvalidKeyException {
+			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 
 		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime,
 			hashingForBlocks, hashingForTransactions, hashingForDeadlines,
-			hashingForGenerations, signatureForBlock, publicKey);
+			hashingForGenerations, signatureForBlocks, publicKey);
 	}
 
 	/**

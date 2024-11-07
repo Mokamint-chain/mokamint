@@ -114,11 +114,11 @@ public interface BlockDescription extends Marshallable {
 	HashingAlgorithm getHashingForGenerations();
 
 	/**
-	 * Yields the signature algorithm used for signing the block.
+	 * Yields the signature algorithm used for signing the blocks.
 	 * 
 	 * @return the signature algorithm
 	 */
-	SignatureAlgorithm getSignatureForBlock();
+	SignatureAlgorithm getSignatureForBlocks();
 
 	/**
 	 * Yields the public key used for signing the block.

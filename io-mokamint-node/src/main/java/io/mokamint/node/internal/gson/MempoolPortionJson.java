@@ -35,7 +35,7 @@ public abstract class MempoolPortionJson implements JsonRepresentation<MempoolPo
 	}
 
 	public Stream<MempoolEntries.Json> getEntries() {
-		return entries == null ? null : Stream.of(entries);
+		return entries == null ? Stream.empty() : Stream.of(entries);
 	}
 
 	@Override

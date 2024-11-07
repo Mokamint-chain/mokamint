@@ -86,28 +86,24 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	/**
 	 * Creates a block from the given JSON representation.
 	 * 
+	 * @param description the description of the block, already extracted from {@code json}
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	protected AbstractBlock(D description, BlockJson json) throws InconsistentJsonException {
-		this.description = description;
-
-		String stateId = json.getStateId();
-		if (stateId == null)
-			throw new InconsistentJsonException("stateId cannot be null");
-
 		try {
+			this.description = description;
+
+			String stateId = json.getStateId();
+			if (stateId == null)
+				throw new InconsistentJsonException("stateId cannot be null");
+
 			this.stateId = Hex.fromHexString(stateId);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
 
-		String signature = json.getSignature();
-		if (signature == null)
-			throw new InconsistentJsonException("signature cannot be null");
+			String signature = json.getSignature();
+			if (signature == null)
+				throw new InconsistentJsonException("signature cannot be null");
 
-		try {
 			this.signature = Hex.fromHexString(signature);
 		}
 		catch (HexConversionException e) {
@@ -116,8 +112,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	}
 
 	/**
-	 * Creates an abstract block with the given description and signs it. The blocks does not get verified,
-	 * therefore the caller must explicitly call {@link #verify()} later.
+	 * Creates an abstract block with the given description and signs it.
 	 * 
 	 * @param description the description of the block
 	 * @param stateId the identifier of the state of the application at the end of this block
@@ -129,13 +124,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
 		this.description = Objects.requireNonNull(description);
 		this.stateId = Objects.requireNonNull(stateId).clone();
-		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
+		this.signature = description.getSignatureForBlocks().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
 	}
 
 	/**
 	 * Unmarshals an abstract block from the given context.
-	 * The description of the block has been already unmarshalled. The blocks does not get verified,
-	 * therefore the caller must explicitly call {@link #verify()} later.
+	 * The description of the block has been already unmarshalled.
 	 * 
 	 * @param description the already unmarshalled description
 	 * @param context the context
@@ -146,7 +140,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 		this.description = description;
 		this.stateId = context.readLengthAndBytes("State id length mismatch");
 
-		var maybeLength = description.getSignatureForBlock().length();
+		var maybeLength = description.getSignatureForBlocks().length();
 		if (maybeLength.isPresent())
 			this.signature = context.readBytes(maybeLength.getAsInt(), "Signature length mismatch");
 		else
@@ -154,7 +148,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	}
 
 	protected void ensureSignatureIsCorrect() throws InvalidKeyException, SignatureException {
-		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
+		if (!description.getSignatureForBlocks().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
 			throw new SignatureException("The block's signature is invalid");
 	}
 
@@ -180,7 +174,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * by using {@link Block#into(MarshallingContext)}.
 	 * 
 	 * @param context the context
-	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 * @throws NoSuchAlgorithmException if the block refers to an unknown cryptographic algorithm
@@ -324,7 +317,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 		builder.append("* hash: " + getHexHash() + " (" + description.getHashingForBlocks() + ")\n");
 		builder.append(description);
 		builder.append("\n");
-		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlock() + ")\n");
+		builder.append("* node's signature: " + Hex.toHexString(signature) + " (" + description.getSignatureForBlocks() + ")\n");
 		builder.append("* final state id: " + Hex.toHexString(stateId));
 	}
 
@@ -347,7 +340,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	protected abstract B getThis();
 
 	private void writeSignature(MarshallingContext context) throws IOException {
-		var maybeLength = description.getSignatureForBlock().length();
+		var maybeLength = description.getSignatureForBlocks().length();
 		if (maybeLength.isPresent())
 			context.writeBytes(signature);
 		else

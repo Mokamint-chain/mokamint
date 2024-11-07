@@ -53,13 +53,10 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	}
 
 	/**
-	 * Creates a transaction with the given bytes.
+	 * Creates a transaction from the given JSON representation.
 	 * 
-	 * @param bytes the bytes
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public TransactionImpl(TransactionJson json) throws InconsistentJsonException {
 		String bytes = json.getBytes();

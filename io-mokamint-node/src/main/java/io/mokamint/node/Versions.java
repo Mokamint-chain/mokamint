@@ -45,10 +45,10 @@ public abstract class Versions {
 
 	/**
 	 * Yields a version object, corresponding to the version of Mokamint
-	 * as reported the pom.xml file of the main project.
+	 * as reported the pom.xml file of the parent project.
 	 * 
 	 * @return the version object
-	 * @throws IOException if the information of the pom.xml file cannot be accessed
+	 * @throws IOException if the information in the pom.xml file cannot be accessed
 	 */
 	public static Version current() throws IOException {
 		return new VersionImpl();

@@ -223,7 +223,7 @@ public class BlockVerification {
 		if (targetBlockCreationTime != expectedTargetBlockCreationTime)
 			throw new VerificationException("Target block creation time mismatch (expected " + expectedTargetBlockCreationTime + " but found " + targetBlockCreationTime + ")");
 
-		var signatureForBlocks = description.getSignatureForBlock();
+		var signatureForBlocks = description.getSignatureForBlocks();
 		var expectedSignatureForBlocks = config.getSignatureForBlocks();
 		if (!signatureForBlocks.equals(expectedSignatureForBlocks))
 			throw new VerificationException("Block signature algorithm mismatch (expected " + expectedSignatureForBlocks + " but found " + signatureForBlocks + ")");

@@ -60,7 +60,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());
 			this.hashingForDeadlines = gbd.getHashingForDeadlines().getName();
 			this.hashingForGenerations = gbd.getHashingForGenerations().getName();
-			this.signatureForBlocks = gbd.getSignatureForBlock().getName();
+			this.signatureForBlocks = gbd.getSignatureForBlocks().getName();
 			this.publicKey = gbd.getPublicKeyForSigningBlockBase58();
 		}
 		else {

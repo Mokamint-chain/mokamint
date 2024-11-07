@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
@@ -35,8 +34,8 @@ public abstract class ChainPortionJson implements JsonRepresentation<ChainPortio
 		this.hashes = chain.getHashes().map(Hex::toHexString).toArray(String[]::new);
 	}
 
-	public Optional<Stream<String>> getHashes() {
-		return Optional.ofNullable(hashes).map(Stream::of);
+	public Stream<String> getHashes() {
+		return hashes == null ? Stream.empty() : Stream.of(hashes);
 	}
 
 	@Override

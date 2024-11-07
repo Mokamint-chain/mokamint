@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
@@ -60,8 +59,8 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		return signature;
 	}
 
-	public Optional<Stream<Transactions.Json>> getTransactions() {
-		return transactions == null ? Optional.empty() : Optional.of(Stream.of(transactions));
+	public Stream<Transactions.Json> getTransactions() {
+		return transactions == null ? Stream.empty() : Stream.of(transactions);
 	}
 
 	@Override

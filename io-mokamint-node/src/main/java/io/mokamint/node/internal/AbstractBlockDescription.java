@@ -150,7 +150,6 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * {@link BlockDescription#into(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 
 	 * @param context the context
-	 * @param config the consensus configuration of the node storing the block description
 	 * @return the block description
 	 * @throws IOException if the block description cannot be unmarshalled
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
