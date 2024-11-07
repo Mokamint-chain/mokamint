@@ -108,7 +108,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown hashing algorithm
 	 */
-	public GenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+	protected GenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		super(json);
 
 		String startDateTimeUTC = json.getStartDateTimeUTC();
@@ -167,7 +167,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
 	 */
-	GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	protected GenesisBlockDescriptionImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		super(context);
 
 		try {
@@ -192,7 +192,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @param config the configuration of the node storing the description
 	 * @throws IOException if unmarshalling failed
 	 */
-	GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+	protected GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		super(config);
 
 		try {

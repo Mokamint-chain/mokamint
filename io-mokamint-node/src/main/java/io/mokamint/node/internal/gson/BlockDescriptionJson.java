@@ -27,8 +27,7 @@ import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.internal.GenesisBlockDescriptionImpl;
-import io.mokamint.node.internal.NonGenesisBlockDescriptionImpl;
+import io.mokamint.node.internal.AbstractBlockDescription;
 import io.mokamint.nonce.Deadlines;
 
 /**
@@ -137,6 +136,6 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 	@Override
 	public BlockDescription unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		return startDateTimeUTC == null ? new NonGenesisBlockDescriptionImpl(this) : new GenesisBlockDescriptionImpl(this);
+		return AbstractBlockDescription.from(this);
 	}
 }

@@ -55,7 +55,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public GenesisBlockImpl(GenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
+	protected GenesisBlockImpl(GenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
 		super(description, json);
 
 		try {

@@ -146,6 +146,19 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	/**
+	 * Yields a block description from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @return the block
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to some unknown cryptographic algorithm
+	 */
+	public static BlockDescription from(BlockDescriptionJson json) throws NoSuchAlgorithmException, InconsistentJsonException {
+		String startDateTimeUTC = json.getStartDateTimeUTC();
+		return startDateTimeUTC == null ? new NonGenesisBlockDescriptionImpl(json) : new GenesisBlockDescriptionImpl(json);
+	}
+
+	/**
 	 * Unmarshals a block description from the given context. It assumes that it was marshalled by using
 	 * {@link BlockDescription#into(io.hotmoka.marshalling.api.MarshallingContext)}.
 	 * 

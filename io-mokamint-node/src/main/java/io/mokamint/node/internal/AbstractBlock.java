@@ -186,6 +186,26 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
 	}
 
+	/**
+	 * Yields a block from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @return the block
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to some unknown cryptographic algorithm
+	 */
+	public static Block from(BlockJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		var descriptionJson = json.getDescription();
+		if (descriptionJson == null)
+			throw new InconsistentJsonException("description cannot be null");
+	
+		var description = descriptionJson.unmap();
+		if (description instanceof GenesisBlockDescription gbd)
+			return new GenesisBlockImpl(gbd, json);
+		else
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, json);
+	}
+
 	@Override
 	public final D getDescription() {
 		return description;

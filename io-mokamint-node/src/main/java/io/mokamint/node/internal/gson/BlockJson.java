@@ -25,11 +25,8 @@ import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.internal.GenesisBlockImpl;
-import io.mokamint.node.internal.NonGenesisBlockImpl;
+import io.mokamint.node.internal.AbstractBlock;
 
 /**
  * The JSON representation of a {@link Block}.
@@ -65,13 +62,6 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		if (description == null)
-			throw new InconsistentJsonException("description cannot be null");
-
-		var description = this.description.unmap();
-		if (description instanceof GenesisBlockDescription gbd)
-			return new GenesisBlockImpl(gbd, this);
-		else
-			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, this);
+		return AbstractBlock.from(this);
 	}
 }

@@ -128,7 +128,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown hashing algorithm
 	 */
-	public NonGenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+	protected NonGenesisBlockDescriptionImpl(BlockDescriptionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		super(json);
 	
 		Long height = json.getHeight();
@@ -201,7 +201,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @throws IOException if unmarshalling failed
 	 * @throws NoSuchAlgorithmException if the block description refers to an unknown cryptographic algorithm
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+	protected NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		super(context);
 	
 		this.height = height;
@@ -238,7 +238,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @param config the consensus configuration of the node storing the block description
 	 * @throws IOException if unmarshalling failed
 	 */
-	NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+	protected NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		super(config);
 
 		this.height = height;
