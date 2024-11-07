@@ -160,7 +160,7 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			protected void onMined(Block block) {
 				super.onMined(block);
-				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDeadline().getValue(), myMiner.deadlineValue))
+				if (block instanceof NonGenesisBlock ngb && Arrays.equals(ngb.getDescription().getDeadline().getValue(), myMiner.deadlineValue))
 					semaphore.release();
 			}
 		}

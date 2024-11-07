@@ -24,20 +24,24 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.internal.gson.BlockJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -80,30 +84,35 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	private final static BigInteger COMPLEMENT_OF_OBLIVION = BigInteger.valueOf(_100000.longValue() - OBLIVION.longValue());
 
 	/**
-	 * Creates an abstract block with the given description. The blocks does not get verified,
-	 * therefore the caller must explicitly call {@link #verify()} later.
+	 * Creates a block from the given JSON representation.
 	 * 
-	 * @param description the description of the block
-	 * @param stateId the identifier of the state of the application at the end of this block
-	 * @param signature the signature of the block
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> AbstractBlock(D description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL {
-		if (description == null)
-			throw onNull.apply("description cannot be null");
-
-		if (stateId == null)
-			throw onNull.apply("stateId cannot be null");
-
-		if (signature == null)
-			throw onNull.apply("signature cannot be null");
-
+	protected AbstractBlock(D description, BlockJson json) throws InconsistentJsonException {
 		this.description = description;
-		this.stateId = stateId.clone();
-		this.signature = signature.clone();
+
+		String stateId = json.getStateId();
+		if (stateId == null)
+			throw new InconsistentJsonException("stateId cannot be null");
+
+		try {
+			this.stateId = Hex.fromHexString(stateId);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
+
+		String signature = json.getSignature();
+		if (signature == null)
+			throw new InconsistentJsonException("signature cannot be null");
+
+		try {
+			this.signature = Hex.fromHexString(signature);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	/**
@@ -118,8 +127,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
 	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
-		this.description = description;
-		this.stateId = stateId.clone();
+		this.description = Objects.requireNonNull(description);
+		this.stateId = Objects.requireNonNull(stateId).clone();
 		this.signature = description.getSignatureForBlock().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
 	}
 
@@ -142,6 +151,11 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 			this.signature = context.readBytes(maybeLength.getAsInt(), "Signature length mismatch");
 		else
 			this.signature = context.readLengthAndBytes("Signature length mismatch");
+	}
+
+	protected void ensureSignatureIsCorrect() throws InvalidKeyException, SignatureException {
+		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
+			throw new SignatureException("The block's signature is invalid");
 	}
 
 	/**
@@ -323,29 +337,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		description.into(context);
 		context.writeLengthAndBytes(stateId);
-	}
-
-	/**
-	 * Checks all constraints expected from this block. This also checks the validity of
-	 * the signature and that transactions are not repeated inside the block.
-	 * 
-	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
-	 * @throws InvalidKeyException if the public key of the description is invalid
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 */
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		if (description == null)
-			throw onNull.apply("description cannot be null");
-
-		if (signature == null)
-			throw onNull.apply("signature cannot be null");
-
-		if (stateId == null)
-			throw onNull.apply("stateId cannot be null");
-
-		if (!description.getSignatureForBlock().getVerifier(description.getPublicKeyForSigningBlock(), Function.identity()).verify(toByteArrayWithoutSignature(), signature))
-			throw new SignatureException("The block's signature is invalid");
 	}
 
 	/**

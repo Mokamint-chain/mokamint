@@ -104,7 +104,7 @@ public class BlockVerification {
 		this.config = node.getConfig();
 		this.block = block;
 		this.previous = previous.orElse(null);
-		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDeadline() : null;
+		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;
 		this.creationTime = node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NodeException("Cannot determine the creation time of the block under verification"));
 
 		if (block instanceof NonGenesisBlock ngb)
@@ -345,7 +345,7 @@ public class BlockVerification {
 					}
 				}
 
-				var found = app.endBlock(id, block.getDeadline());
+				var found = app.endBlock(id, block.getDescription().getDeadline());
 
 				if (!Arrays.equals(block.getStateId(), found))
 					throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");

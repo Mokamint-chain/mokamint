@@ -22,7 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
@@ -30,11 +30,12 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.nonce.api.Deadline;
+import io.mokamint.node.internal.gson.BlockJson;
 
 /**
  * The implementation of a non-genesis block of the Mokamint blockchain.
@@ -59,35 +60,41 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		this(description, transactions.toArray(Transaction[]::new), stateId, privateKey);
+		this(description, transactions.map(Objects::requireNonNull).toArray(Transaction[]::new), stateId, privateKey);
 	}
 
 	/**
-	 * Creates a new non-genesis block with the given description and signature.
+	 * Creates a non-genesis block from the given JSON representation.
 	 * 
-	 * @param description the description
-	 * @param transactions the transactions in the block
-	 * @param stateId the identifier of the state of the application at the end of this block
-	 * @param signature the signature that will be put in the block
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
-	 * @throws InvalidKeyException if the public key of the description is invalid
+	 * @param description the description of the block
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		super(description, stateId, signature, onNull, onIllegal);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
+		super(description, json);
 
-		if (transactions == null)
-			throw onNull.apply("transactions cannot be null");
+		var maybeTransactions = json.getTransactions();
+		if (maybeTransactions.isEmpty())
+			throw new InconsistentJsonException("transactions cannot be null");
 
-		this.transactions = transactions.toArray(Transaction[]::new);
-		for (var transaction: this.transactions)
-			if (transaction == null)
-				throw onNull.apply("transactions cannot contain null elements");
+		var transactionsJson = maybeTransactions.get().toArray(Transactions.Json[]::new);
+		this.transactions = new Transaction[transactionsJson.length];
 
-		verify(onNull, onIllegal);
+		for (int pos = 0; pos < transactionsJson.length; pos++) {
+			Transactions.Json transactionJson = transactionsJson[pos];
+			if (transactionJson == null)
+				throw new InconsistentJsonException("transactions cannot hold a null element");
+			else
+				transactions[pos] = transactionJson.unmap();
+		}
+
+		try {
+			ensureSignatureIsCorrect();
+			ensureTransactionsAreNotRepeated();
+		}
+		catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	/**
@@ -98,15 +105,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
+	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
-		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);
+		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);;
 
 		try {
-			verify(IOException::new, IOException::new);
+			ensureSignatureIsCorrect();
+			ensureTransactionsAreNotRepeated();
 		}
-		catch (InvalidKeyException | SignatureException e) {
+		catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
 			throw new IOException(e);
 		}
 	}
@@ -127,12 +135,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	
 		this.transactions = transactions;
 
-		verify(NullPointerException::new, IllegalArgumentException::new);
+		ensureSignatureIsCorrect();
+		ensureTransactionsAreNotRepeated();
 	}
 
-	@Override
-	public Deadline getDeadline() {
-		return getDescription().getDeadline();
+	private void ensureTransactionsAreNotRepeated() {
+		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
+		for (int pos = 0; pos < transactions.length - 1; pos++)
+			if (transactions[pos].equals(transactions[pos + 1]))
+				throw new IllegalArgumentException("Repeated transaction");
+
 	}
 
 	@Override
@@ -200,16 +212,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	
 		for (var transaction: transactions)
 			builder.append("\n * #" + n++ + ": " + Hex.toHexString(hasher.hash(transaction)) + " (" + hashingForTransactions + ")");
-	}
-
-	@Override
-	protected <ON_NULL extends Exception, ON_ILLEGAL extends Exception> void verify(Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		super.verify(onNull, onIllegal);
-
-		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
-		for (int pos = 0; pos < transactions.length - 1; pos++)
-			if (transactions[pos].equals(transactions[pos + 1]))
-				throw onIllegal.apply("Repeated transaction");
 	}
 
 	@Override

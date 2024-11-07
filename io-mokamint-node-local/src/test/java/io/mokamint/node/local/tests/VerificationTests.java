@@ -311,7 +311,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 		var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline);
-		// we replace the correct signature with a fake one
+		// we replace the correct key signature with a fake one
 		var newKeys = config.getSignatureForBlocks().getKeyPair();
 		SignatureException e = assertThrows(SignatureException.class, () -> Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate()));
 		assertTrue(e.getMessage().startsWith("The block's signature is invalid"));

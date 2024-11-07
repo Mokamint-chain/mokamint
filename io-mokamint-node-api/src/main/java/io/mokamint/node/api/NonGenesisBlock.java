@@ -19,20 +19,12 @@ package io.mokamint.node.api;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
-import io.mokamint.nonce.api.Deadline;
 
 /**
  * A non-genesis block of the Mokamint blockchain.
  */
 @Immutable
 public interface NonGenesisBlock extends Block {
-
-	/**
-	 * Yields the deadline computed for the block.
-	 * 
-	 * @return the deadline
-	 */
-	Deadline getDeadline();
 
 	@Override
 	NonGenesisBlockDescription getDescription();

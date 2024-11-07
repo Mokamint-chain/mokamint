@@ -21,12 +21,13 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
+import io.mokamint.node.internal.gson.BlockJson;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.
@@ -45,27 +46,24 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateId, privateKey, AbstractBlock::toByteArrayWithoutSignature);
-
-		verify(NullPointerException::new, IllegalArgumentException::new);
 	}
 
 	/**
-	 * Creates a new genesis block with the given description and signature.
-	 *
-	 * @param description the description
-	 * @param stateId the identifier of the state of the application at the end of this block
-	 * @param signature the signature
-	 * @param onNull the generator of the exception to throw if some argument is {@code null}
-	 * @param onIllegal the generator of the exception to throw if some argument has an illegal value
-	 * @throws ON_NULL if some argument is {@code null}
-	 * @throws ON_ILLEGAL if some argument has an illegal value
-	 * @throws SignatureException if the signature of this block cannot be verified or the signature is invalid
-	 * @throws InvalidKeyException if the public key of the description is invalid
+	 * Creates a genesis block from the given JSON representation.
+	 * 
+	 * @param description the description of the block
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public <ON_NULL extends Exception, ON_ILLEGAL extends Exception> GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, byte[] signature, Function<String, ON_NULL> onNull, Function<String, ON_ILLEGAL> onIllegal) throws ON_NULL, ON_ILLEGAL, InvalidKeyException, SignatureException {
-		super(description, stateId, signature, onNull, onIllegal);
+	public GenesisBlockImpl(GenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
+		super(description, json);
 
-		verify(onNull, onIllegal);
+		try {
+			ensureSignatureIsCorrect();
+		}
+		catch (InvalidKeyException | SignatureException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	/**
@@ -76,11 +74,11 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
+	protected GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
 		try {
-			verify(IOException::new, IOException::new);
+			ensureSignatureIsCorrect();
 		}
 		catch (InvalidKeyException | SignatureException e) {
 			throw new IOException(e);

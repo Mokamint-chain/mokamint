@@ -16,23 +16,21 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
-import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.internal.GenesisBlockImpl;
+import io.mokamint.node.internal.NonGenesisBlockImpl;
 
 /**
  * The JSON representation of a {@link Block}.
@@ -50,42 +48,31 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
+	public BlockDescriptions.Json getDescription() {
+		return description;
+	}
+
+	public String getStateId() {
+		return stateId;
+	}
+
+	public String getSignature() {
+		return signature;
+	}
+
+	public Optional<Stream<Transactions.Json>> getTransactions() {
+		return transactions == null ? Optional.empty() : Optional.of(Stream.of(transactions));
+	}
+
 	@Override
 	public Block unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		try {
-			if (description == null)
-				throw new InconsistentJsonException("description cannot be null");
+		if (description == null)
+			throw new InconsistentJsonException("description cannot be null");
 
-			if (stateId == null)
-				throw new InconsistentJsonException("stateId cannot be null");
-
-			if (signature == null)
-				throw new InconsistentJsonException("signature cannot be null");
-
-			var description = this.description.unmap();
-			byte[] stateId = Hex.fromHexString(this.stateId);
-			byte[] signature = Hex.fromHexString(this.signature);
-
-			if (description instanceof GenesisBlockDescription gbd)
-				return Blocks.genesis(gbd, stateId, signature, InconsistentJsonException::new, InconsistentJsonException::new);
-			else {
-				if (transactions == null)
-					throw new InconsistentJsonException("transactions cannot be null");
-
-				var unmappedTransactions = new Transaction[transactions.length];
-				for (int pos = 0; pos < unmappedTransactions.length; pos++) {
-					Transactions.Json transactionJson = transactions[pos];
-					if (transactionJson == null)
-						throw new InconsistentJsonException("transactions cannot hold a null element");
-					else
-						unmappedTransactions[pos] = transactionJson.unmap();
-				}
-
-				return Blocks.of((NonGenesisBlockDescription) description, Stream.of(unmappedTransactions), stateId, signature, InconsistentJsonException::new, InconsistentJsonException::new);
-			}
-		}
-		catch (HexConversionException | InvalidKeyException | SignatureException e) {
-			throw new InconsistentJsonException(e);
-		}
+		var description = this.description.unmap();
+		if (description instanceof GenesisBlockDescription gbd)
+			return new GenesisBlockImpl(gbd, this);
+		else
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, this);
 	}
 }
