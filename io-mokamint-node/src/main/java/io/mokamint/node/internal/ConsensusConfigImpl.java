@@ -95,6 +95,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final int maxBlockSize;
 
 	/**
+	 * The rapidity of changes of the acceleration for block creation.
+	 * It is a value between 0 (no acceleration change) to 100,000 (maximally fast change).
+	 */
+	public final int oblivion;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
@@ -109,6 +115,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.signatureForDeadlines = builder.signatureForDeadlines;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 		this.maxBlockSize = builder.maxBlockSize;
+		this.oblivion = builder.oblivion;
 	}
 
 	@Override
@@ -116,6 +123,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return other instanceof ConsensusConfigImpl<?,?> otherConfig && getClass() == other.getClass() &&
 			chainId.equals(otherConfig.chainId) &&
 			maxBlockSize == otherConfig.maxBlockSize &&
+			oblivion == otherConfig.oblivion &&
 			targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 			hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
 			hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
@@ -126,7 +134,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime);
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
 	}
 
 	@Override
@@ -170,6 +178,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("\n");
 		sb.append("# the maximal size, in bytes, of a block's transactions table\n");
 		sb.append("max_block_size = " + maxBlockSize + "\n");
+		sb.append("\n");
+		sb.append("# the rapidity of changes of the acceleration for the block creation time\n");
+		sb.append("# between 0 (no change) and 100,000 (maximally fast change)\n");
+		sb.append("oblivion = " + oblivion + "\n");
 
 		return sb.toString();
 	}
@@ -219,6 +231,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return maxBlockSize;
 	}
 
+	@Override
+	public int getOblivion() {
+		return oblivion;
+	}
+
 	/**
 	 * The builder of a configuration object.
 	 * 
@@ -234,6 +251,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private SignatureAlgorithm signatureForDeadlines;
 		private int targetBlockCreationTime = 4 * 60 * 1000; // 4 minutes
 		private int maxBlockSize = 1_000_000; // 1 megabyte
+		private int oblivion = 20_000;
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
@@ -289,6 +307,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			var maxBlockSize = toml.getLong("max_block_size");
 			if (maxBlockSize != null)
 				setMaxBlockSize(maxBlockSize);
+
+			var oblivion = toml.getLong("oblivion");
+			if (oblivion != null)
+				setOblivion(oblivion);
 		}
 
 		/**
@@ -306,6 +328,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 			this.maxBlockSize = config.getMaxBlockSize();
+			this.oblivion = config.getOblivion();
 		}
 
 		@Override
@@ -406,6 +429,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				throw new IllegalArgumentException("maxBlockSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
 			this.maxBlockSize = (int) maxBlockSize;
+			return getThis();
+		}
+
+		@Override
+		public B setOblivion(int oblivion) {
+			return setOblivion((long) oblivion);
+		}
+
+		private B setOblivion(long oblivion) {
+			if (oblivion < 0 || oblivion > 100_000)
+				throw new IllegalArgumentException("oblivion must be between 0 and 100,000 (inclusive)");
+
+			this.oblivion = (int) oblivion;
 			return getThis();
 		}
 

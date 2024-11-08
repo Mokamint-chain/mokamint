@@ -75,13 +75,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	@GuardedBy("lock")
 	private byte[] lastHash;
 
-	private final static double oblivion = 0.2; // TODO: add configuration parameter
+	private final static long oblivion = 20_000L; // TODO: add configuration parameter
 
 	private final static BigInteger _100000 = BigInteger.valueOf(100000L);
-
-	private final static BigInteger OBLIVION = BigInteger.valueOf((long) (oblivion * _100000.longValue()));
-
-	private final static BigInteger COMPLEMENT_OF_OBLIVION = BigInteger.valueOf(_100000.longValue() - OBLIVION.longValue());
 
 	/**
 	 * Creates a block from the given JSON representation.
@@ -377,8 +373,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 
 	private long computeWeightedWaitingTime(long waitingTime) {
 		// probably irrelevant, but by using BigInteger we reduce the risk of overflow
-		var previousWeightedWaitingTimeWeighted = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(COMPLEMENT_OF_OBLIVION);
-		var waitingTimeWeighted = BigInteger.valueOf(waitingTime).multiply(OBLIVION);
+		var complementOfOblivion = BigInteger.valueOf(100_000L - oblivion);
+		var previousWeightedWaitingTimeWeighted = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(complementOfOblivion);
+		var waitingTimeWeighted = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(oblivion));
 		return previousWeightedWaitingTimeWeighted.add(waitingTimeWeighted).divide(_100000).longValue();
 	}
 
@@ -395,7 +392,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 			.divide(BigInteger.valueOf(description.getTargetBlockCreationTime()))
 			.subtract(oldAcceleration);	
 
-		var acceleration = oldAcceleration.add(delta.multiply(OBLIVION).divide(_100000));
+		var acceleration = oldAcceleration.add(delta.multiply(BigInteger.valueOf(oblivion)).divide(_100000));
 
 		// acceleration must be strictly positive
 		return acceleration.signum() == 0 ? BigInteger.ONE : acceleration;

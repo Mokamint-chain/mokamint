@@ -38,6 +38,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private final String signatureForDeadlines;
 	private final int targetBlockCreationTime;
 	private final int maxBlockSize;
+	private final int oblivion;
 
 	protected ConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();
@@ -49,6 +50,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 		this.signatureForDeadlines = config.getSignatureForDeadlines().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.maxBlockSize = config.getMaxBlockSize();
+		this.oblivion = config.getOblivion();
 	}
 
 	@Override
@@ -64,6 +66,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 					.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
 					.setTargetBlockCreationTime(targetBlockCreationTime)
 					.setMaxBlockSize(maxBlockSize)
+					.setOblivion(oblivion)
 					.build();
 		}
 		catch (NullPointerException | IllegalArgumentException e) {

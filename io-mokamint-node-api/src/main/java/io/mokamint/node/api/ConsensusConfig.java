@@ -101,6 +101,14 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	int getMaxBlockSize();
 
 	/**
+	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.
+	 * 
+	 * @return the rapidity of changes of acceleration. It is a value between 0
+	 *         (no acceleration change) to 100,000 (maximally fast change)
+	 */
+	int getOblivion();
+
+	/**
 	 * Yields a toml representation of this configuration.
 	 * 
 	 * @return the toml representation, as a string

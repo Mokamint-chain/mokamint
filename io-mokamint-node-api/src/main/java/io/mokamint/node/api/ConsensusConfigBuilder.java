@@ -105,6 +105,15 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setMaxBlockSize(int maxBlockSize);
 
 	/**
+	 * Sets the rapidity of changes of acceleration.
+	 * 
+	 * @param oblivion the rapidity of changes of acceleration. It is a value between 0
+	 *                 (no acceleration change) to 100,000 (maximally fast change)
+	 * @return this builder
+	 */
+	B setOblivion(int oblivion);
+
+	/**
 	 * Builds the configuration.
 	 * 
 	 * @return the configuration
