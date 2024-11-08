@@ -46,6 +46,8 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateId, privateKey, AbstractBlock::toByteArrayWithoutSignature);
+
+		ensureSignatureIsCorrect();
 	}
 
 	/**
