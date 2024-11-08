@@ -75,8 +75,6 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	@GuardedBy("lock")
 	private byte[] lastHash;
 
-	private final static long oblivion = 20_000L; // TODO: add configuration parameter
-
 	private final static BigInteger _100000 = BigInteger.valueOf(100000L);
 
 	/**
@@ -251,8 +249,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 
 		return BlockDescriptions.of(heightForNewBlock, powerForNewBlock, totalWaitingTimeForNewBlock,
 			weightedWaitingTimeForNewBlock, accelerationForNewBlock, deadline, hashOfPreviousBlock,
-			description.getTargetBlockCreationTime(), description.getHashingForBlocks(),
-			description.getHashingForTransactions());
+			description.getTargetBlockCreationTime(), description.getOblivion(),
+			description.getHashingForBlocks(), description.getHashingForTransactions());
 	}
 
 	@Override
@@ -373,9 +371,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 
 	private long computeWeightedWaitingTime(long waitingTime) {
 		// probably irrelevant, but by using BigInteger we reduce the risk of overflow
-		var complementOfOblivion = BigInteger.valueOf(100_000L - oblivion);
+		var complementOfOblivion = BigInteger.valueOf(100_000 - description.getOblivion());
 		var previousWeightedWaitingTimeWeighted = BigInteger.valueOf(description.getWeightedWaitingTime()).multiply(complementOfOblivion);
-		var waitingTimeWeighted = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(oblivion));
+		var waitingTimeWeighted = BigInteger.valueOf(waitingTime).multiply(BigInteger.valueOf(description.getOblivion()));
 		return previousWeightedWaitingTimeWeighted.add(waitingTimeWeighted).divide(_100000).longValue();
 	}
 
@@ -392,7 +390,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 			.divide(BigInteger.valueOf(description.getTargetBlockCreationTime()))
 			.subtract(oldAcceleration);	
 
-		var acceleration = oldAcceleration.add(delta.multiply(BigInteger.valueOf(oblivion)).divide(_100000));
+		var acceleration = oldAcceleration.add(delta.multiply(BigInteger.valueOf(description.getOblivion())).divide(_100000));
 
 		// acceleration must be strictly positive
 		return acceleration.signum() == 0 ? BigInteger.ONE : acceleration;

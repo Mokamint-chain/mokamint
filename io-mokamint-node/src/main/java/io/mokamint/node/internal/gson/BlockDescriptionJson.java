@@ -42,6 +42,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 	private BigInteger acceleration;
 	private Deadlines.Json deadline;
 	private final int targetBlockCreationTime;
+	private final int oblivion;
 	private final String hashingForBlocks;
 	private String hashingForDeadlines;
 	private String hashingForGenerations;
@@ -52,6 +53,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 	protected BlockDescriptionJson(BlockDescription description) {
 		this.targetBlockCreationTime = description.getTargetBlockCreationTime();
+		this.oblivion = description.getOblivion();
 		this.hashingForBlocks = description.getHashingForBlocks().getName();
 		this.hashingForTransactions = description.getHashingForTransactions().getName();
 
@@ -108,6 +110,10 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 
 	public int getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
+	}
+
+	public int getOblivion() {
+		return oblivion;
 	}
 
 	public String getHashingForBlocks() {

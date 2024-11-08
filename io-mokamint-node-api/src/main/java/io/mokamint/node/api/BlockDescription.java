@@ -86,6 +86,14 @@ public interface BlockDescription extends Marshallable {
 	int getTargetBlockCreationTime();
 
 	/**
+	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.
+	 * 
+	 * @return the rapidity of changes of acceleration. It is a value between 0
+	 *         (no acceleration change) to 100,000 (maximally fast change)
+	 */
+	int getOblivion();
+
+	/**
 	 * Yields the hashing algorithm used for the blocks.
 	 * 
 	 * @return the hashing algorithm for the blocks

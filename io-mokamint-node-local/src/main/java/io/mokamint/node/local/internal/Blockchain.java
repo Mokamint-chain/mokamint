@@ -604,7 +604,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		var config = node.getConfig();
 		var keys = node.getKeys();
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")),
-				config.getTargetBlockCreationTime(), config.getHashingForBlocks(), config.getHashingForTransactions(),
+				config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(),
 				config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
 
 		try {

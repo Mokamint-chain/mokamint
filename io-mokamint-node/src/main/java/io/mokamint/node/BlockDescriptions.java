@@ -61,17 +61,19 @@ public abstract class BlockDescriptions {
 	 * @param deadline the deadline computed for the block
 	 * @param hashOfPreviousBlock the reference to the previous block
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param oblivion the rapidity of changes of acceleration. It is a value between 0
+	 *                 (no acceleration change) to 100,000 (maximally fast change)
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
 	 * @return the non-genesis block description
 	 */
 	public static NonGenesisBlockDescription of(long height, BigInteger power,
 			long totalWaitingTime, long weightedWaitingTime, BigInteger acceleration, Deadline deadline,
-			byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			byte[] hashOfPreviousBlock, int targetBlockCreationTime, int oblivion,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 
 		return new NonGenesisBlockDescriptionImpl(height, power, totalWaitingTime, weightedWaitingTime,
-			acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+			acceleration, deadline, hashOfPreviousBlock, targetBlockCreationTime, oblivion, hashingForBlocks, hashingForTransactions);
 	}
 
 	/**
@@ -79,6 +81,8 @@ public abstract class BlockDescriptions {
 	 * 
 	 * @param startDateTimeUTC the moment when the block has been created
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param oblivion the rapidity of changes of acceleration. It is a value between 0
+	 *                 (no acceleration change) to 100,000 (maximally fast change)
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @param hashingForTransactions the hashing algorithm used for the transactions in the block
 	 * @param hashingForDeadlines the hashing algorithm used for the deadlines
@@ -88,11 +92,11 @@ public abstract class BlockDescriptions {
 	 * @return the genesis block description
 	 * @throws InvalidKeyException if the public key is invalid
 	 */
-	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+	public static GenesisBlockDescription genesis(LocalDateTime startDateTimeUTC, int targetBlockCreationTime, int oblivion,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines,
 			HashingAlgorithm hashingForGenerations, SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 
-		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime,
+		return new GenesisBlockDescriptionImpl(startDateTimeUTC, targetBlockCreationTime, oblivion,
 			hashingForBlocks, hashingForTransactions, hashingForDeadlines,
 			hashingForGenerations, signatureForBlocks, publicKey);
 	}

@@ -87,11 +87,11 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * 
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime,
+	public GenesisBlockDescriptionImpl(LocalDateTime startDateTimeUTC, int targetBlockCreationTime, int oblivion,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
 			SignatureAlgorithm signatureForBlocks, PublicKey publicKey) throws InvalidKeyException {
 
-		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+		super(targetBlockCreationTime, oblivion, hashingForBlocks, hashingForTransactions);
 
 		this.startDateTimeUTC = Objects.requireNonNull(startDateTimeUTC);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines);

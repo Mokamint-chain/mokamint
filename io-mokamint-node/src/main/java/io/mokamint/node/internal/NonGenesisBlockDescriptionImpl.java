@@ -89,10 +89,10 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * Creates a non-genesis block description.
 	 */
 	public NonGenesisBlockDescriptionImpl(long height, BigInteger power, long totalWaitingTime, long weightedWaitingTime,
-			BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime,
+			BigInteger acceleration, Deadline deadline, byte[] hashOfPreviousBlock, int targetBlockCreationTime, int oblivion,
 			HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 
-		super(targetBlockCreationTime, hashingForBlocks, hashingForTransactions);
+		super(targetBlockCreationTime, oblivion, hashingForBlocks, hashingForTransactions);
 
 		this.height = height;
 		this.power = Objects.requireNonNull(power);

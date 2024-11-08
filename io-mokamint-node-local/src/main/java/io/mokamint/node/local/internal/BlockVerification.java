@@ -223,6 +223,11 @@ public class BlockVerification {
 		if (targetBlockCreationTime != expectedTargetBlockCreationTime)
 			throw new VerificationException("Target block creation time mismatch (expected " + expectedTargetBlockCreationTime + " but found " + targetBlockCreationTime + ")");
 
+		var oblivion = description.getOblivion();
+		var expectedOblivion = config.getOblivion();
+		if (oblivion != expectedOblivion)
+			throw new VerificationException("Oblivion mismatch (expected " + expectedOblivion + " but found " + oblivion + ")");
+
 		var signatureForBlocks = description.getSignatureForBlocks();
 		var expectedSignatureForBlocks = config.getSignatureForBlocks();
 		if (!signatureForBlocks.equals(expectedSignatureForBlocks))

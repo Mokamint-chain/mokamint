@@ -50,6 +50,11 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	private final int targetBlockCreationTime;
 
 	/**
+	 * The rapidity of changes of the acceleration for the block creation time.
+	 */
+	private final int oblivion;
+
+	/**
 	 * The hashing algorithm used for the blocks.
 	 */
 	private final HashingAlgorithm hashingForBlocks;
@@ -63,14 +68,20 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * Creates a block description.
 	 * 
 	 * @param targetBlockCreationTime the target time for the creation of the blocks, in milliseconds
+	 * @param oblivion the rapidity of changes of acceleration. It is a value between 0
+	 *                 (no acceleration change) to 100,000 (maximally fast change)
 	 * @param hashingForBlocks the hashing algorithm used for the blocks
 	 * @param hashingForTransactions the hashing algorithm used for the transactions
 	 */
-	protected AbstractBlockDescription(int targetBlockCreationTime, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
+	protected AbstractBlockDescription(int targetBlockCreationTime, int oblivion, HashingAlgorithm hashingForBlocks, HashingAlgorithm hashingForTransactions) {
 		if (targetBlockCreationTime <= 0)
 			throw new IllegalArgumentException("The target block creation time must be positive");
-	
+
+		if (oblivion < 0 || oblivion > 100_000)
+			throw new IllegalArgumentException("oblivion must be between 0 and 100,000 (inclusive)");
+
 		this.targetBlockCreationTime = targetBlockCreationTime;
+		this.oblivion = oblivion;
 		this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks);
 		this.hashingForTransactions = Objects.requireNonNull(hashingForTransactions);
 	}
@@ -88,6 +99,10 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		if (targetBlockCreationTime <= 0)
 			throw new IOException("The target block creation time must be positive");
 
+		this.oblivion = context.readCompactInt();
+		if (oblivion < 0 || oblivion > 100_000)
+			throw new IOException("oblivion must be between 0 and 100,000 (inclusive)");
+
 		this.hashingForBlocks = HashingAlgorithms.of(context.readStringShared());
 		this.hashingForTransactions = HashingAlgorithms.of(context.readStringShared());
 	}
@@ -99,6 +114,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 */
 	protected AbstractBlockDescription(ConsensusConfig<?,?> config) {
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
+		this.oblivion = config.getOblivion();
 		this.hashingForBlocks = config.getHashingForBlocks();
 		this.hashingForTransactions = config.getHashingForTransactions();
 	}
@@ -116,6 +132,12 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			throw new InconsistentJsonException("The target block creation time must be positive");
 	
 		this.targetBlockCreationTime = targetBlockCreationTime;
+
+		int oblivion = json.getOblivion();
+		if (oblivion < 0 || oblivion > 100_000)
+			throw new InconsistentJsonException("oblivion must be between 0 and 100,000 (inclusive)");
+
+		this.oblivion = oblivion;
 
 		String hashingForBlocks = json.getHashingForBlocks();
 		if (hashingForBlocks == null)
@@ -179,6 +201,11 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
+	public final int getOblivion() {
+		return oblivion;
+	}
+
+	@Override
 	public final HashingAlgorithm getHashingForBlocks() {
 		return hashingForBlocks;
 	}
@@ -201,13 +228,14 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	public boolean equals(Object other) {
 		return other instanceof AbstractBlockDescription abd &&
 			targetBlockCreationTime == abd.getTargetBlockCreationTime() &&
+			oblivion == abd.getOblivion() &&
 			hashingForBlocks.equals(abd.getHashingForBlocks()) &&
 			hashingForTransactions.equals(abd.getHashingForTransactions());
 	}
 
 	@Override
 	public int hashCode() {
-		return targetBlockCreationTime ^ hashingForBlocks.hashCode() ^ hashingForTransactions.hashCode();
+		return targetBlockCreationTime ^ oblivion ^ hashingForBlocks.hashCode() ^ hashingForTransactions.hashCode();
 	}
 
 	@Override
@@ -221,6 +249,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	public void into(MarshallingContext context) throws IOException {
 		context.writeCompactLong(getHeight());
 		context.writeCompactInt(targetBlockCreationTime);
+		context.writeCompactInt(oblivion);
 		context.writeStringShared(hashingForBlocks.getName());
 		context.writeStringShared(hashingForTransactions.getName());
 	}
