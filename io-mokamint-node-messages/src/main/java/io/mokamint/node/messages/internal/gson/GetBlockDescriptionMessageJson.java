@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 
@@ -35,8 +36,13 @@ public abstract class GetBlockDescriptionMessageJson extends AbstractRpcMessageJ
 	}
 
 	@Override
-	public GetBlockDescriptionMessage unmap() throws HexConversionException {
-		return GetBlockDescriptionMessages.of(Hex.fromHexString(hash), getId());
+	public GetBlockDescriptionMessage unmap() throws InconsistentJsonException {
+		try {
+			return GetBlockDescriptionMessages.of(Hex.fromHexString(hash), getId());
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

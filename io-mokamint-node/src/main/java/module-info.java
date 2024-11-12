@@ -21,16 +21,14 @@ module io.mokamint.node {
 	exports io.mokamint.node;
 
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.node.internal to com.google.gson;
+	//opens io.mokamint.node.internal to com.google.gson; // TODO: ?
 	opens io.mokamint.node.internal.gson to com.google.gson;
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.hotmoka.marshalling.api;
-	requires transitive io.mokamint.node.messages.api;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.marshalling;
 	requires io.hotmoka.annotations;
-	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 	requires toml4j;

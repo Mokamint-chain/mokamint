@@ -16,37 +16,32 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetBlockMessages;
-import io.mokamint.node.messages.api.GetBlockMessage;
+import io.mokamint.node.messages.GetChainPortionMessages;
+import io.mokamint.node.messages.api.GetChainPortionMessage;
 
 /**
- * The JSON representation of a {@link GetBlockMessage}.
+ * The JSON representation of a {@link GetChainPortionMessage}.
  */
-public abstract class GetBlockMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockMessage> {
-	private final String hash;
+public abstract class GetChainPortionMessageJson extends AbstractRpcMessageJsonRepresentation<GetChainPortionMessage> {
+	private final long start;
+	private final int count;
 
-	protected GetBlockMessageJson(GetBlockMessage message) {
+	protected GetChainPortionMessageJson(GetChainPortionMessage message) {
 		super(message);
 
-		this.hash = Hex.toHexString(message.getHash());
+		this.start = message.getStart();
+		this.count = message.getCount();
 	}
 
 	@Override
-	public GetBlockMessage unmap() throws InconsistentJsonException {
-		try {
-			return GetBlockMessages.of(Hex.fromHexString(hash), getId());
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+	public GetChainPortionMessage unmap() throws InconsistentJsonException {
+		return GetChainPortionMessages.of(start, count, getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetBlockMessage.class.getName();
+		return GetChainPortionMessage.class.getName();
 	}
 }

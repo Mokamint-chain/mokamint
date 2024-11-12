@@ -19,7 +19,7 @@
       <artifactId>io-mokamint-node-messages-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-    <dependency>
+	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-node</artifactId>
       <version>${mokamint.version}</version>

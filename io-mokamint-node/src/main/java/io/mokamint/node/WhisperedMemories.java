@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages;
+package io.mokamint.node;
 
-import io.mokamint.node.messages.api.WhisperingMemory;
-import io.mokamint.node.messages.internal.WhisperedMemoryImpl;
+import io.mokamint.node.api.WhisperedMemory;
+import io.mokamint.node.internal.WhisperedMemoryImpl;
 
 /**
  * A provider of memories of whispered things.
@@ -34,7 +34,7 @@ public final class WhisperedMemories {
 	 * @return the memory
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public static <W> WhisperingMemory<W> of(int size) {
+	public static <W> WhisperedMemory<W> of(int size) {
 		return new WhisperedMemoryImpl<>(size);
 	}
 }

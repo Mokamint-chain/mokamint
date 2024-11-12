@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetChainInfoMessage;
 import io.mokamint.node.messages.internal.GetChainInfoMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetChainInfoMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetChainInfoMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetChainInfoMessageJson;
 
 /**
  * A provider of {@link GetChainInfoMessage}.
@@ -59,4 +60,19 @@ public final class GetChainInfoMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetChainInfoMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetChainInfoMessage message) {
+    		super(message);
+    	}
+    }
 }

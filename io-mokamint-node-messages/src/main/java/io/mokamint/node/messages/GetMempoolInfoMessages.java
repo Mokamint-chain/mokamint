@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetMempoolInfoMessage;
 import io.mokamint.node.messages.internal.GetMempoolInfoMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetMempoolInfoMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetMempoolInfoMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetMempoolInfoMessageJson;
 
 /**
  * A provider of {@link GetMempoolInfoMessage}.
@@ -59,4 +60,19 @@ public final class GetMempoolInfoMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetMempoolInfoMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetMempoolInfoMessage message) {
+    		super(message);
+    	}
+    }
 }

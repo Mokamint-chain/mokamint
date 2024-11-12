@@ -16,15 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
-import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.PeerInfos;
+import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
 
@@ -42,13 +39,11 @@ public abstract class GetPeerInfosResultMessageJson extends AbstractRpcMessageJs
 
 	@Override
 	public GetPeerInfosResultMessage unmap() throws InconsistentJsonException {
-		//TODO using PeerInfos.Json::unmap below leads to a run-time error in the JVM!
-		try {
-			return check(URISyntaxException.class, () -> GetPeerInfosResultMessages.of(Stream.of(peers).map(uncheck(peer -> peer.unmap())), getId()));
-		}
-		catch (URISyntaxException e) {
-			throw new InconsistentJsonException(e);
-		}
+		var peerInfos = new PeerInfo[peers.length];
+		for (int pos = 0; pos < peers.length; pos++)
+			peerInfos[pos] = peers[pos].unmap();
+
+		return GetPeerInfosResultMessages.of(Stream.of(peerInfos), getId());
 	}
 
 	@Override

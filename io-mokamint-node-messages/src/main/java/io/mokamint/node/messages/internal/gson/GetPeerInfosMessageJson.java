@@ -16,37 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetBlockMessages;
-import io.mokamint.node.messages.api.GetBlockMessage;
+import io.mokamint.node.messages.GetPeerInfosMessages;
+import io.mokamint.node.messages.api.GetPeerInfosMessage;
 
 /**
- * The JSON representation of a {@link GetBlockMessage}.
+ * The JSON representation of a {@link GetPeerInfosMessage}.
  */
-public abstract class GetBlockMessageJson extends AbstractRpcMessageJsonRepresentation<GetBlockMessage> {
-	private final String hash;
+public abstract class GetPeerInfosMessageJson extends AbstractRpcMessageJsonRepresentation<GetPeerInfosMessage> {
 
-	protected GetBlockMessageJson(GetBlockMessage message) {
+	protected GetPeerInfosMessageJson(GetPeerInfosMessage message) {
 		super(message);
-
-		this.hash = Hex.toHexString(message.getHash());
 	}
 
 	@Override
-	public GetBlockMessage unmap() throws InconsistentJsonException {
-		try {
-			return GetBlockMessages.of(Hex.fromHexString(hash), getId());
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+	public GetPeerInfosMessage unmap() throws InconsistentJsonException {
+		return GetPeerInfosMessages.of(getId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetBlockMessage.class.getName();
+		return GetPeerInfosMessage.class.getName();
 	}
 }

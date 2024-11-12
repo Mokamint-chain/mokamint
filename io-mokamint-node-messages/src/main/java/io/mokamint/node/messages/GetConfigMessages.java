@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetConfigMessage;
 import io.mokamint.node.messages.internal.GetConfigMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetConfigMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetConfigMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetConfigMessageJson;
 
 /**
  * A provider of {@link GetConfigMessage}.
@@ -59,4 +60,19 @@ public final class GetConfigMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetConfigMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetConfigMessage message) {
+    		super(message);
+    	}
+    }
 }

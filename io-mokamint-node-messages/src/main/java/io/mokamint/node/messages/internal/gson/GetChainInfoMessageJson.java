@@ -16,16 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
 
 /**
- * A decoder for {@link GetChainInfoMessage}.
+ * The JSON representation of a {@link GetChainInfoMessage}.
  */
-public class GetChainInfoMessageDecoder extends MappedDecoder<GetChainInfoMessage, GetChainInfoMessages.Json> {
+public abstract class GetChainInfoMessageJson extends AbstractRpcMessageJsonRepresentation<GetChainInfoMessage> {
 
-	public GetChainInfoMessageDecoder() {
-		super(GetChainInfoMessages.Json.class);
+	protected GetChainInfoMessageJson(GetChainInfoMessage message) {
+		super(message);
+	}
+
+	@Override
+	public GetChainInfoMessage unmap() throws InconsistentJsonException {
+		return GetChainInfoMessages.of(getId());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetChainInfoMessage.class.getName();
 	}
 }

@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetChainPortionMessage;
 import io.mokamint.node.messages.internal.GetChainPortionMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetChainPortionMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetChainPortionMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetChainPortionMessageJson;
 
 /**
  * A provider of {@link GetChainPortionMessage}.
@@ -61,4 +62,19 @@ public final class GetChainPortionMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetChainPortionMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetChainPortionMessage message) {
+    		super(message);
+    	}
+    }
 }

@@ -107,7 +107,7 @@ import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
-import io.mokamint.node.messages.WhisperedMemories;
+import io.mokamint.node.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -126,7 +126,7 @@ import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
-import io.mokamint.node.messages.api.WhisperingMemory;
+import io.mokamint.node.api.WhisperedMemory;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
@@ -155,14 +155,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory<Whisperable> alreadyWhispered;
+	private final WhisperedMemory<Whisperable> alreadyWhispered;
 
 	/**
 	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
-	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
+	private final WhisperedMemory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * The hasher to use for the transactions.

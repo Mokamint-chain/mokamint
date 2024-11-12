@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.internal;
+package io.mokamint.node.internal;
 
 import java.util.Deque;
 import java.util.HashSet;
@@ -23,7 +23,7 @@ import java.util.Set;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.messages.api.WhisperingMemory;
+import io.mokamint.node.api.WhisperedMemory;
 
 /**
  * Implementation of a memory of messages, that remembers that last inserted messages.
@@ -31,7 +31,7 @@ import io.mokamint.node.messages.api.WhisperingMemory;
  * The test is incomplete, in general, since this memory has limited size.
  */
 @ThreadSafe
-public class WhisperedMemoryImpl<W> implements WhisperingMemory<W> {
+public class WhisperedMemoryImpl<W> implements WhisperedMemory<W> {
 
 	/**
 	 * The size of the memory (number of whispered things that can be stored).
@@ -80,15 +80,6 @@ public class WhisperedMemoryImpl<W> implements WhisperingMemory<W> {
 					var toRemove = elements.removeFirst();
 					seen.remove(toRemove);
 				}
-
-				/*Set<Transaction> txs = new HashSet<>();
-				for (W e: elements)
-					if (e instanceof Transaction tx) {
-						txs.add(tx);
-					}
-
-				if (txs.size() > 0)
-					System.out.println(elements.size() + " vs " + txs.size());*/
 
 				return true;
 			}

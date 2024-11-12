@@ -21,7 +21,6 @@ module io.mokamint.nonce {
 	exports io.mokamint.nonce;
 
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal to com.google.gson;
 	opens io.mokamint.nonce.internal.gson to com.google.gson;
 
 	requires transitive io.mokamint.nonce.api;
@@ -29,7 +28,7 @@ module io.mokamint.nonce {
 	requires transitive io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
-	requires static com.google.gson;
+	requires com.google.gson;
 	requires java.logging;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate

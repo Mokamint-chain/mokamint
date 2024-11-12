@@ -16,13 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
-import io.hotmoka.crypto.Base58ConversionException;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
 import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
@@ -40,7 +35,7 @@ public abstract class GetTransactionRepresentationResultMessageJson extends Abst
 	}
 
 	@Override
-	public GetTransactionRepresentationResultMessage unmap() throws NoSuchAlgorithmException, InvalidKeySpecException, HexConversionException, InvalidKeyException, Base58ConversionException {
+	public GetTransactionRepresentationResultMessage unmap() {
 		return GetTransactionRepresentationResultMessages.of(Optional.ofNullable(representation), getId());
 	}
 

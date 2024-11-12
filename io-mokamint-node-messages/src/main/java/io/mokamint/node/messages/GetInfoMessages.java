@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetInfoMessage;
 import io.mokamint.node.messages.internal.GetInfoMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetInfoMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetInfoMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetInfoMessageJson;
 
 /**
  * A provider of {@link GetInfoMessage}.
@@ -59,4 +60,19 @@ public final class GetInfoMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetInfoMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetInfoMessage message) {
+    		super(message);
+    	}
+    }
 }

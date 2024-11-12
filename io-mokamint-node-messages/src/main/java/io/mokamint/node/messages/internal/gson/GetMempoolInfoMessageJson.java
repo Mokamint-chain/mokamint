@@ -16,16 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetMempoolInfoMessages;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
 
 /**
- * A decoder for {@link GetMempoolInfoMessage}.
+ * The JSON representation of a {@link GetMempoolInfoMessage}.
  */
-public class GetMempoolInfoMessageDecoder extends MappedDecoder<GetMempoolInfoMessage, GetMempoolInfoMessages.Json> {
+public abstract class GetMempoolInfoMessageJson extends AbstractRpcMessageJsonRepresentation<GetMempoolInfoMessage> {
 
-	public GetMempoolInfoMessageDecoder() {
-		super(GetMempoolInfoMessages.Json.class);
+	protected GetMempoolInfoMessageJson(GetMempoolInfoMessage message) {
+		super(message);
+	}
+
+	@Override
+	public GetMempoolInfoMessage unmap() throws InconsistentJsonException {
+		return GetMempoolInfoMessages.of(getId());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetMempoolInfoMessage.class.getName();
 	}
 }

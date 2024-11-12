@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.internal.GetPeerInfosMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageJson;
 
 /**
  * A provider of {@link GetPeerInfosMessage}.
@@ -59,4 +60,19 @@ public final class GetPeerInfosMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetPeerInfosMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetPeerInfosMessage message) {
+    		super(message);
+    	}
+    }
 }

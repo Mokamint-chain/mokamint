@@ -16,17 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.api.GetConfigMessage;
 
 /**
  * An encoder of {@code GetConfigMessage}.
  */
-public class GetConfigMessageEncoder extends BaseEncoder<GetConfigMessage> {
-	
-	/**
-	 * Creates the encoder.
-	 */
+public class GetConfigMessageEncoder extends MappedEncoder<GetConfigMessage, GetConfigMessages.Json> {
+
 	public GetConfigMessageEncoder() {
+		super(GetConfigMessages.Json::new);
 	}
 }

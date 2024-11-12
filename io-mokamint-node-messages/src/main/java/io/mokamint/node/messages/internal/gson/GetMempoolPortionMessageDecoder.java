@@ -16,16 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseDecoder;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.messages.GetMempoolPortionMessages;
 import io.mokamint.node.messages.api.GetMempoolPortionMessage;
-import io.mokamint.node.messages.internal.GetMempoolPortionMessageImpl;
 
 /**
  * A decoder for {@link GetMempoolPortionMessage}.
  */
-public class GetMempoolPortionMessageDecoder extends BaseDecoder<GetMempoolPortionMessage> {
+public class GetMempoolPortionMessageDecoder extends MappedDecoder<GetMempoolPortionMessage, GetMempoolPortionMessages.Json> {
 
 	public GetMempoolPortionMessageDecoder() {
-		super(GetMempoolPortionMessageImpl.class);
+		super(GetMempoolPortionMessages.Json.class);
 	}
 }

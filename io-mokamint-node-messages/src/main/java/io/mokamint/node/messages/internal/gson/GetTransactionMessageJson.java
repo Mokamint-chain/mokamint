@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetTransactionMessages;
 import io.mokamint.node.messages.api.GetTransactionMessage;
 
@@ -35,8 +36,13 @@ public abstract class GetTransactionMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public GetTransactionMessage unmap() throws HexConversionException {
-		return GetTransactionMessages.of(Hex.fromHexString(hash), getId());
+	public GetTransactionMessage unmap() throws InconsistentJsonException {
+		try {
+			return GetTransactionMessages.of(Hex.fromHexString(hash), getId());
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetTaskInfosMessage;
 import io.mokamint.node.messages.internal.GetTaskInfosMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetTaskInfosMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetTaskInfosMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetTaskInfosMessageJson;
 
 /**
  * A provider of {@link GetTaskInfosMessage}.
@@ -59,4 +60,19 @@ public final class GetTaskInfosMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetTaskInfosMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetTaskInfosMessage message) {
+    		super(message);
+    	}
+    }
 }

@@ -39,6 +39,7 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.node.WhisperedMemories;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
@@ -47,6 +48,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.api.WhisperedMemory;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
@@ -80,7 +82,6 @@ import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
-import io.mokamint.node.messages.WhisperedMemories;
 import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
@@ -99,7 +100,6 @@ import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
-import io.mokamint.node.messages.api.WhisperingMemory;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DeploymentException;
@@ -160,14 +160,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperingMemory<Whisperable> alreadyWhispered;
+	private final WhisperedMemory<Whisperable> alreadyWhispered;
 
 	/**
 	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
-	private final WhisperingMemory<WhisperPeerMessage> peersAlreadyWhispered;
+	private final WhisperedMemory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * The prefix used in the log messages;

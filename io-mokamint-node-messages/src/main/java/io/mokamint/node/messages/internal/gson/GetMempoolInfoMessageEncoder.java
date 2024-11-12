@@ -16,17 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.BaseEncoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.messages.GetMempoolInfoMessages;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
 
 /**
  * An encoder of {@code GetMempoolInfoMessage}.
  */
-public class GetMempoolInfoMessageEncoder extends BaseEncoder<GetMempoolInfoMessage> {
-	
-	/**
-	 * Creates the encoder.
-	 */
+public class GetMempoolInfoMessageEncoder extends MappedEncoder<GetMempoolInfoMessage, GetMempoolInfoMessages.Json> {
+
 	public GetMempoolInfoMessageEncoder() {
+		super(GetMempoolInfoMessages.Json::new);
 	}
 }

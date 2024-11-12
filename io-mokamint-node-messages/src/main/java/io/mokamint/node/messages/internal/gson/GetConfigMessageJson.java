@@ -16,16 +16,26 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.GetTaskInfosMessages;
-import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.mokamint.node.messages.GetConfigMessages;
+import io.mokamint.node.messages.api.GetConfigMessage;
 
 /**
- * An encoder of {@link GetTaskInfosMessage}.
+ * The JSON representation of a {@link GetConfigMessage}.
  */
-public class GetTaskInfosMessageEncoder extends MappedEncoder<GetTaskInfosMessage, GetTaskInfosMessages.Json> {
+public abstract class GetConfigMessageJson extends AbstractRpcMessageJsonRepresentation<GetConfigMessage> {
 
-	public GetTaskInfosMessageEncoder() {
-		super(GetTaskInfosMessages.Json::new);
+	protected GetConfigMessageJson(GetConfigMessage message) {
+		super(message);
+	}
+
+	@Override
+	public GetConfigMessage unmap() {
+		return GetConfigMessages.of(getId());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetConfigMessage.class.getName();
 	}
 }

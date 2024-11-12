@@ -20,16 +20,13 @@ limitations under the License.
 module io.mokamint.node.messages {
 	exports io.mokamint.node.messages;
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.node.messages.internal to com.google.gson;
 	opens io.mokamint.node.messages.internal.gson to com.google.gson;
 
 	requires transitive io.mokamint.node.messages.api;
 	requires io.mokamint.node;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.websockets.beans;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires static com.google.gson;
+	requires com.google.gson;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
 	// classes without the no-args constructor

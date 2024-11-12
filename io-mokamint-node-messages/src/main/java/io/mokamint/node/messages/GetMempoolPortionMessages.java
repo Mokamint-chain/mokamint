@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.internal.GetMempoolPortionMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetMempoolPortionMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetMempoolPortionMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetMempoolPortionMessageJson;
 
 /**
  * A provider of {@link GetMempoolPortionMessage}.
@@ -61,4 +62,19 @@ public final class GetMempoolPortionMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetMempoolPortionMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetMempoolPortionMessage message) {
+    		super(message);
+    	}
+    }
 }

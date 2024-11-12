@@ -18,11 +18,10 @@ package io.mokamint.node.messages.internal.gson;
 
 import java.util.stream.Stream;
 
-import io.hotmoka.exceptions.CheckSupplier;
-import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MinerInfos;
+import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 
@@ -40,7 +39,11 @@ public abstract class GetMinerInfosResultMessageJson extends AbstractRpcMessageJ
 
 	@Override
 	public GetMinerInfosResultMessage unmap() throws InconsistentJsonException {
-		return CheckSupplier.check(InconsistentJsonException.class, () -> GetMinerInfosResultMessages.of(Stream.of(miners).map(UncheckFunction.uncheck(MinerInfos.Json::unmap)), getId()));
+		var minerInfos = new MinerInfo[miners.length];
+		for (int pos = 0; pos < miners.length; pos++)
+			minerInfos[pos] = miners[pos].unmap();
+
+		return GetMinerInfosResultMessages.of(Stream.of(minerInfos), getId());
 	}
 
 	@Override

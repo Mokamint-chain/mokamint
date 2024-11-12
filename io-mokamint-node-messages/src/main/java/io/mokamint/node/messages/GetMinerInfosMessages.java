@@ -20,6 +20,7 @@ import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.internal.GetMinerInfosMessageImpl;
 import io.mokamint.node.messages.internal.gson.GetMinerInfosMessageDecoder;
 import io.mokamint.node.messages.internal.gson.GetMinerInfosMessageEncoder;
+import io.mokamint.node.messages.internal.gson.GetMinerInfosMessageJson;
 
 /**
  * A provider of {@link GetMinerInfosMessage}.
@@ -59,4 +60,19 @@ public final class GetMinerInfosMessages {
 		 */
 		public Decoder() {}
 	}
+
+	/**
+     * Json representation.
+     */
+    public static class Json extends GetMinerInfosMessageJson {
+
+    	/**
+    	 * Creates the Json representation for the given message.
+    	 * 
+    	 * @param message the message
+    	 */
+    	public Json(GetMinerInfosMessage message) {
+    		super(message);
+    	}
+    }
 }

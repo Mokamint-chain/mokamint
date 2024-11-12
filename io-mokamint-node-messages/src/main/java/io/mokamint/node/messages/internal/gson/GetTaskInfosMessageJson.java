@@ -16,16 +16,27 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
+import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
 
 /**
- * An encoder of {@link GetTaskInfosMessage}.
+ * The JSON representation of a {@link GetTaskInfosMessage}.
  */
-public class GetTaskInfosMessageEncoder extends MappedEncoder<GetTaskInfosMessage, GetTaskInfosMessages.Json> {
+public abstract class GetTaskInfosMessageJson extends AbstractRpcMessageJsonRepresentation<GetTaskInfosMessage> {
 
-	public GetTaskInfosMessageEncoder() {
-		super(GetTaskInfosMessages.Json::new);
+	protected GetTaskInfosMessageJson(GetTaskInfosMessage message) {
+		super(message);
+	}
+
+	@Override
+	public GetTaskInfosMessage unmap() throws InconsistentJsonException {
+		return GetTaskInfosMessages.of(getId());
+	}
+
+	@Override
+	protected String getExpectedType() {
+		return GetTaskInfosMessage.class.getName();
 	}
 }

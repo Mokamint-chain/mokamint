@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.api;
 
 import io.hotmoka.annotations.ThreadSafe;
 
@@ -26,7 +26,7 @@ import io.hotmoka.annotations.ThreadSafe;
  * @param <W> the type of the objects that get whispered
  */
 @ThreadSafe
-public interface WhisperingMemory<W> {
+public interface WhisperedMemory<W> {
 
 	/**
 	 * Adds the given whispered thing to this container. If it is full already,

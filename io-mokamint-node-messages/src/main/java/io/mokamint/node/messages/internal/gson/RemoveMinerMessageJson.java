@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal.gson;
 import java.util.UUID;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.RemoveMinerMessages;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
 
@@ -35,8 +36,13 @@ public abstract class RemoveMinerMessageJson extends AbstractRpcMessageJsonRepre
 	}
 
 	@Override
-	public RemoveMinerMessage unmap() {
-		return RemoveMinerMessages.of(UUID.fromString(uuid), getId());
+	public RemoveMinerMessage unmap() throws InconsistentJsonException {
+		try {
+			return RemoveMinerMessages.of(UUID.fromString(uuid), getId());
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override
