@@ -39,7 +39,7 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.node.WhisperedMemories;
+import io.mokamint.node.Memories;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
@@ -48,7 +48,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.api.WhisperedMemory;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
@@ -160,14 +160,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperedMemory<Whisperable> alreadyWhispered;
+	private final Memory<Whisperable> alreadyWhispered;
 
 	/**
 	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
-	private final WhisperedMemory<WhisperPeerMessage> peersAlreadyWhispered;
+	private final Memory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * The prefix used in the log messages;
@@ -214,8 +214,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
-		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
-		this.peersAlreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
+		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
+		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
 
 		// if the node gets closed, then this service will be closed as well

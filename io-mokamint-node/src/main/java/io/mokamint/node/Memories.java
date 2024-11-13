@@ -16,25 +16,24 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import io.mokamint.node.api.WhisperedMemory;
-import io.mokamint.node.internal.WhisperedMemoryImpl;
+import io.mokamint.node.api.Memory;
+import io.mokamint.node.internal.MemoryImpl;
 
 /**
- * A provider of memories of whispered things.
+ * A provider of memories of things.
  */
-public final class WhisperedMemories {
+public final class Memories {
 	
-	private WhisperedMemories() {}
+	private Memories() {}
 
 	/**
 	 * Yields a memory with the given maximal size.
 	 * 
-	 * @param <W> the type of the whispered things
-	 * @param size the size (maximal number of stored whispered things)
+	 * @param <T> the type of the things that will be contained in the memory
+	 * @param size the size (maximal number of stored elements)
 	 * @return the memory
-	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public static <W> WhisperedMemory<W> of(int size) {
-		return new WhisperedMemoryImpl<>(size);
+	public static <T> Memory<T> of(int size) {
+		return new MemoryImpl<>(size);
 	}
 }

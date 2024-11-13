@@ -53,7 +53,7 @@ import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.WhisperedMemories;
+import io.mokamint.node.Memories;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -74,7 +74,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.api.WhisperedMemory;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -172,14 +172,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * A memory of the last whispered things.
 	 * This is used to avoid whispering already whispered messages again.
 	 */
-	private final WhisperedMemory<Whisperable> alreadyWhispered;
+	private final Memory<Whisperable> alreadyWhispered;
 
 	/**
 	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
-	private final WhisperedMemory<WhisperPeerMessage> peersAlreadyWhispered;
+	private final Memory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * True if and only if a synchronization task is in process.
@@ -233,8 +233,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.keyPair = keyPair;
 		this.app = app;
-		this.peersAlreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
-		this.alreadyWhispered = WhisperedMemories.of(config.getWhisperingMemorySize());
+		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
+		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.miners = new Miners(this);
 		this.blockchain = new Blockchain(this);
 		this.mempool = new Mempool(this);

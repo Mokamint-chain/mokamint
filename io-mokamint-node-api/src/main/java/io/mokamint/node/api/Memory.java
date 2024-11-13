@@ -19,22 +19,22 @@ package io.mokamint.node.api;
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
- * A memory of whispered things, that remembers that last inserted things.
- * In this way, it is possible to know if something has been already whispered.
+ * A memory of things, that remembers that last inserted things.
+ * In this way, it is possible to know if something has been already seen.
  * The test is incomplete, in general, since this memory has limited size.
  * 
- * @param <W> the type of the objects that get whispered
+ * @param <T> the type of the things remembered by this memory
  */
 @ThreadSafe
-public interface WhisperedMemory<W> {
+public interface Memory<T> {
 
 	/**
-	 * Adds the given whispered thing to this container. If it is full already,
-	 * then the oldest inserted thing is discarded.
+	 * Adds the given element to this memory. If it is full already,
+	 * then the oldest inserted element is discarded.
 	 * 
-	 * @param whispered the whispered thing to add
-	 * @return true if and only if {@code whispered} was not in the container
-	 *              and has been consequently added
+	 * @param element the element to add
+	 * @return true if and only if {@code element} was not in the container
+	 *         and has been consequently added
 	 */
-	boolean add(W whispered);
+	boolean add(T element);
 }

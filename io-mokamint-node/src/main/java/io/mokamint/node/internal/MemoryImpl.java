@@ -23,18 +23,20 @@ import java.util.Set;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.node.api.WhisperedMemory;
+import io.mokamint.node.api.Memory;
 
 /**
- * Implementation of a memory of messages, that remembers that last inserted messages.
- * In this way, it is possible to know if a message has been already seen.
+ * Implementation of a memory of things, that remembers that last inserted things.
+ * In this way, it is possible to know if something has been already seen.
  * The test is incomplete, in general, since this memory has limited size.
+ * 
+ * @param <T> the type of the things remembered by this memory
  */
 @ThreadSafe
-public class WhisperedMemoryImpl<W> implements WhisperedMemory<W> {
+public class MemoryImpl<T> implements Memory<T> {
 
 	/**
-	 * The size of the memory (number of whispered things that can be stored).
+	 * The size of the memory (number of things that can be stored).
 	 */
 	private final long size;
 
@@ -44,24 +46,23 @@ public class WhisperedMemoryImpl<W> implements WhisperedMemory<W> {
 	private final Object lock = new Object();
 
 	/**
-	 * The whispered things added to this container.
+	 * The things added to this memory.
 	 */
 	@GuardedBy("lock")
-	private final Set<W> seen = new HashSet<>();
+	private final Set<T> seen = new HashSet<>();
 
 	/**
-	 * The whispered things added to this container, in order of addition.
+	 * The things added to this memory, in order of addition.
 	 */
 	@GuardedBy("lock")
-	private final Deque<W> elements = new LinkedList<>();
+	private final Deque<T> elements = new LinkedList<>();
 
 	/**
 	 * Creates a memory of the given size.
 	 * 
 	 * @param size the size (maximal number of stored things)
-	 * @throws IllegalArgumentException if {@code size} is negative
 	 */
-	public WhisperedMemoryImpl(int size) {
+	public MemoryImpl(int size) {
 		if (size < 0)
 			throw new IllegalArgumentException("size cannot be negative");
 
@@ -69,17 +70,15 @@ public class WhisperedMemoryImpl<W> implements WhisperedMemory<W> {
 	}
 
 	@Override
-	public boolean add(W whispered) {
+	public boolean add(T element) {
 		synchronized (lock) {
 			boolean reachedMax = seen.size() == size;
 
-			if (seen.add(whispered)) {
-				elements.add(whispered);
+			if (seen.add(element)) {
+				elements.add(element);
 
-				if (reachedMax) {
-					var toRemove = elements.removeFirst();
-					seen.remove(toRemove);
-				}
+				if (reachedMax)
+					seen.remove(elements.removeFirst());
 
 				return true;
 			}

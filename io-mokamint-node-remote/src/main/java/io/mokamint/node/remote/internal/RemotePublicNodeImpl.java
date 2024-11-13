@@ -107,7 +107,7 @@ import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
-import io.mokamint.node.WhisperedMemories;
+import io.mokamint.node.Memories;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -126,7 +126,7 @@ import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
-import io.mokamint.node.api.WhisperedMemory;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
@@ -153,16 +153,16 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	/**
 	 * A memory of the last whispered things.
-	 * This is used to avoid whispering already whispered messages again.
+	 * This is used to avoid whispering already whispered things again.
 	 */
-	private final WhisperedMemory<Whisperable> alreadyWhispered;
+	private final Memory<Whisperable> alreadyWhispered;
 
 	/**
 	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
-	private final WhisperedMemory<WhisperPeerMessage> peersAlreadyWhispered;
+	private final Memory<WhisperPeerMessage> peersAlreadyWhispered;
 
 	/**
 	 * The hasher to use for the transactions.
@@ -197,8 +197,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		super(timeout);
 
 		this.logPrefix = "public remote(" + uri + "): ";
-		this.alreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
-		this.peersAlreadyWhispered = WhisperedMemories.of(whisperedMessagesSize);
+		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
+		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 
 		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
 		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
