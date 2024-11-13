@@ -25,11 +25,6 @@ import io.mokamint.node.api.NodeException;
 public class DatabaseException extends NodeException {
 
 	/**
-	 * Creates a new exception.
-	 */
-	public DatabaseException() {}
-
-	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message

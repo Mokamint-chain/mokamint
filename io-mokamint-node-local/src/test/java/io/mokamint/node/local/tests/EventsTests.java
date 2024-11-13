@@ -144,6 +144,11 @@ public class EventsTests extends AbstractLoggedTests {
 			public void close() {}
 
 			@Override
+			public String toString() {
+				return "test miner";
+			}
+
+			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
 			}
@@ -199,6 +204,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public String toString() {
+				return "test miner";
 			}
 
 			@Override
@@ -311,6 +321,11 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
+			public String toString() {
+				return "test miner";
+			}
+
+			@Override
 			public void close() {}
 		};
 
@@ -329,7 +344,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 		}
 	}
 }

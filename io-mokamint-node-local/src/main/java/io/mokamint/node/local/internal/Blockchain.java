@@ -686,7 +686,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		node.onSynchronizationCompleted();
 	}
 
-	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+	void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
 		CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
 			environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> new Rebase(txn, mempool, newBase)))
 		)

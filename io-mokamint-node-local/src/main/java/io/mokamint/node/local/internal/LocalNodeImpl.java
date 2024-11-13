@@ -661,7 +661,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws NodeException, InterruptedException, TimeoutException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
-		result.forEachTransaction(action); // extract the resulting transactions
+		result.forEachTransaction(action); // process the resulting transactions
 	}
 
 	/**

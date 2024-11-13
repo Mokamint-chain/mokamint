@@ -45,7 +45,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
- * to be processed and then included in the new blocks mined for a blockchain.
+ * to be processed and eventually included in the new blocks mined for a blockchain.
  * Transactions are kept and processed in decreasing order of priority.
  */
 @ThreadSafe
@@ -151,7 +151,6 @@ public class Mempool {
 	 */
 	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
 		byte[] hash = hasher.hash(transaction);
-		String hexHash = Hex.toHexString(hash);
 
 		try {
 			app.checkTransaction(transaction);
@@ -161,17 +160,17 @@ public class Mempool {
 			synchronized (mempool) {
 				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
 					// the transaction was already in blockchain
-					throw new TransactionRejectedException("Repeated transaction " + hexHash);
+					throw new TransactionRejectedException("Repeated transaction " + entry);
 				else if (mempool.contains(entry))
 					// the transaction was already in the mempool
-					throw new TransactionRejectedException("Repeated transaction " + hexHash);
+					throw new TransactionRejectedException("Repeated transaction " + entry);
 				else if (mempool.size() >= maxSize)
-					throw new TransactionRejectedException("Cannot add transaction " + hexHash + ": all " + maxSize + " slots of the mempool are full");
+					throw new TransactionRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
 				else
 					mempool.add(entry);
 			}
 
-			LOGGER.info("mempool: added transaction " + hexHash);
+			LOGGER.info("mempool: added transaction " + entry);
 			node.onAdded(transaction);
 
 			return entry.toMempoolEntry();
@@ -221,9 +220,9 @@ public class Mempool {
 	 * @return the portion from {@code start} (included) to {@code start + length} (excluded)
 	 */
 	public MempoolPortion getPortion(int start, int count) {
-		if (start < 0L || count <= 0)
+		if (start < 0 || count <= 0)
 			return MempoolPortions.of(Stream.empty());
-	
+
 		synchronized (mempool) {
 			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(TransactionEntry::toMempoolEntry));
 		}
@@ -252,7 +251,7 @@ public class Mempool {
 	/**
 	 * An entry in the mempool. It contains the transaction itself, its priority and its hash.
 	 */
-	public static class TransactionEntry implements Comparable<TransactionEntry> {
+	public final static class TransactionEntry implements Comparable<TransactionEntry> {
 		private final Transaction transaction;
 		private final long priority;
 		private final byte[] hash;
