@@ -23,13 +23,12 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
  * The set of miners of a local node.
  */
 @ThreadSafe
-public class Miners {
+public class MinersSet {
 
 	/**
 	 * The node having these miners.
@@ -42,25 +41,19 @@ public class Miners {
 	private final PunishableSet<Miner> miners;
 
 	/**
-	 * The configuration of the node having these miners.
-	 */
-	private final LocalNodeConfig config;
-
-	/**
 	 * Creates a container for the miners of a local node.
 	 * 
 	 * @param node the node
 	 */
-	public Miners(LocalNodeImpl node) {
+	public MinersSet(LocalNodeImpl node) {
 		this.node = node;
-		this.config = node.getConfig();
-		this.miners = new PunishableSet<>(Stream.empty(), config.getMinerInitialPoints());
+		this.miners = new PunishableSet<>(Stream.empty(), node.getConfig().getMinerInitialPoints());
 	}
 
 	/**
-	 * Yields the miners.
+	 * Yields the miners in this set.
 	 * 
-	 * @return the miners
+	 * @return the miners in this set
 	 */
 	public Stream<Miner> get() {
 		return miners.getElements();
@@ -83,7 +76,7 @@ public class Miners {
 	 */
 	public Optional<MinerInfo> add(Miner miner) {
 		if (miners.add(miner)) {
-			var result = Optional.of(MinerInfos.of(miner.getUUID(), config.getMinerInitialPoints(), miner.toString()));
+			var result = Optional.of(MinerInfos.of(miner.getUUID(), node.getConfig().getMinerInitialPoints(), miner.toString()));
 			node.onAdded(miner);
 			return result;
 		}
@@ -112,7 +105,7 @@ public class Miners {
 	 * container, nothing happens.
 	 * 
 	 * @param miner the miner to punish
-	 * @param points how many points get removed
+	 * @param points the points to remove, non-negative
 	 * @return true if and only if the miner was present in this container,
 	 *         has reached zero points and has been removed
 	 */
@@ -131,8 +124,7 @@ public class Miners {
 	 * container, nothing happens.
 	 * 
 	 * @param miner the miner to pardon
-	 * @param points how many points get pardoned
-	 * @throws IllegalArgumentException if {@code points} is negative
+	 * @param points how many points get pardoned, non-negative
 	 */
 	public void pardon(Miner miner, long points) {
 		miners.pardon(miner, points);

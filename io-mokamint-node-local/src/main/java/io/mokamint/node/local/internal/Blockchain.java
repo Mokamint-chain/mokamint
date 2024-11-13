@@ -72,7 +72,6 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -1174,7 +1173,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		/**
 		 * The peers of the node.
 		 */
-		private final Peers peers = node.getPeers();
+		private final PeersSet peers = node.getPeers();
 	
 		/**
 		 * The peers that have been discarded so far during this synchronization, since

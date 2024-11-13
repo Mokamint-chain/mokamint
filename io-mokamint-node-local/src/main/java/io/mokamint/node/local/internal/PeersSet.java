@@ -63,7 +63,7 @@ import jakarta.websocket.DeploymentException;
  * might be currently unreachable).
  */
 @ThreadSafe
-public class Peers implements AutoCloseable {
+public class PeersSet implements AutoCloseable {
 
 	/**
 	 * The node having these peers.
@@ -117,7 +117,7 @@ public class Peers implements AutoCloseable {
 	 */
 	private final Set<URI> bannedURIs = ConcurrentHashMap.newKeySet();
 
-	private final static Logger LOGGER = Logger.getLogger(Peers.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(PeersSet.class.getName());
 
 	/**
 	 * Creates the set of peers of a local node. If a database of peers already exists,
@@ -128,7 +128,7 @@ public class Peers implements AutoCloseable {
 	 * @param node the node having these peers
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Peers(LocalNodeImpl node) throws NodeException {
+	public PeersSet(LocalNodeImpl node) throws NodeException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
@@ -358,7 +358,7 @@ public class Peers implements AutoCloseable {
 	}
 
 	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) throws InterruptedException, NodeException {
-		if (peers.getElements().count() < config.getMaxPeers()) { // optimization
+		if (peers.size() < config.getMaxPeers()) { // optimization
 			try {
 				var peerInfos = remote.getPeerInfos();
 				pardonBecauseReachable(peer);
@@ -436,7 +436,7 @@ public class Peers implements AutoCloseable {
 	}
 
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
-		if (!force && peers.getElements().count() >= config.getMaxPeers())
+		if (!force && peers.size() >= config.getMaxPeers())
 			return false;
 
 		RemotePublicNode remote = null;

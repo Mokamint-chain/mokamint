@@ -25,7 +25,6 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.GenesisBlockDescription;
@@ -144,17 +143,17 @@ public class Show extends AbstractPublicRpcCommand {
 			var info = remote.getChainInfo();
 			var genesisHash = info.getGenesisHash();
 			if (genesisHash.isEmpty())
-				throw new DatabaseException("The database contains a non-genesis block but no genesis block");
+				throw new NodeException("The database contains a non-genesis block but no genesis block");
 	
 			var genesis = remote.getBlockDescription(genesisHash.get());
 			if (genesis.isEmpty())
-				throw new DatabaseException("The genesis block is set but it cannot be found in the database");
+				throw new NodeException("The genesis block is set but it cannot be found in the database");
 	
 			var content = genesis.get();
 			if (content instanceof GenesisBlockDescription gbd)
 				return gbd.getStartDateTimeUTC().plus(((NonGenesisBlockDescription) description).getTotalWaitingTime(), ChronoUnit.MILLIS);
 			else
-				throw new DatabaseException("The initial block of the chain is not a genesis block");
+				throw new NodeException("The initial block of the chain is not a genesis block");
 		}
 	}
 

@@ -75,7 +75,7 @@ public class BlockMiner {
 	/**
 	 * The miners of the node.
 	 */
-	private final Miners miners;
+	private final MinersSet miners;
 
 	/**
 	 * The mempool used to fill the block with transactions.

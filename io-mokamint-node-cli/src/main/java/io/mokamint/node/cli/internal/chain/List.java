@@ -27,7 +27,6 @@ import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.DatabaseException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;
@@ -122,11 +121,11 @@ public class List extends AbstractPublicRpcCommand {
 		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws TimeoutException, InterruptedException, NodeException {
 			var maybeGenesis = remote.getBlockDescription(genesisHash);
 			if (maybeGenesis.isEmpty())
-				throw new DatabaseException("The node has a genesis hash but it is bound to no block!");
+				throw new NodeException("The node has a genesis hash but it is bound to no block!");
 			else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
 				return gbd.getStartDateTimeUTC();
 			else
-				throw new DatabaseException("The type of the genesis block is inconsistent!");
+				throw new NodeException("The type of the genesis block is inconsistent!");
 		}
 
 		private void add(int pos) throws TimeoutException, InterruptedException, NodeException {

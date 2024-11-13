@@ -120,12 +120,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The miners connected to the node.
 	 */
-	private final Miners miners;
+	private final MinersSet miners;
 
 	/**
 	 * The peers of the node.
 	 */
-	private final Peers peers;
+	private final PeersSet peers;
 
 	/**
 	 * The blockchain of this node.
@@ -175,7 +175,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final Memory<Whisperable> alreadyWhispered;
 
 	/**
-	 * A memory of the last whispered peers. This is used to avoid whispering already whispered messages again.
+	 * A memory of the last whispered peer messages. This is used to avoid whispering already whispered messages again.
 	 * We use a different memory than {@link #alreadyWhispered} since we want to allow peers to be
 	 * whispered also after being whispered already.
 	 */
@@ -235,10 +235,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.app = app;
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
-		this.miners = new Miners(this);
+		this.miners = new MinersSet(this);
 		this.blockchain = new Blockchain(this);
 		this.mempool = new Mempool(this);
-		this.peers = new Peers(this);
+		this.peers = new PeersSet(this);
 		this.uuid = getInfo().getUUID();
 		peers.reconnectToSeedsAndPreviousPeers();
 
@@ -510,7 +510,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the peers
 	 */
-	public Peers getPeers() {
+	public PeersSet getPeers() {
 		return peers;
 	}
 
@@ -519,7 +519,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the miners
 	 */
-	public Miners getMiners() {
+	public MinersSet getMiners() {
 		return miners;
 	}
 
