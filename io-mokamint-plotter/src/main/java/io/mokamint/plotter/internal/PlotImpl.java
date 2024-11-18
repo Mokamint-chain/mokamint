@@ -49,6 +49,7 @@ import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
@@ -234,7 +235,7 @@ public class PlotImpl implements Plot {
 				LongStream.range(start, start + length)
 					.parallel()
 					.mapToObj(Long::valueOf)
-					.forEach(UncheckConsumer.uncheck(this::dumpNonce))
+					.forEach(UncheckConsumer.uncheck(IOException.class, this::dumpNonce))
 			);
 		}
 
@@ -334,13 +335,14 @@ public class PlotImpl implements Plot {
 			this.generationSignature = challenge.getGenerationSignature();
 			this.hasher = hashingForDeadlines.getHasher(Function.identity());
 			this.privateKey = privateKey;
+			FunctionWithExceptions3<Long, Deadline, IOException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
 			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->
 				LongStream.range(start, start + length)
-					.parallel()
-					.mapToObj(Long::valueOf)
-					.map(UncheckFunction.uncheck(this::mkDeadline))
-					.min(Deadline::compareByValue)
-					.get() // OK, since plots contain at least one nonce
+						.parallel()
+						.mapToObj(Long::valueOf)
+						.map(UncheckFunction.uncheck(IOException.class, InvalidKeyException.class, SignatureException.class, mkDeadline))
+						.min(Deadline::compareByValue)
+						.get() // OK, since plots contain at least one nonce
 			);
 		}
 

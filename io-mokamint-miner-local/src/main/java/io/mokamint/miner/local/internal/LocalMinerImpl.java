@@ -81,22 +81,19 @@ public class LocalMinerImpl implements Miner {
 	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 		LOGGER.info(logPrefix + "received challenge: " + challenge);
 		var hashingForDeadlines = challenge.getHashingForDeadlines();
+		var plots = Stream.of(plotsAndKeyPairs)
+			.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(hashingForDeadlines))
+			.toArray(PlotAndKeyPair[]::new);
 
-		try {
-			CheckRunnable.check(InterruptedException.class, () -> {
-				PlotAndKeyPair[] plots = Stream.of(plotsAndKeyPairs)
-					.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(hashingForDeadlines))
-					.toArray(PlotAndKeyPair[]::new);
-
-				if (plots.length == 0)
-					LOGGER.warning(logPrefix + "no matching plot for hashing " + hashingForDeadlines);
-				else
-					Stream.of(plots)
-						.map(UncheckFunction.uncheck(plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
-						.flatMap(Optional::stream)
-						.min(Deadline::compareByValue)
-						.ifPresent(onDeadlineComputed::accept);
-			});
+		if (plots.length == 0)
+			LOGGER.warning(logPrefix + "no matching plot for hashing " + hashingForDeadlines);
+		else try {
+			CheckRunnable.check(InterruptedException.class, () ->
+				Stream.of(plots)
+					.map(UncheckFunction.uncheck(InterruptedException.class, plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
+					.flatMap(Optional::stream)
+					.min(Deadline::compareByValue)
+					.ifPresent(onDeadlineComputed::accept));
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();

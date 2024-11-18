@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
@@ -30,7 +28,6 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
-import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -101,7 +98,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 				LOGGER.info("db: closed the peers database");
 			}
 			catch (ExodusException e) {
-				LOGGER.log(Level.WARNING, "db: failed to close the peers database", e);
+				LOGGER.log(Level.SEVERE, "db: failed to close the peers database", e);
 				throw new DatabaseException("Cannot close the peers database", e);
 			}
 		}
@@ -156,7 +153,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 */
 	public boolean add(Peer peer, boolean force) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> add(txn, peer, force))));
+			return environment.computeInTransaction(NodeException.class, txn -> add(txn, peer, force));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -173,7 +170,10 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 */
 	public boolean remove(Peer peer) throws NodeException {
 		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInTransaction(uncheck(txn -> remove(txn, peer))));
+			return environment.computeInTransaction(NodeException.class, txn -> remove(txn, peer));
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
 		}
 	}
 
@@ -209,19 +209,15 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 
 	private void ensureNodeUUID() throws NodeException {
 		try {
-			CheckRunnable.check(IOException.class, () -> {
-				environment.executeInTransaction(txn -> {
-					var bi = storeOfPeers.get(txn, UUID);
-					if (bi == null) {
-						var nodeUUID = java.util.UUID.randomUUID();
-						storeOfPeers.put(txn, UUID, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
-						LOGGER.info("db: created a new UUID for the node: " + nodeUUID);
-					}
-					else {
-						var nodeUUID = uncheck(MarshallableUUID::from).apply(bi).uuid;
-						LOGGER.info("db: the UUID of the node is " + nodeUUID);
-					}
-				});
+			environment.executeInTransaction(IOException.class, txn -> {
+				var bi = storeOfPeers.get(txn, UUID);
+				if (bi == null) {
+					var nodeUUID = java.util.UUID.randomUUID();
+					storeOfPeers.put(txn, UUID, fromBytes(new MarshallableUUID(nodeUUID).toByteArray()));
+					LOGGER.info("db: created a new UUID for the node: " + nodeUUID);
+				}
+				else
+					LOGGER.info("db: the UUID of the node is " + MarshallableUUID.from(bi).uuid);
 			});
 		}
 		catch (ExodusException | IOException e) {

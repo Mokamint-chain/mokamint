@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import static io.hotmoka.exceptions.CheckRunnable.check;
-import static io.hotmoka.exceptions.UncheckConsumer.uncheck;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
@@ -56,10 +55,11 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.exceptions.CheckRunnable;
-import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.exceptions.functions.ConsumerWithExceptions2;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -250,7 +250,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean isEmpty() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::isEmpty)));
+			return environment.computeInReadonlyTransaction(NodeException.class, this::isEmpty);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -271,7 +271,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<byte[]> result;
 
 		try (var scope = mkScope()) {
-			result = CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getGenesisHash)));
+			result = environment.computeInReadonlyTransaction(NodeException.class, this::getGenesisHash);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -297,9 +297,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		Optional<GenesisBlock> result;
 
 		try (var scope = mkScope()) {
-			result = CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getGenesis))
-			);
+			result = environment.computeInReadonlyTransaction(NodeException.class, this::getGenesis);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -319,29 +317,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getHead))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, this::getHead);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
-
-	/**
-	 * Yields the hash of the head of the best chain in this blockchain, if any.
-	 * 
-	 * @return the hash of the head block, if any
-	 * @throws NodeException if the node is misbehaving
-	 */
-	/*public Optional<byte[]> getHeadHash() throws NodeException {
-		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getHeadHash)));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}*/
 
 	/**
 	 * Yields the starting block of the non-frozen part of the history of this blockchain, if any.
@@ -351,9 +332,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getStartOfNonFrozenPart() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getStartOfNonFrozenPart))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, this::getStartOfNonFrozenPart);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -369,9 +348,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getStartingTimeOfNonFrozenHistory))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, this::getStartingTimeOfNonFrozenHistory);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -386,27 +363,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public OptionalLong getHeightOfHead() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getHeightOfHead)));
+			return environment.computeInReadonlyTransaction(NodeException.class, this::getHeightOfHead);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
 	}
-
-	/**
-	 * Yields the power of the head of the best chain in this blockchain, if any.
-	 * 
-	 * @return the power of the head block, if any
-	 * @throws NodeException if the node is misbehaving
-	 */
-	/*public Optional<BigInteger> getPowerOfHead() throws NodeException {
-		try (var scope = mkScope()) {
-			return check(NodeException.class, () -> environment.computeInReadonlyTransaction(uncheck(this::getPowerOfHead)));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
-	}*/
 
 	/**
 	 * Yields the block with the given hash, if it is contained in this blockchain.
@@ -417,9 +379,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<Block> getBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getBlock(txn, hash)))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getBlock(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -435,9 +395,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getBlockDescription(txn, hash)))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getBlockDescription(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -453,9 +411,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransaction(txn, hash)))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getTransaction(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -472,9 +428,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransactionAddress(txn, hash)))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getTransactionAddress(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -492,9 +446,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () ->
-				environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getTransactionAddress(txn, block, hash)))
-			);
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getTransactionAddress(txn, block, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -509,7 +461,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public ChainInfo getChainInfo() throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(this::getChainInfo)));
+			return environment.computeInReadonlyTransaction(NodeException.class, this::getChainInfo);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -528,7 +480,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Stream<byte[]> getChain(long start, int count) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> getChain(txn, start, count))));
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> getChain(txn, start, count));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -544,7 +496,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean containsBlock(byte[] hash) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> containsBlock(txn, hash))));
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> containsBlock(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -560,7 +512,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> headIsLessPowerfulThan(txn, block))));
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> headIsLessPowerfulThan(txn, block));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -579,7 +531,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
 		try (var scope = mkScope()) {
-			return CheckSupplier.check(NodeException.class, () -> environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> creationTimeOf(txn, block))));
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> creationTimeOf(txn, block));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -665,20 +617,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
-		DownloadedGroupOfBlocks group = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-			environment.computeInExclusiveTransaction(UncheckFunction.uncheck(DownloadedGroupOfBlocks::new))
-		);
-
+		FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function = DownloadedGroupOfBlocks::new;
+		DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function);
 		group.updateMempool();
 		group.informNode();
 
 		while (group.thereMightBeMoreGroupsToDownload()) {
 			DownloadedGroupOfBlocks previousGroup = group;
-
-			group = CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-				environment.computeInExclusiveTransaction(UncheckFunction.uncheck(txn -> new DownloadedGroupOfBlocks(txn, previousGroup)))
-			);
-
+			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
+			group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function2);
 			group.updateMempool();
 			group.informNode();
 		}
@@ -687,14 +634,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
-		CheckSupplier.check(NodeException.class, InterruptedException.class, TimeoutException.class, () ->
-			environment.computeInReadonlyTransaction(UncheckFunction.uncheck(txn -> new Rebase(txn, mempool, newBase)))
-		)
-		.updateMempool();
+		FunctionWithExceptions3<Transaction, Rebase, NodeException, InterruptedException, TimeoutException> function = txn -> new Rebase(txn, mempool, newBase);
+		environment.computeInReadonlyTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function).updateMempool();
 	}
 
 	/**
-	 * A context for the addition of one or more blocks to this blockchain, inside the same databse transaction.
+	 * A context for the addition of one or more blocks to this blockchain, inside the same database transaction.
 	 */
 	public class BlockAdder {
 
@@ -743,7 +688,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Adds the given block to this blockchain, allowing one to specify if block verification is required.
+		 * Adds the given block to the blockchain, allowing one to specify if block verification is required.
 		 * 
 		 * @param block the block to add
 		 * @param verify true if and only if verification of {@code block} must be performed
@@ -1289,13 +1234,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			stopIfInterrupted();
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + ")");
 	
-			check(InterruptedException.class, NodeException.class, () -> {
-				peers.get().parallel()
-					.filter(PeerInfo::isConnected)
-					.map(PeerInfo::getPeer)
-					.filter(peer -> !unusable.contains(peer))
-					.forEach(uncheck(this::downloadNextGroupFrom));
-			});
+			ConsumerWithExceptions2<Peer, InterruptedException, NodeException> consumer = this::downloadNextGroupFrom;
+			check(InterruptedException.class, NodeException.class, () ->
+				connectedUsablePeers().forEach(UncheckConsumer.uncheck(InterruptedException.class, NodeException.class, consumer)));
 	
 			return !groups.isEmpty();
 		}
@@ -1450,16 +1391,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 	
 			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
-	
-			check(InterruptedException.class, NodeException.class, () -> {
-				peers.get().parallel()
-					.filter(PeerInfo::isConnected)
-					.map(PeerInfo::getPeer)
-					.filter(peer -> !unusable.contains(peer))
-					.forEach(UncheckConsumer.uncheck(peer -> downloadBlocksFrom(peer)));
-			});
+
+			ConsumerWithExceptions2<Peer, NodeException, InterruptedException> consumer = this::downloadBlocksFrom;
+			check(InterruptedException.class, NodeException.class, () ->
+				connectedUsablePeers().forEach(UncheckConsumer.uncheck(NodeException.class, InterruptedException.class, consumer)));
 		}
-	
+
+		private Stream<Peer> connectedUsablePeers() {
+			return peers.get().parallel()
+				.filter(PeerInfo::isConnected)
+				.map(PeerInfo::getPeer)
+				.filter(peer -> !unusable.contains(peer));
+		}
+
 		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
@@ -1687,11 +1631,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
-			CheckRunnable.check(InterruptedException.class, TimeoutException.class, NodeException.class, () ->
+			FunctionWithExceptions3<io.mokamint.node.api.Transaction, TransactionEntry, InterruptedException, TimeoutException, NodeException> function = this::intoTransactionEntry;
+
+			check(InterruptedException.class, TimeoutException.class, NodeException.class, () ->
 				block.getTransactions()
-					.map(UncheckFunction.uncheck(this::intoTransactionEntry))
-					.forEach(toRemove::add)
-			);
+					.map(UncheckFunction.uncheck(InterruptedException.class, TimeoutException.class, NodeException.class, function))
+					.forEach(toRemove::add));
 		}
 
 		/**
@@ -1724,11 +1669,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
 		BlockAdder adder;
-	
+
+		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, TimeoutException> function = txn -> new BlockAdder(txn).add(block, verify);
+
 		try (var scope = mkScope()) {
-			adder = CheckSupplier.check(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class,
-				() -> environment.computeInTransaction(UncheckFunction.uncheck(txn -> new BlockAdder(txn).add(block, verify)))
-			);
+			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class, function);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1784,7 +1729,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the state identifier of yje head block of the blockchain in this database, if it has been set already,
+	 * Yields the state identifier of the head block of the blockchain in this database, if it has been set already,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -2393,15 +2338,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (chainHeight.isEmpty())
 				return Stream.empty();
 
-			ByteIterable[] hashes = CheckSupplier.check(NodeException.class, DatabaseException.class, () -> LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
+			var hashes = LongStream.range(start, Math.min(start + count, chainHeight.getAsLong() + 1))
 				.mapToObj(height -> storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height))))
-				.map(UncheckFunction.uncheck(bi -> {
-					if (bi == null)
-						throw new DatabaseException("The current best chain contains a missing element");
+				.toArray(ByteIterable[]::new);
 
-					return bi;
-				}))
-				.toArray(ByteIterable[]::new));
+			for (var bi: hashes)
+				if (bi == null)
+					throw new DatabaseException("The current best chain contains a missing element");
 
 			return Stream.of(hashes).map(ByteIterable::getBytes);
 		}

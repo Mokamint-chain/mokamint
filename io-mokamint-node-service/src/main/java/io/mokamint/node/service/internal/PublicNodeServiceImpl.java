@@ -216,7 +216,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
-		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(u -> addPort(u, port)))));
+		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(DeploymentException.class, u -> addPort(u, port)))));
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);

@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions2;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Versions;
@@ -307,9 +308,11 @@ public class PeersSet implements AutoCloseable {
 	 * and collects their peers, in case they might be useful for the node.
 	 */
 	public void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
+		FunctionWithExceptions2<Peer, Stream<Peer>, NodeException, InterruptedException> pingPeerRecreateRemoteAndCollectPeers = this::pingPeerRecreateRemoteAndCollectPeers;
+
 		var allPeers = CheckSupplier.check(NodeException.class, InterruptedException.class, () ->
 			peers.getElements()
-				.flatMap(UncheckFunction.uncheck(this::pingPeerRecreateRemoteAndCollectPeers))
+				.flatMap(UncheckFunction.uncheck(NodeException.class, InterruptedException.class, pingPeerRecreateRemoteAndCollectPeers))
 				.toArray(Peer[]::new)
 		);
 
