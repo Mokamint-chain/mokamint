@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import static io.hotmoka.exceptions.CheckRunnable.check;
 import static io.hotmoka.xodus.ByteIterable.fromByte;
 import static io.hotmoka.xodus.ByteIterable.fromBytes;
 
@@ -47,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -55,9 +55,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.exceptions.UncheckConsumer;
-import io.hotmoka.exceptions.UncheckFunction;
-import io.hotmoka.exceptions.functions.ConsumerWithExceptions2;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -1234,9 +1231,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			stopIfInterrupted();
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + ")");
 	
-			ConsumerWithExceptions2<Peer, InterruptedException, NodeException> consumer = this::downloadNextGroupFrom;
-			check(InterruptedException.class, NodeException.class, () ->
-				connectedUsablePeers().forEach(UncheckConsumer.uncheck(InterruptedException.class, NodeException.class, consumer)));
+			for (var peer: connectedUsablePeers())
+				downloadNextGroupFrom(peer);
 	
 			return !groups.isEmpty();
 		}
@@ -1392,16 +1388,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
-			ConsumerWithExceptions2<Peer, NodeException, InterruptedException> consumer = this::downloadBlocksFrom;
-			check(InterruptedException.class, NodeException.class, () ->
-				connectedUsablePeers().forEach(UncheckConsumer.uncheck(NodeException.class, InterruptedException.class, consumer)));
+			for (var peer: connectedUsablePeers())
+				downloadBlocksFrom(peer);
 		}
 
-		private Stream<Peer> connectedUsablePeers() {
+		private Set<Peer> connectedUsablePeers() {
 			return peers.get().parallel()
 				.filter(PeerInfo::isConnected)
 				.map(PeerInfo::getPeer)
-				.filter(peer -> !unusable.contains(peer));
+				.filter(peer -> !unusable.contains(peer))
+				.collect(Collectors.toSet());
 		}
 
 		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException {
@@ -1631,12 +1627,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
-			FunctionWithExceptions3<io.mokamint.node.api.Transaction, TransactionEntry, InterruptedException, TimeoutException, NodeException> function = this::intoTransactionEntry;
-
-			check(InterruptedException.class, TimeoutException.class, NodeException.class, () ->
-				block.getTransactions()
-					.map(UncheckFunction.uncheck(InterruptedException.class, TimeoutException.class, NodeException.class, function))
-					.forEach(toRemove::add));
+			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Transaction[]::new))
+				toRemove.add(intoTransactionEntry(transaction));
 		}
 
 		/**
