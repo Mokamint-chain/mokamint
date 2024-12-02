@@ -240,7 +240,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.mempool = new Mempool(this);
 		this.peers = new PeersSet(this);
 		this.uuid = getInfo().getUUID();
-		peers.reconnectToSeedsAndPreviousPeers();
 
 		if (init)
 			blockchain.initialize();
@@ -686,7 +685,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Schedules the advertisement to its peers of the services published by this node.
 	 */
-	protected void scheduleWhisperingOfAllServices() {
+	private void scheduleWhisperingOfAllServices() {
 		execute(this::whisperAllServices, "whispering of all node's services");
 	}
 
@@ -1010,8 +1009,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
 		var interval = config.getPeerPingInterval();
 		if (interval >= 0)
-			scheduleWithFixedDelay(peers::pingAllRecreateRemotesAndAddTheirPeers,
+			scheduleWithFixedDelay(this::pingAllRecreateRemotesAndAddTheirPeers,
 				"pinging all peers to create missing remotes and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
+	}
+
+	private void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
+		if (peers.pingAllRecreateRemotesAndAddTheirPeers())
+			scheduleSynchronization();
 	}
 
 	/**

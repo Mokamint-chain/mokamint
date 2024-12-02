@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
@@ -98,17 +99,19 @@ public class PeersSet implements AutoCloseable {
 	private final Object lock = new Object();
 
 	/**
-	 * The peers of the node.
+	 * The peers of the node. These are all guaranteed to be in {@link #db}.
 	 */
 	private final PunishableSet<Peer> peers;
 
 	/**
-	 * The remote nodes connected to each peer of {@link #node}.
+	 * The remote nodes connected to each peer of {@link #node}. The keys in this map
+	 * are all guaranteed to be in {@link #peers} and consequently in {@link #db}.
 	 */
 	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
 
 	/**
 	 * The time difference (in milliseconds) between {@link #node} and each of its peers.
+	 * The keys in this map are all guaranteed to be in {@link #peers} and consequently in {@link #db}.
 	 */
 	private final ConcurrentMap<Peer, Long> timeDifferences = new ConcurrentHashMap<>();
 
@@ -127,8 +130,9 @@ public class PeersSet implements AutoCloseable {
 	 * 
 	 * @param node the node
 	 * @throws NodeException if the node is misbehaving
+	 * @throws InterruptedException if the current thread is interrupted while contacting the peers
 	 */
-	public PeersSet(LocalNodeImpl node) throws NodeException {
+	public PeersSet(LocalNodeImpl node) throws NodeException, InterruptedException {
 		this.node = node;
 		this.config = node.getConfig();
 		this.db = new PeersDatabase(node);
@@ -142,17 +146,6 @@ public class PeersSet implements AutoCloseable {
 
 		this.uuid = db.getUUID();
 		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
-	}
-
-	/**
-	 * Recovers the peers saved in the database and attempts
-	 * to create a connection to them. In any case, it adds the seeds of the node
-	 * and attempts a connection to them.
-	 * 
-	 * @throws InterruptedException if the thread is interrupted while contacting the peers
-	 * @throws NodeException if the node is misbehaving
-	 */
-	void reconnectToSeedsAndPreviousPeers() throws NodeException, InterruptedException {
 		Set<Peer> seeds = config.getSeeds().map(Peers::of).collect(Collectors.toSet());
 		var all = new HashSet<>(seeds);
 		all.addAll(peers.getElements().collect(Collectors.toSet()));
@@ -244,7 +237,7 @@ public class PeersSet implements AutoCloseable {
 	 * @param seen the whisperers already seen during whispering
 	 */
 	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
-		remotes.values().forEach(remote -> remote.whisper(message, seen, description)); // we forward the message to all peers
+		remotes.forEach((_peer, remote) -> remote.whisper(message, seen, description)); // we forward the message to all peers
 	}
 
 	/**
@@ -307,13 +300,15 @@ public class PeersSet implements AutoCloseable {
 	/**
 	 * Pings all peers, tries to recreate their remote (if missing)
 	 * and collects their peers, in case they might be useful for the node.
+	 * 
+	 * @return true if some peer has been added or reconnected
 	 */
-	public void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
+	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
 		var all = new HashSet<Peer>();
 		for (var peer: peers.getElements().collect(Collectors.toSet()))
 			pingPeerRecreateRemoteAndCollectPeers(peer, all);
 
-		tryToReconnectOrAdd(all, _peer -> false);
+		return tryToReconnectOrAdd(all, _peer -> false);
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws NodeException, InterruptedException {
@@ -416,10 +411,11 @@ public class PeersSet implements AutoCloseable {
 	 * @param peers the peers to add
 	 * @param force true if and only if a peer must be added also when the maximal number of peers
 	 *              for the node has been reached
+	 * @returns true if and only if at least a peer has been added or reconnected
 	 * @throws InterruptedException if the execution was interrupted
 	 * @throws NodeException if {@link #node} could not complete the operation
 	 */
-	private void tryToReconnectOrAdd(Set<Peer> peers, Predicate<Peer> force) throws NodeException, InterruptedException {
+	private boolean tryToReconnectOrAdd(Set<Peer> peers, Predicate<Peer> force) throws NodeException, InterruptedException {
 		boolean somethingChanged = false;
 		for (var peer: peers) {
 			try {
@@ -430,10 +426,7 @@ public class PeersSet implements AutoCloseable {
 			}
 		}
 
-		if (somethingChanged) {
-			node.scheduleSynchronization();
-			node.scheduleWhisperingOfAllServices();
-		}
+		return somethingChanged;
 	}
 
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
@@ -594,6 +587,7 @@ public class PeersSet implements AutoCloseable {
 		punishBecauseUnreachable(peer);
 	}
 
+	@GuardedBy("this.lock")
 	private void connect(Peer peer, RemotePublicNode remote, long timeDifference) {
 		remotes.put(peer, remote);
 		timeDifferences.put(peer, timeDifference);
