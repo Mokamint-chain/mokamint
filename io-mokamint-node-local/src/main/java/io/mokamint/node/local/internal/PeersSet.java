@@ -25,6 +25,8 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -130,7 +132,7 @@ public class PeersSet implements AutoCloseable {
 	 * 
 	 * @param node the node
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread is interrupted while contacting the peers
+	 * @throws InterruptedException if the current thread gets interrupted while contacting the peers
 	 */
 	public PeersSet(LocalNodeImpl node) throws NodeException, InterruptedException {
 		this.node = node;
@@ -180,11 +182,12 @@ public class PeersSet implements AutoCloseable {
 	 * @return the information about the peer; this is empty if the peer has not been added nor reconnected,
 	 *         for instance, because it was already present or a maximum number of peers has been already reached
 	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
+	 * @throws IOException if the connection to the peer failed
 	 * @throws TimeoutException if the addition does not complete in time
-	 * @throws InterruptedException if the current thread is interrupted while waiting for the addition to complete
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws InterruptedException if the current thread gets interrupted while waiting for the addition to complete
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, PeerRejectedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, IOException, InterruptedException, PeerRejectedException, NodeException {
 		if (tryToReconnectOrAdd(peer, true))
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		else
@@ -197,7 +200,7 @@ public class PeersSet implements AutoCloseable {
 	 * @param peer the peer to remove
 	 * @return true if and only if the peer has been removed
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread is interrupted
+	 * @throws InterruptedException if the current thread gets interrupted
 	 */
 	public boolean remove(Peer peer) throws NodeException, InterruptedException {
 		boolean removed;
@@ -260,29 +263,11 @@ public class PeersSet implements AutoCloseable {
 
 	@Override
 	public void close() throws InterruptedException, NodeException {
-		InterruptedException interruptedException = null;
-
 		try {
-			synchronized (lock) {
-				for (var entry: remotes.entrySet()) {
-					try {
-						disconnect(entry.getKey(), entry.getValue());
-					}
-					catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-						interruptedException = e;
-					}
-				}
-			}
+			closeRemotes(remotes.entrySet().iterator());
 		}
 		finally {
-			try {
-				db.close();
-			}
-			finally {
-				if (interruptedException != null)
-					throw interruptedException;
-			}
+			db.close();
 		}
 	}
 
@@ -330,6 +315,18 @@ public class PeersSet implements AutoCloseable {
 		}
 	}
 
+	private void closeRemotes(Iterator<Entry<Peer, RemotePublicNode>> remotes) throws InterruptedException {
+		if (remotes.hasNext()) {
+			try {
+				var entry = remotes.next();
+				disconnect(entry.getKey(), entry.getValue());	
+			}
+			finally {
+				closeRemotes(remotes);
+			}
+		}
+	}
+
 	private void pardonBecauseReachable(Peer peer) {
 		long gained = peers.pardon(peer, config.getPeerPunishmentForUnreachable());
 		if (gained > 0L)
@@ -373,32 +370,31 @@ public class PeersSet implements AutoCloseable {
 
 	/**
 	 * If the peer is not in this container, adds it, if possible.
-	 * This might fail if the peer was already
-	 * present, or a connection to the peer cannot be established, or the peer
-	 * is incompatible with the node. In such cases, this method just ignores
-	 * the addition and nothing happens. If the peer was already in this container,
+	 * This might fail if the peer was already present or a maximal
+	 * number of peers has been reached. In such cases, this method just ignores
+	 * the addition and returns false.
+	 * If a connection to the peer cannot be established, or the peer
+	 * is incompatible with the node, an exception is thrown.
+	 * If the peer was already in this container,
 	 * but was disconnected, this method tries to reconnect to it.
 	 * 
 	 * @param peer the peer to add
 	 * @param force true if and only if the addition must be performed also if
 	 *              the maximal number of peers for the node has been reached
 	 * @return true if and only if the peer has been added or reconnected
-	 * @throws InterruptedException if the execution was interrupted
-	 * @throws NodeException if {@link #node} node could not complete the operation
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws NodeException if the node is misbehaving
+	 * @throws PeerRejectedException if the peer was rejected for some reason
+	 * @throws TimeoutException if the peer did not answer in time
+	 * @throws IOException if the connection to the peer failed
 	 */
-	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, TimeoutException {
+	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, TimeoutException {
 		if (bannedURIs.contains(peer.getURI()))
 			return false;
 		else if (peers.contains(peer))
 			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
-		else {
-			try {
-				return add(peer, force);
-			}
-			catch (IOException e) {
-				throw new PeerRejectedException("Cannot connect to " + peer.toStringSanitized() + ": " + e.getMessage());
-			}
-		}
+		else
+			return add(peer, force);
 	}
 
 	/**
@@ -412,8 +408,8 @@ public class PeersSet implements AutoCloseable {
 	 * @param force true if and only if a peer must be added also when the maximal number of peers
 	 *              for the node has been reached
 	 * @returns true if and only if at least a peer has been added or reconnected
-	 * @throws InterruptedException if the execution was interrupted
-	 * @throws NodeException if {@link #node} could not complete the operation
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
 	private boolean tryToReconnectOrAdd(Set<Peer> peers, Predicate<Peer> force) throws NodeException, InterruptedException {
 		boolean somethingChanged = false;
@@ -421,8 +417,8 @@ public class PeersSet implements AutoCloseable {
 			try {
 				somethingChanged |= tryToReconnectOrAdd(peer, force.test(peer));
 			}
-			catch (PeerRejectedException | TimeoutException e) {
-				// the peer does not answer: never mind
+			catch (PeerRejectedException | IOException | TimeoutException e) {
+				LOGGER.warning("peers: cannot connect to " + peer.toStringSanitized() + ": " + e.getMessage());
 			}
 		}
 
@@ -447,7 +443,8 @@ public class PeersSet implements AutoCloseable {
 				else
 					return false;
 			}
-			
+
+			node.onConnected(peer);
 			node.onAdded(peer);
 
 			return true;
@@ -485,7 +482,11 @@ public class PeersSet implements AutoCloseable {
 						connect(peer, remote, timeDifference);
 						remote = null; // so that it won't be disconnected in the finally clause
 					}
+					else
+						return Optional.of(remote);
 				}
+
+				node.onConnected(peer);
 
 				return Optional.of(remoteCopy);
 			}
@@ -539,9 +540,8 @@ public class PeersSet implements AutoCloseable {
 			throw new PeerRejectedException("A peer cannot be added as a peer of itself: same UUID " + peerUUID);
 
 		var peerVersion = peerInfo.getVersion();
-		var nodeVersion = nodeInfo.getVersion();
-		if (!peerVersion.canWorkWith(nodeVersion))
-			throw new PeerRejectedException("Peer version " + peerVersion + " is incompatible with this node's version " + nodeVersion);
+		if (!peerVersion.canWorkWith(version))
+			throw new PeerRejectedException("Peer version " + peerVersion + " is incompatible with this node's version " + version);
 
 		ChainInfo peerChainInfo;
 
@@ -594,7 +594,6 @@ public class PeersSet implements AutoCloseable {
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
 		remote.addOnCloseHandler(() -> remoteHasBeenClosed(remote, peer));
-		node.onConnected(peer);
 	}
 
 	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
@@ -607,7 +606,7 @@ public class PeersSet implements AutoCloseable {
 				remote.close();
 				node.onDisconnected(peer);
 			}
-			catch (NodeException e) {
+			catch (NodeException e) { // it's the remote that misbehaves, not our node
 				LOGGER.warning("cannot close the remote to peer " + peer.toStringSanitized() + ": " + e.getMessage());
 			}
 		}
