@@ -429,6 +429,7 @@ public class PeersSet implements AutoCloseable {
 		if (!force && peers.size() >= config.getMaxPeers())
 			return false;
 
+		boolean connected = false;
 		RemotePublicNode remote = null;
 
 		try {
@@ -438,7 +439,7 @@ public class PeersSet implements AutoCloseable {
 			synchronized (lock) {
 				if (db.add(peer, force) && peers.add(peer)) {
 					connect(peer, remote, timeDifference);
-					remote = null; // so that it won't be disconnected in the finally clause
+					connected = true;
 				}
 				else
 					return false;
@@ -450,7 +451,8 @@ public class PeersSet implements AutoCloseable {
 			return true;
 		}
 		finally {
-			disconnect(peer, remote);
+			if (!connected)
+				free(peer, remote);
 		}
 	}
 
@@ -467,6 +469,7 @@ public class PeersSet implements AutoCloseable {
 	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) throws NodeException, InterruptedException {
 		try {
 			LOGGER.info("peers: trying to create a connection to " + peer.toStringSanitized());
+			boolean connected = false;
 			RemotePublicNode remote = null;
 
 			try {
@@ -480,7 +483,7 @@ public class PeersSet implements AutoCloseable {
 					// want to store remotes for peers not in the set of peers of this object
 					if (peers.contains(peer) && remotes.get(peer) == null) {
 						connect(peer, remote, timeDifference);
-						remote = null; // so that it won't be disconnected in the finally clause
+						connected = true;
 					}
 					else
 						return Optional.of(remote);
@@ -491,7 +494,8 @@ public class PeersSet implements AutoCloseable {
 				return Optional.of(remoteCopy);
 			}
 			finally {
-				disconnect(peer, remote);
+				if (!connected)
+					free(peer, remote);
 			}
 		}
 		catch (IOException | TimeoutException e) {
@@ -582,7 +586,7 @@ public class PeersSet implements AutoCloseable {
 	 * @throws InterruptedException if the closure operation has been interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void remoteHasBeenClosed(RemotePublicNode remote, Peer peer) throws InterruptedException, NodeException {
+	private void onRemoteClosed(RemotePublicNode remote, Peer peer) throws InterruptedException, NodeException {
 		disconnect(peer, remote);
 		punishBecauseUnreachable(peer);
 	}
@@ -593,7 +597,7 @@ public class PeersSet implements AutoCloseable {
 		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
-		remote.addOnCloseHandler(() -> remoteHasBeenClosed(remote, peer));
+		remote.addOnCloseHandler(() -> onRemoteClosed(remote, peer));
 	}
 
 	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
@@ -609,6 +613,15 @@ public class PeersSet implements AutoCloseable {
 			catch (NodeException e) { // it's the remote that misbehaves, not our node
 				LOGGER.warning("cannot close the remote to peer " + peer.toStringSanitized() + ": " + e.getMessage());
 			}
+		}
+	}
+
+	private void free(Peer peer, RemotePublicNode remote) throws InterruptedException {
+		try {
+			remote.close();
+		}
+		catch (NodeException e) { // it's the remote that misbehaves, not our node
+			LOGGER.warning("cannot close the remote to peer " + peer.toStringSanitized() + ": " + e.getMessage());
 		}
 	}
 }
