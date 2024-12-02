@@ -291,7 +291,7 @@ public class PeersSet implements AutoCloseable {
 	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
 		var all = new HashSet<Peer>();
 		for (var peer: peers.getElements().collect(Collectors.toSet()))
-			pingPeerRecreateRemoteAndCollectPeers(peer, all);
+			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, all);
 
 		return tryToReconnectOrAdd(all, _peer -> false);
 	}
@@ -334,38 +334,38 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Contacts the peer and, if successful, collects all its peers and adds them into the given container.
+	 * Contacts the peer and, if successful, collects all its peers not known to the node
+	 * and adds them to the given container.
 	 * 
 	 * @param peer the peer to contact
 	 * @param container the container where the peers get added
 	 * @throws NodeException if {@link #node} could not complete the operation
 	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
 	 */
-	private void pingPeerRecreateRemoteAndCollectPeers(Peer peer, Set<Peer> container) throws NodeException, InterruptedException {
+	private void pingPeerRecreateRemoteAndCollectUnknownPeers(Peer peer, Set<Peer> container) throws NodeException, InterruptedException {
 		Optional<RemotePublicNode> remote = getRemote(peer);
 		if (remote.isEmpty())
 			remote = tryToCreateRemote(peer);
 
 		if (remote.isPresent())
-			askForPeers(peer, remote.get()).forEach(container::add);
+			collectUnknownPeers(peer, remote.get(), container);
 	}
 
-	private Stream<Peer> askForPeers(Peer peer, RemotePublicNode remote) throws InterruptedException, NodeException {
+	private void collectUnknownPeers(Peer peer, RemotePublicNode remote, Set<Peer> container) throws InterruptedException, NodeException {
 		if (peers.size() < config.getMaxPeers()) { // optimization
 			try {
 				var peerInfos = remote.getPeerInfos();
 				pardonBecauseReachable(peer);
-				return peerInfos.filter(PeerInfo::isConnected)
-						.map(PeerInfo::getPeer)
-						.filter(not(peers::contains));
+				peerInfos.filter(PeerInfo::isConnected)
+					.map(PeerInfo::getPeer)
+					.filter(not(peers::contains))
+					.forEach(container::add);
 			}
 			catch (TimeoutException | NodeException e) {
 				LOGGER.log(Level.WARNING, "peers: cannot contact " + peer.toStringSanitized() + ": " + e.getMessage());
 				punishBecauseUnreachable(peer);
 			}
 		}
-
-		return Stream.empty();
 	}
 
 	/**
