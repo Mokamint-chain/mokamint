@@ -698,7 +698,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		var whisperPeerMessage = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 
 		if (peersAlreadyWhispered.add(whisperPeerMessage)) {
-			String description = "peer " + peer.toStringSanitized();
+			String description = "peer " + peer;
 			whisperedPeersQueue.offer(new WhisperedInfo(whisperPeerMessage, isThis, description, false));
 		}
 	}
@@ -746,7 +746,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param peer the added peer
 	 */
 	protected void onAdded(Peer peer) {
-		LOGGER.info("added peer " + peer.toStringSanitized());
+		LOGGER.info("added peer " + peer);
 	}
 
 	/**
@@ -755,7 +755,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param peer the peer
 	 */
 	protected void onConnected(Peer peer) {
-		LOGGER.info("connected to peer " + peer.toStringSanitized());
+		LOGGER.info("connected to peer " + peer);
 	}
 
 	/**
@@ -764,7 +764,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param peer the peer
 	 */
 	protected void onDisconnected(Peer peer) {
-		LOGGER.info("disconnected from peer " + peer.toStringSanitized());
+		LOGGER.info("disconnected from peer " + peer);
 	}
 
 	/**
@@ -773,7 +773,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param peer the removed peer
 	 */
 	protected void onRemoved(Peer peer) {
-		LOGGER.info("removed peer " + peer.toStringSanitized());
+		LOGGER.info("removed peer " + peer);
 	}
 
 	/**

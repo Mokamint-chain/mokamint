@@ -111,12 +111,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 
 	@Override
 	public String toString() {
-		return uri.toString();
-	}
-
-	@Override
-	public String toStringSanitized() {
-		String uri = toString();
-		return uri.length() > 50 ? uri.substring(0, 50) + "..." : uri;
+		String uri = this.uri.toString();
+		return uri.length() > 100 ? uri.substring(0, 100) + "..." : uri;
 	}
 }

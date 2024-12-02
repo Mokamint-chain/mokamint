@@ -792,7 +792,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperPeerSessions.add(session);
-			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + message.getWhispered().toStringSanitized()));
+			addMessageHandler(session, (WhisperPeerMessage message) -> server.whisper(message, _whisperer -> false, session, "peer " + message.getWhispered()));
 		}
 
 		@SuppressWarnings("resource")

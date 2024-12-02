@@ -314,7 +314,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			.distinct()
 			.forEach(uri -> {
 				var whisperedPeers = WhisperPeerMessages.of(uri, UUID.randomUUID().toString());
-				String description = "peer " + whisperedPeers.getWhispered().toStringSanitized();
+				String description = "peer " + whisperedPeers.getWhispered();
 				whisper(whisperedPeers, _whisperer -> false, false, description);
 			});
 	}
@@ -958,7 +958,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + message.getWhispered().toStringSanitized()));
+			addMessageHandler(session, (WhisperPeerMessage message) -> whisper(message, _whisperer -> false, false, "peer " + message.getWhispered()));
 		}
 
 		@Override

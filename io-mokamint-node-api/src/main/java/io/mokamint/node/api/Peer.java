@@ -37,9 +37,6 @@ public interface Peer extends Marshallable, Whisperable, Comparable<Peer> {
 	 */
 	URI getURI();
 
-	@Override
-	String toString();
-
 	/**
 	 * Yields a string representation of this peer, sanitized to a maximal
 	 * length, so that it cannot be used, for instance, for filling the logs
@@ -47,5 +44,6 @@ public interface Peer extends Marshallable, Whisperable, Comparable<Peer> {
 	 * 
 	 * @return the sanitized representation
 	 */
-	String toStringSanitized();
+	@Override
+	String toString();
 }
