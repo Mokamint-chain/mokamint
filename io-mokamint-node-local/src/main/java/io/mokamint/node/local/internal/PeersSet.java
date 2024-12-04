@@ -24,14 +24,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -103,24 +103,28 @@ public class PeersSet implements AutoCloseable {
 	/**
 	 * The peers of the node. These are all guaranteed to be in {@link #db}.
 	 */
+	@GuardedBy("this.lock")
 	private final PunishableSet<Peer> peers;
 
 	/**
 	 * The remote nodes connected to each peer of {@link #node}. The keys in this map
 	 * are all guaranteed to be in {@link #peers} and consequently in {@link #db}.
 	 */
-	private final ConcurrentMap<Peer, RemotePublicNode> remotes = new ConcurrentHashMap<>();
+	@GuardedBy("this.lock")
+	private final Map<Peer, RemotePublicNode> remotes = new HashMap<>();
 
 	/**
 	 * The time difference (in milliseconds) between {@link #node} and each of its peers.
 	 * The keys in this map are all guaranteed to be in {@link #peers} and consequently in {@link #db}.
 	 */
-	private final ConcurrentMap<Peer, Long> timeDifferences = new ConcurrentHashMap<>();
+	@GuardedBy("this.lock")
+	private final Map<Peer, Long> timeDifferences = new HashMap<>();
 
 	/**
 	 * A set of URIs that have been banned: attempts to connect to peers with these URIs will be rejected.
 	 */
-	private final Set<URI> bannedURIs = ConcurrentHashMap.newKeySet();
+	@GuardedBy("this.lock")
+	private final Set<URI> bannedURIs = new HashSet<>();
 
 	private final static Logger LOGGER = Logger.getLogger(PeersSet.class.getName());
 
@@ -160,7 +164,9 @@ public class PeersSet implements AutoCloseable {
 	 * @return the peers information
 	 */
 	public Stream<PeerInfo> get() {
-		return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
+		synchronized (lock) {
+			return peers.getActorsWithPoints().map(entry -> PeerInfos.of(entry.getKey(), entry.getValue(), remotes.containsKey(entry.getKey())));
+		}
 	}
 
 	/**
@@ -227,7 +233,10 @@ public class PeersSet implements AutoCloseable {
 	 * @throws InterruptedException if the operation was interrupted
 	 */
 	public boolean ban(Peer peer) throws NodeException, InterruptedException {
-		bannedURIs.add(peer.getURI());
+		synchronized (lock) {
+			bannedURIs.add(peer.getURI());
+		}
+
 		LOGGER.warning("peers: " + peer + " has been banned");
 
 		return remove(peer);
@@ -240,7 +249,9 @@ public class PeersSet implements AutoCloseable {
 	 * @param seen the whisperers already seen during whispering
 	 */
 	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
-		remotes.forEach((_peer, remote) -> remote.whisper(message, seen, description)); // we forward the message to all peers
+		synchronized (lock) {
+			remotes.forEach((_peer, remote) -> remote.whisper(message, seen, description)); // we forward the message to all peers
+		}
 	}
 
 	/**
@@ -251,12 +262,16 @@ public class PeersSet implements AutoCloseable {
 	 * @return the normalized {@code ldt}. If there are no peers, this will be {@code ldt} itself
 	 */
 	public LocalDateTime asNetworkDateTime(LocalDateTime ldt) {
-		long averageTimeDifference = (long)
-			// we add the difference of the time of the node with itself: 0L
-			Stream.concat(timeDifferences.values().stream(), Stream.of(0L))
-				.mapToLong(Long::valueOf)
-				.average()
-				.getAsDouble(); // we know there is at least an element (0L) hence the average exists
+		long averageTimeDifference;
+
+		synchronized (lock) {
+			averageTimeDifference = (long)
+				// we add the difference of the time of the node with itself: 0L
+				Stream.concat(timeDifferences.values().stream(), Stream.of(0L))
+					.mapToLong(Long::valueOf)
+					.average()
+					.getAsDouble(); // we know there is at least an element (0L) hence the average exists
+		}
 
 		return ldt.plus(averageTimeDifference, ChronoUnit.MILLIS);
 	}
@@ -264,7 +279,13 @@ public class PeersSet implements AutoCloseable {
 	@Override
 	public void close() throws InterruptedException, NodeException {
 		try {
-			closeRemotes(remotes.entrySet().iterator());
+			synchronized (lock) {
+				// we make a copy of the set since closeRemotes() calls
+				// disconnect(), that modifies the set we are iterating upon,
+				// which might corrupt the iterator
+				var entries = new HashSet<>(remotes.entrySet());
+				closeRemotes(entries.iterator());
+			}
 		}
 		finally {
 			db.close();
@@ -279,7 +300,9 @@ public class PeersSet implements AutoCloseable {
 	 *         peer is currently unreachable
 	 */
 	public Optional<RemotePublicNode> getRemote(Peer peer) {
-		return Optional.ofNullable(remotes.get(peer));
+		synchronized (lock) {
+			return Optional.ofNullable(remotes.get(peer));
+		}
 	}
 
 	/**
@@ -290,31 +313,39 @@ public class PeersSet implements AutoCloseable {
 	 */
 	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
 		var all = new HashSet<Peer>();
-		for (var peer: peers.getElements().collect(Collectors.toSet()))
+		Set<Peer> peers;
+
+		synchronized (lock) {
+			peers = this.peers.getElements().collect(Collectors.toSet());
+		}
+
+		for (var peer: peers)
 			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, all);
 
 		return tryToReconnectOrAdd(all, _peer -> false);
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws NodeException, InterruptedException {
-		if (peers.contains(peer)) { // just for optimization and for keeping the logs clean
-			long lost = config.getPeerPunishmentForUnreachable();
-			boolean removed;
+		boolean removed = false;
 
-			synchronized (lock) {
+		synchronized (lock) {
+			if (peers.contains(peer)) { // just for optimization and for keeping the logs clean
+				long lost = config.getPeerPunishmentForUnreachable();
+
 				if (removed = peers.punish(peer, lost)) {
 					disconnect(peer, remotes.get(peer));
 					db.remove(peer);
 				}
+
+				LOGGER.warning("peers: " + peer + " lost " + lost + " points because it is unreachable");
 			}
-
-			if (removed)
-				node.onRemoved(peer);
-
-			LOGGER.warning("peers: " + peer + " lost " + lost + " points because it is unreachable");
 		}
+
+		if (removed)
+			node.onRemoved(peer);
 	}
 
+	@GuardedBy("this.lock")
 	private void closeRemotes(Iterator<Entry<Peer, RemotePublicNode>> remotes) throws InterruptedException {
 		if (remotes.hasNext()) {
 			try {
@@ -389,12 +420,23 @@ public class PeersSet implements AutoCloseable {
 	 * @throws IOException if the connection to the peer failed
 	 */
 	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, TimeoutException {
-		if (bannedURIs.contains(peer.getURI()))
-			return false;
-		else if (peers.contains(peer))
-			return remotes.get(peer) == null && tryToCreateRemote(peer).isPresent();
-		else
-			return add(peer, force);
+		boolean added;
+
+		synchronized (lock) {
+			if (bannedURIs.contains(peer.getURI()))
+				return false;
+			else if (peers.contains(peer))
+				return !remotes.containsKey(peer) && tryToCreateRemote(peer).isPresent();
+			else
+				added = add(peer, force);
+		}
+
+		if (added) {
+			node.onConnected(peer);
+			node.onAdded(peer);
+		}
+
+		return added;
 	}
 
 	/**
@@ -425,35 +467,29 @@ public class PeersSet implements AutoCloseable {
 		return somethingChanged;
 	}
 
+	@GuardedBy("this.lock")
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
-		if (!force && peers.size() >= config.getMaxPeers())
-			return false;
-
 		boolean connected = false;
-		RemotePublicNode remote = null;
 
-		try {
-			remote = openRemote(peer);
-			long timeDifference = ensurePeerIsCompatible(remote);
+		if (force || peers.size() < config.getMaxPeers()) {
+			RemotePublicNode remote = null;
 
-			synchronized (lock) {
+			try {
+				remote = openRemote(peer);
+				long timeDifference = ensurePeerIsCompatible(remote);
+
 				if (db.add(peer, force) && peers.add(peer)) {
 					connect(peer, remote, timeDifference);
 					connected = true;
 				}
-				else
-					return false;
 			}
-
-			node.onConnected(peer);
-			node.onAdded(peer);
-
-			return true;
+			finally {
+				if (!connected)
+					close(remote, peer);
+			}
 		}
-		finally {
-			if (!connected)
-				free(peer, remote);
-		}
+
+		return connected;
 	}
 
 	/**
@@ -481,7 +517,7 @@ public class PeersSet implements AutoCloseable {
 					// we check if the peer is actually contained in the set of peers,
 					// since it might have been removed in the meanwhile and we not not
 					// want to store remotes for peers not in the set of peers of this object
-					if (peers.contains(peer) && remotes.get(peer) == null) {
+					if (peers.contains(peer) && !remotes.containsKey(peer)) {
 						connect(peer, remote, timeDifference);
 						connected = true;
 					}
@@ -495,7 +531,7 @@ public class PeersSet implements AutoCloseable {
 			}
 			finally {
 				if (!connected)
-					free(peer, remote);
+					close(remote, peer);
 			}
 		}
 		catch (IOException | TimeoutException e) {
@@ -587,7 +623,10 @@ public class PeersSet implements AutoCloseable {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void onRemoteClosed(RemotePublicNode remote, Peer peer) throws InterruptedException, NodeException {
-		disconnect(peer, remote);
+		synchronized (lock) {
+			disconnect(peer, remote);
+		}
+
 		punishBecauseUnreachable(peer);
 	}
 
@@ -600,23 +639,23 @@ public class PeersSet implements AutoCloseable {
 		remote.addOnCloseHandler(() -> onRemoteClosed(remote, peer));
 	}
 
+	@GuardedBy("this.lock")
 	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
-		if (remote != null) {
-			remote.unbindWhisperer(node);
-			remotes.remove(peer);
-			timeDifferences.remove(peer);
+		remote.unbindWhisperer(node);
+		remotes.remove(peer);
+		timeDifferences.remove(peer);
 
-			try {
-				remote.close();
-				node.onDisconnected(peer);
-			}
-			catch (NodeException e) { // it's the remote that misbehaves, not our node
-				LOGGER.warning("cannot close the remote to peer " + peer + ": " + e.getMessage());
-			}
+		try {
+			remote.close();
 		}
+		catch (NodeException e) { // it's the remote that misbehaves, not our node
+			LOGGER.warning("cannot close the remote to peer " + peer + ": " + e.getMessage());
+		}
+
+		node.onDisconnected(peer);
 	}
 
-	private void free(Peer peer, RemotePublicNode remote) throws InterruptedException {
+	private void close(RemotePublicNode remote, Peer peer) throws InterruptedException {
 		try {
 			remote.close();
 		}
