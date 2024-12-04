@@ -26,13 +26,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,7 +62,7 @@ import jakarta.websocket.DeploymentException;
  * The set of peers of a local node. This class guarantees that,
  * if a peer has a remote, then it is in the database of peers
  * (but the converse might not hold since, for instance, a peer
- * might be currently unreachable).
+ * might be currently disconnected).
  */
 @ThreadSafe
 public class PeersSet implements AutoCloseable {
@@ -84,24 +83,25 @@ public class PeersSet implements AutoCloseable {
 	private final PeersDatabase db;
 
 	/**
-	 * The UUID of the node having these peers.
+	 * The UUID of {@link #node}.
 	 */
 	private final UUID uuid;
 
 	/**
-	 * The version of the node having these peers.
+	 * The version of {@link #node}.
 	 */
 	private final Version version;
 
 	/**
-	 * Lock used to guarantee that if there is a peer among the keys of the {@link #remotes}
-	 * map or among the keys of the {@link #timeDifferences} map then the peer is
-	 * in {@link #peers} (the converse might well not hold).
+	 * Lock used to protect access to the modifiable state of this object.
+	 * It guarantees that if there is a peer among the keys of the {@link #remotes}
+	 * map or among the keys of the {@link #timeDifferences} map then the peer is 
+	 * in {@link #peers} (the converse might well not hold since some peers might be disconnected).
 	 */
 	private final Object lock = new Object();
 
 	/**
-	 * The peers of the node. These are all guaranteed to be in {@link #db}.
+	 * The peers of the node. These are exactly the peers in {@link #db}.
 	 */
 	@GuardedBy("this.lock")
 	private final PunishableSet<Peer> peers;
@@ -141,7 +141,6 @@ public class PeersSet implements AutoCloseable {
 	public PeersSet(LocalNodeImpl node) throws NodeException, InterruptedException {
 		this.node = node;
 		this.config = node.getConfig();
-		this.db = new PeersDatabase(node);
 
 		try {
 			this.version = Versions.current();
@@ -150,12 +149,20 @@ public class PeersSet implements AutoCloseable {
 			throw new NodeException(e);
 		}
 
+		this.db = new PeersDatabase(node);
 		this.uuid = db.getUUID();
-		this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
-		Set<Peer> seeds = config.getSeeds().map(Peers::of).collect(Collectors.toSet());
-		var all = new HashSet<>(seeds);
-		all.addAll(peers.getElements().collect(Collectors.toSet()));
-		tryToReconnectOrAdd(all, seeds::contains);
+
+		try {
+			this.peers = new PunishableSet<>(db.getPeers(), config.getPeerInitialPoints());
+			Set<Peer> seeds = config.getSeeds().map(Peers::of).collect(Collectors.toSet());
+			var all = new HashSet<>(seeds);
+			all.addAll(peers.getElements().collect(Collectors.toSet()));
+			tryToReconnectOrAdd(all, seeds::contains);
+		}
+		catch (NodeException | InterruptedException e) {
+			db.close();
+			throw e;
+		}
 	}
 
 	/**
@@ -170,7 +177,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Yields information about the node having these peers, extracted from the database.
+	 * Yields information about the node having these peers.
 	 * 
 	 * @return the node information
 	 */
@@ -179,18 +186,17 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Adds the given peer. This might fail because
-	 * the peer is already present in the node, or because a connection to the peer
-	 * cannot be established, or because the peer is incompatible with the node.
-	 * If the peer was present but was disconnected, it tries to reconnect it.
+	 * Adds the given peer. This might fail because the peer is already present,
+	 * or because a connection to the peer cannot be established, or because the peer
+	 * is incompatible with the node. If the peer was present but was disconnected,
+	 * this method attempts to reestablish a connection to the peer.
 	 * 
 	 * @param peer the peer to add
-	 * @return the information about the peer; this is empty if the peer has not been added nor reconnected,
-	 *         for instance, because it was already present or a maximum number of peers has been already reached
+	 * @return the information about the peer; this is empty if the peer has not been added nor reconnected
 	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
 	 * @throws IOException if the connection to the peer failed
 	 * @throws TimeoutException if the addition does not complete in time
-	 * @throws InterruptedException if the current thread gets interrupted while waiting for the addition to complete
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, IOException, InterruptedException, PeerRejectedException, NodeException {
@@ -213,7 +219,7 @@ public class PeersSet implements AutoCloseable {
 
 		synchronized (lock) {
 			if (removed = peers.remove(peer)) {
-				disconnect(peer, remotes.get(peer));
+				disconnect(peer);
 				db.remove(peer);
 			}
 		}
@@ -243,14 +249,15 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Whispers a message to this container of peers. It forwards it to the peers in this container.
+	 * Whispers a message to all peers in this container.
 	 * 
 	 * @param message the message to whisper
 	 * @param seen the whisperers already seen during whispering
+	 * @param description the description of what is being whispered
 	 */
 	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
 		synchronized (lock) {
-			remotes.forEach((_peer, remote) -> remote.whisper(message, seen, description)); // we forward the message to all peers
+			remotes.forEach((_peer, remote) -> remote.whisper(message, seen, description));
 		}
 	}
 
@@ -259,7 +266,7 @@ public class PeersSet implements AutoCloseable {
 	 * the average time among that of each connected peers and of the node itself.
 	 * 
 	 * @param ldt the date and time to normalize
-	 * @return the normalized {@code ldt}. If there are no peers, this will be {@code ldt} itself
+	 * @return the normalized {@code ldt}; if there are no peers, this is {@code ldt} itself
 	 */
 	public LocalDateTime asNetworkDateTime(LocalDateTime ldt) {
 		long averageTimeDifference;
@@ -270,7 +277,7 @@ public class PeersSet implements AutoCloseable {
 				Stream.concat(timeDifferences.values().stream(), Stream.of(0L))
 					.mapToLong(Long::valueOf)
 					.average()
-					.getAsDouble(); // we know there is at least an element (0L) hence the average exists
+					.getAsDouble(); // we know that there is at least an element (0L) hence the average exists
 		}
 
 		return ldt.plus(averageTimeDifference, ChronoUnit.MILLIS);
@@ -279,13 +286,26 @@ public class PeersSet implements AutoCloseable {
 	@Override
 	public void close() throws InterruptedException, NodeException {
 		try {
+			var interruptedException = new AtomicReference<InterruptedException>();
+
 			synchronized (lock) {
-				// we make a copy of the set since closeRemotes() calls
-				// disconnect(), that modifies the set we are iterating upon,
-				// which might corrupt the iterator
-				var entries = new HashSet<>(remotes.entrySet());
-				closeRemotes(entries.iterator());
+				var copyOfRemotes = new HashMap<>(remotes);
+				remotes.clear();
+				timeDifferences.clear();
+
+				copyOfRemotes.forEach((peer, remote) -> {
+					try {
+						disconnect(peer, remote);
+					}
+					catch (InterruptedException e) {
+						interruptedException.compareAndSet(null, e);
+					}
+				});
 			}
+
+			var e = interruptedException.get();
+			if (e != null)
+				throw e;
 		}
 		finally {
 			db.close();
@@ -297,7 +317,7 @@ public class PeersSet implements AutoCloseable {
 	 * 
 	 * @param peer the peer
 	 * @return the remote, if any. This might be missing if, for instance, the
-	 *         peer is currently unreachable
+	 *         peer is currently disconnected
 	 */
 	public Optional<RemotePublicNode> getRemote(Peer peer) {
 		synchronized (lock) {
@@ -312,17 +332,17 @@ public class PeersSet implements AutoCloseable {
 	 * @return true if some peer has been added or reconnected
 	 */
 	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
-		var all = new HashSet<Peer>();
 		Set<Peer> peers;
 
 		synchronized (lock) {
 			peers = this.peers.getElements().collect(Collectors.toSet());
 		}
 
+		var unknownPeers = new HashSet<Peer>();
 		for (var peer: peers)
-			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, all);
+			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, unknownPeers);
 
-		return tryToReconnectOrAdd(all, _peer -> false);
+		return tryToReconnectOrAdd(unknownPeers, _peer -> false);
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws NodeException, InterruptedException {
@@ -333,7 +353,7 @@ public class PeersSet implements AutoCloseable {
 				long lost = config.getPeerPunishmentForUnreachable();
 
 				if (removed = peers.punish(peer, lost)) {
-					disconnect(peer, remotes.get(peer));
+					disconnect(peer);
 					db.remove(peer);
 				}
 
@@ -343,19 +363,6 @@ public class PeersSet implements AutoCloseable {
 
 		if (removed)
 			node.onRemoved(peer);
-	}
-
-	@GuardedBy("this.lock")
-	private void closeRemotes(Iterator<Entry<Peer, RemotePublicNode>> remotes) throws InterruptedException {
-		if (remotes.hasNext()) {
-			try {
-				var entry = remotes.next();
-				disconnect(entry.getKey(), entry.getValue());	
-			}
-			finally {
-				closeRemotes(remotes);
-			}
-		}
 	}
 
 	private void pardonBecauseReachable(Peer peer) {
@@ -484,7 +491,7 @@ public class PeersSet implements AutoCloseable {
 				}
 			}
 			finally {
-				if (!connected)
+				if (remote != null && !connected)
 					close(remote, peer);
 			}
 		}
@@ -530,7 +537,7 @@ public class PeersSet implements AutoCloseable {
 				return Optional.of(remoteCopy);
 			}
 			finally {
-				if (!connected)
+				if (remote != null && !connected)
 					close(remote, peer);
 			}
 		}
@@ -617,17 +624,14 @@ public class PeersSet implements AutoCloseable {
 	/**
 	 * Called when a remote gets closed: it disconnects the peer and punishes it.
 	 * 
-	 * @param remote the remote of the peer, that is being closed
-	 * @param peer the peer having the {@code remote}
+	 * @param peer the peer whose remote gets closed
 	 * @throws InterruptedException if the closure operation has been interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void onRemoteClosed(RemotePublicNode remote, Peer peer) throws InterruptedException, NodeException {
+	private void onRemoteClosed(Peer peer) throws InterruptedException, NodeException {
 		synchronized (lock) {
-			disconnect(peer, remote);
+			disconnect(peer);
 		}
-
-		punishBecauseUnreachable(peer);
 	}
 
 	@GuardedBy("this.lock")
@@ -636,22 +640,22 @@ public class PeersSet implements AutoCloseable {
 		timeDifferences.put(peer, timeDifference);
 		remote.bindWhisperer(node);
 		// if the remote gets closed, then it will get unlinked from the map of remotes
-		remote.addOnCloseHandler(() -> onRemoteClosed(remote, peer));
+		remote.addOnCloseHandler(() -> onRemoteClosed(peer));
 	}
 
 	@GuardedBy("this.lock")
+	private void disconnect(Peer peer) throws InterruptedException {
+		var remote = remotes.get(peer);
+		if (remote != null) { // this might be null if this object is being closed
+			remotes.remove(peer);
+			timeDifferences.remove(peer);
+			disconnect(peer, remote);
+		}
+	}
+
 	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
 		remote.unbindWhisperer(node);
-		remotes.remove(peer);
-		timeDifferences.remove(peer);
-
-		try {
-			remote.close();
-		}
-		catch (NodeException e) { // it's the remote that misbehaves, not our node
-			LOGGER.warning("cannot close the remote to peer " + peer + ": " + e.getMessage());
-		}
-
+		close(remote, peer);
 		node.onDisconnected(peer);
 	}
 
