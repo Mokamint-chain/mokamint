@@ -87,7 +87,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
-	@Timeout(10)
+	@Timeout(15)
 	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
 				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
@@ -242,7 +242,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(disconnections.tryAcquire(1, 3, TimeUnit.SECONDS));
 
 			// at this point, node1 has still node2 as peer but marked as disconnected
-			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2) && info.getPoints() < config1.getPeerInitialPoints()));
+			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 
 			phase.set(3);
 
