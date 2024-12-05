@@ -237,13 +237,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			periodicTasks.shutdownNow();
 		}
 		finally {
-			try {
-				super.closeResources(reason);
-				LOGGER.info(logPrefix + "closed with reason: " + reason);
-			}
-			finally {
-				periodicTasks.awaitTermination(10, TimeUnit.SECONDS);
-			}
+			super.closeResources(reason);
+			LOGGER.info(logPrefix + "closed with reason: " + reason);
 		}
 	}
 

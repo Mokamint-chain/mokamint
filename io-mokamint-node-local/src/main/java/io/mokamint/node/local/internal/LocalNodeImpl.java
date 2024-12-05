@@ -1155,16 +1155,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				periodicExecutors.shutdownNow();
 			}
 			finally {
-				try {
-					closeHandlersMinersPeersAndBlockchain();
-				}
-				finally {
-					// we give five seconds in total
-					long start = System.currentTimeMillis();
-					executors.awaitTermination(5, TimeUnit.SECONDS);
-					long end = System.currentTimeMillis();
-					periodicExecutors.awaitTermination(5000 - (end - start), TimeUnit.MILLISECONDS);
-				}
+				closeHandlersMinersPeersAndBlockchain();
 			}
 		}
 	}

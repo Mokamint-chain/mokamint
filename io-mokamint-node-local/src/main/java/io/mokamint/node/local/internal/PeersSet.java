@@ -287,6 +287,7 @@ public class PeersSet implements AutoCloseable {
 	public void close() throws InterruptedException, NodeException {
 		try {
 			var interruptedException = new AtomicReference<InterruptedException>();
+			var nodeException = new AtomicReference<NodeException>();
 
 			synchronized (lock) {
 				var copyOfRemotes = new HashMap<>(remotes);
@@ -300,12 +301,19 @@ public class PeersSet implements AutoCloseable {
 					catch (InterruptedException e) {
 						interruptedException.compareAndSet(null, e);
 					}
+					catch (NodeException e) {
+						nodeException.compareAndSet(null, e);
+					}
 				});
 			}
 
 			var e = interruptedException.get();
 			if (e != null)
 				throw e;
+
+			var e2 = nodeException.get();
+			if (e2 != null)
+				throw e2;
 		}
 		finally {
 			db.close();
@@ -492,7 +500,7 @@ public class PeersSet implements AutoCloseable {
 			}
 			finally {
 				if (remote != null && !connected)
-					close(remote, peer);
+					remote.close();
 			}
 		}
 
@@ -538,7 +546,7 @@ public class PeersSet implements AutoCloseable {
 			}
 			finally {
 				if (remote != null && !connected)
-					close(remote, peer);
+					remote.close();
 			}
 		}
 		catch (IOException | TimeoutException e) {
@@ -644,7 +652,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	@GuardedBy("this.lock")
-	private void disconnect(Peer peer) throws InterruptedException {
+	private void disconnect(Peer peer) throws NodeException, InterruptedException {
 		var remote = remotes.get(peer);
 		if (remote != null) { // this might be null if this object is being closed
 			remotes.remove(peer);
@@ -653,18 +661,9 @@ public class PeersSet implements AutoCloseable {
 		}
 	}
 
-	private void disconnect(Peer peer, RemotePublicNode remote) throws InterruptedException {
+	private void disconnect(Peer peer, RemotePublicNode remote) throws NodeException, InterruptedException {
 		remote.unbindWhisperer(node);
-		close(remote, peer);
+		remote.close();
 		node.onDisconnected(peer);
-	}
-
-	private void close(RemotePublicNode remote, Peer peer) throws InterruptedException {
-		try {
-			remote.close();
-		}
-		catch (NodeException e) { // it's the remote that misbehaves, not our node
-			LOGGER.warning("cannot close the remote to peer " + peer + ": " + e.getMessage());
-		}
 	}
 }

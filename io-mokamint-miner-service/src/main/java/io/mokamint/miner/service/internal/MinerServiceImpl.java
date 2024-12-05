@@ -105,9 +105,14 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		if (!isClosed.getAndSet(true)) {
 			closeReason = reason.getReasonPhrase();
 			LOGGER.info("miner service being closed with reason: " + closeReason);
-			session.close();
-			LOGGER.info("miner service unbound from " + uri);
-			latch.countDown();
+
+			try {
+				session.close();
+				LOGGER.info("miner service unbound from " + uri);
+			}
+			finally {
+				latch.countDown();
+			}
 		}
 	}
 
