@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -286,34 +285,14 @@ public class PeersSet implements AutoCloseable {
 	@Override
 	public void close() throws InterruptedException, NodeException {
 		try {
-			var interruptedException = new AtomicReference<InterruptedException>();
-			var nodeException = new AtomicReference<NodeException>();
-
 			synchronized (lock) {
 				var copyOfRemotes = new HashMap<>(remotes);
 				remotes.clear();
 				timeDifferences.clear();
 
-				copyOfRemotes.forEach((peer, remote) -> {
-					try {
-						disconnect(peer, remote);
-					}
-					catch (InterruptedException e) {
-						interruptedException.compareAndSet(null, e);
-					}
-					catch (NodeException e) {
-						nodeException.compareAndSet(null, e);
-					}
-				});
+				for (var entry: copyOfRemotes.entrySet())
+					disconnect(entry.getKey(), entry.getValue());
 			}
-
-			var e = interruptedException.get();
-			if (e != null)
-				throw e;
-
-			var e2 = nodeException.get();
-			if (e2 != null)
-				throw e2;
 		}
 		finally {
 			db.close();
@@ -633,12 +612,15 @@ public class PeersSet implements AutoCloseable {
 	 * Called when a remote gets closed: it disconnects the peer and punishes it.
 	 * 
 	 * @param peer the peer whose remote gets closed
-	 * @throws InterruptedException if the closure operation has been interrupted
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void onRemoteClosed(Peer peer) throws InterruptedException, NodeException {
-		synchronized (lock) {
-			disconnect(peer);
+	private void onRemoteClosed(Peer peer) {
+		try {
+			synchronized (lock) {
+				disconnect(peer);
+			}
+		}
+		catch (NodeException e) {
+			LOGGER.log(Level.SEVERE, "cannot close the connection to " + peer, e);
 		}
 	}
 
@@ -652,7 +634,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	@GuardedBy("this.lock")
-	private void disconnect(Peer peer) throws NodeException, InterruptedException {
+	private void disconnect(Peer peer) throws NodeException {
 		var remote = remotes.get(peer);
 		if (remote != null) { // this might be null if this object is being closed
 			remotes.remove(peer);
@@ -661,7 +643,7 @@ public class PeersSet implements AutoCloseable {
 		}
 	}
 
-	private void disconnect(Peer peer, RemotePublicNode remote) throws NodeException, InterruptedException {
+	private void disconnect(Peer peer, RemotePublicNode remote) throws NodeException {
 		remote.unbindWhisperer(node);
 		remote.close();
 		node.onDisconnected(peer);

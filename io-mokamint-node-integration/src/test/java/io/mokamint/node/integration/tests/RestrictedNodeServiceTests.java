@@ -215,7 +215,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+			protected void closeResources(CloseReason reason) throws NodeException {
 				super.closeResources(reason);
 				semaphore.release();
 			}

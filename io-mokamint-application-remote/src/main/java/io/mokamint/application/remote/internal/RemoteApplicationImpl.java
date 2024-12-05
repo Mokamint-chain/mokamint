@@ -139,7 +139,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws ApplicationException, InterruptedException {
+	protected void closeResources(CloseReason reason) throws ApplicationException {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}

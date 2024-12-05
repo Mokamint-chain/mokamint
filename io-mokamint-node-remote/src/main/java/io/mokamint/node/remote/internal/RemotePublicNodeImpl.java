@@ -232,7 +232,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+	protected void closeResources(CloseReason reason) throws NodeException {
 		try {
 			periodicTasks.shutdownNow();
 		}

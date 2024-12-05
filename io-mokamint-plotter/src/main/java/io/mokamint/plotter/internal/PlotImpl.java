@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -369,19 +368,14 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException {
+	public void close() throws IOException {
 		executors.shutdownNow();
 
 		try {
-			executors.awaitTermination(3, TimeUnit.SECONDS);
+			reader.close();
 		}
 		finally {
-			try {
-				reader.close();
-			}
-			finally {
-				channel.close();
-			}
+			channel.close();
 		}
 	}
 

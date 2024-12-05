@@ -256,9 +256,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException {
-		if (stopNewCalls())
-			closeExecutorsHandlersMinersPeersAndBlockchain();
+	public void close() throws NodeException {
+		try {
+			if (stopNewCalls())
+				closeExecutorsHandlersMinersPeersAndBlockchain();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	@Override
@@ -1164,12 +1169,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			callCloseHandlers();
 		}
-		catch (InterruptedException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw new NodeException(e);
-		}
 		finally {
 			closeMinersPeersAndBlockchain(minersToCloseAtTheEnd.toArray(Miner[]::new), 0);
 		}
@@ -1200,7 +1199,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeBlockchain() throws InterruptedException {
+	private void closeBlockchain() {
 		blockchain.close();
 	}
 }

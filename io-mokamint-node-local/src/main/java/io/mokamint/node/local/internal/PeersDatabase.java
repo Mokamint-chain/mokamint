@@ -91,16 +91,21 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	}
 
 	@Override
-	public void close() throws NodeException, InterruptedException {
-		if (stopNewCalls()) {
-			try {
-				environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
-				LOGGER.info("db: closed the peers database");
+	public void close() throws NodeException {
+		try {
+			if (stopNewCalls()) {
+				try {
+					environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
+					LOGGER.info("db: closed the peers database");
+				}
+				catch (ExodusException e) {
+					LOGGER.log(Level.SEVERE, "db: failed to close the peers database", e);
+					throw new DatabaseException("Cannot close the peers database", e);
+				}
 			}
-			catch (ExodusException e) {
-				LOGGER.log(Level.SEVERE, "db: failed to close the peers database", e);
-				throw new DatabaseException("Cannot close the peers database", e);
-			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 

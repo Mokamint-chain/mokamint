@@ -121,7 +121,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		public void close() throws NodeException, InterruptedException {
+		public void close() throws NodeException {
 			super.close();
 
 			try {

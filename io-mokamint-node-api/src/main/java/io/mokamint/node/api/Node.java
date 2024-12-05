@@ -31,8 +31,7 @@ public interface Node extends OnCloseHandlersContainer, AutoCloseable {
 	 * A node cannot be reopened after being closed.
 	 * 
 	 * @throws NodeException if the closure failed for some reason
-	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
 	@Override
-	void close() throws NodeException, InterruptedException;
+	void close() throws NodeException;
 }

@@ -38,19 +38,8 @@ public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOn
 	@Override
 	public final void close() throws ApplicationException, InterruptedException {
 		if (stopNewCalls()) {
-			try {
-				callCloseHandlers();
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw e;
-			}
-			catch (Exception e) {
-				throw new ApplicationException(e);
-			}
-			finally {
-				closeResources();
-			}
+			callCloseHandlers();
+			closeResources();
 		}
 	}
 

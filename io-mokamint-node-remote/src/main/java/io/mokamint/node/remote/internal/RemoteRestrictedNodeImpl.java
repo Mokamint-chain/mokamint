@@ -89,7 +89,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws NodeException, InterruptedException {
+	protected void closeResources(CloseReason reason) throws NodeException {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}

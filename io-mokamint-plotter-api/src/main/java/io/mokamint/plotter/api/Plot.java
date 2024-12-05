@@ -63,7 +63,7 @@ public interface Plot extends AutoCloseable {
 	HashingAlgorithm getHashing();
 
 	@Override
-	void close() throws IOException, InterruptedException;
+	void close() throws IOException;
 
 	/**
 	 * Yields the smallest deadline in this plot file, matching the given challenge.

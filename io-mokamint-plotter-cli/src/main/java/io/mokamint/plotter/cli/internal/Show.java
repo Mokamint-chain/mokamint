@@ -67,9 +67,6 @@ public class Show extends AbstractCommand {
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The plot file uses an unknown cryptographic algorithm!", e);
 		}
-		catch (InterruptedException e) {
-			throw new CommandException("Interrupted while waiting!", e);
-		}
 		catch (IOException e) {
 			throw new CommandException("Cannot read the plot file!", e);
 		}

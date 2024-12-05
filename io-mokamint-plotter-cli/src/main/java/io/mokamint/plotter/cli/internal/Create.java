@@ -98,9 +98,6 @@ public class Create extends AbstractCommand {
 
 		try (var plot = Plots.create(path, prolog, start, length, hashing, this::onNewPercent)) {
 		}
-		catch (InterruptedException e) {
-			throw new CommandException("Interrupted while waiting!", e);
-		}
 		catch (IOException e) {
 			throw new CommandException("Cannot write the plot file!", e);
 		}
