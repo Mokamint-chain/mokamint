@@ -262,8 +262,7 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * An application cannot be reopened after being closed.
 	 * 
 	 * @throws ApplicationException if the application is misbehaving
-	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
 	@Override
-	void close() throws ApplicationException, InterruptedException;
+	void close() throws ApplicationException;
 }
