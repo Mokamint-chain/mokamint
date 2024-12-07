@@ -1153,7 +1153,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		/**
 		 * The group in {@link #groups} that has been selected as more
-		 * reliable chain, because the most peers agree on its hashes.
+		 * reliable chain, because most peers agree on its hashes.
 		 */
 		private final byte[][] chosenGroup;
 	
@@ -1202,7 +1202,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 			this.chosenGroup = chooseMostReliableGroup();
 			this.semaphores = new Semaphore[chosenGroup.length];
-			this.blocks = new AtomicReferenceArray<Block>(chosenGroup.length);
+			this.blocks = new AtomicReferenceArray<>(chosenGroup.length);
 			downloadBlocks();
 		
 			if (!addBlocksToBlockchain()) {
@@ -1409,7 +1409,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private Set<Peer> connectedUsablePeers() {
-			return peers.get().parallel()
+			return peers.get()
 				.filter(PeerInfo::isConnected)
 				.map(PeerInfo::getPeer)
 				.filter(peer -> !unusable.contains(peer))
@@ -1450,7 +1450,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws NodeException {
-			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h]) && !containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
+			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h])
+					&& !containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
 		}
 	
 		/**
@@ -1531,7 +1532,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 		/**
 		 * Puts in the {@link #unusable} set all peers that downloaded a group
-		 * different from {@link #chosenGroup}: in any case, their subsequent groups are more
+		 * different from {@link #chosenGroup}: in any case, their subsequent groups are
 		 * a less reliable history and won't be downloaded.
 		 * 
 		 * @throws InterruptedException if the current thread gets interrupted
@@ -1548,7 +1549,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * The algorithm for rebasing a mempool at a given, new base.
 	 */
 	private class Rebase {
-		private final io.hotmoka.xodus.env.Transaction txn;
+		private final Transaction txn;
 		private final Mempool mempool;
 		private final Block newBase;
 		private final Set<TransactionEntry> toRemove = new HashSet<>();
@@ -1556,7 +1557,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private Block newBlock;
 		private Block oldBlock;
 
-		private Rebase(io.hotmoka.xodus.env.Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+		private Rebase(Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
 			this.txn = txn;
 			this.mempool = mempool;
 			this.newBase = newBase;
@@ -1569,7 +1570,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// first we move new and old bases to the same height
 				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
 					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
-
 				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
 					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
 
