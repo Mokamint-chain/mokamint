@@ -476,17 +476,14 @@ public class PeersSet implements AutoCloseable {
 				if (db.add(peer, force) && peers.add(peer)) {
 					connect(peer, remote, timeDifference);
 					added = true;
+					node.onConnected(peer);
+					node.onAdded(peer);
 				}
 			}
 			finally {
 				if (remote != null && !added)
 					remote.close();
 			}
-		}
-
-		if (added) {
-			node.onConnected(peer);
-			node.onAdded(peer);
 		}
 
 		return added;

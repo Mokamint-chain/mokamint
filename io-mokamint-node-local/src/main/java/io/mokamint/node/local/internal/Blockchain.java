@@ -165,12 +165,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private int orphansPos;
 
 	/**
-	 * The key mapped in the {@link #storeOfBlocks} to the genesis block.
+	 * The key mapped in the {@link #storeOfBlocks} to the hash of the genesis block.
 	 */
-	private final static ByteIterable GENESIS = fromByte((byte) 0);
+	private final static ByteIterable HASH_OF_GENESIS = fromByte((byte) 0);
 
 	/**
-	 * The key mapped in the {@link #storeOfBlocks} to the head block.
+	 * The key mapped in the {@link #storeOfBlocks} to the hash of the head block.
 	 */
 	private final static ByteIterable HASH_OF_HEAD = fromByte((byte) 1);
 
@@ -180,7 +180,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final static ByteIterable POWER_OF_HEAD = fromByte((byte) 2);
 
 	/**
-	 * The key mapped in the {@link #storeOfBlocks} to the height of the current best chain.
+	 * The key mapped in the {@link #storeOfBlocks} to the height of the head block.
 	 */
 	private final static ByteIterable HEIGHT_OF_HEAD = fromByte((byte) 3);
 
@@ -204,7 +204,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final static Logger LOGGER = Logger.getLogger(Blockchain.class.getName());
 
 	/**
-	 * Creates a blockchain, by opening the database of blocks.
+	 * Creates a blockchain.
 	 * 
 	 * @throws NodeException if the node is misbehaving
 	 */
@@ -222,6 +222,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfChain = openStore("chain");
 		this.storeOfTransactions = openStore("transactions");
+		this.genesisHashCache = Optional.empty();
+		this.genesisCache = Optional.empty();
 	}
 
 	@Override
@@ -260,15 +262,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the hash of the genesis block in this blockchain, if any.
+	 * Yields the hash of the genesis block of this blockchain, if any.
 	 * 
 	 * @return the hash of the genesis block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<byte[]> getGenesisHash() throws NodeException {
-		// we use a cache to avoid repeated access for reading the hash of the genesis block, that is not allowed to change after being set
-		if (genesisHashCache != null)
-			return Optional.of(genesisHashCache.get().clone());
+		// we use a cache to avoid repeated access for reading the hash of the genesis block, since it is not allowed to change after being set
+		if (genesisHashCache.isPresent())
+			return genesisHashCache.map(byte[]::clone);
 
 		Optional<byte[]> result;
 
@@ -279,40 +281,32 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			throw new DatabaseException(e);
 		}
 
-		if (result.isPresent())
-			genesisHashCache = Optional.of(result.get().clone());
+		genesisHashCache = result.map(byte[]::clone);
 
 		return result;
 	}
 
 	/**
-	 * Yields the genesis block in this blockchain, if any.
+	 * Yields the genesis block of this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<GenesisBlock> getGenesis() throws NodeException {
-		// we use a cache to avoid repeated access for reading the genesis block, that is not allowed to change after being set
-		if (genesisCache != null)
+		// we use a cache to avoid repeated access for reading the genesis block, since it is not allowed to change after being set
+		if (genesisCache.isPresent())
 			return genesisCache;
 
-		Optional<GenesisBlock> result;
-
 		try (var scope = mkScope()) {
-			result = environment.computeInReadonlyTransaction(NodeException.class, this::getGenesis);
+			return genesisCache = environment.computeInReadonlyTransaction(NodeException.class, this::getGenesis);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-
-		if (result.isPresent())
-			genesisCache = Optional.of(result.get());
-
-		return result;
 	}
 
 	/**
-	 * Yields the head of the best chain in this blockchain, if any.
+	 * Yields the head of the best chain of this blockchain, if any.
 	 * 
 	 * @return the head block, if any
 	 * @throws NodeException if the node is misbehaving
@@ -343,7 +337,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	/**
 	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history.
-	 * Transactions delivered before that time have generated stores that can be considered as frozen.
+	 * Transactions delivered before that time have stores that can be considered as frozen.
 	 * 
 	 * @return the limit time; this is empty if the database is empty
 	 * @throws NodeException if the node is misbehaving
@@ -358,7 +352,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the height of the head of the best chain in this blockchain, if any.
+	 * Yields the height of the head of the best chain of this blockchain, if any.
 	 * 
 	 * @return the height of the head block, if any
 	 * @throws NodeException if the node is misbehaving
@@ -473,7 +467,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Yields the hashes of the blocks in the best chain, starting at height {@code start}
 	 * (inclusive) and ending at height {@code start + count} (exclusive). The result
-	 * might actually be shorter if the best chain is shorter than {@code start + count} blocks.
+	 * might actually be shorter if not all such blocks exist.
 	 * 
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (maximum) must be reported
@@ -509,7 +503,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Determines if the given block is more powerful than the current head.
 	 * 
 	 * @param block the block
-	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @return true if and only if the current head is missing or {@code block} is more powerful than the current head
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
@@ -528,7 +522,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * of this blockchain.
 	 * 
 	 * @param block the block whose creation time is computed
-	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
+	 * @return the creation time of {@code block}; this is empty only {@code block} is a non-genesis blocks and the blockchain is empty
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
@@ -574,10 +568,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * the given block and adds it to the database of blocks of this blockchain. Note that the addition
 	 * of a block might actually induce the addition of more, orphan blocks,
 	 * if the block is recognized as the previous block of an orphan block.
-	 * The addition of a block might change the head of the best chain, in which case
-	 * mining will be started by this method. Moreover, if the block is an orphan
-	 * with higher power than the current head, its addition might trigger the synchronization
-	 * of the chain from the peers of the node.
+	 * If the block is an orphan with higher power than the current head, its addition might trigger
+	 * the synchronization of the chain from the peers of the node.
 	 * 
 	 * @param block the block to add
 	 * @return true if the block has been actually added to the tree of blocks
@@ -585,9 +577,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 *         There are a few situations when the result can be false. For instance,
 	 *         if {@code block} was already in the tree, or if {@code block} is
 	 *         a genesis block but a genesis block is already present in the tree, or
-	 *         if {@code block} has no previous block already in the tree (it is orphaned),
-	 *         or if the block has a previous block in the tree but it cannot be
-	 *         correctly verified as a legal child of that previous block
+	 *         if {@code block} has no previous block already in the tree (it is orphaned)
 	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
@@ -614,10 +604,17 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence this exception should not have been generated
-			throw new NodeException("Unexpected exception", e);
+			throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 
+	/**
+	 * Synchronizes this blockchain with the peers of the node.
+	 * 
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws TimeoutException if some operation timed out
+	 * @throws NodeException if the node is misbehaving
+	 */
 	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
 		FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function = DownloadedGroupOfBlocks::new;
 		DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function);
@@ -635,7 +632,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		node.onSynchronizationCompleted();
 	}
 
-	void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
 		FunctionWithExceptions3<Transaction, Rebase, NodeException, InterruptedException, TimeoutException> function = txn -> new Rebase(txn, mempool, newBase);
 		environment.computeInReadonlyTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function).updateMempool();
 	}
@@ -643,7 +640,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * A context for the addition of one or more blocks to this blockchain, inside the same database transaction.
 	 */
-	public class BlockAdder {
+	private class BlockAdder {
 
 		/**
 		 * The database transaction where the additions are performed.
@@ -684,7 +681,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param txn the database transaction
 		 * @throws NodeException if the node is misbehaving
 		 */
-		public BlockAdder(Transaction txn) throws NodeException {
+		private BlockAdder(Transaction txn) throws NodeException {
 			this.txn = txn;
 			this.initialHeadHash = getHeadHash(txn);
 		}
@@ -700,7 +697,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws TimeoutException if some operation timed out
 		 */
-		public BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		private BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
@@ -713,7 +710,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return this;
 		}
 
-		public void informNode() {
+		private void informNode() {
 			blocksToAddAmongOrphans.forEach(this::putAmongOrphans);
 			blocksToRemoveFromOrphans.forEach(this::removeFromOrphans);
 			blocksAdded.forEach(node::onAdded);
@@ -722,7 +719,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
 		}
 
-		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+		private void updateMempool() throws NodeException, InterruptedException, TimeoutException {
 			if (!blocksAddedToTheCurrentBestChain.isEmpty())
 				// if the head has been improved, we update the mempool by removing
 				// the transactions that have been added in blockchain and potentially adding
@@ -741,7 +738,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @throws NodeException if the node is misbehaving
 		 */
-		public void scheduleSynchronizationIfUseful() throws NodeException {
+		private void scheduleSynchronizationIfUseful() throws NodeException {
 			for (var newOrphan: blocksToAddAmongOrphans)
 				if (headIsLessPowerfulThan(newOrphan)) {
 					// the new orphan was better than our current head: we synchronize from our peers
@@ -756,7 +753,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @return true if and only if this blockchain has been expanded
 		 */
-		public boolean somethingHasBeenAdded() {
+		private boolean somethingHasBeenAdded() {
 			return !blocksAdded.isEmpty();
 		}
 
@@ -1100,7 +1097,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	public class DownloadedGroupOfBlocks {
+	private class DownloadedGroupOfBlocks {
 	
 		/**
 		 * The database transaction where the synchronization occurs.
@@ -1162,14 +1159,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
 	
-		public DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
 			this(txn,
 				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
 				Optional.empty(),
 				ConcurrentHashMap.newKeySet());
 		}
 
-		public DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
 			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
 			this(txn, previous.height  + synchronizationGroupSize - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
 		}
@@ -1202,15 +1199,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			keepOnlyPeersAgreeingOnTheChosenGroup();
 		}
 
-		public boolean thereMightBeMoreGroupsToDownload() {
+		private boolean thereMightBeMoreGroupsToDownload() {
 			return chosenGroup != null && chosenGroup.length == synchronizationGroupSize;
 		}
 	
-		public void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+		private void updateMempool() throws NodeException, InterruptedException, TimeoutException {
 			blockAdder.updateMempool();
 		}
 	
-		public void informNode() {
+		private void informNode() {
 			blockAdder.informNode();
 		}
 	
@@ -1536,7 +1533,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * The algorithm for rebasing a mempool at a given, new base.
 	 */
-	public class Rebase {
+	private class Rebase {
 		private final io.hotmoka.xodus.env.Transaction txn;
 		private final Mempool mempool;
 		private final Block newBase;
@@ -1545,7 +1542,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private Block newBlock;
 		private Block oldBlock;
 
-		public Rebase(io.hotmoka.xodus.env.Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+		private Rebase(io.hotmoka.xodus.env.Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
 			this.txn = txn;
 			this.mempool = mempool;
 			this.newBase = newBase;
@@ -1570,7 +1567,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
-		public void updateMempool() {
+		private void updateMempool() {
 			mempool.addAll(toAdd.stream());
 			mempool.removeAll(toRemove.stream());
 			mempool.setBase(newBase);
@@ -1804,7 +1801,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	private Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
 		try {
-			return Optional.ofNullable(storeOfBlocks.get(txn, GENESIS)).map(ByteIterable::getBytes);
+			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_GENESIS)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -2258,7 +2255,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws NodeException {
 		try {
-			storeOfBlocks.put(txn, GENESIS, fromBytes(newGenesisHash));
+			storeOfBlocks.put(txn, HASH_OF_GENESIS, fromBytes(newGenesisHash));
 			LOGGER.info("blockchain: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
