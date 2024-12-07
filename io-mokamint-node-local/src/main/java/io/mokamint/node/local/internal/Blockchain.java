@@ -666,7 +666,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final Deque<Block> blocksAddedToTheCurrentBestChain = new LinkedList<>();
 
 		/**
-		 * The blocks that can be added among the orphan blocks after the additions have been performed.
+		 * The blocks that can be added as orphan blocks after the additions have been performed.
 		 */
 		private final Set<NonGenesisBlock> blocksToAddAmongOrphans = new HashSet<>();
 
@@ -687,7 +687,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Adds the given block to the blockchain, allowing one to specify if block verification is required.
+		 * Adds the given block to the blockchain.
 		 * 
 		 * @param block the block to add
 		 * @param verify true if and only if verification of {@code block} must be performed
@@ -702,7 +702,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd))
-				LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlockToAdd) + " since it is already in the database");
+				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in the database");
 
 			addBlockAndConnectOrphans(block, verify);
 			computeBlocksAddedToTheCurrentBestChain();
@@ -771,8 +771,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify)) {
 						blocksAdded.add(cursor);
 						forEachOrphanWithParent(hashOfCursor, ws::add);
-						if (cursor instanceof NonGenesisBlock ngb && cursor != blockToAdd)
-							blocksToRemoveFromOrphans.add(ngb);
+						if (blockToAdd != cursor)
+							blocksToRemoveFromOrphans.add((NonGenesisBlock) cursor); // orphan blocks are always non-genesis blocks
 					}
 				}
 				else if (cursor instanceof NonGenesisBlock ngb)
@@ -811,7 +811,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				height++;
 				hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
 				if (hashOfBlockFromBestChain != null)
-					blocksAddedToTheCurrentBestChain.addLast(getBlock(txn, hashOfBlockFromBestChain.getBytes()).orElseThrow(() -> new DatabaseException("Cannot follow the new best chain upwards")));
+					blocksAddedToTheCurrentBestChain.addLast(getBlock(txn, hashOfBlockFromBestChain.getBytes())
+							.orElseThrow(() -> new DatabaseException("Cannot follow the new best chain upwards")));
 			}
 			while (hashOfBlockFromBestChain != null);
 		}
@@ -823,7 +824,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				}
 				catch (VerificationException e) {
 					if (isOrphan) {
-						LOGGER.warning("blockchain: discarding orphan block " + Hex.toHexString(hashOfBlockToAdd) + " since it does not pass verification: " + e.getMessage());
+						LOGGER.warning("blockchain: discarding orphan block " + blockToAdd.getHexHash() + " since it does not pass verification: " + e.getMessage());
 						blocksToRemoveFromOrphans.add((NonGenesisBlock) blockToAdd); // orphan blocks are never genesis blocks
 						return false;
 					}
@@ -836,28 +837,26 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Adds a block to the tree of blocks rooted at the genesis block (if any), running
-		 * inside a given transaction. It updates the references to the genesis and to the
-		 * head of the longest chain, if needed.
+		 * Adds a block to the tree of blocks rooted at the genesis block (if any).
+		 * It updates the references to the genesis and to the head of the longest chain, if needed.
 		 * 
-		 * @param txn the transaction
 		 * @param block the block to add
 		 * @param hashOfBlock the hash of {@code block}
-		 * @param updatedHead the new head resulting from the addition, if it changed wrt the previous head
+		 * @param previous the parent of {@code block}, if it is a non-genesis block
 		 * @return true if and only if the block has been added. False means that
-		 *         the block was already in the tree; or that {@code block} is a genesis
-		 *         block and there is already a genesis block in the tree; or that {@code block}
+		 *         the block was already in the tree; or that it is a genesis
+		 *         block and there is already a genesis block in the tree; or that it
 		 *         is a non-genesis block whose previous is not in the tree
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException {
 			if (block instanceof NonGenesisBlock ngb) {
 				if (isInFrozenPart(txn, previous.get().getDescription())) {
-					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since its previous block is in the frozen part of the blockchain");
+					LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since its previous block is in the frozen part of the blockchain");
 					return false;
 				}
 				else if (containsBlock(txn, hashOfBlock)) {
-					LOGGER.warning("blockchain: not adding block " + Hex.toHexString(hashOfBlock) + " since it is already present in blockchain");
+					LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already present in blockchain");
 					return false;
 				}
 				else {
@@ -866,7 +865,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					if (isBetterThanHead(txn, ngb, hashOfBlock))
 						setHead(block, hashOfBlock);
 
-					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
 					return true;
 				}
 			}
@@ -875,20 +874,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					putBlockInStore(txn, hashOfBlock, block);
 					setGenesisHash(txn, hashOfBlock);
 					setHead(block, hashOfBlock);
-					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + Hex.toHexString(hashOfBlock));
+					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
 					return true;
 				}
 				else {
-					LOGGER.warning("blockchain: not adding genesis block " + Hex.toHexString(hashOfBlock) + " since the database already contains a genesis block");
+					LOGGER.warning("blockchain: not adding genesis block " + block.getHexHash() + " since the database already contains a genesis block");
 					return false;
 				}
 			}
 		}
 
 		/**
-		 * Sets the head of the best chain in this database, running inside a transaction.
+		 * Sets the head of the best chain in this database.
 		 * 
-		 * @param txn the transaction
 		 * @param newHead the new head
 		 * @param newHeadHash the hash of {@code newHead}
 		 * @throws NodeException if the node is misbehaving
@@ -901,7 +899,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
 				long heightOfHead = newHead.getDescription().getHeight();
 				storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
-				LOGGER.info("blockchain: height " + heightOfHead + ": block " + Hex.toHexString(newHeadHash) + " set as head");
+				LOGGER.info("blockchain: height " + heightOfHead + ": block " + newHead.getHexHash() + " set as head");
 			}
 			catch (ExodusException e) {
 				throw new DatabaseException(e);
@@ -909,8 +907,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Updates the current best chain in this database, to the chain having the given block as head,
-		 * running inside a transaction.
+		 * Updates the current best chain in this database, to the chain having the given block as head.
 		 * 
 		 * @param newHead the block that gets set as new head
 		 * @param newHeadHash the hash of {@code block}
@@ -980,7 +977,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					// we move startOfNonFrozenPartHash upwards along the current best chain, if it is too far away from the head of the blockchain
 					do {
 						var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
-						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy) + " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
+						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash)
+								.orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy)
+									+ " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
 		
 						if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
 							break;
@@ -1006,13 +1005,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
-		private void addReferencesToTransactionsInside(Block block) {
+		private void addReferencesToTransactionsInside(Block block) throws NodeException {
 			if (block instanceof NonGenesisBlock ngb) {
 				long height = ngb.getDescription().getHeight();
+
 				int count = ngb.getTransactionsCount();
 				for (int pos = 0; pos < count; pos++) {
 					var ref = new TransactionRef(height, pos);
-					storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+					
+					try {
+						storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+					}
+					catch (ExodusException e) {
+						throw new NodeException(e);
+					}
 				};
 			}
 		}
@@ -1045,54 +1051,63 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					// it is already inside the array: it is better not to waste a slot
 					return;
 		
-				orphansPos = (orphansPos + 1) % orphans.length;
 				orphans[orphansPos] = block;
+				orphansPos = (orphansPos + 1) % orphans.length;
+			}
+		}
+
+		/**
+		 * Removes the given orphan.
+		 * 
+		 * @param orphan the orphan to remove
+		 */
+		private void removeFromOrphans(NonGenesisBlock orphan) {
+			synchronized (orphans) {
+				for (int pos = 0; pos < orphans.length; pos++)
+					if (orphans[pos] == orphan)
+						orphans[pos] = null;
 			}
 		}
 
 		private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
 			Optional<Block> cursor = getHead(txn);
-			Optional<byte[]> cursorHash = getHeadHash(txn);
 		
 			if (cursor.isPresent()) {
 				Block block = cursor.get();
-				byte[] blockHash = cursorHash.get();
 				long blockHeight;
 		
 				while ((blockHeight = block.getDescription().getHeight()) > height) {
 					if (block instanceof NonGenesisBlock ngb) {
 						removeReferencesToTransactionsInside(txn, block);
-						storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
+
+						try {
+							storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
+						}
+						catch (ExodusException e) {
+							throw new DatabaseException(e);
+						}
+
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
-						var blockHashCopy = blockHash;
-						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(blockHashCopy) + " has no previous block in the database"));
-						blockHash = hashOfPrevious;
+						var blockCopy = block;
+						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + blockCopy.getHexHash() + " has no previous block in the database"));
 					}
 					else
-						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(blockHash) + " at height " + blockHeight);
+						throw new DatabaseException("The current best chain contains a genesis block " + block.getHexHash() + " at height " + blockHeight);
 				}
 			}
 		}
 
-		private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
+		private void removeReferencesToTransactionsInside(Transaction txn, Block block) throws NodeException {
 			if (block instanceof NonGenesisBlock ngb) {
 				int count = ngb.getTransactionsCount();
-				for (int pos = 0; pos < count; pos++)
-					storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
-			}
-		}
-
-		/**
-		 * Yields the orphans having the given parent.
-		 * 
-		 * @param hashOfParent the hash of {@code parent}
-		 * @return the orphans whose previous block is {@code parent}, if any
-		 */
-		private void removeFromOrphans(Block blockToRemove) {
-			synchronized (orphans) {
-				for (int pos = 0; pos < orphans.length; pos++)
-					if (orphans[pos] == blockToRemove)
-						orphans[pos] = null;
+				for (int pos = 0; pos < count; pos++) {
+					try {
+						storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
+					}
+					catch (ExodusException e) {
+						throw new DatabaseException(e);
+					}
+				}
 			}
 		}
 	}
@@ -2035,7 +2050,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) throws NodeException {
 		try {
 			byte[] hashOfBlock = block.getHash();
-			String initialHash = Hex.toHexString(hashOfBlock);
+			String initialHash = block.getHexHash();
 
 			while (true) {
 				if (isContainedInTheBestChain(txn, block, hashOfBlock)) {
