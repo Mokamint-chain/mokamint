@@ -156,7 +156,7 @@ public class PeersSet implements AutoCloseable {
 			Set<Peer> seeds = config.getSeeds().map(Peers::of).collect(Collectors.toSet());
 			var all = new HashSet<>(seeds);
 			all.addAll(peers.getElements().collect(Collectors.toSet()));
-			tryToReconnectOrAdd(all, seeds::contains);
+			reconnectOrAdd(all, seeds::contains);
 		}
 		catch (NodeException | InterruptedException e) {
 			try {
@@ -205,7 +205,7 @@ public class PeersSet implements AutoCloseable {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, IOException, InterruptedException, PeerRejectedException, NodeException {
-		if (tryToReconnectOrAdd(peer, true))
+		if (reconnectOrAdd(peer, true))
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		else
 			return Optional.empty();
@@ -335,7 +335,7 @@ public class PeersSet implements AutoCloseable {
 		for (var peer: peers)
 			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, unknownPeers);
 
-		return tryToReconnectOrAdd(unknownPeers, _peer -> false);
+		return reconnectOrAdd(unknownPeers, _peer -> false);
 	}
 
 	public void punishBecauseUnreachable(Peer peer) throws NodeException {
@@ -377,7 +377,7 @@ public class PeersSet implements AutoCloseable {
 	private void pingPeerRecreateRemoteAndCollectUnknownPeers(Peer peer, Set<Peer> container) throws NodeException, InterruptedException {
 		Optional<RemotePublicNode> remote = getRemote(peer);
 		if (remote.isEmpty())
-			remote = tryToCreateRemote(peer);
+			remote = reconnect(peer);
 
 		if (remote.isPresent())
 			collectUnknownPeers(peer, remote.get(), container);
@@ -412,7 +412,7 @@ public class PeersSet implements AutoCloseable {
 	 * If the peer was already in this container,
 	 * but was disconnected, this method tries to reconnect to it.
 	 * 
-	 * @param peer the peer to add
+	 * @param peer the peer to reconnect or add
 	 * @param force true if and only if the addition must be performed also if
 	 *              the maximal number of peers for the node has been reached
 	 * @return true if and only if the peer has been added or reconnected
@@ -422,24 +422,15 @@ public class PeersSet implements AutoCloseable {
 	 * @throws TimeoutException if the peer did not answer in time
 	 * @throws IOException if the connection to the peer failed
 	 */
-	private boolean tryToReconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, TimeoutException {
-		boolean added;
-
+	private boolean reconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, TimeoutException {
 		synchronized (lock) {
 			if (bannedURIs.contains(peer.getURI()))
 				return false;
 			else if (peers.contains(peer))
-				return !remotes.containsKey(peer) && tryToCreateRemote(peer).isPresent();
+				return !remotes.containsKey(peer) && reconnect(peer).isPresent();
 			else
-				added = add(peer, force);
+				return add(peer, force);
 		}
-
-		if (added) {
-			node.onConnected(peer);
-			node.onAdded(peer);
-		}
-
-		return added;
 	}
 
 	/**
@@ -456,11 +447,12 @@ public class PeersSet implements AutoCloseable {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean tryToReconnectOrAdd(Set<Peer> peers, Predicate<Peer> force) throws NodeException, InterruptedException {
+	private boolean reconnectOrAdd(Set<Peer> peers, Predicate<Peer> force) throws NodeException, InterruptedException {
 		boolean somethingChanged = false;
+
 		for (var peer: peers) {
 			try {
-				somethingChanged |= tryToReconnectOrAdd(peer, force.test(peer));
+				somethingChanged |= reconnectOrAdd(peer, force.test(peer));
 			}
 			catch (PeerRejectedException | IOException | TimeoutException e) {
 				LOGGER.warning("peers: cannot connect to " + peer + ": " + e.getMessage());
@@ -472,7 +464,7 @@ public class PeersSet implements AutoCloseable {
 
 	@GuardedBy("this.lock")
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
-		boolean connected = false;
+		boolean added = false;
 
 		if (force || peers.size() < config.getMaxPeers()) {
 			RemotePublicNode remote = null;
@@ -483,16 +475,21 @@ public class PeersSet implements AutoCloseable {
 
 				if (db.add(peer, force) && peers.add(peer)) {
 					connect(peer, remote, timeDifference);
-					connected = true;
+					added = true;
 				}
 			}
 			finally {
-				if (remote != null && !connected)
+				if (remote != null && !added)
 					remote.close();
 			}
 		}
 
-		return connected;
+		if (added) {
+			node.onConnected(peer);
+			node.onAdded(peer);
+		}
+
+		return added;
 	}
 
 	/**
@@ -505,9 +502,9 @@ public class PeersSet implements AutoCloseable {
 	 * @throws NodeException if {@link #node} could not complete the operation
 	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
 	 */
-	private Optional<RemotePublicNode> tryToCreateRemote(Peer peer) throws NodeException, InterruptedException {
+	private Optional<RemotePublicNode> reconnect(Peer peer) throws NodeException, InterruptedException {
 		try {
-			LOGGER.info("peers: trying to create a connection to " + peer);
+			LOGGER.info("peers: trying to connect to " + peer);
 			boolean connected = false;
 			RemotePublicNode remote = null;
 
@@ -518,7 +515,7 @@ public class PeersSet implements AutoCloseable {
 
 				synchronized (lock) {
 					// we check if the peer is actually contained in the set of peers,
-					// since it might have been removed in the meanwhile and we not not
+					// since it might have been removed in the meanwhile and we do not
 					// want to store remotes for peers not in the set of peers of this object
 					if (peers.contains(peer) && !remotes.containsKey(peer)) {
 						connect(peer, remote, timeDifference);
@@ -550,7 +547,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Checks if the peer whose remote is provided is compatible with {@link #node}.
+	 * Checks if the peer connected though the given remote is compatible with {@link #node}.
 	 * 
 	 * @param remote the remote of the peer
 	 * @return the time difference (in milliseconds) between the local time of {@link #node}
@@ -618,7 +615,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Called when a remote gets closed: it disconnects the peer and punishes it.
+	 * Called when a remote gets closed: it disconnects the peer.
 	 * 
 	 * @param peer the peer whose remote gets closed
 	 */

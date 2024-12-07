@@ -1688,10 +1688,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > blockDescription.getTotalWaitingTime();
 	}
 
-	private Environment createBlockchainEnvironment() {
-		var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
-		LOGGER.info("blockchain: opened the blocks database");
-		return env;
+	private Environment createBlockchainEnvironment() throws NodeException {
+		try {
+			var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
+			LOGGER.info("blockchain: opened the blocks database");
+			return env;
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
 	}
 
 	private Store openStore(String name) throws NodeException {
