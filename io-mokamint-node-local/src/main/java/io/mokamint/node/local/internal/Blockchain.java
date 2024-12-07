@@ -41,7 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -862,7 +861,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				else {
 					putBlockInStore(txn, hashOfBlock, block);
 					addToForwards(txn, ngb, hashOfBlock);
-					if (isBetterThanHead(txn, ngb, hashOfBlock))
+					if (isBetterThanHead(txn, ngb))
 						setHead(block, hashOfBlock);
 
 					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
@@ -1702,8 +1701,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	private Environment createBlockchainEnvironment() throws NodeException {
 		try {
-			var env = new Environment(node.getConfig().getDir().resolve("blocks").toString());
-			LOGGER.info("blockchain: opened the blocks database");
+			var path = node.getConfig().getDir().resolve("blocks");
+			var env = new Environment(path.toString());
+			LOGGER.info("blockchain: opened the blocks database at " + path);
 			return env;
 		}
 		catch (ExodusException e) {
@@ -1712,21 +1712,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	private Store openStore(String name) throws NodeException {
-		var store = new AtomicReference<Store>();
-
 		try {
-			environment.executeInTransaction(txn -> store.set(environment.openStoreWithoutDuplicates(name, txn)));
+			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicates(name, txn));
+			LOGGER.info("blockchain: opened the store of " + name + " inside the blocks database");
+			return store;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-
-		LOGGER.info("blockchain: opened the store of " + name + " inside the blocks database");
-		return store.get();
 	}
 
 	/**
-	 * Yields the hash of the head block of the blockchain in this database, if it has been set already,
+	 * Yields the hash of the head block of this blockchain, if it has been set already,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -1743,7 +1740,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the state identifier of the head block of the blockchain in this database, if it has been set already,
+	 * Yields the state identifier of the head block of this blockchain, if it has been set already,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -1760,7 +1757,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the hash of the starting block of the non-frozen part of the blockchain, if it has been set already,
+	 * Yields the hash of the starting block of the non-frozen part of this blockchain, if it has been set already,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
@@ -1778,33 +1775,27 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	/**
 	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history,
-	 * running inside a Xodus transaction.
-	 * Application transactions delivered before that time have generated stores that can be considered as frozen.
+	 * running inside a transaction.
+	 * Application transactions delivered before that time have stores that can be considered as frozen.
 	 * 
-	 * @param txn the Xodus transaction where the operation is performed
-	 * @return the limit time; this is empty if the database is empty
+	 * @param txn the transaction
+	 * @return the limit time; this is empty if the blockchain is empty
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private Optional<LocalDateTime> getStartingTimeOfNonFrozenHistory(Transaction txn) throws NodeException {
-		try {
-			Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
-			if (maybeStartOfNonFrozenPartHash.isEmpty())
-				return Optional.empty();
+		Optional<byte[]> maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
+		if (maybeStartOfNonFrozenPartHash.isEmpty())
+			return Optional.empty();
 
-			Block startOfNonFrozenPart = getBlock(txn, maybeStartOfNonFrozenPartHash.get())
-				.orElseThrow(() -> new DatabaseException("The hash of the start of the non-frozen part of the blockchain is set but its block cannot be found in the database"));
+		Block startOfNonFrozenPart = getBlock(txn, maybeStartOfNonFrozenPartHash.get())
+			.orElseThrow(() -> new DatabaseException("The hash of the start of the non-frozen part of the blockchain is set but its block cannot be found in the database"));
 
-			if (startOfNonFrozenPart instanceof GenesisBlock gb)
-				return Optional.of(gb.getStartDateTimeUTC());
+		if (startOfNonFrozenPart instanceof GenesisBlock gb)
+			return Optional.of(gb.getStartDateTimeUTC());
 
-			// the transactions in a non-genesis block are delivered in a time that is that of creation of the previous block
-			return Optional.of(getGenesis(txn)
-					.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
-					.getStartDateTimeUTC().plus(startOfNonFrozenPart.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
-		}
-		catch (ExodusException e) {
-			throw new DatabaseException(e);
-		}
+		return Optional.of(getGenesis(txn)
+			.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+			.getStartDateTimeUTC().plus(startOfNonFrozenPart.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 	}
 
 	/**
@@ -1890,8 +1881,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the hashes of the blocks that follow the block with the given hash, if any,
-	 * running inside a transaction.
+	 * Yields the hashes of the blocks that follow the block with the given hash, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @param hash the hash of the parent block
@@ -1930,7 +1920,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	/**
 	 * Yields the block with the given hash, if it is contained in this blockchain,
-	 * running inside the given transaction.
+	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @param hash the hash
@@ -1953,8 +1943,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the description of the block with the given hash, if it is contained in this database,
-	 * running inside the given transaction.
+	 * Yields the description of the block with the given hash, if it is contained in this blockchain,
+	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @param hash the hash
@@ -1978,10 +1968,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this database,
-	 * running inside the given transaction.
+	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this blockchain,
+	 * running inside a transaction.
 	 * 
-	 * @param txn the database transaction
+	 * @param txn the transaction
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction, if any
 	 * @throws NodeException if the node is misbehaving
@@ -2000,8 +1990,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			Block block = getBlock(txn, blockHash.getBytes())
 				.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes())));
 
-			if (block instanceof NonGenesisBlock ngb)
-				return Optional.of(ngb.getTransaction(ref.progressive));
+			if (block instanceof NonGenesisBlock ngb) {
+				try {
+					return Optional.of(ngb.getTransaction(ref.progressive));
+				}
+				catch (IndexOutOfBoundsException e) {
+					throw new DatabaseException("Transaction " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
+				}
+			}
 			else
 				throw new DatabaseException("Transaction " + Hex.toHexString(hash) + " seems contained in a genesis block, which is impossible");
 		}
@@ -2094,10 +2090,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Yields the creation time of the given block, if it were to be added to this blockchain, running
 	 * inside a transaction. For genesis blocks, their creation time is explicit in the block.
-	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis
-	 * of this blockchain.
+	 * For non-genesis blocks, this method adds the total waiting time of the block to the time of the genesis of this blockchain.
 	 * 
-	 * @param txn the Xodus transaction
+	 * @param txn the transaction
 	 * @param block the block whose creation time is computed
 	 * @return the creation time of {@code block}; this is empty only for non-genesis blocks if the blockchain is empty
 	 * @throws NodeException if the node is misbehaving
@@ -2105,21 +2100,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	Optional<LocalDateTime> creationTimeOf(Transaction txn, Block block) throws NodeException {
 		if (block instanceof GenesisBlock gb)
 			return Optional.of(gb.getStartDateTimeUTC());
-		else {
-			var maybeGenesis = getGenesis(txn);
-			if (maybeGenesis.isEmpty())
-				return Optional.empty();
-			else
-				return Optional.of(maybeGenesis.get().getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
-		}
+		else
+			return getGenesis(txn).map(genesis -> genesis.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 	}
 
 	/**
-	 * Determines if the given block is more powerful than the current head, running inside a transaction.
+	 * Determines if the current head is less powerful than the given block, running inside a transaction.
 	 * 
-	 * @param txn the Xodus transaction
+	 * @param txn the transaction
 	 * @param block the block
-	 * @return true if and only if the current head is missing or {@code block} is more powerful
+	 * @return true if and only if the current head is missing or it is less powerful than {@code block}
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
@@ -2149,7 +2139,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the head of the best chain in this database, if any, running inside a transaction.
+	 * Yields the head of the best chain of this blockchain, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @return the head, if any
@@ -2173,7 +2163,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the starting block of the non-frozen part of the history of the blockchain, if any, running inside a transaction.
+	 * Yields the starting block of the non-frozen part of the history of this blockchain, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @return the starting block, if any
@@ -2197,7 +2187,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the genesis block in this database, if any, running inside a transaction.
+	 * Yields the genesis block of this blockchain, if any, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @return the genesis block, if any
@@ -2222,10 +2212,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Adds to the database a block with a given hash, running inside a transaction.
+	 * Adds a block with a given hash to this blockchain, running inside a transaction.
 	 * 
 	 * @param txn the transaction
-	 * @param hashOfBlock the hash of {@code block}
+	 * @param hashOfBlock the hash of the block
 	 * @param block the block
 	 * @throws NodeException if the node is misbehaving
 	 */
@@ -2240,7 +2230,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Determines if this database contains a block with the given hash, running inside a transaction.
+	 * Determines if this blockchain contains a block with the given hash, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @param hashOfBlock the hash
@@ -2256,16 +2246,25 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws NodeException {
+	/**
+	 * Checks if the given block is better than the current head, running inside a transaction.
+	 * It assumes that the blockchain is non-empty.
+	 * 
+	 * @param txn the transaction
+	 * @param block the block
+	 * @return true if and only if that condition holds
+	 * @throws NodeException if the node is misbehaving
+	 */
+	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block) throws NodeException {
 		BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new DatabaseException("The database of blocks is non-empty but the power of the head is not set"));
 		return block.getDescription().getPower().compareTo(powerOfHead) > 0;
 	}
 
 	/**
-	 * Sets the hash of the genesis block in this database, running inside a transaction.
+	 * Sets the hash of the genesis block of this blockchain, running inside a transaction.
 	 * 
 	 * @param txn the transaction
-	 * @param newGenesisHash the hash of the genesis block
+	 * @param newGenesisHash the hash to set as hash of the genesis block
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void setGenesisHash(Transaction txn, byte[] newGenesisHash) throws NodeException {
@@ -2279,10 +2278,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Sets the hash of the starting block of the non-frozen part of the blockchain, running inside a transaction.
+	 * Sets the hash of the starting block of the non-frozen part of this blockchain, running inside a transaction.
 	 * 
 	 * @param txn the transaction
-	 * @param startOfNonFrozenPartHash the hash of the starting block of the non-frozen part of the blockchain
+	 * @param startOfNonFrozenPartHash the hash to set as starting block of the non-frozen part of this blockchain
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void setStartOfNonFrozenPartHash(Transaction txn, byte[] startOfNonFrozenPartHash) throws NodeException {
@@ -2313,6 +2312,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// blocks might have no forward blocks
 				if (storeOfForwards.get(txn, currentHashBI) != null)
 					storeOfForwards.delete(txn, currentHashBI);
+
+				// storeOfTransactions and storeOfChain refer to the current best chain, that
+				// is never garbage-collected; if that best chain changes, the BlockAdder will
+				// take care of updating storeOfTransactions and storeOfChain
 			}
 			catch (ExodusException e) {
 				throw new DatabaseException(e);
@@ -2338,7 +2341,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		Optional<byte[]> maybeStateId = getStateIdOfHead(txn);
 		if (maybeStateId.isEmpty())
-			throw new DatabaseException("The hash of the genesis is set but there is no state identifier for the head set in the database");
+			throw new DatabaseException("The hash of the genesis is set but the state identifier for the head is missing");
 
 		return ChainInfos.of(maybeChainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash, maybeStateId);
 	}
@@ -2358,7 +2361,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			for (var bi: hashes)
 				if (bi == null)
-					throw new DatabaseException("The current best chain contains a missing element");
+					throw new DatabaseException("The current best chain misses an element");
 
 			return Stream.of(hashes).map(ByteIterable::getBytes);
 		}
@@ -2367,11 +2370,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlockToAdd) throws NodeException {
+	private void addToForwards(Transaction txn, NonGenesisBlock block, byte[] hashOfBlock) throws NodeException {
 		try {
 			var hashOfPrevious = fromBytes(block.getHashOfPreviousBlock());
 			var oldForwards = storeOfForwards.get(txn, hashOfPrevious);
-			var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlockToAdd) : hashOfBlockToAdd);
+			var newForwards = fromBytes(oldForwards != null ? concat(oldForwards.getBytes(), hashOfBlock) : hashOfBlock);
 			storeOfForwards.put(txn, hashOfPrevious, newForwards);
 		}
 		catch (ExodusException e) {
@@ -2414,7 +2417,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private static class TransactionRef extends AbstractMarshallable {
 
 		/**
-		 * The height of the block in the current chain containing the transaction.
+		 * The height of the block in the current chain, containing the transaction.
 		 */
 		private final long height;
 

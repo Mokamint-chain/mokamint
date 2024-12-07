@@ -22,7 +22,6 @@ import static io.hotmoka.xodus.ByteIterable.fromBytes;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -149,8 +148,8 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * 
 	 * @param peer the peer to add
 	 * @param force true if the peer must be added, regardless of the total amount
-	 *              of peers already added; false otherwise, which means that no more
-	 *              than {@link #maxPeers} peers are allowed
+	 *              of peers already added; false otherwise, which means that the maximal
+	 *              number of peers has been reached
 	 * @return true if the peer has been added; false otherwise, which means
 	 *         that the peer was already present or that it was not forced
 	 *         and there are already {@link maxPeers} peers
@@ -335,22 +334,20 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	}
 
 	private Environment createPeersEnvironment(LocalNodeConfig config) {
-		var env = new Environment(config.getDir().resolve("peers").toString());
-		LOGGER.info("db: opened the peers database");
+		var path = config.getDir().resolve("peers");
+		var env = new Environment(path.toString());
+		LOGGER.info("db: opened the peers database at " + path);
 		return env;
 	}
 
 	private Store openStore(String name) throws NodeException {
-		var store = new AtomicReference<Store>();
-
 		try {
-			environment.executeInTransaction(txn -> store.set(environment.openStoreWithoutDuplicates(name, txn)));
+			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicates(name, txn));
+			LOGGER.info("db: opened the store of " + name);
+			return store;
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-
-		LOGGER.info("db: opened the store of " + name);
-		return store.get();
 	}
 }
