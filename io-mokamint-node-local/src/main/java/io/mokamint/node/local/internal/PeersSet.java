@@ -159,7 +159,13 @@ public class PeersSet implements AutoCloseable {
 			tryToReconnectOrAdd(all, seeds::contains);
 		}
 		catch (NodeException | InterruptedException e) {
-			db.close();
+			try {
+				close();
+			}
+			catch (NodeException e2) {
+				LOGGER.log(Level.SEVERE, "could not close the peers set", e2);
+			}
+
 			throw e;
 		}
 	}
@@ -211,9 +217,8 @@ public class PeersSet implements AutoCloseable {
 	 * @param peer the peer to remove
 	 * @return true if and only if the peer has been removed
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	public boolean remove(Peer peer) throws NodeException, InterruptedException {
+	public boolean remove(Peer peer) throws NodeException {
 		boolean removed;
 
 		synchronized (lock) {
@@ -235,9 +240,8 @@ public class PeersSet implements AutoCloseable {
 	 * @param peer the peer to ban
 	 * @return true if and only if the peer has been removed
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the operation was interrupted
 	 */
-	public boolean ban(Peer peer) throws NodeException, InterruptedException {
+	public boolean ban(Peer peer) throws NodeException {
 		synchronized (lock) {
 			bannedURIs.add(peer.getURI());
 		}
@@ -283,7 +287,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws InterruptedException, NodeException {
+	public void close() throws NodeException {
 		try {
 			synchronized (lock) {
 				var copyOfRemotes = new HashMap<>(remotes);
@@ -317,6 +321,8 @@ public class PeersSet implements AutoCloseable {
 	 * and collects their peers, in case they might be useful for the node.
 	 * 
 	 * @return true if some peer has been added or reconnected
+	 * @throws NodeException if the node misbehaves
+	 * @throws InterruptedException if the current thread gets interrupted
 	 */
 	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
 		Set<Peer> peers;
@@ -332,7 +338,7 @@ public class PeersSet implements AutoCloseable {
 		return tryToReconnectOrAdd(unknownPeers, _peer -> false);
 	}
 
-	public void punishBecauseUnreachable(Peer peer) throws NodeException, InterruptedException {
+	public void punishBecauseUnreachable(Peer peer) throws NodeException {
 		boolean removed = false;
 
 		synchronized (lock) {
@@ -352,6 +358,7 @@ public class PeersSet implements AutoCloseable {
 			node.onRemoved(peer);
 	}
 
+	@GuardedBy("this.lock")
 	private void pardonBecauseReachable(Peer peer) {
 		long gained = peers.pardon(peer, config.getPeerPunishmentForUnreachable());
 		if (gained > 0L)
@@ -376,19 +383,21 @@ public class PeersSet implements AutoCloseable {
 			collectUnknownPeers(peer, remote.get(), container);
 	}
 
-	private void collectUnknownPeers(Peer peer, RemotePublicNode remote, Set<Peer> container) throws InterruptedException, NodeException {
-		if (peers.size() < config.getMaxPeers()) { // optimization
-			try {
-				var peerInfos = remote.getPeerInfos();
-				pardonBecauseReachable(peer);
-				peerInfos.filter(PeerInfo::isConnected)
-					.map(PeerInfo::getPeer)
-					.filter(not(peers::contains))
-					.forEach(container::add);
-			}
-			catch (TimeoutException | NodeException e) {
-				LOGGER.log(Level.WARNING, "peers: cannot contact " + peer + ": " + e.getMessage());
-				punishBecauseUnreachable(peer);
+	private void collectUnknownPeers(Peer peer, RemotePublicNode remote, Set<Peer> container) throws NodeException, InterruptedException {
+		synchronized (lock) {
+			if (peers.size() < config.getMaxPeers()) { // optimization
+				try {
+					var peerInfos = remote.getPeerInfos();
+					pardonBecauseReachable(peer);
+					peerInfos.filter(PeerInfo::isConnected)
+						.map(PeerInfo::getPeer)
+						.filter(not(peers::contains))
+						.forEach(container::add);
+				}
+				catch (TimeoutException | NodeException e) {
+					LOGGER.log(Level.WARNING, "peers: cannot contact " + peer + ": " + e.getMessage());
+					punishBecauseUnreachable(peer);
+				}
 			}
 		}
 	}
