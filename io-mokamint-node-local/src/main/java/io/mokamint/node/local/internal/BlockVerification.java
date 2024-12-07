@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -85,7 +86,7 @@ public class BlockVerification {
 	private final LocalDateTime creationTime;
 
 	/**
-	 * Performs the verification that {@code block} satisfies all consensus rules required
+	 * Verifies that {@code block} satisfies all consensus rules required
 	 * for being a child of {@code previous}, in the given {@code node}.
 	 * 
 	 * @param txn the Xodus transaction during which verification occurs
@@ -105,7 +106,8 @@ public class BlockVerification {
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;
-		this.creationTime = node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NodeException("Cannot determine the creation time of the block under verification"));
+		// the following exception should never happen, since the blockchain is non-empty for non-genesis blocks
+		this.creationTime = node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NoSuchElementException("Cannot determine the creation time of the block under verification"));
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
@@ -114,11 +116,11 @@ public class BlockVerification {
 	}
 
 	/**
-	 * Verifies if the genesis {@link #block} is valid for the blockchain in {@link #node}.
+	 * Verifies if the genesis {@link #block} is valid.
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
@@ -130,17 +132,16 @@ public class BlockVerification {
 
 	/**
 	 * Verifies if the non-genesis {@link #block} satisfies all consensus rules required for being
-	 * a child of {@link #previous}. This method is called only if the database is not empty.
-	 * Namely, if {@link #previous} is in the database and if the genesis block of the database is set.
-	 * It is guaranteed that the previous hash inside {@link #block} coincides with the hash
+	 * a child of {@link #previous}. This method is called only if the blockchain is not empty.
+	 * Namely, if {@link #previous} is in blockchain and if the genesis block of the blockchain is set.
+	 * It is guaranteed that the previous hash reference in {@link #block} coincides with the hash
 	 * of {@link #previous} (hence this condition is not verified by this method).
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
-	 * @throws NodeException if the node is misbehaving
 	 */
 	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
@@ -168,7 +169,7 @@ public class BlockVerification {
 	 * 
 	 * @throws VerificationException if that condition in violated
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
 	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException, TimeoutException {
@@ -256,11 +257,11 @@ public class BlockVerification {
 		if (!power.equals(expectedDescription.getPower()))
 			throw new VerificationException("Power mismatch (expected " + expectedDescription.getPower() + " but found " + power + ")");
 
-		var totalWaitingTime = description.getTotalWaitingTime();
+		long totalWaitingTime = description.getTotalWaitingTime();
 		if (totalWaitingTime != expectedDescription.getTotalWaitingTime())
 			throw new VerificationException("Total waiting time mismatch (expected " + expectedDescription.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
 
-		var weightedWaitingTime = description.getWeightedWaitingTime();
+		long weightedWaitingTime = description.getWeightedWaitingTime();
 		if (weightedWaitingTime != expectedDescription.getWeightedWaitingTime())
 			throw new VerificationException("Weighted waiting time mismatch (expected " + expectedDescription.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
 
@@ -272,10 +273,9 @@ public class BlockVerification {
 	/**
 	 * Checks if the creation time of {@link #block} is not too much in the future.
 	 * 
-	 * @throws VerificationException if the creationTime of {@link #block} is too much in the future
-	 * @throws NodeException if the node is misbehaving
+	 * @throws VerificationException if that condition is violated
 	 */
-	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, NodeException {
+	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
 		long max = node.getConfig().getBlockMaxTimeInTheFuture();
@@ -285,7 +285,7 @@ public class BlockVerification {
 
 	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
 		if (block.getTransactions().mapToLong(Transaction::size).sum() > config.getMaxBlockSize())
-			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + ")");
+			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
 	}
 
 	/**
@@ -305,30 +305,30 @@ public class BlockVerification {
 
 	/**
 	 * Checks that the execution of the transactions inside {@link #block} is successful
-	 * (both check and delivery of transactions succeeds) and leads to the final state
+	 * (both check and delivery of transactions succeed) and leads to the final state
 	 * whose hash is in the {@link #block}.
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
-	 * @throws VerificationException if that condition does not hold
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws VerificationException if that condition is violated
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, TimeoutException, NodeException {
 		var app = node.getApplication();
 
-		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous);
-		if (creationTimeOfPrevious.isEmpty())
-			throw new NodeException("The previous of the block under verification was expected to be in blockchain");
+		// if the following exception occurs, there is a coding error
+		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
+			.orElseThrow(() -> new NoSuchElementException("The previous of the block under verification was expected to be in blockchain"));
 
 		try {
 			int id;
 
 			try {
-				id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious.get(), previous.getStateId());
+				id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious, previous.getStateId());
 			}
 			catch (UnknownStateException e) {
-				throw new VerificationException("Block verification failed because its initial state is unknown to the application: " + e.getMessage());
+				throw new VerificationException("The initial state is unknown to the application: " + e.getMessage());
 			}
 
 			boolean success = false;
@@ -365,8 +365,8 @@ public class BlockVerification {
 			}
 		}
 		catch (UnknownGroupIdException e) {
-			// somebody has closed the group id that we are using: the node is not working properly
-			throw new NodeException(e);
+			// somebody has closed the group id that we are using: there is a coding error
+			throw new IllegalStateException(e);
 		}
 		catch (ApplicationException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving

@@ -1140,7 +1140,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
 			if (maybeStartTimeOfNonFrozenPart.isPresent())
-				app.keepFrom(maybeStartTimeOfNonFrozenPart.get());
+				app.keepFrom(maybeStartTimeOfNonFrozenPart.get()); // TODO: this should be inside an exclusive transaction on the blockchain's database?
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
