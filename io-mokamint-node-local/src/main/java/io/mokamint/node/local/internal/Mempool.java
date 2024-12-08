@@ -107,7 +107,7 @@ public class Mempool {
 	 * 
 	 * @param parent the mempool to clone
 	 */
-	Mempool(Mempool parent) {
+	public Mempool(Mempool parent) {
 		this.node = parent.node;
 		this.blockchain = parent.blockchain;
 		this.app = parent.app;
@@ -127,7 +127,7 @@ public class Mempool {
 	 * 
 	 * @param newBase the new base that must be set for this mempool
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public void rebaseAt(Block newBase) throws NodeException, InterruptedException, TimeoutException {
@@ -146,14 +146,13 @@ public class Mempool {
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 *                                      or if the transaction is already contained in the blockchain or mempool
 	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
 	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
-		byte[] hash = hasher.hash(transaction);
-
 		try {
 			app.checkTransaction(transaction);
+			byte[] hash = hasher.hash(transaction);
 			var entry = new TransactionEntry(transaction, app.getPriority(transaction), hash);
 			int maxSize = node.getConfig().getMempoolSize();
 
@@ -187,7 +186,7 @@ public class Mempool {
 	}
 
 	/**
-	 * Performs an action for each transaction in this mempool.
+	 * Performs an action for each transaction in this mempool, in decreasing priority order.
 	 * 
 	 * @param the action
 	 */
@@ -229,23 +228,23 @@ public class Mempool {
 	}
 
 	boolean isEmpty() {
-		return mempool.isEmpty();
+		synchronized (mempool) {
+			return mempool.isEmpty();
+		}
 	}
 
 	Optional<Block> getBase() {
-		return base;
+		synchronized (mempool) {
+			return base;
+		}
 	}
 
-	void setBase(Block newBase) {
-		this.base = Optional.of(newBase);
-	}
-
-	void addAll(Stream<TransactionEntry> toAdd) {
-		toAdd.forEach(mempool::add);
-	}
-
-	void removeAll(Stream<TransactionEntry> toRemove) {
-		toRemove.forEach(mempool::remove);
+	void update(Block newBase, Stream<TransactionEntry> toAdd, Stream<TransactionEntry> toRemove) {
+		synchronized (mempool) {
+			toAdd.forEach(mempool::add);
+			toRemove.forEach(mempool::remove);
+			this.base = Optional.of(newBase);
+		}
 	}
 
 	/**
@@ -259,7 +258,7 @@ public class Mempool {
 		protected TransactionEntry(Transaction transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
-			this.hash = hash;
+			this.hash = hash; // TODO: transaction.getHash();
 		}
 	
 		/**

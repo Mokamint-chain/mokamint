@@ -328,6 +328,7 @@ public class BlockVerification {
 				id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious, previous.getStateId());
 			}
 			catch (UnknownStateException e) {
+				System.out.println("!!!!!!!!!!!!!!!!!!!!"); // TODO
 				throw new VerificationException("The initial state is unknown to the application: " + e.getMessage());
 			}
 

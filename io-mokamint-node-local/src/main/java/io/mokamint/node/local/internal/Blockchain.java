@@ -701,7 +701,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd))
-				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in the database");
+				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 
 			addBlockAndConnectOrphans(block, verify);
 			computeBlocksAddedToTheCurrentBestChain();
@@ -1582,9 +1582,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private void updateMempool() {
-			mempool.addAll(toAdd.stream());
-			mempool.removeAll(toRemove.stream());
-			mempool.setBase(newBase);
+			mempool.update(newBase, toAdd.stream(), toRemove.stream());
 		}
 
 		private boolean reachedSharedAncestor() throws NodeException {

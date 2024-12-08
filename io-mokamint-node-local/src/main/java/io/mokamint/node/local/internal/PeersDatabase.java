@@ -275,9 +275,8 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		 */
 		private static ArrayOfPeers from(ByteIterable bi) throws IOException {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				int length = context.readCompactInt();
-				var peers = new Peer[length];
-				for (int pos = 0; pos < length; pos++)
+				var peers = new Peer[context.readCompactInt()];
+				for (int pos = 0; pos < peers.length; pos++)
 					peers[pos] = Peers.from(context);
 		
 				return new ArrayOfPeers(Stream.of(peers));

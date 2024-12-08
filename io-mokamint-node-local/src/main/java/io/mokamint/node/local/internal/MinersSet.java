@@ -119,9 +119,8 @@ public class MinersSet {
 	}
 
 	/**
-	 * Pardons a miner, by increasing its points. There is a maximal
-	 * value to the resulting points. If the miner was not present in this
-	 * container, nothing happens.
+	 * Pardons a miner, by increasing its points. There is a maximal value to the resulting points.
+	 * If the miner was not present in this container, nothing happens.
 	 * 
 	 * @param miner the miner to pardon
 	 * @param points how many points get pardoned, non-negative

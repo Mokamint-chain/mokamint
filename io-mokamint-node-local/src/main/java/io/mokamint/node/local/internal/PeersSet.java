@@ -466,7 +466,7 @@ public class PeersSet implements AutoCloseable {
 	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
 		boolean added = false;
 
-		if (force || peers.size() < config.getMaxPeers()) {
+		if (force || peers.size() < config.getMaxPeers()) { // optimization: this is checked by db.add as well, but better avoid creating a useless remote
 			RemotePublicNode remote = null;
 
 			try {

@@ -134,7 +134,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	/**
 	 * The size of the memory used to avoid whispering the same
 	 * message again; higher numbers reduce the circulation of spurious messages.
-	 * It defaults to 1000.
+	 * It defaults to 1,000.
 	 */
 	public final int whisperingMemorySize;
 
@@ -148,12 +148,14 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	/**
 	 * The size of the mempool of the node, that is, the area
 	 * of memory where incoming transactions are held before being verified and added to blocks.
+	 * It defaults to 100,000.
 	 */
 	public final int mempoolSize;
 
 	/**
 	 * The size of the group of blocks whose hashes get downloaded
 	 * in one shot during synchronization.
+	 * It defaults to 500.
 	 */
 	public final int synchronizationGroupSize;
 
@@ -170,6 +172,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * If negative, changes of history are always allowed, without any limit, which drastically reduces
 	 * the opportunities for garbage-collection of the blocks' database and of the database for the states of the
 	 * application, if the latter implements any garbage-collection strategy.
+	 * It defaults to one hour.
 	 */
 	public final long maximalHistoryChangeTime;
 
@@ -372,11 +375,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public boolean equals(Object other) {
-		if (super.equals(other)) {
-			var otherConfig = (LocalNodeConfigImpl) other;
-
-			return dir.equals(otherConfig.dir) &&
+	public boolean equals(Object other) { // compatible with the inherited hashCode
+		return super.equals(other) && other instanceof LocalNodeConfigImpl otherConfig &&
+				dir.equals(otherConfig.dir) &&
 				deadlineWaitTimeout == otherConfig.deadlineWaitTimeout &&
 				minerInitialPoints == otherConfig.minerInitialPoints &&
 				minerPunishmentForTimeout == otherConfig.minerPunishmentForTimeout &&
@@ -395,9 +396,6 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				synchronizationGroupSize == otherConfig.synchronizationGroupSize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture &&
 				maximalHistoryChangeTime == otherConfig.maximalHistoryChangeTime;
-		}
-		else
-			return false;
 	}
 
 	/**
@@ -429,10 +427,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		 * 
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is not available
 		 */
-		public LocalNodeConfigBuilderImpl() throws NoSuchAlgorithmException {
-		}
+		public LocalNodeConfigBuilderImpl() throws NoSuchAlgorithmException {}
 
-		private LocalNodeConfigBuilderImpl(Toml toml) throws NoSuchAlgorithmException, FileNotFoundException, URISyntaxException {
+		private LocalNodeConfigBuilderImpl(Toml toml) throws NoSuchAlgorithmException, URISyntaxException {
 			super(toml);
 
 			var dir = toml.getString("dir");
@@ -521,7 +518,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		 * Creates a builder by reading the properties of the given TOML file and sets them for
 		 * the corresponding fields of this builder.
 		 * 
-		 * @param toml the file
+		 * @param toml the path to the file
 		 * @throws FileNotFoundException if the file cannot be found
 		 * @throws URISyntaxException if the file refers to a URI with a wrong syntax
 		 * @throws NoSuchAlgorithmException if the file refers to a hashing algorithm that is not available
