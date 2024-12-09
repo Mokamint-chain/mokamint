@@ -52,12 +52,13 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
-import io.mokamint.node.TaskInfos;
 import io.mokamint.node.Memories;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
@@ -74,7 +75,6 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.api.Memory;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -140,7 +140,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The UUID of this node.
 	 */
-	private final UUID uuid;
+	public final UUID uuid; // TODO
 
 	/**
 	 * The executor of tasks. There might be more tasks in execution at the same time.
@@ -196,17 +196,17 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The queue of the whispered peers to process.
 	 */
-	private final BlockingQueue<WhisperedInfo> whisperedPeersQueue = new ArrayBlockingQueue<>(1000);
+	private final BlockingQueue<WhisperedInfo<WhisperPeerMessage>> whisperedPeersQueue = new ArrayBlockingQueue<>(1000);
 	
 	/**
 	 * The queue of the whispered blocks to process.
 	 */
-	private final BlockingQueue<WhisperedInfo> whisperedBlocksQueue = new ArrayBlockingQueue<>(1000);
+	private final BlockingQueue<WhisperedInfo<WhisperBlockMessage>> whisperedBlocksQueue = new ArrayBlockingQueue<>(1000);
 	
 	/**
 	 * The queue of the whispered transactions to process.
 	 */
-	private final BlockingQueue<WhisperedInfo> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
+	private final BlockingQueue<WhisperedInfo<WhisperTransactionMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -252,6 +252,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
 		schedulePeriodicWhisperingOfAllServices();
 		schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
+		schedulePeriodicSynchronization();
 		execute(this.miningTask = new MiningTask(this), "blocks mining process");
 	}
 
@@ -278,13 +279,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		boundWhisperers.remove(whisperer);
 	}
 
-	private static class WhisperedInfo {
-		private final WhisperMessage<?> message;
+	private static class WhisperedInfo<M extends WhisperMessage<?>> {
+		private final M message;
 		private final Predicate<Whisperer> seen;
 		private final String description;
 		private final boolean add;
 
-		private WhisperedInfo(WhisperMessage<?> message, Predicate<Whisperer> seen, String description, boolean add) {
+		private WhisperedInfo(M message, Predicate<Whisperer> seen, String description, boolean add) {
 			this.message = message;
 			this.seen = seen;
 			this.description = description;
@@ -296,11 +297,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public void whisper(WhisperMessage<?> message, Predicate<Whisperer> seen, String description) {
 		if (!seen.test(this))
 			if (message instanceof WhisperPeerMessage wpm && peersAlreadyWhispered.add(wpm))
-				whisperedPeersQueue.offer(new WhisperedInfo(message, seen, description, true));
-			else if (message instanceof WhisperBlockMessage && alreadyWhispered.add(message.getWhispered()))
-				whisperedBlocksQueue.offer(new WhisperedInfo(message, seen, description, true));
-			else if (message instanceof WhisperTransactionMessage && alreadyWhispered.add(message.getWhispered()))
-				whisperedTransactionsQueue.offer(new WhisperedInfo(message, seen, description, true));
+				whisperedPeersQueue.offer(new WhisperedInfo<>(wpm, seen, description, true));
+			else if (message instanceof WhisperBlockMessage wbm && alreadyWhispered.add(message.getWhispered()))
+				whisperedBlocksQueue.offer(new WhisperedInfo<>(wbm, seen, description, true));
+			else if (message instanceof WhisperTransactionMessage wtm && alreadyWhispered.add(message.getWhispered()))
+				whisperedTransactionsQueue.offer(new WhisperedInfo<>(wtm, seen, description, true));
 	}
 
 	@Override
@@ -673,9 +674,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
 	 */
 	protected void scheduleSynchronization() {
-		// we avoid to synchronize if synchronization is already in process
-		if (isSynchronizing.getAndSet(true) == false)
-			execute(blockchain::synchronize, "synchronization from the peers");
+		execute(this::synchronize, "synchronization from the peers");
 	}
 
 	/**
@@ -704,7 +703,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 		if (peersAlreadyWhispered.add(whisperPeerMessage)) {
 			String description = "peer " + peer;
-			whisperedPeersQueue.offer(new WhisperedInfo(whisperPeerMessage, isThis, description, false));
+			whisperedPeersQueue.offer(new WhisperedInfo<>(whisperPeerMessage, isThis, description, false));
 		}
 	}
 
@@ -717,7 +716,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (alreadyWhispered.add(block)) {
 			var whisperBlockMessage = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
 			String description = "block " + block.getHexHash();
-			whisperedBlocksQueue.offer(new WhisperedInfo(whisperBlockMessage, isThis, description, false));
+			whisperedBlocksQueue.offer(new WhisperedInfo<>(whisperBlockMessage, isThis, description, false));
 		}
 	}
 
@@ -730,7 +729,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (alreadyWhispered.add(transaction)) {
 			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 			String description = "transaction " + transaction.getHexHash(hasherForTransactions);
-			whisperedTransactionsQueue.offer(new WhisperedInfo(whisperTransactionMessage, isThis, description, false));
+			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, description, false));
 		}
 	}
 
@@ -1008,6 +1007,20 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
+	 * Schedules a periodic task that synchronizes the blockchain with its peers.
+	 */
+	private void schedulePeriodicSynchronization() {
+		// every 30 blocks, on average, and in any case no more frequently than every five minutes
+		scheduleWithFixedDelay(this::synchronize, "synchronization from the peers", 100000L, Math.max(5L * 60 * 1000, 30L * config.getTargetBlockCreationTime()), TimeUnit.MILLISECONDS);
+	}
+
+	private void synchronize() throws InterruptedException, TimeoutException, NodeException {
+		// we avoid to synchronize if synchronization is already in process
+		if (isSynchronizing.getAndSet(true) == false)
+			blockchain.synchronize();
+	}
+
+	/**
 	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
 	 */
 	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
@@ -1031,17 +1044,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedInfo = whisperedPeersQueue.take();
 
 				try {
+					var whisperedPeerMessage = whisperedInfo.message;
+					var peer = whisperedPeerMessage.getWhispered();
+
 					if (whisperedInfo.add)
-						if (whisperedInfo.message instanceof WhisperPeerMessage whisperedPeer)
-							peers.add(whisperedPeer.getWhispered());
+						peers.add(peer);
 
-					var whispered = whisperedInfo.message;
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whispered, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
-
-					if (whispered instanceof WhisperPeerMessage whisperedPeer)
-						onWhispered(whisperedPeer.getWhispered());
+					peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
+					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
+					onWhispered(peer);
 				}
 				catch (NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
@@ -1065,17 +1077,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedInfo = whisperedBlocksQueue.take();
 
 				try {
-					var whispered = whisperedInfo.message;
+					var whisperedBlockMessage = whisperedInfo.message;
+					var block = whisperedBlockMessage.getWhispered();
 
-					if (whisperedInfo.add && whispered instanceof WhisperBlockMessage whisperedBlock)
-						blockchain.add(whisperedBlock.getWhispered());
+					if (whisperedInfo.add)
+						blockchain.add(block);
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whispered, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
-
-					if (whispered instanceof WhisperBlockMessage whisperedBlock)
-						onWhispered(whisperedBlock.getWhispered());
+					peers.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description);
+					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
+					onWhispered(block);
 				}
 				catch (NodeException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
@@ -1100,16 +1111,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedInfo = whisperedTransactionsQueue.take();
 
 				try {
-					if (whisperedInfo.add && whisperedInfo.message instanceof WhisperTransactionMessage whisperedTransaction)
-						mempool.add(whisperedTransaction.getWhispered());
+					var whisperedTransactionMessage = whisperedInfo.message;
+					var tx = whisperedTransactionMessage.getWhispered();
 
-					var whispered = whisperedInfo.message;
+					if (whisperedInfo.add)
+						mempool.add(tx);
+
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whispered, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whispered, newSeen, whisperedInfo.description));
-
-					if (whispered instanceof WhisperTransactionMessage whisperedTransaction)
-						onWhispered(whisperedTransaction.getWhispered());
+					peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
+					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
+					onWhispered(tx);
 				}
 				catch (NodeException | TimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);

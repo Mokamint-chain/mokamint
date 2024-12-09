@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.stream.Stream;
+
 import io.hotmoka.annotations.ThreadSafe;
 
 /**
@@ -37,4 +39,26 @@ public interface Memory<T> {
 	 *         and has been consequently added
 	 */
 	boolean add(T element);
+
+	/**
+	 * Removes the given element from this memory.
+	 * 
+	 * @param element the element to remove
+	 * @return true if and only if the element has been removed
+	 */
+	boolean remove(T element);
+
+	/**
+	 * Yields the elements of this memory.
+	 * 
+	 * @return the elements
+	 */
+	Stream<T> stream();
+
+	/**
+	 * Yields the number of elements in this memory.
+	 * 
+	 * @return the number of elements in this memory
+	 */
+	int size();
 }

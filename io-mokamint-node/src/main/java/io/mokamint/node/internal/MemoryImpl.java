@@ -20,6 +20,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
@@ -58,15 +59,15 @@ public class MemoryImpl<T> implements Memory<T> {
 	private final Deque<T> elements = new LinkedList<>();
 
 	/**
-	 * Creates a memory of the given size.
+	 * Creates a memory of the given maximal size, initially empty.
 	 * 
-	 * @param size the size (maximal number of stored things)
+	 * @param maximalSize the maximal size (maximal number of stored things)
 	 */
-	public MemoryImpl(int size) {
-		if (size < 0)
-			throw new IllegalArgumentException("size cannot be negative");
+	public MemoryImpl(int maximalSize) {
+		if (maximalSize < 0)
+			throw new IllegalArgumentException("maximalSize cannot be negative");
 
-		this.size = size;
+		this.size = maximalSize;
 	}
 
 	@Override
@@ -80,10 +81,36 @@ public class MemoryImpl<T> implements Memory<T> {
 				if (reachedMax)
 					seen.remove(elements.removeFirst());
 
+				return size > 0;
+			}
+			else
+				return false;
+		}
+	}
+
+	@Override
+	public boolean remove(T element) {
+		synchronized (lock) {
+			if (seen.remove(element)) {
+				elements.remove(element);
 				return true;
 			}
 			else
 				return false;
+		}
+	}
+
+	@Override
+	public Stream<T> stream() {
+		synchronized (lock) {
+			return new LinkedList<>(elements).stream();
+		}
+	}
+
+	@Override
+	public int size() {
+		synchronized (lock) {
+			return elements.size();
 		}
 	}
 }

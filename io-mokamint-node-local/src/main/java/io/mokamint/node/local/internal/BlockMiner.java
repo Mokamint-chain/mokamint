@@ -44,10 +44,11 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
@@ -267,7 +268,7 @@ public class BlockMiner {
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	private Optional<Block> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	private Optional<NonGenesisBlock> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
 		var deadline = currentDeadline.deadline; // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
@@ -289,12 +290,12 @@ public class BlockMiner {
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(Block block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
 		// it is theoretically possible that head and block have exactly the same power:
 		// this might lead to temporary forks, when a node follows one chain and another node
 		// follows another chain, both with the same power. However, such forks would be
 		// subsequently resolved, when a further block will expand either of the chains
-		if (blockchain.headIsLessPowerfulThan(block)) {
+		if (blockchain.isBetterThanHead(block)) {
 			transactionExecutor.commitBlock();
 			committed = true;
 			node.onMined(block);

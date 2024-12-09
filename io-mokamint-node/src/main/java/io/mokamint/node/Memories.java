@@ -27,13 +27,13 @@ public final class Memories {
 	private Memories() {}
 
 	/**
-	 * Yields a memory with the given maximal size.
+	 * Yields a memory with the given maximal size, initially empty.
 	 * 
 	 * @param <T> the type of the things that will be contained in the memory
-	 * @param size the size (maximal number of stored elements)
+	 * @param maximalSize the maximal size (maximal number of stored elements)
 	 * @return the memory
 	 */
-	public static <T> Memory<T> of(int size) {
-		return new MemoryImpl<>(size);
+	public static <T> Memory<T> of(int maximalSize) {
+		return new MemoryImpl<>(maximalSize);
 	}
 }

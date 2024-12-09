@@ -50,7 +50,6 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
@@ -68,12 +67,14 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
+import io.mokamint.node.Memories;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.GenesisBlock;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
@@ -154,14 +155,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * A buffer where blocks without a known previous block are parked, in case their previous block arrives later.
 	 */
-	@GuardedBy("itself")
-	private final NonGenesisBlock[] orphans;
-
-	/**
-	 * The next insertion position inside the {@link #orphans} array.
-	 */
-	@GuardedBy("orphans")
-	private int orphansPos;
+	private final Memory<NonGenesisBlock> orphans;
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the hash of the genesis block.
@@ -215,7 +209,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
 		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
-		this.orphans = new NonGenesisBlock[config.getOrphansMemorySize()];
+		this.orphans = Memories.of(config.getOrphansMemorySize());
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
@@ -505,9 +499,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return true if and only if the current head is missing or {@code block} is more powerful than the current head
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public boolean headIsLessPowerfulThan(Block block) throws NodeException {
+	public boolean isBetterThanHead(NonGenesisBlock block) throws NodeException {
 		try (var scope = mkScope()) {
-			return environment.computeInReadonlyTransaction(NodeException.class, txn -> headIsLessPowerfulThan(txn, block));
+			return environment.computeInReadonlyTransaction(NodeException.class, txn -> isBetterThanHead(txn, block));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -615,20 +609,23 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
-		FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function = DownloadedGroupOfBlocks::new;
-		DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function);
-		group.updateMempool();
-		group.informNode();
-
-		while (group.thereMightBeMoreGroupsToDownload()) {
-			DownloadedGroupOfBlocks previousGroup = group;
-			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
-			group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function2);
+		try {
+			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function = DownloadedGroupOfBlocks::new;
+			DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function);
 			group.updateMempool();
 			group.informNode();
-		}
 
-		node.onSynchronizationCompleted();
+			while (group.thereMightBeMoreGroupsToDownload()) {
+				DownloadedGroupOfBlocks previousGroup = group;
+				FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
+				group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function2);
+				group.updateMempool();
+				group.informNode();
+			}
+		}
+		finally {
+			node.onSynchronizationCompleted();
+		}
 	}
 
 	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
@@ -710,8 +707,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private void informNode() {
-			blocksToAddAmongOrphans.forEach(this::putAmongOrphans);
-			blocksToRemoveFromOrphans.forEach(this::removeFromOrphans);
+			blocksToAddAmongOrphans.forEach(orphans::add);
+			blocksToRemoveFromOrphans.forEach(orphans::remove);
 			blocksAdded.forEach(node::onAdded);
 
 			if (!blocksAddedToTheCurrentBestChain.isEmpty())
@@ -739,9 +736,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private void scheduleSynchronizationIfUseful() throws NodeException {
 			for (var newOrphan: blocksToAddAmongOrphans)
-				if (headIsLessPowerfulThan(newOrphan)) {
+				if (isBetterThanHead(newOrphan)) {
 					// the new orphan was better than our current head: we synchronize from our peers
-					node.scheduleSynchronization();
+					node.scheduleSynchronization(); // TODO: this seems dangerous: forged orphans might schedule repeated synchronization
 					break;
 				}
 		}
@@ -863,7 +860,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					addToForwards(txn, ngb, hashOfBlock);
 					if (isBetterThanHead(txn, ngb))
 						setHead(block, hashOfBlock);
-
+						
 					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
 					return true;
 				}
@@ -1029,43 +1026,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param action the action to perform
 		 */
 		private void forEachOrphanWithParent(byte[] hashOfParent, Consumer<NonGenesisBlock> action) {
-			synchronized (orphans) {
-				// we also look in the orphans that have been added during the life of this adder
-				Stream.concat(Stream.of(orphans), blocksToAddAmongOrphans.stream())
-					.filter(Objects::nonNull)
-					.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent))
-					.filter(orphan -> !blocksToRemoveFromOrphans.contains(orphan))
-					.forEach(action);
-			}
-		}
-
-		/**
-		 * Adds the given block to {@link #orphans}.
-		 * 
-		 * @param block the block to add
-		 */
-		private void putAmongOrphans(NonGenesisBlock block) {
-			synchronized (orphans) {
-				if (Stream.of(orphans).anyMatch(block::equals))
-					// it is already inside the array: it is better not to waste a slot
-					return;
-		
-				orphans[orphansPos] = block;
-				orphansPos = (orphansPos + 1) % orphans.length;
-			}
-		}
-
-		/**
-		 * Removes the given orphan.
-		 * 
-		 * @param orphan the orphan to remove
-		 */
-		private void removeFromOrphans(NonGenesisBlock orphan) {
-			synchronized (orphans) {
-				for (int pos = 0; pos < orphans.length; pos++)
-					if (orphans[pos] == orphan)
-						orphans[pos] = null;
-			}
+			// we also look in the orphans that have been added during the life of this adder
+			Stream.concat(orphans.stream(), blocksToAddAmongOrphans.stream())
+				.filter(Objects::nonNull)
+				.filter(orphan -> Arrays.equals(orphan.getHashOfPreviousBlock(), hashOfParent))
+				.filter(orphan -> !blocksToRemoveFromOrphans.contains(orphan))
+				.forEach(action);
 		}
 
 		private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
@@ -2103,15 +2069,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Determines if the current head is less powerful than the given block, running inside a transaction.
+	 * Checks if the blockchain is empty or the given block is better than the current head, running inside a transaction.
 	 * 
 	 * @param txn the transaction
 	 * @param block the block
-	 * @return true if and only if the current head is missing or it is less powerful than {@code block}
+	 * @return true if and only if that condition holds
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private boolean headIsLessPowerfulThan(Transaction txn, Block block) throws NodeException {
-		return getPowerOfHead(txn).map(power -> power.compareTo(block.getDescription().getPower()) < 0).orElse(true);
+	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block) throws NodeException {
+		if (isEmpty(txn))
+			return true;
+		else {
+			BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new DatabaseException("The database of blocks is non-empty but the power of the head is not set"));
+			return block.getDescription().getPower().compareTo(powerOfHead) > 0;
+		}
 	}
 
 	private boolean isContainedInTheBestChain(Transaction txn, Block block, byte[] blockHash) throws NodeException {
@@ -2242,20 +2213,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
 		}
-	}
-
-	/**
-	 * Checks if the given block is better than the current head, running inside a transaction.
-	 * It assumes that the blockchain is non-empty.
-	 * 
-	 * @param txn the transaction
-	 * @param block the block
-	 * @return true if and only if that condition holds
-	 * @throws NodeException if the node is misbehaving
-	 */
-	private boolean isBetterThanHead(Transaction txn, NonGenesisBlock block) throws NodeException {
-		BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new DatabaseException("The database of blocks is non-empty but the power of the head is not set"));
-		return block.getDescription().getPower().compareTo(powerOfHead) > 0;
 	}
 
 	/**
