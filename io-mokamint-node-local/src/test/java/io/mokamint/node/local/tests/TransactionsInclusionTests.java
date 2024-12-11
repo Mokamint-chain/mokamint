@@ -137,17 +137,17 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
 	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, InterruptedException, IOException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException {
+		var config = mkConfig(chain);
 		var allTransactions = new HashSet<Transaction>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Transactions.of(bytes);
+			var tx = Transactions.of(bytes, config.getHashingForTransactions());
 			allTransactions.add(tx);
 		}
 		var allIncluded = new Semaphore(0);
-		var config = mkConfig(chain);
 
 		class TestNode extends NodeWithLocalMiner {
 

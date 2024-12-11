@@ -321,13 +321,14 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a repeated transaction, its creation fails")
 	public void repeatedTransactionGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InvalidKeyException, SignatureException, InterruptedException {
 		var config = mkConfig(dir);
+		var hashingForTransactions = config.getHashingForTransactions();
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 		var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline);
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingForTransactions);
+		var tx3 = Transactions.of(new byte[] { 4, 50 }, hashingForTransactions);
 		// we place transaction tx2 twice
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected, Stream.of(tx1, tx2, tx3, tx2), stateId, nodePrivateKey));
 		assertTrue(e.getMessage().startsWith("Repeated transaction"));
@@ -361,13 +362,13 @@ public class VerificationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if an added non-genesis block contains a transaction already in blockchain, verification rejects it")
 	public void transactionAlreadyInBlockchainGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
-
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var hashingForTransactions = config.getHashingForTransactions();
+			var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingForTransactions);
+			var tx3 = Transactions.of(new byte[] { 4, 50 }, hashingForTransactions);
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
@@ -388,10 +389,11 @@ public class VerificationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the transactions table of an added non-genesis block is too big, verification rejects it")
 	public void transactionsTooBigForNonGenesisGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
 		var config = mkConfig(dir).toBuilder().setMaxBlockSize(6).build();
+		var hashingFortransactions = config.getHashingForTransactions();
+		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingFortransactions);
+		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingFortransactions);
+		var tx3 = Transactions.of(new byte[] { 4, 50 }, hashingFortransactions);
 
 		try (var node = new TestNode(config)) {
 			var blockchain = node.getBlockchain();
@@ -412,14 +414,15 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
 	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var hashingForTransactions = config.getHashingForTransactions();
+			var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingForTransactions);
+			doThrow(new TransactionRejectedException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
+			var tx3 = Transactions.of(new byte[] { 4, 50 }, hashingForTransactions);
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
@@ -441,14 +444,15 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
 	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).deliverTransaction(anyInt(), eq(tx2));
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var hashingForTransactions = config.getHashingForTransactions();
+			var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingForTransactions);
+			doThrow(new TransactionRejectedException("tx2 rejected")).when(app).deliverTransaction(anyInt(), eq(tx2));
+			var tx3 = Transactions.of(new byte[] { 4, 50 }, hashingForTransactions);
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
@@ -470,12 +474,12 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
 	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
 		var app = mockApplication();
-		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var tx = Transactions.of(new byte[] { 13, 1, 19, 73 }, config.getHashingForTransactions());
+			when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);

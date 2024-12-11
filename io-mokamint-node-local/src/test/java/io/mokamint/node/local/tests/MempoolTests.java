@@ -46,6 +46,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
@@ -169,6 +170,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			var hashingForDeadlines = config.getHashingForDeadlines();
 			var hashingForGenerations = config.getHashingForGenerations();
 			var hashingForBlocks = config.getHashingForBlocks();
+			var hashingForTransactions = config.getHashingForTransactions();
 			var generationSignature = new byte[hashingForGenerations.length()];
 			for (int pos = 0; pos < generationSignature.length; pos++)
 				generationSignature[pos] = (byte) (42 + pos);
@@ -185,9 +187,9 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(genesis));
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 }, hashingForTransactions);
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 }, hashingForTransactions);
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
 
 			assertFalse(blockchain.add(block));
@@ -207,10 +209,11 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
+			var hashingForTransactions = config.getHashingForTransactions();
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 }, hashingForTransactions);
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 }, hashingForTransactions);
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction3));
 			node.add(transaction2);
 
@@ -234,10 +237,11 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
+			var hashingForTransactions = config.getHashingForTransactions();
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 }, hashingForTransactions);
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 }, hashingForTransactions);
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
 
 			var block1 = computeNextBlock(genesis, plot1);
@@ -271,12 +275,13 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var hashingForTransactions = config.getHashingForTransactions();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 }, hashingForTransactions);
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 }, hashingForTransactions);
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 }, hashingForTransactions);
 			var entry0 = node.add(transaction0);
 			var entry1 = node.add(transaction1);
 			var entry2 = node.add(transaction2);
@@ -366,12 +371,13 @@ public class MempoolTests extends AbstractLoggedTests {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
+			var hashingForTransactions = config.getHashingForTransactions();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 }, hashingForTransactions);
+			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
+			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 }, hashingForTransactions);
+			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 }, hashingForTransactions);
 			var entry0 = node.add(transaction0);
 			var entry1 = node.add(transaction1);
 			var entry2 = node.add(transaction2);

@@ -18,6 +18,7 @@ package io.mokamint.node;
 
 import java.io.IOException;
 
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.TransactionImpl;
@@ -38,8 +39,8 @@ public abstract class Transactions {
 	 * @param bytes the bytes of the transaction
 	 * @return the transaction object
 	 */
-	public static Transaction of(byte[] bytes) {
-		return new TransactionImpl(bytes);
+	public static Transaction of(byte[] bytes, HashingAlgorithm hashing) {
+		return new TransactionImpl(bytes, hashing);
 	}
 
 	/**

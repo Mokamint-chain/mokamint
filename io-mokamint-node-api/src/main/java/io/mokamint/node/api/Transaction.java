@@ -16,9 +16,13 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.io.IOException;
+
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
+import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
  * A transaction of the Mokamint blockchain. Transactions are ordered
@@ -38,10 +42,28 @@ public interface Transaction extends Marshallable, Whisperable, Comparable<Trans
 	String toString();
 
 	/**
+	 * Yields the hashing algorithm to use for this transaction.
+	 * 
+	 * @return the hashing algorithm
+	 */
+	HashingAlgorithm getHashing();
+
+	/**
 	 * Yields the hexadecimal hash of this transaction, by using the given hasher.
 	 * 
 	 * @param hasher the hasher
 	 * @return the hash, as a string
 	 */
 	String getHexHash(Hasher<Transaction> hasher);
+
+	/**
+	 * Marshals this object into a given stream. This method in general
+	 * performs better than standard Java serialization, wrt the size of the marshalled data.
+	 * It does not report information that can be recomputed from the configuration of the
+	 * node storing this transaction.
+	 * 
+	 * @param context the context holding the stream
+	 * @throws IOException if this object cannot be marshalled
+	 */
+	void intoWithoutConfigurationData(MarshallingContext context) throws IOException;
 }

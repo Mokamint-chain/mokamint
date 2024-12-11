@@ -32,12 +32,22 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 	 */
 	private final String bytes;
 
+	/**
+	 * The hashing used for this transaction.
+	 */
+	private final String hashing;
+
 	protected TransactionJson(Transaction transaction) {
 		this.bytes = Base64.toBase64String(transaction.getBytes());
+		this.hashing = transaction.getHashing().getName();
 	}
 
 	public String getBytes() {
 		return bytes;
+	}
+
+	public String getHashing() {
+		return hashing;
 	}
 
 	@Override

@@ -17,14 +17,17 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -44,12 +47,19 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	private final byte[] bytes;
 
 	/**
+	 * The hashing algorithm used for hashing this transaction.
+	 */
+	private final HashingAlgorithm hashing;
+
+	/**
 	 * Creates a transaction with the given bytes.
 	 * 
 	 * @param bytes the bytes
+	 * @param hashing the hashing algorithm to use for the transaction
 	 */
-	public TransactionImpl(byte[] bytes) {
+	public TransactionImpl(byte[] bytes, HashingAlgorithm hashing) {
 		this.bytes = Objects.requireNonNull(bytes).clone();
+		this.hashing = Objects.requireNonNull(hashing);
 	}
 
 	/**
@@ -57,8 +67,9 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * 
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws NoSuchAlgorithmException if the JSON refers to an unknown cryptographic algorithm
 	 */
-	public TransactionImpl(TransactionJson json) throws InconsistentJsonException {
+	public TransactionImpl(TransactionJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		String bytes = json.getBytes();
 		if (bytes == null)
 			throw new InconsistentJsonException("bytes cannot be null");
@@ -69,11 +80,22 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 		catch (Base64ConversionException e) {
 			throw new InconsistentJsonException(e);
 		}
+
+		String hashing = json.getBytes();
+		if (hashing == null)
+			throw new InconsistentJsonException("hashing cannot be null");
+
+		this.hashing = HashingAlgorithms.of(hashing);
 	}
 
 	@Override
 	public byte[] getBytes() {
 		return bytes.clone();
+	}
+
+	@Override
+	public HashingAlgorithm getHashing() {
+		return hashing;
 	}
 
 	@Override
@@ -97,6 +119,13 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		context.writeLengthAndBytes(bytes);
+		context.writeStringShared(hashing.getName());
+	}
+
+	@Override
+	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
+		context.writeLengthAndBytes(bytes);
+		context.writeStringShared(hashing.getName());
 	}
 
 	@Override
@@ -110,9 +139,10 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 * @param context the context
 	 * @return the transaction
 	 * @throws IOException if the transaction cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
 	 */
-	public static TransactionImpl from(UnmarshallingContext context) throws IOException {
-		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"));
+	public static TransactionImpl from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
+		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"), HashingAlgorithms.of(context.readStringShared()));
 	}
 
 	@Override

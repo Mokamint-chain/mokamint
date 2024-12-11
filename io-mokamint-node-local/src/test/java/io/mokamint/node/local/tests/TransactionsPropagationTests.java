@@ -98,8 +98,8 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var peersSemaphore = new Semaphore(0);
 		var transactionsSemaphore = new Semaphore(0);
-		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7, 8, 9 });
+		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, config1.getHashingForTransactions());
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7, 8, 9 }, config2.getHashingForTransactions());
 
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expectedPeer;

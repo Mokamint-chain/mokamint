@@ -553,8 +553,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
 	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, TransactionRejectedException, NodeException {
+		var node = mkNode();
+		var hashingForTransactions = node.getConfig().getHashingForTransactions();
+
 		var semaphore = new Semaphore(0);
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
 		
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -572,7 +575,6 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 
-		var node = mkNode();
 		when(node.add(eq(transaction))).thenReturn(MempoolEntries.of(new byte[] { 1, 2, 3 }, 1000L));
 
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
