@@ -19,6 +19,7 @@ package io.mokamint.node.internal;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
@@ -79,7 +81,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	
 		this.transactions = transactions;
 	
-		ensureSignatureIsCorrect();
+		ensureSignatureIsCorrect(); // TODO: do we need this? we just signed the block ourselves...
 		ensureTransactionsAreNotRepeated();
 	}
 
@@ -90,7 +92,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
+	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		super(description, json);
 
 		var transactionsJson = json.getTransactions().toArray(Transactions.Json[]::new);
@@ -124,7 +126,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
-		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);;
+		var hashingForTransactions = description.getHashingForTransactions();
+		this.transactions = context.readLengthAndArray(_context -> Transactions.from(_context, hashingForTransactions), Transaction[]::new);
 
 		try {
 			ensureSignatureIsCorrect();
@@ -172,22 +175,35 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 			&& Arrays.equals(transactions, other instanceof NonGenesisBlockImpl ongbi ? ongbi.transactions : ongb.getTransactions().toArray(Transaction[]::new)); // optimization
 	}
 
+	private static class TransactionWithoutHashing extends AbstractMarshallable {
+		private final Transaction parent;
+
+		private TransactionWithoutHashing(Transaction parent) {
+			this.parent = parent;
+		}
+
+		@Override
+		public void into(MarshallingContext context) throws IOException {
+			context.writeLengthAndBytes(parent.getBytes()); // TODO: expensive
+		}
+	}
+
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		super.into(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(Stream.of(transactions).map(TransactionWithoutHashing::new).toArray(TransactionWithoutHashing[]::new));
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		super.intoWithoutConfigurationData(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(Stream.of(transactions).map(TransactionWithoutHashing::new).toArray(TransactionWithoutHashing[]::new));
 	}
 
 	@Override
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		super.intoWithoutSignature(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(Stream.of(transactions).map(TransactionWithoutHashing::new).toArray(TransactionWithoutHashing[]::new));
 	}
 
 	@Override
@@ -223,7 +239,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	private byte[] toByteArrayWithoutSignature(Transaction[] transactions) {
 		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
 			super.intoWithoutSignature(context);
-			context.writeLengthAndArray(transactions);
+			context.writeLengthAndArray(Stream.of(transactions).map(TransactionWithoutHashing::new).toArray(TransactionWithoutHashing[]::new));
 			context.flush();
 			return baos.toByteArray();
 		}

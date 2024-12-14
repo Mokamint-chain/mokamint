@@ -138,8 +138,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction() works")
-	public void checkTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void checkTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, NoSuchAlgorithmException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 
 		class MyServer extends PublicTestServer {
 
@@ -166,8 +166,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction() works if it throws RejectedTransactionException")
-	public void getTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "rejected";
 
 		class MyServer extends PublicTestServer {
@@ -193,8 +193,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPriority() works")
-	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException, NoSuchAlgorithmException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var priority = 42L;
 
 		class MyServer extends PublicTestServer {
@@ -219,8 +219,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPriority() works if it throws RejectedTransactionException")
-	public void getPriorityWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getPriorityWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "rejected";
 
 		class MyServer extends PublicTestServer {
@@ -246,8 +246,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getRepresentation() works")
-	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException, NoSuchAlgorithmException {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var representation = "this is the wonderful representation";
 
 		class MyServer extends PublicTestServer {
@@ -272,8 +272,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getRepresentation() works if it throws RejectedTransactionException")
-	public void getRepresentationWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getRepresentationWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException  {
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "rejected";
 
 		class MyServer extends PublicTestServer {
@@ -403,9 +403,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works")
-	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, TransactionRejectedException {
+	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, TransactionRejectedException, NoSuchAlgorithmException {
 		var groupId = 42;
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 
 		class MyServer extends PublicTestServer {
 
@@ -432,9 +432,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works if it throws UnknownGroupIdException")
-	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException  {
 		var groupId = 42;
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "unknown group id";
 
 		class MyServer extends PublicTestServer {
@@ -460,9 +460,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works if it throws RejectedTransactionException")
-	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException  {
 		var groupId = 42;
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "rejected";
 
 		class MyServer extends PublicTestServer {

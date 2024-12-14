@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
@@ -33,7 +35,7 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 	private final String bytes;
 
 	/**
-	 * The hashing used for this transaction.
+	 * The hashing that must be used for this transaction.
 	 */
 	private final String hashing;
 
@@ -51,7 +53,7 @@ public abstract class TransactionJson implements JsonRepresentation<Transaction>
 	}
 
 	@Override
-	public Transaction unmap() throws InconsistentJsonException {
+	public Transaction unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
 		return new TransactionImpl(this);
 	}
 }

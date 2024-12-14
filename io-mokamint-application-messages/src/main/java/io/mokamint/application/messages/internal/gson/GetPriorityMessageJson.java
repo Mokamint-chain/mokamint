@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -35,7 +37,7 @@ public abstract class GetPriorityMessageJson extends AbstractRpcMessageJsonRepre
 	}
 
 	@Override
-	public GetPriorityMessage unmap() throws InconsistentJsonException {
+	public GetPriorityMessage unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
 		return GetPriorityMessages.of(transaction.unmap(), getId());
 	}
 

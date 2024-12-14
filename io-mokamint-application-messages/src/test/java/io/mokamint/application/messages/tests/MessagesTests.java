@@ -81,8 +81,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForCheckTransaction() throws EncodeException, DecodeException {
-		var checkTransactionMessage1 = CheckTransactionMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+	public void encodeDecodeWorksForCheckTransaction() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var checkTransactionMessage1 = CheckTransactionMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256()), "id");
 		String encoded = new CheckTransactionMessages.Encoder().encode(checkTransactionMessage1);
 		var checkTransactionMessage2 = new CheckTransactionMessages.Decoder().decode(encoded);
 		assertEquals(checkTransactionMessage1, checkTransactionMessage2);
@@ -99,8 +99,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForDeliverTransaction() throws EncodeException, DecodeException {
-		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+	public void encodeDecodeWorksForDeliverTransaction() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256()), "id");
 		String encoded = new DeliverTransactionMessages.Encoder().encode(deliverTransactionMessage1);
 		var deliverTransactionMessage2 = new DeliverTransactionMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionMessage1, deliverTransactionMessage2);
@@ -117,8 +117,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPriority messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPriority() throws EncodeException, DecodeException {
-		var getPriorityMessage1 = GetPriorityMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+	public void encodeDecodeWorksForGetPriority() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var getPriorityMessage1 = GetPriorityMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256()), "id");
 		String encoded = new GetPriorityMessages.Encoder().encode(getPriorityMessage1);
 		var getPriorityMessage2 = new GetPriorityMessages.Decoder().decode(encoded);
 		assertEquals(getPriorityMessage1, getPriorityMessage2);
@@ -135,8 +135,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getRepresentation messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetRepresentation() throws EncodeException, DecodeException {
-		var getRepresentationMessage1 = GetRepresentationMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+	public void encodeDecodeWorksForGetRepresentation() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var getRepresentationMessage1 = GetRepresentationMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256()), "id");
 		String encoded = new GetRepresentationMessages.Encoder().encode(getRepresentationMessage1);
 		var getRepresentationMessage2 = new GetRepresentationMessages.Decoder().decode(encoded);
 		assertEquals(getRepresentationMessage1, getRepresentationMessage2);

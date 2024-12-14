@@ -18,9 +18,12 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.security.NoSuchAlgorithmException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Transactions;
 import jakarta.websocket.DecodeException;
@@ -30,8 +33,8 @@ public class TransactionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("transactions are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException {
-		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 });
+	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, HashingAlgorithms.sha256());
 		String encoded = new Transactions.Encoder().encode(transaction1);
 		var transaction2 = new Transactions.Decoder().decode(encoded);
 		assertEquals(transaction1, transaction2);

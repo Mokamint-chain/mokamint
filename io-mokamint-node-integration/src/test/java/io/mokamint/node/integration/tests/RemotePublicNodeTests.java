@@ -678,6 +678,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		for (int pos = 0; pos < value.length; pos++)
 			value[pos] = (byte) pos;
 		var hashingForGenerations = sha256();
+		var hashingForTransactions = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -689,9 +690,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 }, hashingForTransactions);
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 }, hashingForTransactions);
+		var transaction3 = Transactions.of(new byte[] {}, hashingForTransactions);
 		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3),
 			new byte[0], nodeKeyPair.getPrivate());
@@ -1084,8 +1085,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works")
-	public void addTransactionWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, TransactionRejectedException, NodeException {
-		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
+	public void addTransactionWorks() throws DeploymentException, IOException, TimeoutException, InterruptedException, TransactionRejectedException, NodeException, NoSuchAlgorithmException {
+		var hashingForTransactions = sha256();
+		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
 		var transaction2 = new AtomicReference<Transaction>();
 
 		class MyServer extends PublicTestServer {
@@ -1110,9 +1112,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of RejectedTransactionException")
-	public void addTransactionWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, InterruptedException, NodeException {
+	public void addTransactionWorksInCaseOfRejectedTransactionException() throws DeploymentException, IOException, InterruptedException, NodeException, NoSuchAlgorithmException {
+		var hashingForTransactions = sha256();
 		var exceptionMessage = "exception message";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
 
 		class MyServer extends PublicTestServer {
 
@@ -1135,9 +1138,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of TimeoutException")
-	public void addTransactionWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException, NodeException {
+	public void addTransactionWorksInCaseOfTimeoutException() throws DeploymentException, IOException, InterruptedException, NodeException, NoSuchAlgorithmException {
+		var hashingForTransactions = sha256();
 		var exceptionMessage = "timeout";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
 
 		class MyServer extends PublicTestServer {
 
@@ -1160,9 +1164,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add(Transaction) works in case of NodeException")
-	public void addTransactionWorksInCaseOfNodeException() throws DeploymentException, IOException, InterruptedException, NodeException {
+	public void addTransactionWorksInCaseOfNodeException() throws DeploymentException, IOException, InterruptedException, NodeException, NoSuchAlgorithmException {
+		var hashingForTransactions = sha256();
 		var exceptionMessage = "the node is misbehaving";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 }, hashingForTransactions);
 
 		class MyServer extends PublicTestServer {
 
@@ -1242,6 +1247,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var hashingForDeadlines = shabal256();
 		var hashingForGenerations = sha256();
 		var hashingForBlocks = sha256();
+		var hashingForTransactions = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -1256,9 +1262,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 }, hashingForTransactions);
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 }, hashingForTransactions);
+		var transaction3 = Transactions.of(new byte[] {}, hashingForTransactions);
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var semaphore = new Semaphore(0);
@@ -1283,8 +1289,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction() works if the transaction exists")
-	public void getTransactionWorksIfTransactionExists() throws IOException, InterruptedException, DeploymentException, TimeoutException, NodeException {
-		var tx1 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+	public void getTransactionWorksIfTransactionExists() throws IOException, InterruptedException, DeploymentException, TimeoutException, NodeException, NoSuchAlgorithmException {
+		var hashingForTransactions = sha256();
+		var tx1 = Transactions.of(new byte[] { 13, 1, 19, 73 }, hashingForTransactions);
 		var hash = new byte[] { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {

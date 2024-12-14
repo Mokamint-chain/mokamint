@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -37,6 +38,7 @@ public abstract class Transactions {
 	 * Yields a new transaction object.
 	 * 
 	 * @param bytes the bytes of the transaction
+	 * @param hashing the hashing algorithm to use for the transaction
 	 * @return the transaction object
 	 */
 	public static Transaction of(byte[] bytes, HashingAlgorithm hashing) {
@@ -49,9 +51,22 @@ public abstract class Transactions {
 	 * @param context the context
 	 * @return the transaction
 	 * @throws IOException if the transaction cannot be unmarshalled
+	 * @throws NoSuchAlgorithmException if the transaction refers to a non-available hashing algorithm
 	 */
-	public static Transaction from(UnmarshallingContext context) throws IOException {
+	public static Transaction from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		return TransactionImpl.from(context);
+	}
+
+	/**
+	 * Unmarshals a transaction from the given context, providing an explicit hashing algorithm.
+	 * 
+	 * @param context the context
+	 * @param hashingForTransactions the hashing algorithm to use for the transaction
+	 * @return the transaction
+	 * @throws IOException if the transaction cannot be unmarshalled
+	 */
+	public static Transaction from(UnmarshallingContext context, HashingAlgorithm hashingForTransactions) throws IOException {
+		return TransactionImpl.from(context, hashingForTransactions);
 	}
 
 	/**

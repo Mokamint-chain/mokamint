@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -315,14 +316,15 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		new Run();
 	}
 
-	private Set<Transaction> mkTransactions() {
+	private Set<Transaction> mkTransactions() throws NoSuchAlgorithmException {
 		var allTransactions = new HashSet<Transaction>();
+		var hashingForTransactions = HashingAlgorithms.sha256(); // TODO: extract this from the node's default config
 		var random = new Random();
 		while (allTransactions.size() < 200) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Transactions.of(bytes);
+			var tx = Transactions.of(bytes, hashingForTransactions);
 			allTransactions.add(tx);
 		}
 

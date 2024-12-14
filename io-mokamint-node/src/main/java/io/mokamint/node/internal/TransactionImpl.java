@@ -81,7 +81,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 			throw new InconsistentJsonException(e);
 		}
 
-		String hashing = json.getBytes();
+		String hashing = json.getHashing();
 		if (hashing == null)
 			throw new InconsistentJsonException("hashing cannot be null");
 
@@ -123,12 +123,6 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	}
 
 	@Override
-	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		context.writeLengthAndBytes(bytes);
-		context.writeStringShared(hashing.getName());
-	}
-
-	@Override
 	public String toString() {
 		return Base64.toBase64String(bytes) + " (base64)";
 	}
@@ -143,6 +137,17 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	 */
 	public static TransactionImpl from(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
 		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"), HashingAlgorithms.of(context.readStringShared()));
+	}
+
+	/**
+	 * Unmarshals a transaction from the given context.
+	 * 
+	 * @param context the context
+	 * @return the transaction
+	 * @throws IOException if the transaction cannot be unmarshalled
+	 */
+	public static TransactionImpl from(UnmarshallingContext context, HashingAlgorithm hashingForTransactions) throws IOException {
+		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"), hashingForTransactions);
 	}
 
 	@Override

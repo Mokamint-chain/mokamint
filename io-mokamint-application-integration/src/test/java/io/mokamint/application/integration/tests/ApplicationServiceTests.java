@@ -120,10 +120,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service, it checks the transaction")
-	public void serviceCheckTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		doNothing().when(app).checkTransaction(eq(transaction));
 
 		class MyTestClient extends RemoteApplicationImpl {
@@ -151,10 +151,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceCheckTransactionRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var exceptionMessage = "rejected";
 		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).checkTransaction(eq(transaction));
 	
@@ -183,10 +183,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service, it yields the priority of the transaction")
-	public void serviceGetPriorityWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		when(app.getPriority(eq(transaction))).thenReturn(42L);
 
 		class MyTestClient extends RemoteApplicationImpl {
@@ -214,10 +214,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetPriorityRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		String exceptionMessage = "rejected";
 		when(app.getPriority(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
 	
@@ -246,10 +246,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service, it yields the representation of the transaction")
-	public void serviceGetRepresentationWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var representation = "this is the wonderful representation";
 		when(app.getRepresentation(eq(transaction))).thenReturn(representation);
 
@@ -278,10 +278,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetRepresentationRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		String exceptionMessage = "rejected";
 		when(app.getRepresentation(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
 	
@@ -440,10 +440,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service, it delivers the transaction in the application")
-	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var groupId = 13;
 		doNothing().when(app).deliverTransaction(groupId, transaction);
 
@@ -472,10 +472,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var groupId = 13;
 		var exceptionMessage = "unknown group id";
 		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
@@ -505,10 +505,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256());
 		var groupId = 13;
 		var exceptionMessage = "rejected";
 		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);

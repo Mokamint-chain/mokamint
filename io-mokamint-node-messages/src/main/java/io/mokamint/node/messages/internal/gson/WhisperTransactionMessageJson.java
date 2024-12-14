@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Transactions;
@@ -35,7 +37,7 @@ public abstract class WhisperTransactionMessageJson extends AbstractRpcMessageJs
 	}
 
 	@Override
-	public WhisperTransactionMessage unmap() throws InconsistentJsonException {
+	public WhisperTransactionMessage unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
 		return WhisperTransactionMessages.of(transaction.unmap(), getId());
 	}
 

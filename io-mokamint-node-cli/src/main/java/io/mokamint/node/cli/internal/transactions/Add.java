@@ -55,7 +55,7 @@ public class Add extends AbstractPublicRpcCommand {
 
 	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
 		try {
-			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
+			return remote.add(Transactions.of(Base64.fromBase64String(tx), remote.getConfig().getHashingForTransactions()));
 		}
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);

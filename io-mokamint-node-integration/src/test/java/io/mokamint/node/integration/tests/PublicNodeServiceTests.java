@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.OngoingStubbing;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -255,9 +256,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
 	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
-		var semaphore = new Semaphore(0);
+		var semaphore = new Semaphore(0); // TODO: extract these from the default config of the node
 		var hashingForGenerations = sha256();
 		var hashingForBlocks = sha256();
+		var hashingForTransactions = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -274,9 +276,9 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations), plotKeyPair.getPrivate());
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 }, hashingForTransactions);
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 }, hashingForTransactions);
+		var transaction3 = Transactions.of(new byte[] {}, hashingForTransactions);
 		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, sha256()),
 			Stream.of(transaction1, transaction2, transaction3),
 			new byte[0], nodeKeyPair.getPrivate());
@@ -806,7 +808,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
 	public void serviceGetTransactionNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DeploymentException, IOException, NodeException {
 		var semaphore = new Semaphore(0);
-		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 }, HashingAlgorithms.sha256()); // TODO: use the node's default
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	

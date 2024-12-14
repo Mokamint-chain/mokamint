@@ -141,6 +141,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var hashingForBlocks = HashingAlgorithms.sha256();
+		var hashingForTransactions = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -155,9 +156,9 @@ public class MessagesTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 }, hashingForTransactions);
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 }, hashingForTransactions);
+		var transaction3 = Transactions.of(new byte[] {}, hashingForTransactions);
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.of(block), "id");
@@ -406,8 +407,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForPostTransaction() throws EncodeException, DecodeException {
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
+	public void encodeDecodeWorksForPostTransaction() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 }, HashingAlgorithms.sha256());
 		var addTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
 		String encoded = new AddTransactionMessages.Encoder().encode(addTransactionMessage1);
 		var addTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
@@ -530,6 +531,7 @@ public class MessagesTests extends AbstractLoggedTests {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var hashingForBlocks = HashingAlgorithms.sha256();
+		var hashingForTransactions = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
 			generationSignature[pos] = (byte) (42 + pos);
@@ -544,9 +546,9 @@ public class MessagesTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 }, hashingForTransactions);
+		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 }, hashingForTransactions);
+		var transaction3 = Transactions.of(new byte[] {}, hashingForTransactions);
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var whisperBlockMessage1 = WhisperBlockMessages.of(block, "id");
@@ -557,8 +559,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException {
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6});
+	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6}, HashingAlgorithms.sha256());
 		var whisperTransactionMessage1 = WhisperTransactionMessages.of(transaction, "id");
 		String encoded = new WhisperTransactionMessages.Encoder().encode(whisperTransactionMessage1);
 		var whisperTransactionMessage2 = new WhisperTransactionMessages.Decoder().decode(encoded);
@@ -576,8 +578,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getTransactionResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionResultNonEmpty() throws EncodeException, DecodeException {
-		var tx = Transactions.of(new byte[] { 1 ,2, 3, 4 });
+	public void encodeDecodeWorksForGetTransactionResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+		var tx = Transactions.of(new byte[] { 1 ,2, 3, 4 }, HashingAlgorithms.sha256());
 		var getTransactionResultMessage1 = GetTransactionResultMessages.of(Optional.of(tx), "id");
 		String encoded = new GetTransactionResultMessages.Encoder().encode(getTransactionResultMessage1);
 		var getTransactionResultMessage2 = new GetTransactionResultMessages.Decoder().decode(encoded);
