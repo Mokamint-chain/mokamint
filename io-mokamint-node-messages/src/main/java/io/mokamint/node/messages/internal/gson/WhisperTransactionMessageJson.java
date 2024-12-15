@@ -18,25 +18,28 @@ package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.messages.WhisperTransactionMessages;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
+import io.mokamint.node.messages.internal.WhisperTransactionMessageImpl;
 
 /**
  * The JSON representation of an {@link WhisperTransactionMessage}.
  */
 public abstract class WhisperTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperTransactionMessage> {
-	private final Transactions.Json transaction;
+	private final String transaction;
 
 	protected WhisperTransactionMessageJson(WhisperTransactionMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getWhispered());
+		this.transaction = message.getWhispered().toBase64String();
+	}
+
+	public String getTransaction() {
+		return transaction;
 	}
 
 	@Override
 	public WhisperTransactionMessage unmap() throws InconsistentJsonException {
-		return WhisperTransactionMessages.of(transaction.unmap(), getId());
+		return new WhisperTransactionMessageImpl(this);
 	}
 
 	@Override

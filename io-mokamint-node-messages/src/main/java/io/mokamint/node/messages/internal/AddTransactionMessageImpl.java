@@ -18,10 +18,15 @@ package io.mokamint.node.messages.internal;
 
 import java.util.Objects;
 
+import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.AddTransactionMessage;
+import io.mokamint.node.messages.internal.gson.AddTransactionMessageJson;
 
 /**
  * Implementation of the network message corresponding to
@@ -40,6 +45,27 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public AddTransactionMessageImpl(AddTransactionMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var transactionBase64 = json.getTransaction();
+		if (transactionBase64 == null)
+			throw new InconsistentJsonException("transaction cannot be null");
+
+		try {
+			this.transaction = Transactions.of(Base64.fromBase64String(transactionBase64));
+		}
+		catch (Base64ConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

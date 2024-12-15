@@ -23,13 +23,11 @@ import com.google.gson.Gson;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
-import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NodeException;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -48,7 +46,7 @@ public class Show extends AbstractPublicRpcCommand {
 			String representation = getTransactionRepresentation(remote);
 
 			if (json()) {
-				var answer = new Answer();
+				var answer = new RepresentationAnswer();
 				answer.representation = representation;
 				System.out.println(new Gson().toJsonTree(answer));
 			}
@@ -59,12 +57,9 @@ public class Show extends AbstractPublicRpcCommand {
 			var transaction = getTransaction(remote);
 
 			if (json()) {
-				try {
-					System.out.println(new Transactions.Encoder().encode(transaction));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode a transaction at \"" + publicUri() + "\" in JSON format!", e);
-				}
+				var answer = new TransactionAnswer();
+				answer.bytes = transaction.toBase64String();
+				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else
 				System.out.println(transaction);
@@ -101,8 +96,13 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private static class Answer {
+	private static class RepresentationAnswer {
 		@SuppressWarnings("unused")
 		private String representation;
+	}
+
+	private static class TransactionAnswer {
+		@SuppressWarnings("unused")
+		private String bytes;
 	}
 }

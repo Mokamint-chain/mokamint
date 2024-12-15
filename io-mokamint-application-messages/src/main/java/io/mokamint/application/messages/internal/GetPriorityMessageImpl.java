@@ -18,9 +18,14 @@ package io.mokamint.application.messages.internal;
 
 import java.util.Objects;
 
+import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetPriorityMessage;
+import io.mokamint.application.messages.internal.gson.GetPriorityMessageJson;
+import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
 
 /**
@@ -39,6 +44,27 @@ public class GetPriorityMessageImpl extends AbstractRpcMessage implements GetPri
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public GetPriorityMessageImpl(GetPriorityMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var transactionBase64 = json.getTransaction();
+		if (transactionBase64 == null)
+			throw new InconsistentJsonException("transaction cannot be null");
+
+		try {
+			this.transaction = Transactions.of(Base64.fromBase64String(transactionBase64));
+		}
+		catch (Base64ConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

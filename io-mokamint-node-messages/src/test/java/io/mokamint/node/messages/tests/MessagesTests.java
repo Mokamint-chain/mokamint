@@ -406,17 +406,18 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForPostTransaction() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForAddTransaction() throws EncodeException, DecodeException {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
 		var addTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
 		String encoded = new AddTransactionMessages.Encoder().encode(addTransactionMessage1);
+		System.out.println(encoded);
 		var addTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
 		assertEquals(addTransactionMessage1, addTransactionMessage2);
 	}
 
 	@Test
 	@DisplayName("add transaction result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForPostTransactionResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForAddTransactionResult() throws EncodeException, DecodeException {
 		var addTransactionResultMessage1 = AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1, 2, 3 }, 17L), "id");
 		String encoded = new AddTransactionResultMessages.Encoder().encode(addTransactionResultMessage1);
 		var addTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);

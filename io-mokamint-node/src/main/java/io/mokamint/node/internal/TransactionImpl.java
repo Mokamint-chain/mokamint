@@ -22,15 +22,12 @@ import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.internal.gson.TransactionJson;
 
 /**
  * An implementation of a transaction.
@@ -52,28 +49,14 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 		this.bytes = Objects.requireNonNull(bytes).clone();
 	}
 
-	/**
-	 * Creates a transaction from the given JSON representation.
-	 * 
-	 * @param json the JSON representation
-	 * @throws InconsistentJsonException if the JSON representation is inconsistent
-	 */
-	public TransactionImpl(TransactionJson json) throws InconsistentJsonException {
-		String bytes = json.getBytes();
-		if (bytes == null)
-			throw new InconsistentJsonException("bytes cannot be null");
-
-		try {
-			this.bytes = Base64.fromBase64String(bytes);
-		}
-		catch (Base64ConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
-	}
-
 	@Override
 	public byte[] getBytes() {
 		return bytes.clone();
+	}
+
+	@Override
+	public String toBase64String() {
+		return Base64.toBase64String(bytes);
 	}
 
 	@Override
@@ -101,7 +84,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public String toString() {
-		return Base64.toBase64String(bytes) + " (base64)";
+		return toBase64String() + " (base64)";
 	}
 
 	/**

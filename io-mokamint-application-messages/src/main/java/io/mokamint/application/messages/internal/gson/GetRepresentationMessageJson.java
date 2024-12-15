@@ -18,25 +18,28 @@ package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
-import io.mokamint.node.Transactions;
+import io.mokamint.application.messages.internal.GetRepresentationMessageImpl;
 
 /**
  * The JSON representation of an {@link GetRepresentationMessage}.
  */
 public abstract class GetRepresentationMessageJson extends AbstractRpcMessageJsonRepresentation<GetRepresentationMessage> {
-	private final Transactions.Json transaction;
+	private final String transaction;
 
 	protected GetRepresentationMessageJson(GetRepresentationMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getTransaction());
+		this.transaction = message.getTransaction().toBase64String();
+	}
+
+	public String getTransaction() {
+		return transaction;
 	}
 
 	@Override
 	public GetRepresentationMessage unmap() throws InconsistentJsonException {
-		return GetRepresentationMessages.of(transaction.unmap(), getId());
+		return new GetRepresentationMessageImpl(this);
 	}
 
 	@Override

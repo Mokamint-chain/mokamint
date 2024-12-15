@@ -18,25 +18,28 @@ package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
-import io.mokamint.node.Transactions;
+import io.mokamint.application.messages.internal.CheckTransactionMessageImpl;
 
 /**
  * The JSON representation of an {@link CheckTransactionMessage}.
  */
 public abstract class CheckTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<CheckTransactionMessage> {
-	private final Transactions.Json transaction;
+	private final String transaction;
 
 	protected CheckTransactionMessageJson(CheckTransactionMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getTransaction());
+		this.transaction = message.getTransaction().toBase64String();
+	}
+
+	public String getTransaction() {
+		return transaction;
 	}
 
 	@Override
 	public CheckTransactionMessage unmap() throws InconsistentJsonException {
-		return CheckTransactionMessages.of(transaction.unmap(), getId());
+		return new CheckTransactionMessageImpl(this);
 	}
 
 	@Override

@@ -20,25 +20,29 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.messages.GetTransactionResultMessages;
+import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
+import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTransactionResultMessage}.
  */
 public abstract class GetTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetTransactionResultMessage> {
-	private final Transactions.Json transaction;
+	private final String transaction;
 
 	protected GetTransactionResultMessageJson(GetTransactionResultMessage message) {
 		super(message);
 
-		this.transaction = message.get().map(Transactions.Json::new).orElse(null);
+		this.transaction = message.get().map(Transaction::toBase64String).orElse(null);
+	}
+
+	public Optional<String> getTransaction() {
+		return Optional.ofNullable(transaction);
 	}
 
 	@Override
 	public GetTransactionResultMessage unmap() throws InconsistentJsonException {
-		return GetTransactionResultMessages.of(Optional.ofNullable(transaction == null ? null : transaction.unmap()), getId());
+		return new GetTransactionResultMessageImpl(this);
 	}
 
 	@Override

@@ -18,25 +18,28 @@ package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.GetPriorityMessages;
 import io.mokamint.application.messages.api.GetPriorityMessage;
-import io.mokamint.node.Transactions;
+import io.mokamint.application.messages.internal.GetPriorityMessageImpl;
 
 /**
  * The JSON representation of an {@link GetPriorityMessage}.
  */
 public abstract class GetPriorityMessageJson extends AbstractRpcMessageJsonRepresentation<GetPriorityMessage> {
-	private final Transactions.Json transaction;
+	private final String transaction;
 
 	protected GetPriorityMessageJson(GetPriorityMessage message) {
 		super(message);
 
-		this.transaction = new Transactions.Json(message.getTransaction());
+		this.transaction = message.getTransaction().toBase64String();
+	}
+
+	public String getTransaction() {
+		return transaction;
 	}
 
 	@Override
 	public GetPriorityMessage unmap() throws InconsistentJsonException {
-		return GetPriorityMessages.of(transaction.unmap(), getId());
+		return new GetPriorityMessageImpl(this);
 	}
 
 	@Override

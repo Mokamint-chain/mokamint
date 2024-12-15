@@ -26,7 +26,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.Base64;
+import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -93,17 +94,26 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
 		super(description, json);
 
-		var transactionsJson = json.getTransactions().toArray(Transactions.Json[]::new);
-		transactions = new Transaction[transactionsJson.length];
+		var txs = json.getTransactions();
+		if (txs == null)
+			throw new InconsistentJsonException("transactions cannot be null");
 
-		for (int pos = 0; pos < transactionsJson.length; pos++) {
-			Transactions.Json transactionJson = transactionsJson[pos];
-			if (transactionJson == null)
+		String[] hexes = txs.toArray(String[]::new);
+
+		this.transactions = new Transaction[hexes.length];
+		for (int pos = 0; pos < hexes.length; pos++) {
+			String hex = hexes[pos];
+			if (hex == null)
 				throw new InconsistentJsonException("transactions cannot hold a null element");
-			else
-				transactions[pos] = transactionJson.unmap();
-		}
 
+			try {
+				transactions[pos] = Transactions.of(Base64.fromBase64String(hex));
+			}
+			catch (Base64ConversionException e) {
+				throw new InconsistentJsonException(e);
+			}
+		}
+		
 		try {
 			ensureSignatureIsCorrect();
 			ensureTransactionsAreNotRepeated();
@@ -207,7 +217,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);
 	
 		for (var transaction: transactions)
-			builder.append("\n * #" + n++ + ": " + Hex.toHexString(hasher.hash(transaction)) + " (" + hashingForTransactions + ")");
+			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hasher) + " (" + hashingForTransactions + ")");
 	}
 
 	@Override
