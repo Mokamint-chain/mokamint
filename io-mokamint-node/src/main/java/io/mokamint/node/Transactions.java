@@ -47,6 +47,6 @@ public abstract class Transactions {
 	 * @throws IOException if the transaction cannot be unmarshalled
 	 */
 	public static Transaction from(UnmarshallingContext context) throws IOException {
-		return TransactionImpl.from(context);
+		return new TransactionImpl(context);
 	}
 }

@@ -49,6 +49,16 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 		this.bytes = Objects.requireNonNull(bytes).clone();
 	}
 
+	/**
+	 * Creates a new transaction, unmarshalled from the given context.
+	 * 
+	 * @param context the context
+	 * @throws IOException if the transaction cannot be unmarshalled
+	 */
+	public TransactionImpl(UnmarshallingContext context) throws IOException {
+		this(context.readLengthAndBytes("Transaction length mismatch"));
+	}
+
 	@Override
 	public byte[] getBytes() {
 		return bytes.clone();
@@ -85,17 +95,6 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	@Override
 	public String toString() {
 		return toBase64String() + " (base64)";
-	}
-
-	/**
-	 * Unmarshals a transaction from the given context.
-	 * 
-	 * @param context the context
-	 * @return the transaction
-	 * @throws IOException if the transaction cannot be unmarshalled
-	 */
-	public static TransactionImpl from(UnmarshallingContext context) throws IOException {
-		return new TransactionImpl(context.readLengthAndBytes("Transaction length mismatch"));
 	}
 
 	@Override
