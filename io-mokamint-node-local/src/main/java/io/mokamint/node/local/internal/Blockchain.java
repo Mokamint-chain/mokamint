@@ -1622,14 +1622,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, TimeoutException, NodeException {
 			try {
-				return mempool.mkTransactionEntry(transaction, node.getApplication().getPriority(transaction));
+				return mempool.mkTransactionEntry(transaction);
 			}
-			catch (TransactionRejectedException e) {
-				// the database contains a block with a rejected transaction: it should not be there!
-				throw new NodeException(e);
-			}
-			catch (ApplicationException e) {
-				// the node is misbehaving because the application it is connected to is misbehaving
+			catch (TransactionRejectedException | ApplicationException e) {
+				// either the database contains a block with a rejected transaction: it should not be there!
+				// or the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
 		}

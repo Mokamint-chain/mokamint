@@ -152,7 +152,7 @@ public class Mempool {
 	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
 		try {
 			app.checkTransaction(transaction);
-			var entry = mkTransactionEntry(transaction, app.getPriority(transaction));
+			var entry = mkTransactionEntry(transaction);
 			int maxSize = node.getConfig().getMempoolSize();
 
 			synchronized (mempool) {
@@ -178,8 +178,8 @@ public class Mempool {
 		}
 	}
 
-	protected TransactionEntry mkTransactionEntry(Transaction transaction, long priority) {
-		return new TransactionEntry(transaction, priority, hasher.hash(transaction));
+	protected TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
+		return new TransactionEntry(transaction,  app.getPriority(transaction), hasher.hash(transaction));
 	}
 
 	public void remove(TransactionEntry entry) {
@@ -258,10 +258,10 @@ public class Mempool {
 		private final long priority;
 		private final byte[] hash;
 	
-		protected TransactionEntry(Transaction transaction, long priority, byte[] hash) {
+		private TransactionEntry(Transaction transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
-			this.hash = hash; // TODO: transaction.getHash();
+			this.hash = hash;
 		}
 
 		/**
