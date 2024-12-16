@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
-import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
@@ -103,11 +102,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final LocalNodeConfig config;
 
 	/**
-	 * The hasher for the transactions.
-	 */
-	private final Hasher<Transaction> hasherForTransactions;
-
-	/**
 	 * The key pair that the node uses to sign the blocks that it mines.
 	 */
 	private final KeyPair keyPair;
@@ -140,7 +134,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The UUID of this node.
 	 */
-	public final UUID uuid; // TODO
+	private final UUID uuid;
 
 	/**
 	 * The executor of tasks. There might be more tasks in execution at the same time.
@@ -230,7 +224,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		super(ClosedNodeException::new);
 
 		this.config = config;
-		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.keyPair = keyPair;
 		this.app = app;
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
@@ -369,18 +362,18 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	@Override
 	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, TimeoutException, InterruptedException {
-		MempoolEntry result;
+		TransactionEntry result;
 
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
 
 		if (miningTask != null)
-			miningTask.add(new TransactionEntry(transaction, result.getPriority(), result.getHash()));
+			miningTask.add(result);
 
 		whisperWithoutAddition(transaction);
 
-		return result;
+		return result.toMempoolEntry();
 	}
 
 	@Override
@@ -548,15 +541,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	protected void remove(TransactionEntry transactionEntry) {
 		mempool.remove(transactionEntry);
-	}
-
-	/**
-	 * Yields the hasher that can be used for hashing the transactions.
-	 * 
-	 * @return the hasher
-	 */
-	protected Hasher<Transaction> getHasherForTransactions() {
-		return hasherForTransactions;
 	}
 
 	/**
@@ -728,6 +712,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void whisperWithoutAddition(Transaction transaction) {
 		if (alreadyWhispered.add(transaction)) {
 			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
+			var hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 			String description = "transaction " + transaction.getHexHash(hasherForTransactions);
 			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, description, false));
 		}

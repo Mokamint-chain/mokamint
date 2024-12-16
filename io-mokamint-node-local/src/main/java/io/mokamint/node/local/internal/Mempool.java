@@ -97,7 +97,7 @@ public class Mempool {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.app = node.getApplication();
-		this.hasher = node.getHasherForTransactions();
+		this.hasher = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.base = Optional.empty();
 		this.mempool = new TreeSet<>(Comparator.reverseOrder()); // decreasing priority
 	}
@@ -140,7 +140,7 @@ public class Mempool {
 	 * Adds the given transaction to this mempool, after checking its validity.
 	 * 
 	 * @param transaction the transaction to add
-	 * @return the mempool entry where the transaction has been added
+	 * @return the transaction entry added to the mempool
 	 * @throws TransactionRejectedException if the transaction has been rejected; this happens,
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
@@ -149,15 +149,14 @@ public class Mempool {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 */
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
+	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
 		try {
 			app.checkTransaction(transaction);
-			byte[] hash = hasher.hash(transaction);
-			var entry = new TransactionEntry(transaction, app.getPriority(transaction), hash);
+			var entry = mkTransactionEntry(transaction, app.getPriority(transaction));
 			int maxSize = node.getConfig().getMempoolSize();
 
 			synchronized (mempool) {
-				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), hash).isPresent())
+				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
 					// the transaction was already in blockchain
 					throw new TransactionRejectedException("Repeated transaction " + entry);
 				else if (mempool.contains(entry))
@@ -172,11 +171,15 @@ public class Mempool {
 			LOGGER.info("mempool: added transaction " + entry);
 			node.onAdded(transaction);
 
-			return entry.toMempoolEntry();
+			return entry;
 		}
 		catch (ApplicationException e) {
 			throw new NodeException(e);
 		}
+	}
+
+	protected TransactionEntry mkTransactionEntry(Transaction transaction, long priority) {
+		return new TransactionEntry(transaction, priority, hasher.hash(transaction));
 	}
 
 	public void remove(TransactionEntry entry) {
@@ -260,7 +263,7 @@ public class Mempool {
 			this.priority = priority;
 			this.hash = hash; // TODO: transaction.getHash();
 		}
-	
+
 		/**
 		 * Yields the transaction inside this entry.
 		 * 
@@ -305,7 +308,7 @@ public class Mempool {
 		 * 
 		 * @return the {@link MempoolEntry}
 		 */
-		private MempoolEntry toMempoolEntry() {
+		public MempoolEntry toMempoolEntry() {
 			return MempoolEntries.of(hash, priority);
 		}
 	}

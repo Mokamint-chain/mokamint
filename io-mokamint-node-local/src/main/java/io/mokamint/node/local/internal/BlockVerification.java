@@ -101,8 +101,8 @@ public class BlockVerification {
 	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, TimeoutException {
 		this.txn = txn;
 		this.node = node;
-		this.hasherForTransactions = node.getHasherForTransactions();
 		this.config = node.getConfig();
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;
@@ -233,6 +233,16 @@ public class BlockVerification {
 		var expectedSignatureForBlocks = config.getSignatureForBlocks();
 		if (!signatureForBlocks.equals(expectedSignatureForBlocks))
 			throw new VerificationException("Block signature algorithm mismatch (expected " + expectedSignatureForBlocks + " but found " + signatureForBlocks + ")");
+
+		var hashingForDeadlines = description.getHashingForDeadlines();
+		var expectedHashingForDeadlines = config.getHashingForDeadlines();
+		if (!hashingForDeadlines.equals(expectedHashingForDeadlines))
+			throw new VerificationException("Deadline hashing algorithm mismatch (expected " + expectedHashingForDeadlines + " but found " + hashingForDeadlines + ")");
+
+		var hashingForGenerations = description.getHashingForGenerations();
+		var expectedHashingForGenerations = config.getHashingForGenerations();
+		if (!hashingForGenerations.equals(expectedHashingForGenerations))
+			throw new VerificationException("Generation hashing algorithm mismatch (expected " + expectedHashingForGenerations + " but found " + hashingForGenerations + ")");
 	}
 
 	/**
@@ -243,30 +253,35 @@ public class BlockVerification {
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
 		var expectedDescription = previous.getNextBlockDescription(deadline);
-
 		var description = block.getDescription();
-		var height = description.getHeight();
-		if (height != expectedDescription.getHeight())
-			throw new VerificationException("Height mismatch (expected " + expectedDescription.getHeight() + " but found " + height + ")");
+
+		long height = description.getHeight();
+		long expectedHeight = expectedDescription.getHeight();
+		if (height != expectedHeight)
+			throw new VerificationException("Height mismatch (expected " + expectedHeight + " but found " + height + ")");
 
 		var acceleration = description.getAcceleration();
-		if (!acceleration.equals(expectedDescription.getAcceleration()))
-			throw new VerificationException("Acceleration mismatch (expected " + expectedDescription.getAcceleration() + " but found " + acceleration + ")");
+		var expectedAcceleration = expectedDescription.getAcceleration();
+		if (!acceleration.equals(expectedAcceleration))
+			throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
 
 		var power = description.getPower();
-		if (!power.equals(expectedDescription.getPower()))
-			throw new VerificationException("Power mismatch (expected " + expectedDescription.getPower() + " but found " + power + ")");
+		var expectedPower = expectedDescription.getPower();
+		if (!power.equals(expectedPower))
+			throw new VerificationException("Power mismatch (expected " + expectedPower + " but found " + power + ")");
 
 		long totalWaitingTime = description.getTotalWaitingTime();
-		if (totalWaitingTime != expectedDescription.getTotalWaitingTime())
-			throw new VerificationException("Total waiting time mismatch (expected " + expectedDescription.getTotalWaitingTime() + " but found " + totalWaitingTime + ")");
+		long expectedTotalWaitingTime = expectedDescription.getTotalWaitingTime();
+		if (totalWaitingTime != expectedTotalWaitingTime)
+			throw new VerificationException("Total waiting time mismatch (expected " + expectedTotalWaitingTime + " but found " + totalWaitingTime + ")");
 
 		long weightedWaitingTime = description.getWeightedWaitingTime();
 		if (weightedWaitingTime != expectedDescription.getWeightedWaitingTime())
 			throw new VerificationException("Weighted waiting time mismatch (expected " + expectedDescription.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
 
-		var hashOfPreviousBlock = description.getHashOfPreviousBlock();
-		if (!Arrays.equals(hashOfPreviousBlock, expectedDescription.getHashOfPreviousBlock()))
+		byte[] hashOfPreviousBlock = description.getHashOfPreviousBlock();
+		byte[] expectedHashOfPreviousBlock = expectedDescription.getHashOfPreviousBlock();
+		if (!Arrays.equals(hashOfPreviousBlock, expectedHashOfPreviousBlock))
 			throw new VerificationException("Hash of previous block mismatch");
 	}
 
@@ -278,7 +293,7 @@ public class BlockVerification {
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException {
 		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
-		long max = node.getConfig().getBlockMaxTimeInTheFuture();
+		long max = config.getBlockMaxTimeInTheFuture();
 		if (howMuchInTheFuture > max)
 			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
 	}
