@@ -80,8 +80,7 @@ public class Mempool {
 	private Optional<Block> base;
 
 	/**
-	 * The container of the transactions inside this mempool. They are kept ordered
-	 * by decreasing priority.
+	 * The container of the transactions inside this mempool. They are kept ordered by decreasing priority.
 	 */
 	@GuardedBy("itself")
 	private final SortedSet<TransactionEntry> mempool;
@@ -227,12 +226,6 @@ public class Mempool {
 
 		synchronized (mempool) {
 			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(TransactionEntry::toMempoolEntry));
-		}
-	}
-
-	boolean isEmpty() {
-		synchronized (mempool) {
-			return mempool.isEmpty();
 		}
 	}
 

@@ -1579,7 +1579,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, TimeoutException {
-			while (!mempool.isEmpty() && newBlock instanceof NonGenesisBlock ngb) {
+			while (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}

@@ -98,16 +98,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		if (txs == null)
 			throw new InconsistentJsonException("transactions cannot be null");
 
-		String[] hexes = txs.toArray(String[]::new);
+		var txsAsArray = txs.toArray(String[]::new);
 
-		this.transactions = new Transaction[hexes.length];
-		for (int pos = 0; pos < hexes.length; pos++) {
-			String hex = hexes[pos];
-			if (hex == null)
+		this.transactions = new Transaction[txsAsArray.length];
+		for (int pos = 0; pos < txsAsArray.length; pos++) {
+			String txBase64 = txsAsArray[pos];
+			if (txBase64 == null)
 				throw new InconsistentJsonException("transactions cannot hold a null element");
 
 			try {
-				transactions[pos] = Transactions.of(Base64.fromBase64String(hex));
+				transactions[pos] = Transactions.of(Base64.fromBase64String(txBase64));
 			}
 			catch (Base64ConversionException e) {
 				throw new InconsistentJsonException(e);
