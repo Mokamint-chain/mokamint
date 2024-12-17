@@ -23,7 +23,6 @@ import java.security.SignatureException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
@@ -33,13 +32,13 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
-import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -97,7 +96,7 @@ public class BlockMiner {
 	 * The moment when the previous block has been mined. From that moment we
 	 * count the time to wait for the deadline.
 	 */
-	private final LocalDateTime startTime;
+	private final LocalDateTime creationTimeOfPrevious;
 
 	/**
 	 * The challenge of the deadline required for the next block.
@@ -151,24 +150,23 @@ public class BlockMiner {
 	private final static Logger LOGGER = Logger.getLogger(BlockMiner.class.getName());
 
 	/**
-	 * Creates a task that mines a new block.
+	 * Creates a task that mines a new block. It assumes that the blockchain of the node is non-empty.
 	 * 
 	 * @param node the node performing the mining
-	 * @throws UnknownStateException if the state of the head of the blockchain is unknown to the application
 	 * @throws InterruptedException if the thread running this code gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws TimeoutException if the application of the node timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
+	public BlockMiner(LocalNodeImpl node) throws InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.previous = blockchain.getHead().get();
 		this.config = node.getConfig();
 		this.miners = node.getMiners();
-		this.startTime = blockchain.getGenesis().get().getStartDateTimeUTC().plus(previous.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS);
+		this.creationTimeOfPrevious = blockchain.creationTimeOf(previous).get();
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 		this.challenge = previous.getDescription().getNextChallenge();
-		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous);
+		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous, creationTimeOfPrevious);
 	}
 
 	/**
@@ -380,7 +378,7 @@ public class BlockMiner {
 				node.punish(miner, points, "it provided an illegal deadline");
 			}
 			catch (TimeoutException | DeadlineValidityCheckException e) {
-				LOGGER.warning(heightMessage + "discarding uncheckable deadline " + deadline + ": " + e.getMessage());
+				LOGGER.log(Level.SEVERE, heightMessage + "discarding uncheckable deadline " + deadline + ": " + e.getMessage());
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -395,7 +393,7 @@ public class BlockMiner {
 	 */
 	private void setWaker(Deadline deadline) {
 		long millisecondsToWait = deadline.getMillisecondsToWait(previous.getDescription().getAcceleration());
-		long millisecondsAlreadyPassed = Duration.between(startTime, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
+		long millisecondsAlreadyPassed = Duration.between(creationTimeOfPrevious, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 		long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
 		if (waker.set(stillToWait))
 			LOGGER.info(heightMessage + "set up a waker in " + stillToWait + " ms");

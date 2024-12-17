@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -128,7 +127,7 @@ public class MiningTask implements Task {
 				onBlockAddedWaitingLock.wait(2000L);
 			}
 		}
-		else if (node.getMiners().get().count() == 0L) {
+		else if (node.getMiners().isEmpty()) {
 			LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
 			node.onNoMinersAvailable();
 
@@ -153,9 +152,6 @@ public class MiningTask implements Task {
 			catch (TimeoutException e) {
 				LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
 				Thread.sleep(5000L);
-			}
-			catch (UnknownStateException e) {
-				LOGGER.log(Level.WARNING, "mining: the state of the head of the blockchain is unknown to the application, trying again", e);
 			}
 		}
 	}

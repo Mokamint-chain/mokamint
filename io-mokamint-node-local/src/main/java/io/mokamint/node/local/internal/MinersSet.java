@@ -60,6 +60,15 @@ public class MinersSet {
 	}
 
 	/**
+	 * Determines if this set of miners is empty.
+	 * 
+	 * @return true if and only if that condition holds
+	 */
+	public boolean isEmpty() {
+		return miners.isEmpty();
+	}
+
+	/**
 	 * Yields information about the miners.
 	 * 
 	 * @return information about the miners

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -126,20 +127,19 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous) throws UnknownStateException, InterruptedException, TimeoutException, NodeException {
+	TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, TimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
 		this.app = node.getApplication();
 		this.source = source;
 
-		var creationTime = node.getBlockchain().creationTimeOf(previous).orElseThrow(() -> new NodeException("The blockchain should not be empty at this stage"));
-
 		try {
-			this.id = app.beginBlock(previous.getDescription().getHeight() + 1, creationTime, previous.getStateId());
+			this.id = app.beginBlock(previous.getDescription().getHeight() + 1, creationTimeOfPrevious, previous.getStateId());
 		}
-		catch (ApplicationException e) {
+		catch (ApplicationException | UnknownStateException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
+			// or because the head (ie, previous) of the blockchain has no associated state in the application
 			throw new NodeException(e);
 		}
 	}

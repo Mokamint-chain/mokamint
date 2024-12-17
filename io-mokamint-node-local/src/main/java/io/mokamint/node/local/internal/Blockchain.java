@@ -520,7 +520,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public Optional<LocalDateTime> creationTimeOf(Block block) throws NodeException {
 		try (var scope = mkScope()) {
-			return environment.computeInReadonlyTransaction(NodeException.class, txn -> creationTimeOf(txn, block));
+			// we do not call creationTimeOf(txn, block) since we hope to avoid a database transaction by exploiting the cache in getGenesis()
+			if (block instanceof GenesisBlock gb)
+				return Optional.of(gb.getStartDateTimeUTC());
+			else
+				return getGenesis().map(genesis -> genesis.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
