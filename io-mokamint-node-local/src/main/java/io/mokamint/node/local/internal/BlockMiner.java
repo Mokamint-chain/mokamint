@@ -54,7 +54,7 @@ import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A block miner above a previous block. It requests a deadline to the miners of the node
- * and waits for the best deadline to expire. Once expired, it builds the block and add it into blockchain.
+ * and waits for the best deadline to expire. Once expired, it builds the block and adds it to the blockchain.
  */
 public class BlockMiner {
 
@@ -176,12 +176,10 @@ public class BlockMiner {
 	 * 
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws TimeoutException if some operation timed out
-	 * @throws SignatureException if the block could not be signed with the key of the node
-	 * @throws InvalidKeyException if the key of the node for signing the block is invalid
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws InvalidKeyException, NodeException, InterruptedException, TimeoutException, SignatureException, RejectedExecutionException {
+	public void mine() throws NodeException, InterruptedException, TimeoutException, RejectedExecutionException {
 		LOGGER.info("mining: starting mining over block " + previous.getHexHash());
 		transactionExecutor.start();
 
@@ -214,9 +212,6 @@ public class BlockMiner {
 
 			if (block.isPresent())
 				commitIfBetterThanHead(block.get());
-		}
-		catch (ApplicationException | UnknownGroupIdException e) {
-			throw new NodeException(e);
 		}
 		finally {
 			cleanUp();
@@ -262,22 +257,25 @@ public class BlockMiner {
 	 * 
 	 * @return the block; this might be missing if some transaction could not be delivered successfully
 	 * @throws TimeoutException if the application did not answer in time
-	 * @throws SignatureException if the block could not be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<NonGenesisBlock> createNewBlock() throws InvalidKeyException, SignatureException, InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, TimeoutException, NodeException {
 		var deadline = currentDeadline.deadline; // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline);
-		var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
-		if (processedTransactions.isPresent())
-			return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
-		else
-			return Optional.empty();
+		
+		try {
+			var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
+			if (processedTransactions.isPresent())
+				return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
+			else
+				return Optional.empty();
+		}
+		catch (ApplicationException | UnknownGroupIdException | InvalidKeyException | SignatureException e) {
+			throw new NodeException(e);
+		}
 	}
 
 	/**
@@ -286,17 +284,21 @@ public class BlockMiner {
 	 * @param block the block
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is not behaving correctly
-	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException, NodeException {
+	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
 		// it is theoretically possible that head and block have exactly the same power:
 		// this might lead to temporary forks, when a node follows one chain and another node
 		// follows another chain, both with the same power. However, such forks would be
 		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.isBetterThanHead(block)) {
-			transactionExecutor.commitBlock();
+			try {
+				transactionExecutor.commitBlock();
+			}
+			catch (ApplicationException | UnknownGroupIdException e) {
+				throw new NodeException(e);
+			}
+
 			committed = true;
 			node.onMined(block);
 			addToBlockchain(block);
@@ -364,13 +366,9 @@ public class BlockMiner {
 				if (minersThatDidNotAnswer.remove(miner))
 					miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
-				if (currentDeadline.isWorseThan(deadline)) {
-					if (currentDeadline.updateIfWorseThan(deadline)) {
-						LOGGER.info(heightMessage + "improved deadline to " + deadline);
-						setWaker(deadline);
-					}
-					else
-						LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
+				if (currentDeadline.updateIfWorseThan(deadline)) {
+					LOGGER.info(heightMessage + "improved deadline to " + deadline);
+					setWaker(deadline);
 				}
 				else
 					LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
@@ -414,21 +412,8 @@ public class BlockMiner {
 	@ThreadSafe
 	private class ImprovableDeadline {
 
-		@GuardedBy("this.lock")
+		@GuardedBy("this")
 		private Deadline deadline;
-		private final Object lock = new Object();
-
-		/**
-		 * Determines if the given deadline is better than this.
-		 * 
-		 * @param other the given deadline
-		 * @return true if and only if this is not set yet or {@code other} is smaller than this
-		 */
-		private boolean isWorseThan(Deadline other) {
-			synchronized (lock) {
-				return deadline == null || other.compareByValue(deadline) < 0;
-			}
-		}
 
 		/**
 		 * Updates this deadline if the given deadline is better.
@@ -436,16 +421,14 @@ public class BlockMiner {
 		 * @param other the given deadline
 		 * @return true if and only if this deadline has been updated
 		 */
-		private boolean updateIfWorseThan(Deadline other) {
-			synchronized (lock) {
-				if (isWorseThan(other)) {
-					deadline = other;
-					endOfDeadlineArrivalPeriod.release();
-					return true;
-				}
-				else
-					return false;
+		private synchronized boolean updateIfWorseThan(Deadline other) {
+			if (deadline == null || other.compareByValue(deadline) < 0) {
+				deadline = other;
+				endOfDeadlineArrivalPeriod.release();
+				return true;
 			}
+			else
+				return false;
 		}
 	}
 
@@ -460,13 +443,8 @@ public class BlockMiner {
 		/**
 		 * The current future of the waiting task, if any.
 		 */
-		@GuardedBy("this.lock")
+		@GuardedBy("this")
 		private Future<?> future;
-
-		/**
-		 * A lock to synchronize access to {@link #future}.
-		 */
-		private final Object lock = new Object();
 
 		/**
 		 * Sets a waker at the given time distance from now. If the waker was already set,
@@ -475,23 +453,21 @@ public class BlockMiner {
 		 * @param millisecondsToWait the timeout to wait for
 		 * @return true if the waker has been set, false otherwise (if this object was already shut down)
 		 */
-		private boolean set(long millisecondsToWait) {
-			synchronized (lock) {
-				turnOff();
+		private synchronized boolean set(long millisecondsToWait) {
+			turnOff();
 
-				if (millisecondsToWait <= 0)
-					endOfWaitingPeriod.release();
-				else {
-					try {
-						future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
-					}
-					catch (RejectedExecutionException e) {
-						return false;
-					}
+			if (millisecondsToWait <= 0)
+				endOfWaitingPeriod.release();
+			else {
+				try {
+					future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
 				}
-
-				return true;
+				catch (RejectedExecutionException e) {
+					return false;
+				}
 			}
+
+			return true;
 		}
 
 		private void taskBody(long millisecondsToWait) throws InterruptedException {
@@ -501,14 +477,13 @@ public class BlockMiner {
 			}
 			catch (InterruptedException e) {
 				// we avoid throwing the exception, since it would result in an ugly warning message in the logs, since a task has been interrupted...
-				// but interruption for this task is expected: it means that it has been cancelled in {@link #turnOff()} since the head of the blockchain
-				// changed and it is better to move mining on top of it
+				// but interruption for this task is in most cases expected: it means that it has been cancelled in {@link #turnOff()} since
+				// the head of the blockchain changed and it is better to restart mining on top of it
 				Thread.currentThread().interrupt();
 			}
 		}
 
-		@GuardedBy("this.lock")
-		private void turnOff() {
+		private synchronized void turnOff() {
 			if (future != null)
 				future.cancel(true);
 		}

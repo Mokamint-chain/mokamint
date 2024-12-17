@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -122,7 +120,7 @@ public class MiningTask implements Task {
 			blockMiner.add(entry);
 	}
 
-	private void mineOverHead() throws NodeException, InterruptedException, InvalidKeyException, SignatureException {
+	private void mineOverHead() throws NodeException, InterruptedException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
 
