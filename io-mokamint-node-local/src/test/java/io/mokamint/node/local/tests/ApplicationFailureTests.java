@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -114,9 +113,9 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
 	@Timeout(20)
-	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, TimeoutException, UnknownStateException {
+	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, TimeoutException, UnknownStateException {
 		var port = 8032;
-		var uri = new URI("ws://localhost:" + port);
+		var uri = URI.create("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {

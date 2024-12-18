@@ -24,12 +24,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -144,13 +142,12 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
 
 		var port1 = 8030;
 		var port2 = 8032;
-		var uri1 = new URI("ws://localhost:" + port1);
-		var uri2 = new URI("ws://localhost:" + port2);
+		var uri1 = URI.create("ws://localhost:" + port1);
+		var uri2 = URI.create("ws://localhost:" + port2);
 		var peer1 = Peers.of(uri1);
 		var peer2 = Peers.of(uri2);
 		var config1 = LocalNodeConfigBuilders.defaults()
