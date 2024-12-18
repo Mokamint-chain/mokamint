@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -73,7 +72,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -163,11 +161,11 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers(@TempDir Path dir) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, NodeException {
 		var port1 = 8032;
 		var port2 = 8034;
-		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
+		var peer2 = Peers.of(URI.create("ws://localhost:" + port2));
 		var allPeers = Set.of(peer1, peer2);
 		var stillToAccept = new HashSet<>(allPeers);
 
@@ -182,7 +180,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws IOException, InterruptedException, NodeException, TimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -203,7 +201,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, AlreadyInitializedException, NodeException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, NodeException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -212,7 +210,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -234,11 +232,11 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, AlreadyInitializedException, NodeException {
+	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
 		var port1 = 8032;
 		var port2 = 8034;
-		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
+		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
+		var peer2 = Peers.of(URI.create("ws://localhost:" + port2));
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(peer1);
 		allPeers.add(peer2);
@@ -255,7 +253,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeException, TimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -276,7 +274,7 @@ public class PeersTests extends AbstractLoggedTests {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 
-			try (var node = LocalNodes.of(mkConfig(dir), nodeKey, app)) {
+			try (var node = LocalNodes.of(mkConfig(dir), nodeKey, app, false)) {
 				assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
 			}
 		}
@@ -284,14 +282,14 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, NodeException {
 		var port = 8032;
-		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var peer = Peers.of(URI.create("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -306,13 +304,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
 		var port = 8032;
-		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -327,13 +325,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, TimeoutException, DeploymentException, NodeException, IOException {
 		var port = 8032;
-		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -348,15 +346,15 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose local times are too far away cannot work together")
-	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
 		var port = 8032;
-		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		var config = mkConfig(dir);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
+			private MyLocalNode() throws InterruptedException, TimeoutException, NodeException {
 				super(config, nodeKey, app, false);
 			}
 		}
@@ -370,13 +368,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose genesis block is different cannot work together")
-	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, NodeException {
 		var port = 8032;
 		var peer = Peers.of(new URI("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 

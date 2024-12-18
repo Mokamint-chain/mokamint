@@ -534,12 +534,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Initializes this blockchain, which must be empty. It adds a genesis block.
 	 * 
-	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws AlreadyInitializedException, InterruptedException, TimeoutException, NodeException {
+	public void initialize() throws InterruptedException, TimeoutException, NodeException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 

@@ -34,22 +34,6 @@ public abstract class LocalNodes {
 
 	/**
 	 * Yields a local node of a Mokamint blockchain, for the given application.
-	 * It does not mine the first genesis block by itself but rather performs a synchronization from the peers.
-	 * 
-	 * @param config the configuration of the node
-	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
-	 * @param app the application
-	 * @return the local node
-	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws NodeException if the node is misbehaving
-	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app) throws InterruptedException, TimeoutException, NodeException {
-		return new LocalNodeImpl(config, keyPair, app);
-	}
-
-	/**
-	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
@@ -58,12 +42,10 @@ public abstract class LocalNodes {
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
-	 *                                     contains a genesis block already
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, TimeoutException, NodeException {
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, NodeException {
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }

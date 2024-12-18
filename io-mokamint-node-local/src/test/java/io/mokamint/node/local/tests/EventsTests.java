@@ -51,13 +51,12 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -118,7 +117,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
-	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = new Miner() {
@@ -156,7 +155,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -176,7 +175,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
-	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
+	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = new Miner() {
@@ -217,7 +216,7 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends AbstractLocalNode {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -237,12 +236,12 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
-	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
+	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -260,13 +259,13 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
+	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var config = mkConfig(dir);
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 
 				var miner = mock(Miner.class);
@@ -290,7 +289,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong chain id, an event is signalled to the node")
-	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
+	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		var config = mkConfig(dir);
 
@@ -331,7 +330,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 				add(myMiner);
 			}

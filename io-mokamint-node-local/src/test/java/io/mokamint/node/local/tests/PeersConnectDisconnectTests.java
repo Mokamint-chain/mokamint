@@ -106,7 +106,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
-				super(config, nodeKey, app);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -117,7 +117,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app);  var node3 = LocalNodes.of(config3, nodeKey, app);
+		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app, false);  var node3 = LocalNodes.of(config3, nodeKey, app, false);
 			 var service2 = PublicNodeServices.open(node2, port2, 1800000, 1000, Optional.of(uri2));
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(uri3))) {
 
@@ -171,7 +171,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		class MyLocalNode1 extends AbstractLocalNode {
 
 			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
-				super(config, nodeKey, app);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override
@@ -199,7 +199,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		class MyLocalNode2 extends AbstractLocalNode {
 
 			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, TimeoutException, NodeException {
-				super(config, nodeKey, app);
+				super(config, nodeKey, app, false);
 			}
 
 			@Override

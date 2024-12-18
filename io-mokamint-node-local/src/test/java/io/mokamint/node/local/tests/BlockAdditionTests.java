@@ -60,7 +60,6 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.VerificationException;
@@ -144,11 +143,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, TimeoutException, NodeException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 	}
@@ -166,7 +165,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
-	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, ApplicationException {
+	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -184,7 +183,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the genesis of the chain is set, a subsequent genesis block is not added")
-	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifGenesisIsSetNextGenesisBlockIsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -205,7 +204,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the head of the chain does not change")
-	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifBlockWithUnknownPreviousIsAddedThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -238,7 +237,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, it becomes the head of the chain")
-	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifBlockAddedToHeadOfChainThenItBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -259,7 +258,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the head of the chain is not changed")
-	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifBlockAddedToChainButHeadBetterThenHeadIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -295,7 +294,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then it becomes the current chain")
-	public void ifMorePowerfulChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifMorePowerfulChainIsAddedThenItBecomesTheCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -363,7 +362,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if more children of the head are added, the one with higher power becomes head")
-	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifMoreChildrenThanHigherPowerBecomesHead(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -420,7 +419,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then it becomes the current chain")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenItBecomesCurrentChain(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
