@@ -164,7 +164,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	@Override
-	public void body() throws ApplicationException, TimeoutException, UnknownGroupIdException {
+	public void body() throws NodeException {
 		long sizeUpToNow = 0L;
 
 		try {
@@ -174,8 +174,7 @@ public class TransactionsExecutionTask implements Task {
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			// we do not throw the exception further but rather stop working:
-			// interruption is the standard way of terminating this task
+			// no warning log: interruption is the standard way of terminating this task
 		}
 		finally {
 			// this allows to commit or abort the execution in the database of the application
@@ -239,7 +238,7 @@ public class TransactionsExecutionTask implements Task {
 		}
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, NodeException {
 		var tx = next.getTransaction();
 
 		if (successfullyDeliveredTransactions.contains(tx) || rejectedTransactions.contains(tx))
@@ -259,9 +258,13 @@ public class TransactionsExecutionTask implements Task {
 					try {
 						app.deliverTransaction(id, tx);
 					}
-					catch (TimeoutException | InterruptedException | ApplicationException | RuntimeException e) {
+					catch (InterruptedException e) {
 						deliveryFailed = true;
 						throw e;
+					}
+					catch (ApplicationException | TimeoutException | UnknownGroupIdException e) {
+						deliveryFailed = true;
+						throw new NodeException(e);
 					}
 
 					successfullyDeliveredTransactions.add(tx);

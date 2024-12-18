@@ -308,12 +308,12 @@ public class BlockMiner {
 	/**
 	 * Cleans up everything at the end of mining.
 	 * 
-	 * @throws InterruptedException if the operation gets interrupted
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void cleanUp() throws InterruptedException, TimeoutException, NodeException {
-		this.done = true;
+		done = true;
 		transactionExecutor.stop();
 
 		try {
@@ -464,7 +464,7 @@ public class BlockMiner {
 			}
 		}
 
-		private void taskBody(long millisecondsToWait) throws InterruptedException {
+		private void taskBody(long millisecondsToWait) {
 			try {
 				Thread.sleep(millisecondsToWait);
 				endOfWaitingPeriod.release();

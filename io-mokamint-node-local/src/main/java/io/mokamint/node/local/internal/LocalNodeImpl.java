@@ -574,9 +574,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		/**
 		 * Main body of the task execution.
 		 * 
-		 * @throws Exception if the execution fails
+		 * @throws NodeException if the node is misbehaving
+		 * @throws InterruptedException if the task has been interrupted, because the node is shutting down
 		 */
-		void body() throws Exception;
+		void body() throws NodeException, InterruptedException;
 	}
 
 	/**
@@ -905,14 +906,18 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				task.body();
 			}
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down: " + e.getMessage());
+			}
+			catch (NodeException e) {
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " exits since the node is misbehaving", e);
+			}
 			catch (InterruptedException e) {
-				LOGGER.warning("node " + uuid + ": " + this + " interrupted");
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down");
 				Thread.currentThread().interrupt();
-				return;
 			}
 			catch (Exception e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " failed", e);
-				return;
 			}
 			finally {
 				currentlyExecutingTasks.remove(this);
@@ -999,10 +1004,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		scheduleWithFixedDelay(this::synchronize, "synchronization from the peers", 100000L, Math.max(5L * 60 * 1000, 30L * config.getTargetBlockCreationTime()), TimeUnit.MILLISECONDS);
 	}
 
-	private void synchronize() throws InterruptedException, TimeoutException, NodeException {
-		// we avoid to synchronize if synchronization is already in process
-		if (isSynchronizing.getAndSet(true) == false)
-			blockchain.synchronize();
+	private void synchronize() throws InterruptedException, NodeException {
+		if (isSynchronizing.getAndSet(true) == false) // we avoid to synchronize if synchronization is already in process
+			try {
+				blockchain.synchronize();
+			}
+			catch (TimeoutException e) {
+				LOGGER.log(Level.SEVERE, "sync: timed-out", e);
+			}
 	}
 
 	/**
@@ -1022,34 +1031,29 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
+	 * 
+	 * @throws NodeException if the node is misbehaving
+	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	private void processWhisperedPeers() {
-		try {
-			while (!Thread.currentThread().isInterrupted()) {
-				var whisperedInfo = whisperedPeersQueue.take();
+	private void processWhisperedPeers() throws NodeException, InterruptedException {
+		while (!Thread.currentThread().isInterrupted()) {
+			var whisperedInfo = whisperedPeersQueue.take();
 
-				try {
-					var whisperedPeerMessage = whisperedInfo.message;
-					var peer = whisperedPeerMessage.getWhispered();
+			try {
+				var whisperedPeerMessage = whisperedInfo.message;
+				var peer = whisperedPeerMessage.getWhispered();
 
-					if (whisperedInfo.add)
-						peers.add(peer);
+				if (whisperedInfo.add)
+					peers.add(peer);
 
-					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
-					onWhispered(peer);
-				}
-				catch (NodeException e) {
-					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
-				}
-				catch (PeerRejectedException | IOException | TimeoutException e) {
-					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
-				}
+				Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
+				peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
+				boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
+				onWhispered(peer);
 			}
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+			catch (PeerRejectedException | IOException | TimeoutException e) {
+				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
+			}
 		}
 	}
 

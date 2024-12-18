@@ -53,20 +53,13 @@ public class MiningTask implements Task {
 	}
 
 	@Override
-	public void body() {
+	public void body() throws NodeException, InterruptedException {
 		try {
 			while (true)
 				mineOverHead();
 		}
 		catch (RejectedExecutionException | ClosedDatabaseException e) {
 			LOGGER.warning("mining: exiting since the node is shutting down");
-		}
-		catch (InterruptedException e) {
-			LOGGER.warning("mining: exiting since the node is shutting down");
-			Thread.currentThread().interrupt();
-		}
-		catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "mining: dying because of exception", e);
 		}
 	}
 
