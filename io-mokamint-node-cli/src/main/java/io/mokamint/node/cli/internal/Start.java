@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +44,7 @@ import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNode;
@@ -278,7 +278,7 @@ public class Start extends AbstractCommand {
 					throw new CommandException("The node is misbehaving", e);
 				}
 			}
-			catch (ApplicationException | TimeoutException e) {
+			catch (ApplicationException | ApplicationTimeoutException e) {
 				throw new CommandException("The application is misbehaving", e);
 			}
 			catch (InterruptedException e) {

@@ -35,6 +35,7 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.Deadline;
 
@@ -96,9 +97,9 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, TimeoutException {
+	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		this.txn = txn;
 		this.node = node;
 		this.config = node.getConfig();
@@ -124,7 +125,7 @@ public class BlockVerification {
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
 		finalStateIsTheInitialStateOfTheApplication();
@@ -141,9 +142,9 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, TimeoutException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedChallenge();
 		deadlineHasValidProlog();
@@ -170,9 +171,9 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException, TimeoutException {
+	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		var prolog = deadline.getProlog();
 
 		if (!prolog.getChainId().equals(config.getChainId()))
@@ -187,6 +188,9 @@ public class BlockVerification {
 		try {
 			if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
 				throw new VerificationException("Invalid deadline prolog's extra");
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
 		catch (ApplicationException e) {
 			throw new NodeException(e);
@@ -326,10 +330,10 @@ public class BlockVerification {
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if that condition is violated
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, TimeoutException, NodeException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
 		var app = node.getApplication();
 
 		// if the following exception occurs, there is a coding error
@@ -379,17 +383,16 @@ public class BlockVerification {
 					app.abortBlock(id);
 			}
 		}
-		catch (UnknownGroupIdException e) {
-			// somebody has closed the group id that we are using: there is a coding error
-			throw new IllegalStateException(e);
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
-		catch (ApplicationException e) {
+		catch (ApplicationException | UnknownGroupIdException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			throw new NodeException(e);
 		}
 	}
 
-	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, TimeoutException, NodeException {
+	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
 		try {
 			var expected = node.getApplication().getInitialStateId();
 			if (!Arrays.equals(block.getStateId(), expected))
@@ -398,6 +401,9 @@ public class BlockVerification {
 		catch (ApplicationException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			throw new NodeException(e);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
 	}
 }

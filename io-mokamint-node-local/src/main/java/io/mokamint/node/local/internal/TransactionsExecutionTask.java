@@ -39,6 +39,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
@@ -127,7 +128,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, TimeoutException, NodeException {
+	TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
@@ -141,6 +142,9 @@ public class TransactionsExecutionTask implements Task {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			// or because the head (ie, previous) of the blockchain has no associated state in the application
 			throw new NodeException(e);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
 	}
 
@@ -191,17 +195,22 @@ public class TransactionsExecutionTask implements Task {
 	 * @return the processed transactions, if any; this might be missing if some transaction delivery failed
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
-	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id of the transactions became invalid
 	 */
-	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
 		done.await();
 
 		if (deliveryFailed)
 			return Optional.empty();
 		else
-			return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, app.endBlock(id, deadline)));
+			try {
+				return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, app.endBlock(id, deadline)));
+			}
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
+			}
 	}
 
 	/**
@@ -210,13 +219,19 @@ public class TransactionsExecutionTask implements Task {
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
-	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id for the transactions became invalid
 	 */
-	public void commitBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	public void commitBlock() throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
 		done.await();
-		app.commitBlock(id);
+
+		try {
+			app.commitBlock(id);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
 	}
 
 	/**

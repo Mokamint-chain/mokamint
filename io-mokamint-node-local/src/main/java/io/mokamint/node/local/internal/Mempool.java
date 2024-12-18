@@ -42,6 +42,7 @@ import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
@@ -127,9 +128,9 @@ public class Mempool {
 	 * @param newBase the new base that must be set for this mempool
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	public void rebaseAt(Block newBase) throws NodeException, InterruptedException, TimeoutException {
+	public void rebaseAt(Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		synchronized (mempool) {
 			blockchain.rebase(this, newBase);
 		}

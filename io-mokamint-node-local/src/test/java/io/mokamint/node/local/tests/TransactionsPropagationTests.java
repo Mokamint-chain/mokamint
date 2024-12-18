@@ -50,6 +50,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
@@ -82,7 +83,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer adds another peer, then transactions flow from one to the other")
 	public void ifPeerAddsPeerThenTransactionsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, TransactionRejectedException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, TransactionRejectedException, NodeException, TimeoutException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -101,7 +102,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			private final Peer expectedPeer;
 			private final Transaction expectedTransaction;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;

@@ -17,11 +17,11 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 
@@ -142,7 +142,7 @@ public class MiningTask implements Task {
 				blockMiner = new BlockMiner(node);
 				blockMiner.mine();
 			}
-			catch (TimeoutException e) {
+			catch (ApplicationTimeoutException e) {
 				LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
 				Thread.sleep(5000L);
 			}

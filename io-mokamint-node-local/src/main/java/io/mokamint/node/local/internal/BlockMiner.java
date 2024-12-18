@@ -44,6 +44,7 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Challenge;
@@ -154,10 +155,10 @@ public class BlockMiner {
 	 * 
 	 * @param node the node performing the mining
 	 * @throws InterruptedException if the thread running this code gets interrupted
-	 * @throws TimeoutException if the application of the node timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public BlockMiner(LocalNodeImpl node) throws InterruptedException, TimeoutException, NodeException {
+	public BlockMiner(LocalNodeImpl node) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.previous = blockchain.getHead().get();
@@ -173,11 +174,11 @@ public class BlockMiner {
 	 * Mines the new block.
 	 * 
 	 * @throws InterruptedException if the thread running this code gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws RejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws NodeException, InterruptedException, TimeoutException, RejectedExecutionException {
+	public void mine() throws NodeException, InterruptedException, ApplicationTimeoutException, RejectedExecutionException {
 		LOGGER.info("mining: starting mining over block " + previous.getHexHash());
 		transactionExecutor.start();
 
@@ -258,7 +259,7 @@ public class BlockMiner {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, TimeoutException, NodeException {
+	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
@@ -284,7 +285,7 @@ public class BlockMiner {
 	 * @throws TimeoutException if the application did not provide an answer in time
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		// it is theoretically possible that head and block have exactly the same power:
 		// this might lead to temporary forks, when a node follows one chain and another node
 		// follows another chain, both with the same power. However, such forks would be
@@ -309,10 +310,10 @@ public class BlockMiner {
 	 * Cleans up everything at the end of mining.
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private void cleanUp() throws InterruptedException, TimeoutException, NodeException {
+	private void cleanUp() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		done = true;
 		transactionExecutor.stop();
 
@@ -324,6 +325,9 @@ public class BlockMiner {
 		}
 		catch (UnknownGroupIdException | ApplicationException e) {
 			throw new NodeException(e);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
 		finally {
 			punishMinersThatDidNotAnswer();
@@ -338,7 +342,7 @@ public class BlockMiner {
 		}
 	}
 
-	private void addToBlockchain(Block block) throws InterruptedException, TimeoutException, NodeException {
+	private void addToBlockchain(Block block) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (!interrupted && blockchain.addVerified(block))
 			node.whisperWithoutAddition(block);

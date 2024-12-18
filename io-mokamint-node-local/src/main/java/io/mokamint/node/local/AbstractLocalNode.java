@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import java.security.KeyPair;
-import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
@@ -40,9 +39,9 @@ public abstract class AbstractLocalNode extends LocalNodeImpl {
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws NodeException if the node is misbehaving
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeException, TimeoutException {
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeException, ApplicationTimeoutException {
 		super(config, keyPair, app, init);
 	}
 }

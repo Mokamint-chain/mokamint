@@ -54,6 +54,7 @@ import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
@@ -102,7 +103,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("the addition of a miner to a network of nodes lets them start mining, its removal stops mining")
 	public void addMinerStartsMiningThenRemovalStopsMining(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, InvalidKeyException, SignatureException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
 
 		var port1 = 8030;
 		var port2 = 8032;
@@ -122,7 +123,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1() throws IOException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode1() throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config1, node1Keys, app, true);
 			}
 
@@ -139,7 +140,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2() throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode2() throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config2, node2Keys, app, false);
 			}
 

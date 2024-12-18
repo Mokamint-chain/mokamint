@@ -52,6 +52,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -87,7 +88,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@Timeout(15)
 	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
 			throws NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
+				   IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
 
 		var port2 = 8032;
 		var port3 = 8034;
@@ -103,7 +104,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -142,7 +143,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
 
 		var port1 = 8030;
 		var port2 = 8032;
@@ -167,7 +168,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -195,7 +196,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, TimeoutException, NodeException {
+			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, ApplicationTimeoutException, NodeException {
 				super(config, nodeKey, app, false);
 			}
 

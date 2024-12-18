@@ -52,6 +52,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -84,7 +85,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@DisplayName("a peer added to a clique is broadcast to all nodes in the clique")
 	@Timeout(20)
 	public void peerAddedToCliqueIsBroadcast(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -103,7 +104,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -149,7 +150,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@DisplayName("a peer added to a node eventually propagates all its peers")
 	@Timeout(20)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -171,7 +172,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -209,7 +210,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
 	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
 
 		var port1 = 8032;
 		var port2 = 8034;
@@ -224,7 +225,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expected = expected;

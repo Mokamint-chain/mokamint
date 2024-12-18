@@ -64,6 +64,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -107,7 +108,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NodeException, TimeoutException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -135,7 +136,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
-	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException, TransactionRejectedException, TimeoutException, NodeException {
+	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
 		var allTransactions = new HashSet<Transaction>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
@@ -150,7 +151,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, TimeoutException, NodeException {
+			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
 				super(config, init);
 			}
 
@@ -203,7 +204,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, TimeoutException {
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
 					super(config, init);
 				}
 
@@ -286,7 +287,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, InterruptedException, DeploymentException, TimeoutException, NodeException {
+			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, InterruptedException, DeploymentException, ApplicationTimeoutException, NodeException {
 				LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 
 				var uri = getPeer(num).getURI();

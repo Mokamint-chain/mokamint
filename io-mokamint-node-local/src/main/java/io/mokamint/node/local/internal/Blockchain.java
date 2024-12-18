@@ -82,6 +82,7 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -535,10 +536,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Initializes this blockchain, which must be empty. It adds a genesis block.
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws InterruptedException, TimeoutException, NodeException {
+	public void initialize() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 
@@ -555,6 +556,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		catch (ApplicationException | InvalidKeyException | SignatureException e) {
 			// this node is misbehaving because the application it is connected to is misbehaving
 			throw new NodeException(e);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
 		}
 	}
 
@@ -576,9 +580,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 		return add(block, true);
 	}
 
@@ -591,9 +595,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 *         rooted at the genesis block, false otherwise
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	public boolean addVerified(Block block) throws NodeException, InterruptedException, TimeoutException {
+	public boolean addVerified(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		try {
 			return add(block, false);
 		}
@@ -607,20 +611,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Synchronizes this blockchain with the peers of the node.
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void synchronize() throws InterruptedException, TimeoutException, NodeException {
+	public void synchronize() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		try {
-			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function = DownloadedGroupOfBlocks::new;
-			DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function);
+			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, ApplicationTimeoutException> function = DownloadedGroupOfBlocks::new;
+			DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
 			group.updateMempool();
 			group.informNode();
 
 			while (group.thereMightBeMoreGroupsToDownload()) {
 				DownloadedGroupOfBlocks previousGroup = group;
-				FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, TimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
-				group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function2);
+				FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, ApplicationTimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
+				group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function2);
 				group.updateMempool();
 				group.informNode();
 			}
@@ -630,9 +634,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
-		FunctionWithExceptions3<Transaction, Rebase, NodeException, InterruptedException, TimeoutException> function = txn -> new Rebase(txn, mempool, newBase);
-		environment.computeInReadonlyTransaction(NodeException.class, InterruptedException.class, TimeoutException.class, function).updateMempool();
+	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
+		FunctionWithExceptions3<Transaction, Rebase, NodeException, InterruptedException, ApplicationTimeoutException> function = txn -> new Rebase(txn, mempool, newBase);
+		environment.computeInReadonlyTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function).updateMempool();
 	}
 
 	/**
@@ -693,9 +697,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
 		 * @throws InterruptedException if the current thread is interrupted
-		 * @throws TimeoutException if some operation timed out
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 */
-		private BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		private BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
@@ -717,7 +721,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
 		}
 
-		private void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+		private void updateMempool() throws NodeException, InterruptedException, ApplicationTimeoutException {
 			if (!blocksAddedToTheCurrentBestChain.isEmpty())
 				// if the head has been improved, we update the mempool by removing
 				// the transactions that have been added in blockchain and potentially adding
@@ -755,7 +759,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return !blocksAdded.isEmpty();
 		}
 
-		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			// we use a working set, since the addition of a single block might trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
 			ws.add(blockToAdd);
@@ -815,7 +819,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			if (verify || isOrphan) {
 				try {
 					new BlockVerification(txn, node, blockToAdd, previous);
@@ -1141,19 +1145,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
 	
-		private DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			this(txn,
 				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
 				Optional.empty(),
 				ConcurrentHashMap.newKeySet());
 		}
 
-		private DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
 			this(txn, previous.height  + synchronizationGroupSize - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
 		}
 
-		private DownloadedGroupOfBlocks(Transaction txn, long height, Optional<byte[]> lastHashOfPreviousGroup, Set<Peer> unusable) throws InterruptedException, TimeoutException, NodeException {
+		private DownloadedGroupOfBlocks(Transaction txn, long height, Optional<byte[]> lastHashOfPreviousGroup, Set<Peer> unusable) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			this.txn = txn;
 			this.blockAdder = new BlockAdder(txn);
 			this.lastHashOfPreviousGroup = lastHashOfPreviousGroup;
@@ -1185,7 +1189,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return chosenGroup != null && chosenGroup.length == synchronizationGroupSize;
 		}
 	
-		private void updateMempool() throws NodeException, InterruptedException, TimeoutException {
+		private void updateMempool() throws NodeException, InterruptedException, ApplicationTimeoutException {
 			blockAdder.updateMempool();
 		}
 	
@@ -1470,10 +1474,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @return true if and only if no block was missing and all blocks could be
 		 *         successfully verified and added to blockchain; if false, synchronization must stop here
 		 * @throws InterruptedException if the current thread gets interrupted during this method
-		 * @throws TimeoutException if some operation timed out
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean addBlocksToBlockchain() throws InterruptedException, TimeoutException, NodeException {
+		private boolean addBlocksToBlockchain() throws InterruptedException, ApplicationTimeoutException, NodeException {
 			for (int h = 0; h < chosenGroup.length; h++) {
 				stopIfInterrupted();
 	
@@ -1525,7 +1529,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private Block newBlock;
 		private Block oldBlock;
 
-		private Rebase(Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, TimeoutException {
+		private Rebase(Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
 			this.txn = txn;
 			this.mempool = mempool;
 			this.newBase = newBase;
@@ -1562,7 +1566,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException, InterruptedException, ApplicationTimeoutException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -1571,7 +1575,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, TimeoutException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, ApplicationTimeoutException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -1580,7 +1584,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, TimeoutException {
+		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, ApplicationTimeoutException {
 			while (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -1592,10 +1596,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws TimeoutException if some operation timed out
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -1605,10 +1609,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws TimeoutException if some operation timed out
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, TimeoutException, NodeException {
+		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Transaction[]::new))
 				toRemove.add(intoTransactionEntry(transaction));
 		}
@@ -1619,10 +1623,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param transaction the transaction
 		 * @return the resulting transaction entry
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws TimeoutException if some operation timed out
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, TimeoutException, NodeException {
+		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, ApplicationTimeoutException, NodeException {
 			try {
 				return mempool.mkTransactionEntry(transaction);
 			}
@@ -1631,6 +1635,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// or the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
+			}
 		}
 
 		private Block getBlock(byte[] hash) throws NodeException {
@@ -1638,13 +1645,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, TimeoutException {
+	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 		BlockAdder adder;
 
-		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, TimeoutException> function = txn -> new BlockAdder(txn).add(block, verify);
+		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verify);
 
 		try (var scope = mkScope()) {
-			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, TimeoutException.class, function);
+			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);

@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -72,6 +71,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -122,14 +122,20 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static PublicNode mkNode(NodeInfo info) throws TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException {
-		PublicNode node = mock();
-		when(node.getInfo()).thenReturn(info);
-		when(node.getChainInfo()).thenReturn(chainInfo);
-		when(node.getChainPortion(anyLong(), anyInt())).thenReturn(ChainPortions.of(Stream.empty()));
-		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
-		w.thenReturn(LocalNodeConfigBuilders.defaults().build());
-		return node;
+	private static PublicNode mkNode(NodeInfo info) throws NoSuchAlgorithmException {
+		try {
+			PublicNode node = mock();
+			when(node.getInfo()).thenReturn(info);
+			when(node.getChainInfo()).thenReturn(chainInfo);
+			when(node.getChainPortion(anyLong(), anyInt())).thenReturn(ChainPortions.of(Stream.empty()));
+			OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
+			w.thenReturn(LocalNodeConfigBuilders.defaults().build());
+			return node;
+		}
+		catch (TimeoutException | InterruptedException | NodeException e) {
+			// fake, it's just out of stubbing
+			throw new RuntimeException("Unexpected exception", e);
+		}
 	}
 
 	/**
@@ -146,7 +152,7 @@ public class PeersTests extends AbstractLoggedTests {
 		 * @throws DeploymentException if the service cannot be deployed
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
 		 */
-		private PublicTestServer(NodeInfo info, int port) throws DeploymentException, IOException, TimeoutException, InterruptedException, NodeException, NoSuchAlgorithmException {
+		private PublicTestServer(NodeInfo info, int port) throws DeploymentException, IOException, NoSuchAlgorithmException {
 			super(mkNode(info), port, 180000, 1000, Optional.of(URI.create("ws://localhost:" + port)));
 		}
 	}
@@ -161,7 +167,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, IOException, TimeoutException, DeploymentException, NodeException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, IOException, ApplicationTimeoutException, DeploymentException, NodeException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -180,7 +186,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws IOException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws IOException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -201,7 +207,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, NodeException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, PeerRejectedException, NodeException, TimeoutException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -210,7 +216,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -232,7 +238,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
+	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException, TimeoutException {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -253,7 +259,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -282,14 +288,14 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, PeerRejectedException, NodeException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, PeerRejectedException, NodeException, TimeoutException {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -304,13 +310,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -325,13 +331,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, TimeoutException, DeploymentException, NodeException, IOException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException, IOException {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -346,7 +352,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose local times are too far away cannot work together")
-	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, TimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
@@ -354,7 +360,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, TimeoutException, NodeException {
+			private MyLocalNode() throws InterruptedException, ApplicationTimeoutException, NodeException {
 				super(config, nodeKey, app, false);
 			}
 		}
@@ -368,13 +374,13 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose genesis block is different cannot work together")
-	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException, TimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
 		var port = 8032;
-		var peer = Peers.of(new URI("ws://localhost:" + port));
+		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 

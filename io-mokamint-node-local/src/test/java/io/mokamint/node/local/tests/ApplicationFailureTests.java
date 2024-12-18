@@ -53,6 +53,7 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AbstractLocalNode;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Prologs;
@@ -113,14 +114,14 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
 	@Timeout(20)
-	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, TimeoutException, UnknownStateException {
+	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, ApplicationTimeoutException, UnknownStateException {
 		var port = 8032;
 		var uri = URI.create("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}
@@ -135,7 +136,12 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		var stopDone = new AtomicInteger(0);
 		// we simulate an application failure at the fifth block, but only at the first attempts
-		when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new TimeoutException("stopped at fifth"));
+		try {
+			when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new TimeoutException("stopped at fifth"));
+		}
+		catch (TimeoutException e) {
+			throw new RuntimeException("Unexpected exception", e);
+		}
 
 		try (var service = ApplicationServices.open(app, port);
 			 var remote = RemoteApplications.of(uri, 2000);

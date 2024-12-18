@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -116,10 +115,10 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeersResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException, URISyntaxException {
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://google.com:8011")), 1234, true);
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://amazon.it:8024")), 313, false);
-		var peerInfo3 = PeerInfos.of(Peers.of(new URI("ws://panarea.io:8025")), 112, true);
+	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException {
+		var peerInfo1 = PeerInfos.of(Peers.of(URI.create("ws://google.com:8011")), 1234, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(URI.create("ws://amazon.it:8024")), 313, false);
+		var peerInfo3 = PeerInfos.of(Peers.of(URI.create("ws://panarea.io:8025")), 112, true);
 		var getPeersResultMessage1 = GetPeerInfosResultMessages.of(Stream.of(peerInfo1, peerInfo2, peerInfo3), "id");
 		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeersResultMessage1);
 		var getPeersResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);
@@ -271,9 +270,9 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeerInfosResult() throws EncodeException, DecodeException, URISyntaxException {
-		var peers = Stream.of(PeerInfos.of(Peers.of(new URI("ws://www.hotmoka.io")), 100L, true),
-				PeerInfos.of(Peers.of(new URI("ws://www.mokamint.io:8030")), 123L, false));
+	public void encodeDecodeWorksForGetPeerInfosResult() throws EncodeException, DecodeException {
+		var peers = Stream.of(PeerInfos.of(Peers.of(URI.create("ws://www.hotmoka.io")), 100L, true),
+				PeerInfos.of(Peers.of(URI.create("ws://www.mokamint.io:8030")), 123L, false));
 		var getPeerInfosResultMessage1 = GetPeerInfosResultMessages.of(peers, "id");
 		String encoded = new GetPeerInfosResultMessages.Encoder().encode(getPeerInfosResultMessage1);
 		var getPeerInfosResultMessage2 = new GetPeerInfosResultMessages.Decoder().decode(encoded);
@@ -291,7 +290,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMinerInfosResult() throws EncodeException, DecodeException, URISyntaxException {
+	public void encodeDecodeWorksForGetMinerInfosResult() throws EncodeException, DecodeException {
 		var miners = Stream.of(MinerInfos.of(UUID.randomUUID(), 100L, "a miner"),
 				MinerInfos.of(UUID.randomUUID(), 123L, "another miner"));
 		var getMinerInfosResultMessage1 = GetMinerInfosResultMessages.of(miners, "id");
@@ -311,7 +310,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTaskInfosResult() throws EncodeException, DecodeException, URISyntaxException {
+	public void encodeDecodeWorksForGetTaskInfosResult() throws EncodeException, DecodeException {
 		var tasks = Stream.of(TaskInfos.of("a beautiful task"), TaskInfos.of("another beautiful task"));
 		var getTaskInfosResultMessage1 = GetTaskInfosResultMessages.of(tasks, "id");
 		String encoded = new GetTaskInfosResultMessages.Encoder().encode(getTaskInfosResultMessage1);
@@ -410,7 +409,6 @@ public class MessagesTests extends AbstractLoggedTests {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
 		var addTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
 		String encoded = new AddTransactionMessages.Encoder().encode(addTransactionMessage1);
-		System.out.println(encoded);
 		var addTransactionMessage2 = new AddTransactionMessages.Decoder().decode(encoded);
 		assertEquals(addTransactionMessage1, addTransactionMessage2);
 	}
@@ -426,8 +424,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add peer messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException, URISyntaxException {
-		var addPeers1 = AddPeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
+	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException {
+		var addPeers1 = AddPeerMessages.of(Peers.of(URI.create("ws://google.com:8011")), "id");
 		String encoded = new AddPeerMessages.Encoder().encode(addPeers1);
 		var addPeers2 = new AddPeerMessages.Decoder().decode(encoded);
 		assertEquals(addPeers1, addPeers2);
@@ -435,8 +433,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("remove peer messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException, URISyntaxException {
-		var removePeers1 = RemovePeerMessages.of(Peers.of(new URI("ws://google.com:8011")), "id");
+	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException {
+		var removePeers1 = RemovePeerMessages.of(Peers.of(URI.create("ws://google.com:8011")), "id");
 		String encoded = new RemovePeerMessages.Encoder().encode(removePeers1);
 		var removePeers2 = new RemovePeerMessages.Decoder().decode(encoded);
 		assertEquals(removePeers1, removePeers2);
@@ -444,8 +442,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add peer non-empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws EncodeException, DecodeException, URISyntaxException {
-		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.of(PeerInfos.of(Peers.of(new URI("ws://www.mokamint-io")), 800, true)), "id");
+	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws EncodeException, DecodeException {
+		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.of(PeerInfos.of(Peers.of(URI.create("ws://www.mokamint.io")), 800, true)), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
 		assertEquals(addPeerResultMessage1, addPeerResultMessage2);
@@ -453,7 +451,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("addPeer empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmptyAddPeerResult() throws EncodeException, DecodeException, URISyntaxException {
+	public void encodeDecodeWorksForEmptyAddPeerResult() throws EncodeException, DecodeException {
 		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.empty(), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
@@ -517,8 +515,8 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper peers messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException, URISyntaxException {
-		var peer1 = Peers.of(new URI("ws://google.com:8011"));
+	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException {
+		var peer1 = Peers.of(URI.create("ws://google.com:8011"));
 		var whisperPeersMessage1 = WhisperPeerMessages.of(peer1, "id");
 		String encoded = new WhisperPeerMessages.Encoder().encode(whisperPeersMessage1);
 		var whisperPeersMessage2 = new WhisperPeerMessages.Decoder().decode(encoded);

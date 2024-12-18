@@ -72,6 +72,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -213,7 +214,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		super(ClosedNodeException::new);
 
 		this.config = config;
@@ -430,7 +431,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws NodeException, InterruptedException {
+	public boolean remove(Peer peer) throws NodeException {
 		try (var scope = mkScope()) {
 			return peers.remove(peer);
 		}
@@ -626,9 +627,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param block the block
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted while performing the operation
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	protected void rebaseMempoolAt(Block block) throws NodeException, InterruptedException, TimeoutException {
+	protected void rebaseMempoolAt(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		mempool.rebaseAt(block);
 	}
 
@@ -640,9 +641,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param action the action
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws NodeException, InterruptedException, TimeoutException {
+	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		result.forEachTransaction(action); // process the resulting transactions
@@ -1003,7 +1004,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				blockchain.synchronize();
 			}
-			catch (TimeoutException e) {
+			catch (ApplicationTimeoutException e) { // TODO
 				LOGGER.log(Level.SEVERE, "sync: timed-out", e);
 			}
 	}
@@ -1071,7 +1072,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
 					onWhispered(block);
 				}
-				catch (NodeException | TimeoutException e) {
+				catch (NodeException | ApplicationTimeoutException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived

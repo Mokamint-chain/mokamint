@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local;
 
 import java.security.KeyPair;
-import java.util.concurrent.TimeoutException;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.NodeException;
@@ -42,10 +41,10 @@ public abstract class LocalNodes {
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws TimeoutException if the application did not answer in time
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, NodeException {
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }
