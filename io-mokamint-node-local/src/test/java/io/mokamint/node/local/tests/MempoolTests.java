@@ -140,11 +140,11 @@ public class MempoolTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 	}
@@ -162,7 +162,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the mempool is unchanged")
-	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, ApplicationException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -201,7 +201,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, its transactions are removed from the mempool")
-	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TransactionRejectedException, TimeoutException, NodeException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();

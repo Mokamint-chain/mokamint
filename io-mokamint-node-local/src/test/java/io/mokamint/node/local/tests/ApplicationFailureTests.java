@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -116,14 +115,14 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
 	@Timeout(20)
-	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, InvalidKeyException, SignatureException, NodeException, AlreadyInitializedException, TimeoutException, UnknownStateException {
+	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws URISyntaxException, NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, AlreadyInitializedException, TimeoutException, UnknownStateException {
 		var port = 8032;
 		var uri = new URI("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InvalidKeyException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}

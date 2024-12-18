@@ -142,7 +142,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+		private MiningNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(config, nodeKeys, app, true);
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
@@ -160,7 +160,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends AbstractLocalNode {
 
-		private NonMiningNode(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+		private NonMiningNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 
@@ -179,7 +179,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	@DisplayName("a node without mining capacity synchronizes from its peer")
 	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, NodeException, ApplicationException {
 
 		var port2 = 8034;
 		var uri2 = new URI("ws://localhost:" + port2);

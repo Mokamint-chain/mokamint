@@ -16,9 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.SignatureException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -35,21 +33,33 @@ public abstract class AbstractLocalNode extends LocalNodeImpl {
 
 	/**
 	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * It does not mine the first genesis block by itself but rather performs a synchronization from the peers.
 	 * 
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
-	 * @param init if true, creates a genesis block and starts mining on top
-	 *             (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
-	 *                                     contains a genesis block already
-	 * @throws SignatureException if the genesis block cannot be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws NodeException if the node is misbehaving
 	 * @throws TimeoutException if some operation timed out
 	 */
-	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app) throws InterruptedException, NodeException, TimeoutException {
+		super(config, keyPair, app);
+	}
+
+	/**
+	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
+	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
+	 *                                     contains a genesis block already
+	 * @throws NodeException if the node is misbehaving
+	 * @throws TimeoutException if some operation timed out
+	 */
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 		super(config, keyPair, app, init);
 	}
 }

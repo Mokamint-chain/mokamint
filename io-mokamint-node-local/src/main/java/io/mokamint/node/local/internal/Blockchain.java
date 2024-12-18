@@ -535,26 +535,25 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Initializes this blockchain, which must be empty. It adds a genesis block.
 	 * 
 	 * @throws AlreadyInitializedException if this blockchain is already initialized (non-empty)
-	 * @throws InvalidKeyException if the key of the node is invalid
-	 * @throws SignatureException if the genesis block could not be signed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws AlreadyInitializedException, InvalidKeyException, SignatureException, InterruptedException, TimeoutException, NodeException {
+	public void initialize() throws AlreadyInitializedException, InterruptedException, TimeoutException, NodeException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 
 		var config = node.getConfig();
 		var keys = node.getKeys();
-		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")),
+
+		try {
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")),
 				config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(),
 				config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
 
-		try {
 			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
 		}
-		catch (ApplicationException e) {
+		catch (ApplicationException | InvalidKeyException | SignatureException e) {
 			// this node is misbehaving because the application it is connected to is misbehaving
 			throw new NodeException(e);
 		}

@@ -153,15 +153,14 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@DisplayName("a peer added to a node eventually propagates all its peers")
 	@Timeout(20)
 	public void peerAddedToNodePropagatesItsPeers(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3, @TempDir Path chain4)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
 		var port3 = 8036;
-		var peer1 = Peers.of(new URI("ws://localhost:" + port1));
-		var peer2 = Peers.of(new URI("ws://localhost:" + port2));
-		var peer3 = Peers.of(new URI("ws://localhost:" + port3));
+		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
+		var peer2 = Peers.of(URI.create("ws://localhost:" + port2));
+		var peer3 = Peers.of(URI.create("ws://localhost:" + port3));
 		var allPeers = Set.of(peer1, peer2, peer3);
 		Set<Peer> stillToRemove = ConcurrentHashMap.newKeySet();
 		stillToRemove.addAll(allPeers);
@@ -176,7 +175,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -189,8 +188,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var node1 = LocalNodes.of(config1, nodeKey, app, false); var node2 = LocalNodes.of(config2, nodeKey, app, false);
-			 var node3 = LocalNodes.of(config3, nodeKey, app, false); var node4 = new MyLocalNode(config4);
+		try (var node1 = LocalNodes.of(config1, nodeKey, app); var node2 = LocalNodes.of(config2, nodeKey, app);
+			 var node3 = LocalNodes.of(config3, nodeKey, app); var node4 = new MyLocalNode(config4);
 			 var service1 = PublicNodeServices.open(node1, port1, 1800000, 1000, Optional.of(peer1.getURI()));
 			 var service2 = PublicNodeServices.open(node2, port2, 1800000, 1000, Optional.of(peer2.getURI()));
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(peer3.getURI()))) {
@@ -214,13 +213,12 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer adds another peer, eventually to end up being a peer of each other")
 	public void ifPeerAddsPeerThenTheyKnowEachOther(@TempDir Path chain1, @TempDir Path chain2)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
+			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
 
 		var port1 = 8032;
 		var port2 = 8034;
-		var uri1 = new URI("ws://localhost:" + port1);
-		var uri2 = new URI("ws://localhost:" + port2);
+		var uri1 = URI.create("ws://localhost:" + port1);
+		var uri2 = URI.create("ws://localhost:" + port2);
 		var peer1 = Peers.of(uri1);
 		var peer2 = Peers.of(uri2);
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
@@ -230,8 +228,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expected) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
-				super(config, nodeKey, app, false);
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException, NodeException, TimeoutException {
+				super(config, nodeKey, app);
 				
 				this.expected = expected;
 			}

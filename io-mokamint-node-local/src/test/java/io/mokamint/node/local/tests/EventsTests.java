@@ -156,7 +156,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -176,7 +176,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
-	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
+	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = new Miner() {
@@ -217,7 +217,7 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends AbstractLocalNode {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -237,12 +237,12 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
-	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
+	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -260,13 +260,13 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
+	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
 		var config = mkConfig(dir);
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 
 				var miner = mock(Miner.class);
@@ -290,7 +290,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong chain id, an event is signalled to the node")
-	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
+	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, AlreadyInitializedException, TimeoutException, NodeException {
 		var semaphore = new Semaphore(0);
 		var config = mkConfig(dir);
 
@@ -331,7 +331,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
+			private MyLocalNode() throws InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 				super(config, nodeKeys, app, true);
 				add(myMiner);
 			}

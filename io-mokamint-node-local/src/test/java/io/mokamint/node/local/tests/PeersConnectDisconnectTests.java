@@ -54,7 +54,6 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -89,14 +88,14 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
 	@Timeout(15)
 	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
-			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+			throws NoSuchAlgorithmException, InterruptedException,
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, NodeException {
 
 		var port2 = 8032;
 		var port3 = 8034;
-		var uri2 = new URI("ws://localhost:" + port2);
+		var uri2 = URI.create("ws://localhost:" + port2);
 		var peer2 = Peers.of(uri2);
-		var uri3 = new URI("ws://localhost:" + port3);
+		var uri3 = URI.create("ws://localhost:" + port3);
 		var peer3 = Peers.of(uri3);
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
@@ -106,8 +105,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
-				super(config, nodeKey, app, false);
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+				super(config, nodeKey, app);
 			}
 
 			@Override
@@ -118,7 +117,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 		}
 
-		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app, false);  var node3 = LocalNodes.of(config3, nodeKey, app, false);
+		try (var node1 = new MyLocalNode(config1); var node2 = LocalNodes.of(config2, nodeKey, app);  var node3 = LocalNodes.of(config3, nodeKey, app);
 			 var service2 = PublicNodeServices.open(node2, port2, 1800000, 1000, Optional.of(uri2));
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(uri3))) {
 
@@ -146,7 +145,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
 	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
 			throws URISyntaxException, NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, TimeoutException, PeerRejectedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
+				   IOException, DeploymentException, TimeoutException, PeerRejectedException, InvalidKeyException, SignatureException, NodeException, ApplicationException {
 
 		var port1 = 8030;
 		var port2 = 8032;
@@ -171,8 +170,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1(LocalNodeConfig config) throws IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException, TimeoutException {
-				super(config, nodeKey, app, false);
+			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeException, TimeoutException {
+				super(config, nodeKey, app);
 			}
 
 			@Override
@@ -199,8 +198,8 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2(LocalNodeConfig config) throws NoSuchAlgorithmException, IOException, InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, ApplicationException, NodeException {
-				super(config, nodeKey, app, false);
+			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, TimeoutException, NodeException {
+				super(config, nodeKey, app);
 			}
 
 			@Override

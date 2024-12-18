@@ -16,9 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.SignatureException;
 import java.util.concurrent.TimeoutException;
 
 import io.mokamint.application.api.Application;
@@ -36,6 +34,22 @@ public abstract class LocalNodes {
 
 	/**
 	 * Yields a local node of a Mokamint blockchain, for the given application.
+	 * It does not mine the first genesis block by itself but rather performs a synchronization from the peers.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @return the local node
+	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws TimeoutException if the application did not answer in time
+	 * @throws NodeException if the node is misbehaving
+	 */
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app) throws InterruptedException, TimeoutException, NodeException {
+		return new LocalNodeImpl(config, keyPair, app);
+	}
+
+	/**
+	 * Yields a local node of a Mokamint blockchain, for the given application.
 	 * 
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
@@ -46,14 +60,10 @@ public abstract class LocalNodes {
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
 	 *                                     contains a genesis block already
-	 * @throws SignatureException if the genesis block cannot be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init)
-			throws InterruptedException, AlreadyInitializedException, InvalidKeyException, SignatureException, TimeoutException, NodeException {
-
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, AlreadyInitializedException, TimeoutException, NodeException {
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }

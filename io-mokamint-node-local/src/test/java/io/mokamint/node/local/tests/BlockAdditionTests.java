@@ -144,11 +144,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, TimeoutException, ApplicationException, NodeException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, IOException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, AlreadyInitializedException, NodeException, TimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 	}
@@ -166,7 +166,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("the first genesis block added to the database becomes head and genesis of the chain")
-	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, IOException, AlreadyInitializedException, TimeoutException, NodeException, DeadlineValidityCheckException, ApplicationException {
+	public void firstGenesisBlockBecomesHeadAndGenesis(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, AlreadyInitializedException, TimeoutException, NodeException, ApplicationException {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();

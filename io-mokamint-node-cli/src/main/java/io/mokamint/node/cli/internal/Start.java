@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -274,9 +273,6 @@ public class Start extends AbstractCommand {
 				}
 				catch (AlreadyInitializedException e) {
 					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
-				}
-				catch (InvalidKeyException | SignatureException e) {
-					throw new CommandException("The node cannot sign the genesis block", e);
 				}
 				catch (NodeException e) {
 					throw new CommandException("The node is misbehaving", e);

@@ -17,9 +17,7 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Deque;
 import java.util.Optional;
@@ -206,21 +204,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	/**
 	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * It does not mine the first genesis block by itself but rather performs a synchronization from the peers.
 	 * 
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
-	 * @param init if true, creates a genesis block and starts mining on top
-	 *             (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws TimeoutException if some operation timed out
-	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
-	 *                                     contains a genesis block already
-	 * @throws SignatureException if the genesis block cannot be signed
-	 * @throws InvalidKeyException if the private key of the node is invalid
 	 * @throws NodeException if the node is not behaving correctly
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, AlreadyInitializedException, InvalidKeyException, SignatureException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app) throws InterruptedException, TimeoutException, NodeException {
 		super(ClosedNodeException::new);
 
 		this.config = config;
@@ -233,12 +226,50 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.mempool = new Mempool(this);
 		this.peers = new PeersSet(this);
 		this.uuid = getInfo().getUUID();
+		this.miningTask = new MiningTask(this);
+
+		scheduleSynchronization();
+		spawnTasks();
+	}
+
+	/**
+	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @param init if true, creates a genesis block and starts mining on top
+	 *             (initial synchronization is consequently skipped)
+	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws TimeoutException if some operation timed out
+	 * @throws AlreadyInitializedException if {@code init} is true but the database of the node
+	 *                                     contains a genesis block already
+	 * @throws NodeException if the node is not behaving correctly
+	 */
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, TimeoutException, AlreadyInitializedException, NodeException {
+		super(ClosedNodeException::new);
+
+		this.config = config;
+		this.keyPair = keyPair;
+		this.app = app;
+		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
+		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
+		this.miners = new MinersSet(this);
+		this.blockchain = new Blockchain(this);
+		this.mempool = new Mempool(this);
+		this.peers = new PeersSet(this);
+		this.uuid = getInfo().getUUID();
+		this.miningTask = new MiningTask(this);
 
 		if (init)
 			blockchain.initialize();
 		else
 			scheduleSynchronization();
 
+		spawnTasks();
+	}
+
+	private void spawnTasks() {
 		execute(this::processWhisperedPeers, "peers whispering process");
 		execute(this::processWhisperedBlocks, "blocks whispering process");
 		execute(this::processWhisperedTransactions, "transactions whispering process");
@@ -246,7 +277,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		schedulePeriodicWhisperingOfAllServices();
 		schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
 		schedulePeriodicSynchronization();
-		execute(this.miningTask = new MiningTask(this), "blocks mining process");
+		execute(miningTask, "blocks mining process");
 	}
 
 	@Override
