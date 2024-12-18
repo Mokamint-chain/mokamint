@@ -238,7 +238,7 @@ public class BlockMiner {
 	}
 
 	private void requestDeadlineToEveryMiner() throws InterruptedException {
-		for (Miner miner: miners.get().toArray(Miner[]::new))
+		for (var miner: miners.get().toArray(Miner[]::new))
 			requestDeadlineTo(miner);
 	}
 
@@ -259,7 +259,7 @@ public class BlockMiner {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, TimeoutException, NodeException {
-		var deadline = currentDeadline.deadline; // here, we know that a deadline has been computed
+		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
 		transactionExecutor.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline);
@@ -364,12 +364,7 @@ public class BlockMiner {
 				if (minersThatDidNotAnswer.remove(miner))
 					miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
-				if (currentDeadline.updateIfWorseThan(deadline)) {
-					LOGGER.info(heightMessage + "improved deadline to " + deadline);
-					setWaker(deadline);
-				}
-				else
-					LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
+				currentDeadline.updateIfWorseThan(deadline);
 			}
 			catch (IllegalDeadlineException e) {
 				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());
@@ -395,8 +390,7 @@ public class BlockMiner {
 		long millisecondsToWait = deadline.getMillisecondsToWait(previous.getDescription().getAcceleration());
 		long millisecondsAlreadyPassed = Duration.between(creationTimeOfPrevious, LocalDateTime.now(ZoneId.of("UTC"))).toMillis();
 		long stillToWait = millisecondsToWait - millisecondsAlreadyPassed;
-		if (waker.set(stillToWait))
-			LOGGER.info(heightMessage + "set up a waker in " + stillToWait + " ms");
+		waker.set(stillToWait);
 	}
 
 	private void punishMinersThatDidNotAnswer() {
@@ -417,16 +411,20 @@ public class BlockMiner {
 		 * Updates this deadline if the given deadline is better.
 		 * 
 		 * @param other the given deadline
-		 * @return true if and only if this deadline has been updated
 		 */
-		private synchronized boolean updateIfWorseThan(Deadline other) {
+		private synchronized void updateIfWorseThan(Deadline other) {
 			if (deadline == null || other.compareByValue(deadline) < 0) {
 				deadline = other;
 				endOfDeadlineArrivalPeriod.release();
-				return true;
+				LOGGER.info(heightMessage + "improved deadline to " + deadline);
+				setWaker(deadline);
 			}
 			else
-				return false;
+				LOGGER.info(heightMessage + "discarding not improving deadline " + deadline);
+		}
+
+		private synchronized Deadline get() {
+			return deadline;
 		}
 	}
 
@@ -449,9 +447,8 @@ public class BlockMiner {
 		 * it gets replaced with the new timeout. If this object was already shut down, it does nothing.
 		 * 
 		 * @param millisecondsToWait the timeout to wait for
-		 * @return true if the waker has been set, false otherwise (if this object was already shut down)
 		 */
-		private synchronized boolean set(long millisecondsToWait) {
+		private synchronized void set(long millisecondsToWait) {
 			turnOff();
 
 			if (millisecondsToWait <= 0)
@@ -459,13 +456,12 @@ public class BlockMiner {
 			else {
 				try {
 					future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
+					LOGGER.info(heightMessage + "set up a waker in " + millisecondsToWait + " ms");
 				}
 				catch (RejectedExecutionException e) {
-					return false;
+					LOGGER.warning(heightMessage + "could not set up a next waker, probably because the node is shutting down");
 				}
 			}
-
-			return true;
 		}
 
 		private void taskBody(long millisecondsToWait) throws InterruptedException {
