@@ -362,6 +362,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
+		catch (ApplicationTimeoutException e) {
+			throw new TimeoutException(e.getMessage()); // TODO
+		}
 
 		if (miningTask != null)
 			miningTask.add(result);
@@ -1004,8 +1007,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				blockchain.synchronize();
 			}
-			catch (ApplicationTimeoutException e) { // TODO
-				LOGGER.log(Level.SEVERE, "sync: timed-out", e);
+			catch (ApplicationTimeoutException e) {
+				LOGGER.warning("sync: stop synchronizing since the application is unresponsive: " + e.getMessage());
 			}
 	}
 
@@ -1064,15 +1067,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					var whisperedBlockMessage = whisperedInfo.message;
 					var block = whisperedBlockMessage.getWhispered();
 
-					if (whisperedInfo.add)
-						blockchain.add(block);
+					if (whisperedInfo.add) {
+						try {
+							blockchain.add(block);
+						}
+						catch (ApplicationTimeoutException e) {
+							LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
+						}
+					}
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
 					onWhispered(block);
 				}
-				catch (NodeException | ApplicationTimeoutException e) {
+				catch (NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
@@ -1098,15 +1107,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					var whisperedTransactionMessage = whisperedInfo.message;
 					var tx = whisperedTransactionMessage.getWhispered();
 
-					if (whisperedInfo.add)
-						mempool.add(tx);
+					if (whisperedInfo.add) {
+						try {
+							mempool.add(tx);
+						}
+						catch (ApplicationTimeoutException e) {
+							LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
+						}
+					}
 
 					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 					peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
 					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
 					onWhispered(tx);
 				}
-				catch (NodeException | TimeoutException e) {
+				catch (NodeException e) {
 					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
 				}
 				catch (TransactionRejectedException e) {

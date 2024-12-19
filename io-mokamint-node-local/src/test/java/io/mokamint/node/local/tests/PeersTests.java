@@ -167,7 +167,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("seeds are used as peers")
 	@Timeout(10)
-	public void seedsAreUsedAsPeers(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, IOException, ApplicationTimeoutException, DeploymentException, NodeException {
+	public void seedsAreUsedAsPeers(@TempDir Path dir) throws Exception {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -207,7 +207,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if peers are added to a node, they are saved into the database and used at the next start-up")
 	@Timeout(10)
-	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, PeerRejectedException, NodeException, TimeoutException {
+	public void addedPeersAreUsedAtNextStart(@TempDir Path dir) throws Exception {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -238,7 +238,7 @@ public class PeersTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer is removed from a node, the database is updated and the seed is not used at the next start-up")
 	@Timeout(10)
-	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException, TimeoutException {
+	public void removedPeerIsNotUsedAtNextStart(@TempDir Path dir) throws Exception {
 		var port1 = 8032;
 		var port2 = 8034;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
@@ -288,7 +288,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the patch version only can work together")
-	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, PeerRejectedException, NodeException, TimeoutException {
+	public void addPeerWorksIfPatchVersionIsDifferent(@TempDir Path dir) throws Exception {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 		var allPeers = Set.of(peer);
@@ -310,7 +310,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the minor version cannot work together")
-	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfMinorVersionIsDifferent(@TempDir Path dir) throws Exception {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
@@ -331,7 +331,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers that differ for the major version cannot work together")
-	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException, IOException {
+	public void addPeerFailsIfMajorVersionIsDifferent(@TempDir Path dir) throws Exception {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
@@ -352,7 +352,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose local times are too far away cannot work together")
-	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfLocalTimesAreTooFarAway(@TempDir Path dir) throws Exception {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 
@@ -374,7 +374,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("two peers whose genesis block is different cannot work together")
-	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InterruptedException, ApplicationTimeoutException, DeploymentException, NodeException {
+	public void addPeerFailsIfGenesisBlocksAreDifferent(@TempDir Path dir) throws Exception {
 		var port = 8032;
 		var peer = Peers.of(URI.create("ws://localhost:" + port));
 

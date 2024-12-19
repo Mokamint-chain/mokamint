@@ -136,7 +136,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
-	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
+	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws Exception {
 		var allTransactions = new HashSet<Transaction>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
@@ -204,7 +204,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
 					super(config, init);
 				}
 

@@ -62,7 +62,6 @@ import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -161,7 +160,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block with unknown previous is added, the mempool is unchanged")
-	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
+	public void ifBlockWithUnknownPreviousIsAddedThenMempoolIsNotChanged(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -200,7 +199,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the head of the chain, its transactions are removed from the mempool")
-	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, ApplicationTimeoutException, TimeoutException {
+	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -227,7 +226,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block is added to the chain but head has more power, the mempool remains unchanged")
-	public void ifBlockAddedToChainButHeadBetterThenMempoolIsNotChanged(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
+	public void ifBlockAddedToChainButHeadBetterThenMempoolIsNotChanged(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -266,7 +265,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a chain with more power than the current chain is added, then the mempool is rebased")
-	public void ifMorePowerfulChainIsAddedThenMempoolRebased(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
+	public void ifMorePowerfulChainIsAddedThenMempoolRebased(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -361,7 +360,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the more powerful chain is added with genesis at the root, then all its transactions are removed from the mempool")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, TimeoutException {
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();

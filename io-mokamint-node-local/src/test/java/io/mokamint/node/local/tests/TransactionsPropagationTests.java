@@ -22,7 +22,6 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -46,7 +45,6 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -54,7 +52,6 @@ import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the propagation of the transactions in a network of nodes.
@@ -82,9 +79,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a peer adds another peer, then transactions flow from one to the other")
-	public void ifPeerAddsPeerThenTransactionsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, TransactionRejectedException, NodeException, TimeoutException {
-
+	public void ifPeerAddsPeerThenTransactionsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port1 = 8032;
 		var port2 = 8034;
 		var uri1 = URI.create("ws://localhost:" + port1);

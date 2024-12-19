@@ -113,7 +113,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	private static Prolog prolog;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, TransactionRejectedException, ApplicationTimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws Exception {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var signature = config.getSignatureForBlocks();
 		nodeKeys = signature.getKeyPair();
@@ -167,7 +167,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block is too much in the future, verification rejects it")
-	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, InvalidKeyException, SignatureException, InterruptedException, ApplicationTimeoutException, NodeException {
+	public void blockTooMuchInTheFutureGetsRejected(@TempDir Path dir) throws Exception {
 		var config = LocalNodeConfigBuilders.defaults()
 				.setDir(dir)
 				.setBlockMaxTimeInTheFuture(1000)
@@ -223,7 +223,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent height, verification rejects it")
-	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void blockHeightMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -245,7 +245,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent acceleration, verification rejects it")
-	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void accelerationMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -517,7 +517,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's generation signature, verification rejects it")
-	public void deadlineGenerationSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void deadlineGenerationSignatureMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -545,7 +545,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has inconsistent deadline's hashing algorithm, verification rejects it")
-	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void deadlineHashingMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -572,7 +572,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong deadline's prolog chain identifier, verification rejects it")
-	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void deadlinePrologChainIdMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -598,7 +598,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has the wrong blocks' signature algorithm, verification rejects it")
-	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, NodeException, ApplicationTimeoutException {
+	public void deadlinePrologBlocksSignatureMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
@@ -660,15 +660,9 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
-	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, VerificationException, IOException, InvalidKeyException, SignatureException, InterruptedException, TransactionRejectedException, ApplicationTimeoutException, NodeException, ApplicationException, UnknownGroupIdException {
+	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws Exception {
 		var application = mockApplication();
-		try {
-			when(application.checkPrologExtra(any())).thenReturn(false);
-		}
-		catch (TimeoutException e) {
-			// fake, it's just out of stubbing
-			throw new RuntimeException("Unexpected exception", e);
-		}
+		when(application.checkPrologExtra(any())).thenReturn(false);
 
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();

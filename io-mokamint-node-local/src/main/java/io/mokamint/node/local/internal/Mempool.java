@@ -147,9 +147,9 @@ public class Mempool {
 	 *                                      or if the transaction is already contained in the blockchain or mempool
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application connected to the Mokamint node is unresponsive
 	 */
-	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, TimeoutException {
+	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, ApplicationTimeoutException {
 		try {
 			app.checkTransaction(transaction);
 			var entry = mkTransactionEntry(transaction);
@@ -176,10 +176,22 @@ public class Mempool {
 		catch (ApplicationException e) {
 			throw new NodeException(e);
 		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
 	}
 
-	protected TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
-		return new TransactionEntry(transaction,  app.getPriority(transaction), hasher.hash(transaction));
+	protected TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, ApplicationTimeoutException, InterruptedException {
+		long priority;
+
+		try {
+			priority = app.getPriority(transaction);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
+
+		return new TransactionEntry(transaction,  priority, hasher.hash(transaction));
 	}
 
 	public void remove(TransactionEntry entry) {

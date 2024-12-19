@@ -53,7 +53,6 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -63,7 +62,6 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the synchronization of the chain from the peers.
@@ -175,9 +173,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("a node without mining capacity synchronizes from its peer")
-	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
-
+	public void nodeWithoutMinerFollowsPeer(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port2 = 8034;
 		var uri2 = URI.create("ws://localhost:" + port2);
 		var miningPeer = Peers.of(uri2);
@@ -199,9 +195,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("a node without mining capacity, once stopped and restarted, synchronizes from its peer")
-	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
-
+	public void nodeWithoutMinerStopRestartFollowsPeer(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port2 = 8034;
 		var uri2 = URI.create("ws://localhost:" + port2);
 		var miningPeer = Peers.of(uri2);
@@ -238,10 +232,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("a node without mining capacity, once disconnected and reconnected, synchronizes from its peer")
-	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
-
+	public void nodeWithoutMinerDisconnectConnectFollowsPeer(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port2 = 8034;
 		var uri2 = URI.create("ws://localhost:" + port2);
 		var miningPeer = Peers.of(uri2);

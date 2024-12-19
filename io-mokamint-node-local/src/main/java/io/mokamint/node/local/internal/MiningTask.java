@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.local.internal;
 
 import java.util.concurrent.RejectedExecutionException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.NodeException;
@@ -143,7 +142,7 @@ public class MiningTask implements Task {
 				blockMiner.mine();
 			}
 			catch (ApplicationTimeoutException e) {
-				LOGGER.log(Level.SEVERE, "mining: the application is not answering: I will wait five seconds and then try again", e);
+				LOGGER.warning("mining: the application is unresponsive: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
 			}
 		}

@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -50,14 +49,12 @@ import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the connection and disconnection of peers in a network of nodes.
@@ -86,10 +83,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a peer disconnects, its remote gets removed from the peers table")
 	@Timeout(15)
-	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3)
-			throws NoSuchAlgorithmException, InterruptedException,
-				   IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
-
+	public void ifPeerDisconnectsThenRemoteRemoved(@TempDir Path chain1, @TempDir Path chain2, @TempDir Path chain3) throws Exception {
 		var port2 = 8032;
 		var port3 = 8034;
 		var uri2 = URI.create("ws://localhost:" + port2);
@@ -142,9 +136,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a peer disconnects and reconnects, its network is reconstructed")
-	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2)
-			throws NoSuchAlgorithmException, InterruptedException, IOException, DeploymentException, ApplicationTimeoutException, PeerRejectedException, NodeException, TimeoutException {
-
+	public void ifPeerDisconnectsThenConnectsItIsBackInNetwork(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port1 = 8030;
 		var port2 = 8032;
 		var uri1 = URI.create("ws://localhost:" + port1);

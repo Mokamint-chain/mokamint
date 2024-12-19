@@ -204,13 +204,18 @@ public class TransactionsExecutionTask implements Task {
 
 		if (deliveryFailed)
 			return Optional.empty();
-		else
+		else {
+			byte[] finalStateId;
+
 			try {
-				return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, app.endBlock(id, deadline)));
+				finalStateId = app.endBlock(id, deadline);
 			}
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
+
+			return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, finalStateId));
+		}
 	}
 
 	/**
@@ -240,16 +245,21 @@ public class TransactionsExecutionTask implements Task {
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
 	 *                              or for the application
-	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationTimeoutException if the application did not provide an answer in time
 	 * @throws ApplicationException if the application is misbehaving
 	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
 	 */
-	public void abortBlock() throws InterruptedException, TimeoutException, ApplicationException, UnknownGroupIdException {
+	public void abortBlock() throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
 		try {
 			done.await();
 		}
 		finally {
-			app.abortBlock(id);
+			try {
+				app.abortBlock(id);
+			}
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
+			}
 		}
 	}
 

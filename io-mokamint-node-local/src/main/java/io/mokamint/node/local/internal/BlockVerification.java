@@ -122,7 +122,7 @@ public class BlockVerification {
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if some operation timed out
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
@@ -393,10 +393,10 @@ public class BlockVerification {
 	}
 
 	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
+		byte[] expected;
+
 		try {
-			var expected = node.getApplication().getInitialStateId();
-			if (!Arrays.equals(block.getStateId(), expected))
-				throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
+			expected = node.getApplication().getInitialStateId();
 		}
 		catch (ApplicationException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
@@ -405,5 +405,8 @@ public class BlockVerification {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
+
+		if (!Arrays.equals(block.getStateId(), expected))
+			throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(expected) + " but found " + Hex.toHexString(block.getStateId()) + ")");
 	}
 }

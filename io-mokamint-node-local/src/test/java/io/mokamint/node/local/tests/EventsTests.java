@@ -118,7 +118,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces a valid deadline, a block is discovered")
-	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+	public void discoverNewBlockAfterDeadlineRequestToMiner(@TempDir Path dir) throws Exception {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = new Miner() {
@@ -176,7 +176,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline is requested and a miner produces an invalid deadline, the misbehavior is signalled to the node")
-	public void signalIfInvalidDeadline(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+	public void signalIfInvalidDeadline(@TempDir Path dir) throws Exception {
 		var semaphore = new Semaphore(0);
 
 		var myMiner = new Miner() {
@@ -237,7 +237,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a node has no miners, an event is signalled")
-	public void signalIfNoMiners(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+	public void signalIfNoMiners(@TempDir Path dir) throws Exception {
 		var semaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
@@ -260,7 +260,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if miners do not produce any deadline, an event is signalled to the node")
-	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+	public void signalIfNoDeadlineArrives(@TempDir Path dir) throws Exception {
 		var config = mkConfig(dir);
 		var semaphore = new Semaphore(0);
 
@@ -290,7 +290,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a miner provides deadlines for the wrong chain id, an event is signalled to the node")
-	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws InterruptedException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+	public void signalIfDeadlineForWrongChainIdArrives(@TempDir Path dir) throws Exception {
 		var semaphore = new Semaphore(0);
 		var config = mkConfig(dir);
 

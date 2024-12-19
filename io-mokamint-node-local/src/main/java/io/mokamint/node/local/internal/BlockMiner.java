@@ -326,9 +326,6 @@ public class BlockMiner {
 		catch (UnknownGroupIdException | ApplicationException e) {
 			throw new NodeException(e);
 		}
-		catch (TimeoutException e) {
-			throw new ApplicationTimeoutException(e);
-		}
 		finally {
 			punishMinersThatDidNotAnswer();
 		}

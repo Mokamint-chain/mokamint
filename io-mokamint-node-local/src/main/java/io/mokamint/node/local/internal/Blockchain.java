@@ -1635,9 +1635,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// or the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
-			catch (TimeoutException e) {
-				throw new ApplicationTimeoutException(e);
-			}
 		}
 
 		private Block getBlock(byte[] hash) throws NodeException {
