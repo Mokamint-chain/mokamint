@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.MempoolInfos;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class MempoolInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("mempool information objects are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException {
+	public void encodeDecodeWorks() throws Exception {
 		var mempoolInfo1 = MempoolInfos.of(1317L);
 		String encoded = new MempoolInfos.Encoder().encode(mempoolInfo1);
 		var mempoolInfo2 = new MempoolInfos.Decoder().decode(encoded);

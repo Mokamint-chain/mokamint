@@ -18,7 +18,6 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
@@ -26,14 +25,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ChainInfos;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class ChainInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain infos with non-empty hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorksForNonEmpty() throws Exception {
 		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 3, 6, 8, 11 }), Optional.of(new byte[] { 0, 90, 91 }), Optional.of(new byte[] { 13, 17, 19 }));
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
@@ -42,7 +39,7 @@ public class ChainInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain infos with non-empty hashes and empty state id are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNonEmptyWithEmptyStateId() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorksForNonEmptyWithEmptyStateId() throws Exception {
 		var info1 = ChainInfos.of(1317L, Optional.of(new byte[] { 3, 6, 8, 11 }), Optional.of(new byte[] { 0, 90, 91 }), Optional.empty());
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);
@@ -51,7 +48,7 @@ public class ChainInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain infos with empty hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorksForEmpty() throws Exception {
 		var info1 = ChainInfos.of(0, Optional.empty(), Optional.empty(), Optional.empty());
 		String encoded = new ChainInfos.Encoder().encode(info1);
 		var info2 = new ChainInfos.Decoder().decode(encoded);

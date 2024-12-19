@@ -26,15 +26,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,19 +64,10 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DeploymentException;
 
 public class ApplicationServiceTests extends AbstractLoggedTests {
-	private final static URI URI;
 	private final static int PORT = 8030;
+	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 	private final static int TIME_OUT = 2000;
 	private final static String ID = "id";
-
-	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	private Application mkApplication() {
 		return mock();
@@ -89,7 +75,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkPrologExtra() request reaches the service, it sends back the result of the check")
-	public void serviceCheckPrologExtraWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckPrologExtraWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var extra = new byte[] { 13, 1, 19, 73 };
@@ -120,7 +106,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service, it checks the transaction")
-	public void serviceCheckTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -151,7 +137,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a checkTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceCheckTransactionRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCheckTransactionRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -183,7 +169,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service, it yields the priority of the transaction")
-	public void serviceGetPriorityWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -214,7 +200,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPriority() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetPriorityRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetPriorityRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -246,7 +232,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service, it yields the representation of the transaction")
-	public void serviceGetRepresentationWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -278,7 +264,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getRepresentation() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceGetRepresentationRejectedTransactionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetRepresentationRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -310,7 +296,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getInitialStateId() request reaches the service, it yields the initial state id of the application")
-	public void serviceGetInitialStateIdWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetInitialStateIdWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		byte[] initialStateId = { 13, 1, 19, 73 };
@@ -341,7 +327,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getInitialStateId() request reaches the service and the application fails, it sends back an exception")
-	public void serviceGetInitialStateApplicationExceptionWorks() throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceGetInitialStateApplicationExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		String exceptionMessage = "failed";
@@ -372,7 +358,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a beginBlock() request reaches the service, it yields the group id of the transactions in the block")
-	public void serviceBeginBlockWorks() throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceBeginBlockWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		long height = 42L;
@@ -406,7 +392,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a beginBlock() request reaches the service and the state id is unknown, it sends back an exception")
-	public void serviceBeginBlockUnknownStateExceptionWorks() throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceBeginBlockUnknownStateExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		long height = 42L;
@@ -440,7 +426,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service, it delivers the transaction in the application")
-	public void serviceDeliverTransactionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -472,7 +458,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -505,7 +491,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deliverTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws UnknownGroupIdException, TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
@@ -537,8 +523,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an endBlock() request reaches the service, it yeilds the state identifier ayt the end of the block")
-	public void serviceEndBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	@DisplayName("if an endBlock() request reaches the service, it yields the state identifier ayt the end of the block")
+	public void serviceEndBlockWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -582,7 +568,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an endBlock() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceEndBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void serviceEndBlockUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -626,7 +612,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a commitBlock() request reaches the service, the block gets committed")
-	public void serviceCommitBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCommitBlockWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -657,7 +643,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a commitBlock() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceCommitBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceCommitBlockUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -689,7 +675,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an abortBlock() request reaches the service, the block gets aborted")
-	public void serviceAbortBlockWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceAbortBlockWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -720,7 +706,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an abortBlock() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceAbortBlockUnknownGroupIdExceptionWorks() throws UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceAbortBlockUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var groupId = 13;
@@ -752,7 +738,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a keepFrom() request reaches the service, the application gets informed")
-	public void serviceKeepFromWorks() throws ApplicationException, TimeoutException, InterruptedException, DeploymentException, IOException {
+	public void serviceKeepFromWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var start = LocalDateTime.now();

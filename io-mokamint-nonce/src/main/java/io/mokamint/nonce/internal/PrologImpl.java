@@ -96,12 +96,11 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
 	public PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
 			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
-					throws NoSuchAlgorithmException, InvalidKeyException {
+					throws InvalidKeyException {
 
 		Objects.requireNonNull(chainId, "chainId cannot be null");
 		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");

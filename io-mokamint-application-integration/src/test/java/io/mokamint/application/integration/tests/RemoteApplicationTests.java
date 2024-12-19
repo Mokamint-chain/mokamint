@@ -26,13 +26,8 @@ import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,18 +73,8 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemoteApplicationTests extends AbstractLoggedTests {
-	private final static URI URI;
 	private final static int PORT = 8030;
-
-	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
+	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 	private final static int TIME_OUT = 2000;
 
 	/**
@@ -111,9 +96,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkPrologExtra() works")
-	public void checkPrologExtraWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+	public void checkPrologExtraWorks() throws Exception {
 		boolean result1 = true;
-		var extra = new byte[] { 13, 1, 19, 73 };
+		byte[] extra = { 13, 1, 19, 73 };
 
 		class MyServer extends PublicTestServer {
 
@@ -138,7 +123,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction() works")
-	public void checkTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+	public void checkTransactionWorks() throws Exception {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 
 		class MyServer extends PublicTestServer {
@@ -166,7 +151,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction() works if it throws RejectedTransactionException")
-	public void getTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void getTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 
@@ -193,7 +178,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPriority() works")
-	public void getPriorityWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
+	public void getPriorityWorks() throws Exception {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var priority = 42L;
 
@@ -219,7 +204,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPriority() works if it throws RejectedTransactionException")
-	public void getPriorityWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void getPriorityWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 
@@ -246,7 +231,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getRepresentation() works")
-	public void getRepresentationWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
+	public void getRepresentationWorks() throws Exception {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var representation = "this is the wonderful representation";
 
@@ -272,7 +257,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getRepresentation() works if it throws RejectedTransactionException")
-	public void getRepresentationWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void getRepresentationWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 
@@ -299,7 +284,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getInitialStateId() works")
-	public void getInitialStateIdWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, TransactionRejectedException {
+	public void getInitialStateIdWorks() throws Exception {
 		byte[] initialStateId = { 13, 1, 19, 73 };
 
 		class MyServer extends PublicTestServer {
@@ -322,7 +307,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getInitialStateId() works if it throws ApplicationException")
-	public void getInitialStateIdWorksInCaseOfApplicationException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void getInitialStateIdWorksInCaseOfApplicationException() throws Exception  {
 		var exceptionMessage = "failed";
 
 		class MyServer extends PublicTestServer {
@@ -346,7 +331,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("beginBlock() works")
-	public void beginBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownStateException {
+	public void beginBlockWorks() throws Exception {
 		var groupId = 42;
 		var height = 13L;
 		var when = LocalDateTime.now();
@@ -374,7 +359,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("beginBlock() works if it throws UnknownStateException")
-	public void beginBlockWorksInCaseOfUnknownStateException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void beginBlockWorksInCaseOfUnknownStateException() throws Exception  {
 		var height = 13L;
 		var when = LocalDateTime.now();
 		var stateId = new byte[] { 13, 1, 19, 73 };
@@ -403,7 +388,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works")
-	public void deliverTransactionWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, TransactionRejectedException {
+	public void deliverTransactionWorks() throws Exception {
 		var groupId = 42;
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 
@@ -432,7 +417,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works if it throws UnknownGroupIdException")
-	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws Exception  {
 		var groupId = 42;
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "unknown group id";
@@ -460,7 +445,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deliverTransaction() works if it throws RejectedTransactionException")
-	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var groupId = 42;
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
@@ -488,7 +473,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("endBlock works")
-	public void endBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException, UnknownGroupIdException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void endBlockWorks() throws Exception {
 		var hashingForGenerations = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
@@ -526,7 +511,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("endBlock() works if it throws UnknownGroupIdException")
-	public void endBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException  {
+	public void endBlockWorksInCaseOfUnknownGroupIdException() throws Exception  {
 		var hashingForGenerations = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)
@@ -565,7 +550,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("commitBlock() works")
-	public void commitBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+	public void commitBlockWorks() throws Exception {
 		var groupId = 42;
 
 		class MyServer extends PublicTestServer {
@@ -591,7 +576,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("commitBlock() works if it throws UnknownGroupIdException")
-	public void commitBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void commitBlockWorksInCaseOfUnknownGroupIdException() throws Exception  {
 		var groupId = 42;
 		var exceptionMessage = "unknown group id";
 
@@ -616,7 +601,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("abortBlock() works")
-	public void abortBlockWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+	public void abortBlockWorks() throws Exception {
 		var groupId = 42;
 
 		class MyServer extends PublicTestServer {
@@ -642,7 +627,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("abortBlock() works if it throws UnknownGroupIdException")
-	public void abortBlockWorksInCaseOfUnknownGroupIdException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void abortBlockWorksInCaseOfUnknownGroupIdException() throws Exception  {
 		var groupId = 42;
 		var exceptionMessage = "unknown group id";
 
@@ -667,7 +652,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("keepFrom() works")
-	public void keepFromWorks() throws DeploymentException, IOException, ApplicationException, TimeoutException, InterruptedException {
+	public void keepFromWorks() throws Exception {
 		var start = LocalDateTime.now();
 
 		class MyServer extends PublicTestServer {
@@ -690,7 +675,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("keepFrom() works if it throws ApplicationException")
-	public void keepFromWorksInCaseOfApplicationException() throws ApplicationException, InterruptedException, DeploymentException, IOException  {
+	public void keepFromWorksInCaseOfApplicationException() throws Exception  {
 		var start = LocalDateTime.now();
 
 		var exceptionMessage = "misbehaving application";

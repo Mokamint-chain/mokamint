@@ -25,14 +25,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.MinerInfos;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class MinerInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("miner information is correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException {
+	public void encodeDecodeWorks() throws Exception {
 		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 1234L, "a miner");
 		String encoded = new MinerInfos.Encoder().encode(minerInfo1);
 		var minerInfo2 = new MinerInfos.Decoder().decode(encoded);

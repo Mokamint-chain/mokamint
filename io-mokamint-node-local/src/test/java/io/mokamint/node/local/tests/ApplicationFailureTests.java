@@ -23,10 +23,8 @@ import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
@@ -44,8 +42,6 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
@@ -86,7 +82,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	private static Plot plot;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException, IOException {
+	public static void beforeAll(@TempDir Path plotDir) throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 4 };

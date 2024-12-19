@@ -20,16 +20,10 @@ import static io.hotmoka.crypto.HashingAlgorithms.sha256;
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.DisplayName;
@@ -46,13 +40,12 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
-import jakarta.websocket.DeploymentException;
 
 public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
-	public void minerServiceForwardsToMiner() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException {
+	public void minerServiceForwardsToMiner() throws Exception {
 		var semaphore = new Semaphore(0);
 		var hashingForGenerations = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
@@ -85,7 +78,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the miner sends a deadline, it gets forwarded to the requester")
-	public void minerForwardsToRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void minerForwardsToRequester() throws Exception {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var hashingForGenerations = sha256();
@@ -130,7 +123,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the miner sends a deadline after a delayed one, it gets forwarded to the requester")
-	public void minerForwardsToRequesterAfterDelay() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void minerForwardsToRequesterAfterDelay() throws Exception {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
@@ -190,7 +183,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("a deadline sent back after the requester disconnects is simply lost, without errors")
-	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void ifMinerSendsDeadlineAfterDisconnectionItIsIgnored() throws Exception {
 		HashingAlgorithm shabal256 = shabal256();
 		var hashingForGenerations = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];

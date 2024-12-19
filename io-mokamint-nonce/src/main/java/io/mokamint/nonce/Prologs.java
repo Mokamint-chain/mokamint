@@ -49,12 +49,11 @@ public final class Prologs {
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
 	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
 	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
 			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
-					throws NoSuchAlgorithmException, InvalidKeyException {
+					throws InvalidKeyException {
 		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocks, signatureForDeadlines, publicKeyForSigningDeadlines, extra);
 	}
 

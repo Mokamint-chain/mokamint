@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.TransactionAddresses;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class TransactionAddressTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("transaction addresses are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException {
+	public void encodeDecodeWorks() throws Exception {
 		var transactionAddress1 = TransactionAddresses.of(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, 1317);
 		String encoded = new TransactionAddresses.Encoder().encode(transactionAddress1);
 		var transactionAddress2 = new TransactionAddresses.Decoder().decode(encoded);

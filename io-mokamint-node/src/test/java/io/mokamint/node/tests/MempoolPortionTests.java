@@ -24,16 +24,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
-import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.MempoolEntries;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
+import io.mokamint.node.MempoolPortions;
 
 public class MempoolPortionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("mempool portions with hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksWithHashes() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksWithHashes() throws Exception {
 		var info1 = MempoolEntries.of(new byte[] { 1, 2, 4, 100, 12 }, 13L);
 		var info2 = MempoolEntries.of(new byte[] { 13, 20, 4, 99, 12, 11 }, 17L);
 		var mempoolPortion1 = MempoolPortions.of(Stream.of(info1, info2));
@@ -44,7 +42,7 @@ public class MempoolPortionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("mempool portions with no hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksWithoutHashes() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksWithoutHashes() throws Exception {
 		var mempoolPortion1 = MempoolPortions.of(Stream.empty());
 		String encoded = new MempoolPortions.Encoder().encode(mempoolPortion1);
 		var mempoolPortion2 = new MempoolPortions.Decoder().decode(encoded);

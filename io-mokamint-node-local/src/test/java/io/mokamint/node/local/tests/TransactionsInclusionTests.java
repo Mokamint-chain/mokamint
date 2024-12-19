@@ -50,8 +50,6 @@ import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
@@ -87,7 +85,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	private static Application app;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });
@@ -108,7 +106,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -151,7 +149,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, ApplicationTimeoutException, NodeException {
+			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, ApplicationTimeoutException, NodeException {
 				super(config, init);
 			}
 
@@ -181,7 +179,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Test
 	@Timeout(200)
 	@DisplayName("transactions added to a network get eventually added to the blockchain")
-	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws NoSuchAlgorithmException, InterruptedException, IOException, TransactionRejectedException, PeerRejectedException, TimeoutException, URISyntaxException, NodeException {
+	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws Exception {
 		var allTransactions = mkTransactions();
 		final int NUM_NODES = 4;
 
@@ -204,7 +202,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NodeException, ApplicationTimeoutException {
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException {
 					super(config, init);
 				}
 
@@ -229,7 +227,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, NoSuchAlgorithmException, TransactionRejectedException, TimeoutException, IOException, PeerRejectedException, NodeException {
+			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, IOException, PeerRejectedException, NodeException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {

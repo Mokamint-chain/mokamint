@@ -21,12 +21,7 @@ import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -42,13 +37,12 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
-import jakarta.websocket.DeploymentException;
 
 public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a deadline description is requested to a remote miner, it gets forwarded to the connected service(s)")
-	public void remoteMinerForwardsToServices() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+	public void remoteMinerForwardsToServices() throws Exception {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
 		var hashingForGenerations = sha256();
@@ -72,7 +66,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it reaches the requester of the corresponding challenge")
-	public void remoteMinerForwardsToCorrespondingRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void remoteMinerForwardsToCorrespondingRequester() throws Exception {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
 		var hashingForGenerations = sha256();
@@ -105,7 +99,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a client sends a deadline, it does not reach the requester of another challenge")
-	public void remoteMinerDoesNotForwardToWrongRequester() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void remoteMinerDoesNotForwardToWrongRequester() throws Exception {
 		var semaphore = new Semaphore(0);
 		var shabal256 = shabal256();
 		var hashingForGenerations = sha256();
@@ -137,7 +131,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a client has been closed, it does not receive descriptions anymore")
-	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+	public void remoteMinerDoesNotForwardDescriptionToClosedClient() throws Exception {
 		var semaphore = new Semaphore(0);
 		var hashingForGenerations = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];

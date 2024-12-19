@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.TaskInfos;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class TaskInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("task information is correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException {
+	public void encodeDecodeWorks() throws Exception {
 		var minerInfo1 = TaskInfos.of("a beatiful task");
 		String encoded = new TaskInfos.Encoder().encode(minerInfo1);
 		var taskInfo2 = new TaskInfos.Decoder().decode(encoded);

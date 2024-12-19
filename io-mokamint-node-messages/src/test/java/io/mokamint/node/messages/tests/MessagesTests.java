@@ -22,9 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.net.URI;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
@@ -100,13 +98,12 @@ import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeers messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeers() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetPeers() throws Exception {
 		var getPeersMessage1 = GetPeerInfosMessages.of("id");
 		String encoded = new GetPeerInfosMessages.Encoder().encode(getPeersMessage1);
 		var getPeersMessage2 = new GetPeerInfosMessages.Decoder().decode(encoded);
@@ -115,7 +112,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeersResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeersResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetPeersResult() throws Exception {
 		var peerInfo1 = PeerInfos.of(Peers.of(URI.create("ws://google.com:8011")), 1234, true);
 		var peerInfo2 = PeerInfos.of(Peers.of(URI.create("ws://amazon.it:8024")), 313, false);
 		var peerInfo3 = PeerInfos.of(Peers.of(URI.create("ws://panarea.io:8025")), 112, true);
@@ -127,7 +124,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlock messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlock() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetBlock() throws Exception {
 		var getBlockMessage1 = GetBlockMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
 		String encoded = new GetBlockMessages.Encoder().encode(getBlockMessage1);
 		var getBlockMessage2 = new GetBlockMessages.Decoder().decode(encoded);
@@ -136,7 +133,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getBlockResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForGetBlockResultNonEmpty() throws Exception {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var hashingForBlocks = HashingAlgorithms.sha256();
@@ -167,7 +164,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("empty getBlockResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockResultEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetBlockResultEmpty() throws Exception {
 		var getBlockResultMessage1 = GetBlockResultMessages.of(Optional.empty(), "id");
 		String encoded = new GetBlockResultMessages.Encoder().encode(getBlockResultMessage1);
 		var getBlockResultMessage2 = new GetBlockResultMessages.Decoder().decode(encoded);
@@ -176,7 +173,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getBlockDescription messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockDescription() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetBlockDescription() throws Exception {
 		var getBlockDescriptionMessage1 = GetBlockDescriptionMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
 		String encoded = new GetBlockDescriptionMessages.Encoder().encode(getBlockDescriptionMessage1);
 		var getBlockDescriptionMessage2 = new GetBlockDescriptionMessages.Decoder().decode(encoded);
@@ -185,7 +182,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getBlockDescriptionResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockDescriptionResultNonEmpty() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForGetBlockDescriptionResultNonEmpty() throws Exception {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var hashingForBlocks = HashingAlgorithms.sha256();
@@ -212,7 +209,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("empty getBlockDescriptionResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetBlockDescriptionResultEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetBlockDescriptionResultEmpty() throws Exception {
 		var getBlockDescriptionResultMessage1 = GetBlockDescriptionResultMessages.of(Optional.empty(), "id");
 		String encoded = new GetBlockDescriptionResultMessages.Encoder().encode(getBlockDescriptionResultMessage1);
 		var getBlockDescriptionResultMessage2 = new GetBlockDescriptionResultMessages.Decoder().decode(encoded);
@@ -221,7 +218,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainPortion messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChainPortion() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetChainPortion() throws Exception {
 		var getChainPortionMessage1 = GetChainPortionMessages.of(13, 20, "id");
 		String encoded = new GetChainPortionMessages.Encoder().encode(getChainPortionMessage1);
 		var getChainPortionMessage2 = new GetChainPortionMessages.Decoder().decode(encoded);
@@ -230,7 +227,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainPortion result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChainPortionResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetChainPortionResult() throws Exception {
 		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3 }, new byte[] { 20, 50, 70, 88 }));
 		var getChainPortionResultMessage1 = GetChainPortionResultMessages.of(chain, "id");
 		String encoded = new GetChainPortionResultMessages.Encoder().encode(getChainPortionResultMessage1);
@@ -240,7 +237,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolPortion messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMempoolPortion() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMempoolPortion() throws Exception {
 		var getMempoolPortionMessage1 = GetMempoolPortionMessages.of(13, 20, "id");
 		String encoded = new GetMempoolPortionMessages.Encoder().encode(getMempoolPortionMessage1);
 		var getMempoolPortionMessage2 = new GetMempoolPortionMessages.Decoder().decode(encoded);
@@ -249,7 +246,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolPortion result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMempoolPortionResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMempoolPortionResult() throws Exception {
 		var info1 = MempoolEntries.of(new byte[] { 1, 2, 3 }, 13L);
 		var info2 = MempoolEntries.of(new byte[] { 20, 50, 70, 88 }, 17L);
 		var mempool = MempoolPortions.of(Stream.of(info1, info2));
@@ -261,7 +258,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfos messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeerInfos() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetPeerInfos() throws Exception {
 		var getPeerInfosMessage1 = GetPeerInfosMessages.of("id");
 		String encoded = new GetPeerInfosMessages.Encoder().encode(getPeerInfosMessage1);
 		var getPeerInfosMessage2 = new GetPeerInfosMessages.Decoder().decode(encoded);
@@ -270,7 +267,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getPeerInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetPeerInfosResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetPeerInfosResult() throws Exception {
 		var peers = Stream.of(PeerInfos.of(Peers.of(URI.create("ws://www.hotmoka.io")), 100L, true),
 				PeerInfos.of(Peers.of(URI.create("ws://www.mokamint.io:8030")), 123L, false));
 		var getPeerInfosResultMessage1 = GetPeerInfosResultMessages.of(peers, "id");
@@ -281,7 +278,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfos messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMinerInfos() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMinerInfos() throws Exception {
 		var getMinerInfosMessage1 = GetMinerInfosMessages.of("id");
 		String encoded = new GetMinerInfosMessages.Encoder().encode(getMinerInfosMessage1);
 		var getMinerInfosMessage2 = new GetMinerInfosMessages.Decoder().decode(encoded);
@@ -290,7 +287,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMinerInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMinerInfosResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMinerInfosResult() throws Exception {
 		var miners = Stream.of(MinerInfos.of(UUID.randomUUID(), 100L, "a miner"),
 				MinerInfos.of(UUID.randomUUID(), 123L, "another miner"));
 		var getMinerInfosResultMessage1 = GetMinerInfosResultMessages.of(miners, "id");
@@ -301,7 +298,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfos messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTaskInfos() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTaskInfos() throws Exception {
 		var getTaskInfosMessage1 = GetTaskInfosMessages.of("id");
 		String encoded = new GetTaskInfosMessages.Encoder().encode(getTaskInfosMessage1);
 		var getTaskInfosMessage2 = new GetTaskInfosMessages.Decoder().decode(encoded);
@@ -310,7 +307,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTaskInfosResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTaskInfosResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTaskInfosResult() throws Exception {
 		var tasks = Stream.of(TaskInfos.of("a beautiful task"), TaskInfos.of("another beautiful task"));
 		var getTaskInfosResultMessage1 = GetTaskInfosResultMessages.of(tasks, "id");
 		String encoded = new GetTaskInfosResultMessages.Encoder().encode(getTaskInfosResultMessage1);
@@ -320,7 +317,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getConfig messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetConfig() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetConfig() throws Exception {
 		var getConfigMessage1 = GetConfigMessages.of("id");
 		String encoded = new GetConfigMessages.Encoder().encode(getConfigMessage1);
 		var getConfigMessage2 = new GetConfigMessages.Decoder().decode(encoded);
@@ -329,7 +326,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getInfo messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetInfo() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetInfo() throws Exception {
 		var getInfoMessage1 = GetInfoMessages.of("id");
 		String encoded = new GetInfoMessages.Encoder().encode(getInfoMessage1);
 		var getInfoMessage2 = new GetInfoMessages.Decoder().decode(encoded);
@@ -338,7 +335,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getInfo result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetInfoResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetInfoResult() throws Exception {
 		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
 		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
@@ -348,7 +345,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolInfo messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMempoolInfo() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMempoolInfo() throws Exception {
 		var getMempoolInfoMessage1 = GetMempoolInfoMessages.of("id");
 		String encoded = new GetMempoolInfoMessages.Encoder().encode(getMempoolInfoMessage1);
 		var getMempoolInfoMessage2 = new GetMempoolInfoMessages.Decoder().decode(encoded);
@@ -357,7 +354,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getMempoolInfo result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetMempoolInfoResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetMempoolInfoResult() throws Exception {
 		var info = MempoolInfos.of(1317L);
 		var getMempoolInfoResultMessage1 = GetMempoolInfoResultMessages.of(info, "id");
 		String encoded = new GetMempoolInfoResultMessages.Encoder().encode(getMempoolInfoResultMessage1);
@@ -367,7 +364,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getConfig result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetConfigResult() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorksForGetConfigResult() throws Exception {
 		var config = ConsensusConfigBuilders.defaults().build();
 		var getConfigResultMessage1 = GetConfigResultMessages.of(config, "id");
 		String encoded = new GetConfigResultMessages.Encoder().encode(getConfigResultMessage1);
@@ -377,7 +374,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("exception result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForExceptionResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForExceptionResult() throws Exception {
 		var exceptionResultMessage1 = ExceptionMessages.of(NoSuchAlgorithmException.class, "something went wrong", "id");
 		String encoded = new ExceptionMessages.Encoder().encode(exceptionResultMessage1);
 		var exceptionResultMessage2 = new ExceptionMessages.Decoder().decode(encoded);
@@ -386,7 +383,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainInfo messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChainInfo() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetChainInfo() throws Exception {
 		var getChainInfo1 = GetChainInfoMessages.of("id");
 		String encoded = new GetChainInfoMessages.Encoder().encode(getChainInfo1);
 		var getChainInfo2 = new GetChainInfoMessages.Decoder().decode(encoded);
@@ -395,7 +392,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getChainInfo result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetChainInfoResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetChainInfoResult() throws Exception {
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 3, 7, 8, 11 }), Optional.of(new byte[] { 13, 17, 19 }));
 		var getChainInfoResultMessage1 = GetChainInfoResultMessages.of(info, "id");
 		String encoded = new GetChainInfoResultMessages.Encoder().encode(getChainInfoResultMessage1);
@@ -405,7 +402,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForAddTransaction() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForAddTransaction() throws Exception {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5 });
 		var addTransactionMessage1 = AddTransactionMessages.of(transaction, "id");
 		String encoded = new AddTransactionMessages.Encoder().encode(addTransactionMessage1);
@@ -415,7 +412,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add transaction result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForAddTransactionResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForAddTransactionResult() throws Exception {
 		var addTransactionResultMessage1 = AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1, 2, 3 }, 17L), "id");
 		String encoded = new AddTransactionResultMessages.Encoder().encode(addTransactionResultMessage1);
 		var addTransactionResultMessage2 = new AddTransactionResultMessages.Decoder().decode(encoded);
@@ -424,7 +421,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add peer messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForAddPeers() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForAddPeers() throws Exception {
 		var addPeers1 = AddPeerMessages.of(Peers.of(URI.create("ws://google.com:8011")), "id");
 		String encoded = new AddPeerMessages.Encoder().encode(addPeers1);
 		var addPeers2 = new AddPeerMessages.Decoder().decode(encoded);
@@ -433,7 +430,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("remove peer messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForRemovePeer() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForRemovePeer() throws Exception {
 		var removePeers1 = RemovePeerMessages.of(Peers.of(URI.create("ws://google.com:8011")), "id");
 		String encoded = new RemovePeerMessages.Encoder().encode(removePeers1);
 		var removePeers2 = new RemovePeerMessages.Decoder().decode(encoded);
@@ -442,7 +439,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("add peer non-empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForNonEmptyAddPeerResult() throws Exception {
 		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.of(PeerInfos.of(Peers.of(URI.create("ws://www.mokamint.io")), 800, true)), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
@@ -451,7 +448,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("addPeer empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForEmptyAddPeerResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForEmptyAddPeerResult() throws Exception {
 		var addPeerResultMessage1 = AddPeerResultMessages.of(Optional.empty(), "id");
 		String encoded = new AddPeerResultMessages.Encoder().encode(addPeerResultMessage1);
 		var addPeerResultMessage2 = new AddPeerResultMessages.Decoder().decode(encoded);
@@ -460,7 +457,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("removePeer result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForRemovePeerResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForRemovePeerResult() throws Exception {
 		var removePeerResultMessage1 = RemovePeerResultMessages.of(true, "id");
 		String encoded = new RemovePeerResultMessages.Encoder().encode(removePeerResultMessage1);
 		var removePeerResultMessage2 = new RemovePeerResultMessages.Decoder().decode(encoded);
@@ -469,7 +466,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("openMiner messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForOpenMiner() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForOpenMiner() throws Exception {
 		var openMiner1 = OpenMinerMessages.of(8025, "id");
 		String encoded = new OpenMinerMessages.Encoder().encode(openMiner1);
 		var openMiner2 = new OpenMinerMessages.Decoder().decode(encoded);
@@ -478,7 +475,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("openMiner non-empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForOpenMinerNonEmptyResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForOpenMinerNonEmptyResult() throws Exception {
 		var info = MinerInfos.of(UUID.randomUUID(), 1234, "a breautiful miner");
 		var openMinerResultMessage1 = OpenMinerResultMessages.of(Optional.of(info), "id");
 		String encoded = new OpenMinerResultMessages.Encoder().encode(openMinerResultMessage1);
@@ -488,7 +485,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("openMiner empty result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForOpenMinerEmptyResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForOpenMinerEmptyResult() throws Exception {
 		var openMinerResultMessage1 = OpenMinerResultMessages.of(Optional.empty(), "id");
 		String encoded = new OpenMinerResultMessages.Encoder().encode(openMinerResultMessage1);
 		var openMinerResultMessage2 = new OpenMinerResultMessages.Decoder().decode(encoded);
@@ -497,7 +494,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("closeMiner messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForCloseMiner() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForCloseMiner() throws Exception {
 		var closeMiner1 = RemoveMinerMessages.of(UUID.randomUUID(), "id");
 		String encoded = new RemoveMinerMessages.Encoder().encode(closeMiner1);
 		var closeMiner2 = new RemoveMinerMessages.Decoder().decode(encoded);
@@ -506,7 +503,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("closeMiner result messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForCloseMinerResult() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForCloseMinerResult() throws Exception {
 		var closeMinerResultMessage1 = RemoveMinerResultMessages.of(true, "id");
 		String encoded = new RemoveMinerResultMessages.Encoder().encode(closeMinerResultMessage1);
 		var closeMinerResultMessage2 = new RemoveMinerResultMessages.Decoder().decode(encoded);
@@ -515,7 +512,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper peers messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperPeers() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForWhisperPeers() throws Exception {
 		var peer1 = Peers.of(URI.create("ws://google.com:8011"));
 		var whisperPeersMessage1 = WhisperPeerMessages.of(peer1, "id");
 		String encoded = new WhisperPeerMessages.Encoder().encode(whisperPeersMessage1);
@@ -525,7 +522,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper block messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperBlock() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForWhisperBlock() throws Exception {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var hashingForBlocks = HashingAlgorithms.sha256();
@@ -556,7 +553,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("whisper transaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForWhisperTransaction() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForWhisperTransaction() throws Exception {
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4, 5, 6});
 		var whisperTransactionMessage1 = WhisperTransactionMessages.of(transaction, "id");
 		String encoded = new WhisperTransactionMessages.Encoder().encode(whisperTransactionMessage1);
@@ -566,7 +563,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransaction messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransaction() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransaction() throws Exception {
 		var getTransactionMessage1 = GetTransactionMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
 		String encoded = new GetTransactionMessages.Encoder().encode(getTransactionMessage1);
 		var getTransactionMessage2 = new GetTransactionMessages.Decoder().decode(encoded);
@@ -575,7 +572,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getTransactionResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionResultNonEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionResultNonEmpty() throws Exception {
 		var tx = Transactions.of(new byte[] { 1 ,2, 3, 4 });
 		var getTransactionResultMessage1 = GetTransactionResultMessages.of(Optional.of(tx), "id");
 		String encoded = new GetTransactionResultMessages.Encoder().encode(getTransactionResultMessage1);
@@ -585,7 +582,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("empty getTransactionResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionResultEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionResultEmpty() throws Exception {
 		var getTransactionResultMessage1 = GetTransactionResultMessages.of(Optional.empty(), "id");
 		String encoded = new GetTransactionResultMessages.Encoder().encode(getTransactionResultMessage1);
 		var getTransactionResultMessage2 = new GetTransactionResultMessages.Decoder().decode(encoded);
@@ -594,7 +591,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionRepresentation messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionRepresentation() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionRepresentation() throws Exception {
 		var getTransactionRepresentationMessage1 = GetTransactionRepresentationMessages.of(new byte[] { 1, 2, 3, 4, 5 }, "id");
 		String encoded = new GetTransactionRepresentationMessages.Encoder().encode(getTransactionRepresentationMessage1);
 		var getTransactionRepresentationMessage2 = new GetTransactionRepresentationMessages.Decoder().decode(encoded);
@@ -603,7 +600,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getTransactionRepresentationResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionRepresentationResultNonEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionRepresentationResultNonEmpty() throws Exception {
 		var getTransactionRepresentationResultMessage1 = GetTransactionRepresentationResultMessages.of(Optional.of("hello"), "id");
 		String encoded = new GetTransactionRepresentationResultMessages.Encoder().encode(getTransactionRepresentationResultMessage1);
 		var getTransactionRepresentationResultMessage2 = new GetTransactionRepresentationResultMessages.Decoder().decode(encoded);
@@ -612,7 +609,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("empty getTransactionRepresentationResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionRepresentationResultEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionRepresentationResultEmpty() throws Exception {
 		var getTransactionRepresentationResultMessage1 = GetTransactionRepresentationResultMessages.of(Optional.empty(), "id");
 		String encoded = new GetTransactionRepresentationResultMessages.Encoder().encode(getTransactionRepresentationResultMessage1);
 		var getTransactionRepresentationResultMessage2 = new GetTransactionRepresentationResultMessages.Decoder().decode(encoded);
@@ -629,7 +626,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("getTransactionAddress messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionAddress() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionAddress() throws Exception {
 		var getTransactionAddressMessage1 = GetTransactionAddressMessages.of(new byte[] { 13, 1, 19, 73 }, "id");
 		String encoded = new GetTransactionAddressMessages.Encoder().encode(getTransactionAddressMessage1);
 		var getTransactionAddressMessage2 = new GetTransactionAddressMessages.Decoder().decode(encoded);
@@ -638,7 +635,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-empty getTransactionAddressResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionAddressResultNonEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionAddressResultNonEmpty() throws Exception {
 		var address = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 17);
 		var getTransactionAddressResultMessage1 = GetTransactionAddressResultMessages.of(Optional.of(address), "id");
 		String encoded = new GetTransactionAddressResultMessages.Encoder().encode(getTransactionAddressResultMessage1);
@@ -648,7 +645,7 @@ public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("empty getTransactionAddressResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGetTransactionAddressResultEmpty() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForGetTransactionAddressResultEmpty() throws Exception {
 		var getTransactionAddressResultMessage1 = GetTransactionAddressResultMessages.of(Optional.empty(), "id");
 		String encoded = new GetTransactionAddressResultMessages.Encoder().encode(getTransactionAddressResultMessage1);
 		var getTransactionAddressResultMessage2 = new GetTransactionAddressResultMessages.Decoder().decode(encoded);

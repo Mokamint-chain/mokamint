@@ -18,10 +18,6 @@ package io.mokamint.nonce.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -31,14 +27,12 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class DeadlineTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("deadlines are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForDeadlines() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForDeadlines() throws Exception {
 		var hashingForDeadlines = HashingAlgorithms.shabal256();
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];

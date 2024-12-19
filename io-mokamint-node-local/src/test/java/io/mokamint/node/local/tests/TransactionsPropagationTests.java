@@ -24,13 +24,10 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -40,13 +37,11 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -69,7 +64,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException {
+	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(app).checkTransaction(any());

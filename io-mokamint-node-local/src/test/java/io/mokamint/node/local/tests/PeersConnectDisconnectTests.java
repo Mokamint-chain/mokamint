@@ -24,13 +24,10 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
@@ -43,8 +40,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -72,7 +67,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	private static KeyPair nodeKey;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 4 };

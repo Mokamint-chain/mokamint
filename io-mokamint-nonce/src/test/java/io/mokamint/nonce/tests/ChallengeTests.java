@@ -18,22 +18,18 @@ package io.mokamint.nonce.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.security.NoSuchAlgorithmException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.Challenges;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class ChallengeTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("challenges are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForChallenges() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorksForChallenges() throws Exception {
 		var hashingForGenerations = HashingAlgorithms.sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];
 		for (int pos = 0; pos < generationSignature.length; pos++)

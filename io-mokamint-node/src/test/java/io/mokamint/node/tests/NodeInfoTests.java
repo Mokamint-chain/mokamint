@@ -28,14 +28,12 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Versions;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class NodeInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("node informations are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNodeInfo() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForNodeInfo() throws Exception {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 		String encoded = new NodeInfos.Encoder().encode(info1);
 		var info2 = new NodeInfos.Decoder().decode(encoded);

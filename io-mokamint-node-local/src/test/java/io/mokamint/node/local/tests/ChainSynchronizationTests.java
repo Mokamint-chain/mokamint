@@ -23,10 +23,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
@@ -34,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,8 +44,6 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
@@ -99,7 +94,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	private volatile Set<Block> nonMiningBlocks;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
@@ -116,7 +111,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException, InterruptedException {
+	public static void afterAll() throws Exception {
 		plot.close();
 	}
 

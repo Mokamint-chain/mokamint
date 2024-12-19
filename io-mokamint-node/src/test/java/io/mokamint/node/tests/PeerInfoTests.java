@@ -19,7 +19,6 @@ package io.mokamint.node.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,15 +26,13 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class PeerInfoTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peer information is correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, URISyntaxException, DecodeException {
-		var peer = Peers.of(new URI("ws://mygreatsite.org:2090"));
+	public void encodeDecodeWorks() throws Exception {
+		var peer = Peers.of(URI.create("ws://mygreatsite.org:2090"));
 		var peerInfo1 = PeerInfos.of(peer, 1234, true);
 		String encoded = new PeerInfos.Encoder().encode(peerInfo1);
 		var peerInfo2 = new PeerInfos.Decoder().decode(encoded);

@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Versions;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class VersionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("versions are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForVersion() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksForVersion() throws Exception {
 		var version1 = Versions.of(1, 2, 3);
 		String encoded = new Versions.Encoder().encode(version1);
 		var version2 = new Versions.Decoder().decode(encoded);

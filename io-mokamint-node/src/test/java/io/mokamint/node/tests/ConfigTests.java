@@ -18,11 +18,9 @@ package io.mokamint.node.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,14 +30,12 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ConsensusConfigBuilders;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class ConfigTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("configs are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorks() throws EncodeException, DecodeException, NoSuchAlgorithmException {
+	public void encodeDecodeWorks() throws Exception {
 		var config1 = ConsensusConfigBuilders.defaults()
 			.setChainId("octopus")
 			.setSignatureForBlocks(SignatureAlgorithms.ed25519())
@@ -54,7 +50,7 @@ public class ConfigTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("configs are correctly dumped into TOML and reloaded from TOML")
-	public void dumpLoadTOMLWorks(@TempDir Path dir) throws NoSuchAlgorithmException, IOException {
+	public void dumpLoadTOMLWorks(@TempDir Path dir) throws Exception {
 		var path = dir.resolve("config.toml");
 		var config1 = ConsensusConfigBuilders.defaults()
 				.setChainId("octopus")

@@ -38,7 +38,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -50,15 +49,12 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -110,7 +106,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private static Plot plot3;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path plotDir) throws IOException, NoSuchAlgorithmException, InvalidKeyException, TransactionRejectedException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path plotDir) throws Exception {
 		var config = LocalNodeConfigBuilders.defaults().build();
 		var hashing = config.getHashingForDeadlines();
 		var signature = config.getSignatureForBlocks();
@@ -135,7 +131,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException, InterruptedException {
+	public static void afterAll() throws Exception {
 		plot1.close();
 		plot2.close();
 		plot3.close();

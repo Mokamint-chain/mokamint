@@ -21,9 +21,6 @@ import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
@@ -38,14 +35,12 @@ import io.mokamint.node.Transactions;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class BlockTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("genesis blocks are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForGenesis() throws Exception {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var keys = ed25519.getKeyPair();
 		var block1 = Blocks.genesis(BlockDescriptions.genesis(LocalDateTime.now(), 4000, 20000, sha256(), sha256(), shabal256(), shabal256(), ed25519, keys.getPublic()), new byte[] { 1, 2, 3, 4 }, keys.getPrivate());
@@ -56,7 +51,7 @@ public class BlockTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("non-genesis blocks are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForNonGenesis() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public void encodeDecodeWorksForNonGenesis() throws Exception {
 		var hashingForGenerations = sha256();
 		var hashingForBlocks = sha256();
 		var generationSignature = new byte[hashingForGenerations.length()];

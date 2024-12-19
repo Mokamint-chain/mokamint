@@ -25,14 +25,12 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.ChainPortions;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class ChainPortionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain portions with hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksWithHashes() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksWithHashes() throws Exception {
 		var hash1 = new byte[] { 1, 2, 4, 100, 12 };
 		var hash2 = new byte[] { 13, 20, 4, 99, 12, 11 };
 		var chainPortion1 = ChainPortions.of(Stream.of(hash1, hash2));
@@ -43,7 +41,7 @@ public class ChainPortionTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("chain portions with no hashes are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksWithoutHashes() throws EncodeException, DecodeException {
+	public void encodeDecodeWorksWithoutHashes() throws Exception {
 		var chainPortion1 = ChainPortions.of(Stream.empty());
 		String encoded = new ChainPortions.Encoder().encode(chainPortion1);
 		var chainPortion2 = new ChainPortions.Decoder().decode(encoded);

@@ -18,23 +18,18 @@ package io.mokamint.nonce.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.EncodeException;
 
 public class PrologTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("prologs are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForPrologs() throws EncodeException, DecodeException, NoSuchAlgorithmException, InvalidKeyException {
+	public void encodeDecodeWorksForPrologs() throws Exception {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var prolog1 = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, ed25519.getKeyPair().getPublic(), new byte[] { 1, 2, 4 });
 		String encoded = new Prologs.Encoder().encode(prolog1);

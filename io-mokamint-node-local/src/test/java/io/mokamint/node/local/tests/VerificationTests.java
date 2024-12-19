@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -303,7 +302,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a non-genesis block is signed with the wrong key, its creation fails")
-	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InvalidKeyException, SignatureException, InterruptedException {
+	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws Exception {
 		var config = mkConfig(dir);
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
@@ -317,7 +316,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a block contains a repeated transaction, its creation fails")
-	public void repeatedTransactionGetsRejected(@TempDir Path dir) throws NoSuchAlgorithmException, IOException, InvalidKeyException, SignatureException, InterruptedException {
+	public void repeatedTransactionGetsRejected(@TempDir Path dir) throws Exception {
 		var config = mkConfig(dir);
 		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);

@@ -41,8 +41,7 @@ import io.mokamint.node.local.internal.PeersDatabase;
 
 public class PeersDatabaseTests extends AbstractLoggedTests {
 
-	private static PeersDatabase mkDatabase(Path dir) throws NodeException {
-		try {
+	private static PeersDatabase mkDatabase(Path dir) throws NodeException, NoSuchAlgorithmException {
 		var config = LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.build();
@@ -51,15 +50,11 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 		when(node.getConfig()).thenReturn(config);
 
 		return new PeersDatabase(node);
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw new NodeException(e);
-		}
 	}
 
 	@Test
 	@DisplayName("peers added to the database are still there at next opening")
-	public void peersAreKeptForNextOpening(@TempDir Path dir) throws InterruptedException, NodeException {
+	public void peersAreKeptForNextOpening(@TempDir Path dir) throws Exception {
 		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
 		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
 
@@ -76,7 +71,7 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("peers removed from the database are not there at next opening")
-	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws InterruptedException, NodeException {
+	public void removedPeersAreNotInNextOpening(@TempDir Path dir) throws Exception {
 		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
 		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
 		var peer3 = Peers.of(URI.create("ws://www.amazon.com:8032"));
@@ -96,7 +91,7 @@ public class PeersDatabaseTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("duplicate peers are kept only once")
-	public void peersHaveNoDuplicates(@TempDir Path dir) throws InterruptedException, NodeException {
+	public void peersHaveNoDuplicates(@TempDir Path dir) throws Exception {
 		var peer1 = Peers.of(URI.create("ws://localhost:8030"));
 		var peer2 = Peers.of(URI.create("ws://www.mokamint.io:8032"));
 

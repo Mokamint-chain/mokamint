@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterAll;
@@ -44,8 +43,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
@@ -90,7 +87,7 @@ public class EventsTests extends AbstractLoggedTests {
 	private static Plot plot;
 
 	@BeforeAll
-	public static void beforeAll(@TempDir Path dir) throws NoSuchAlgorithmException, InvalidKeyException, IOException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll(@TempDir Path dir) throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
@@ -104,7 +101,7 @@ public class EventsTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException, InterruptedException {
+	public static void afterAll() throws Exception {
 		plot.close();
 	}
 
@@ -312,7 +309,9 @@ public class EventsTests extends AbstractLoggedTests {
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IOException | NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {}
+				catch (IOException | InvalidKeyException | SignatureException e) {
+					e.printStackTrace();
+				}
 			}
 
 			@Override
