@@ -554,7 +554,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
 		}
 		catch (ApplicationException | InvalidKeyException | SignatureException e) {
-			// this node is misbehaving because the application it is connected to is misbehaving
+			// this node is misbehaving because the application it is connected to is misbehaving or its key is wrong
 			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {
