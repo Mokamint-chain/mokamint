@@ -114,7 +114,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
 	@Timeout(20)
-	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws NoSuchAlgorithmException, InterruptedException, DeploymentException, IOException, ApplicationException, NodeException, ApplicationTimeoutException, UnknownStateException {
+	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws Exception {
 		var port = 8032;
 		var uri = URI.create("ws://localhost:" + port);
 		var sevenBlocksAdded = new Semaphore(0);
