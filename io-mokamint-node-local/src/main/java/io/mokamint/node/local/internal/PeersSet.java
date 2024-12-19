@@ -52,6 +52,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.local.PeerTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -200,11 +201,11 @@ public class PeersSet implements AutoCloseable {
 	 * @return the information about the peer; this is empty if the peer has not been added nor reconnected
 	 * @throws PeerRejectedException if the addition of {@code peer} was rejected for some reason
 	 * @throws IOException if the connection to the peer failed
-	 * @throws TimeoutException if the addition does not complete in time
+	 * @throws PeerTimeoutException if the addition does not complete in time
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, IOException, InterruptedException, PeerRejectedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerTimeoutException, IOException, InterruptedException, PeerRejectedException, NodeException {
 		if (reconnectOrAdd(peer, true))
 			return Optional.of(PeerInfos.of(peer, config.getPeerInitialPoints(), true));
 		else
@@ -419,10 +420,10 @@ public class PeersSet implements AutoCloseable {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 * @throws PeerRejectedException if the peer was rejected for some reason
-	 * @throws TimeoutException if the peer did not answer in time
+	 * @throws PeerTimeoutException if the peer did not answer in time
 	 * @throws IOException if the connection to the peer failed
 	 */
-	private boolean reconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, TimeoutException {
+	private boolean reconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, PeerTimeoutException {
 		synchronized (lock) {
 			if (bannedURIs.contains(peer.getURI()))
 				return false;
@@ -454,7 +455,7 @@ public class PeersSet implements AutoCloseable {
 			try {
 				somethingChanged |= reconnectOrAdd(peer, force.test(peer));
 			}
-			catch (PeerRejectedException | IOException | TimeoutException e) {
+			catch (PeerRejectedException | IOException | PeerTimeoutException e) {
 				LOGGER.warning("peers: cannot connect to " + peer + ": " + e.getMessage());
 			}
 		}
@@ -463,7 +464,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	@GuardedBy("this.lock")
-	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, TimeoutException, InterruptedException, NodeException {
+	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, PeerTimeoutException, InterruptedException, NodeException {
 		boolean added = false;
 
 		if (force || peers.size() < config.getMaxPeers()) { // optimization: this is checked by db.add as well, but better avoid creating a useless remote
@@ -531,7 +532,7 @@ public class PeersSet implements AutoCloseable {
 					remote.close();
 			}
 		}
-		catch (IOException | TimeoutException e) {
+		catch (IOException | PeerTimeoutException e) {
 			LOGGER.log(Level.WARNING, "peers: cannot contact " + peer + ": " + e.getMessage());
 			punishBecauseUnreachable(peer);
 		}
@@ -551,11 +552,11 @@ public class PeersSet implements AutoCloseable {
 	 *         and the local time of the peer (this is positive if the clock of the peer is
 	 *         in the future wrt the clock of this node; it is negative in the opposite case)
 	 * @throws PeerRejectedException if the peer was rejected for some reason
-	 * @throws TimeoutException if the peer could not be contacted through the {@code remote}
+	 * @throws PeerTimeoutException if the peer could not be contacted through the {@code remote}
 	 * @throws InterruptedException if the connection to the peer though {@code remote} was interrupted
 	 * @throws NodeException if {@link #node} could not complete the operation
 	 */
-	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, NodeException, TimeoutException, InterruptedException {
+	private long ensurePeerIsCompatible(RemotePublicNode remote) throws PeerRejectedException, NodeException, PeerTimeoutException, InterruptedException {
 		NodeInfo peerInfo;
 
 		try {
@@ -564,6 +565,9 @@ public class PeersSet implements AutoCloseable {
 		catch (NodeException e) {
 			// it's the remote peer that misbehaves, not our node
 			throw new PeerRejectedException("The peer is misbehaving", e);
+		}
+		catch (TimeoutException e) {
+			throw new PeerTimeoutException(e);
 		}
 
 		var nodeInfo = getNodeInfo();
@@ -588,6 +592,9 @@ public class PeersSet implements AutoCloseable {
 		catch (NodeException e) {
 			// it's the remote peer that misbehaves, not our node
 			throw new PeerRejectedException("The peer is misbehaving", e);
+		}
+		catch (TimeoutException e) {
+			throw new PeerTimeoutException(e);
 		}
 
 		Optional<byte[]> peerGenesisHash = peerChainInfo.getGenesisHash();

@@ -23,13 +23,11 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +50,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
@@ -60,7 +57,6 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the addition and removal of a miner from a network of nodes.

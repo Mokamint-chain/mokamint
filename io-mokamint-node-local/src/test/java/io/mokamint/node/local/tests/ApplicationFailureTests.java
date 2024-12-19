@@ -46,7 +46,6 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
-import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
@@ -60,7 +59,6 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the possible failures of the application of a node.

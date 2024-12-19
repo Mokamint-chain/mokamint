@@ -124,12 +124,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	private final static int PORT = 8030;
 
 	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		URI = java.net.URI.create("ws://localhost:" + PORT);
 	}
 
 	private final static int TIME_OUT = 500;

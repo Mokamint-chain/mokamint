@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,6 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
@@ -52,17 +50,12 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	private final static int PORT = 8031;
 
 	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		URI = java.net.URI.create("ws://localhost:" + PORT);
 	}
 
 	@Test
 	@DisplayName("if an add(Peer) request reaches the service, it adds the peers to the node and it sends back a result")
-	public void serviceAddPeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, PeerRejectedException, NodeException {
+	public void serviceAddPeerWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(Peers.of(new URI("ws://my.machine:8032")));
@@ -97,7 +90,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a remove(Peer) request reaches the service, it removes the peers from the node and it sends back a result")
-	public void serviceRemovePeerWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NodeException {
+	public void serviceRemovePeerWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
 		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
@@ -133,7 +126,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an openMiner() request reaches the service, it opens the miner and it sends back a result")
-	public void serviceOpenMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NodeException {
+	public void serviceOpenMinerWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var port1 = 8025;
 		var port2 = 8028;
@@ -169,7 +162,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a closeMiner() request reaches the service, it closes the miner and it sends back a result")
-	public void serviceCloseMinerWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NodeException {
+	public void serviceCloseMinerWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		Set<UUID> allUUIDs = new HashSet<>();
 		var uuid1 = UUID.randomUUID();
@@ -205,13 +198,13 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a restricted service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, InterruptedException, DeploymentException, URISyntaxException, NodeException {
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws Exception {
 		var node = mock(RestrictedNode.class);
 		var semaphore = new Semaphore(0);
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
 			private MyRemoteRestrictedNode() throws DeploymentException, IOException, URISyntaxException {
-				super(new URI("ws://localhost:8031"), 2000);
+				super(java.net.URI.create("ws://localhost:8031"), 2000);
 			}
 
 			@Override

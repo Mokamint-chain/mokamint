@@ -73,6 +73,7 @@ import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.ApplicationTimeoutException;
+import io.mokamint.node.local.PeerTimeoutException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -422,6 +423,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
+		}
+		catch (PeerTimeoutException e) { // TODO
+			throw new TimeoutException(e.getMessage());
 		}
 	
 		if (result.isPresent()) {
@@ -1041,15 +1045,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				var whisperedPeerMessage = whisperedInfo.message;
 				var peer = whisperedPeerMessage.getWhispered();
 
-				if (whisperedInfo.add)
-					peers.add(peer);
+				if (whisperedInfo.add) {
+					try {
+						peers.add(peer);
+					}
+					catch (PeerTimeoutException e) {
+						LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is not responding: " + e.getMessage());
+					}
+				}
 
 				Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
 				peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
 				boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
 				onWhispered(peer);
 			}
-			catch (PeerRejectedException | IOException | TimeoutException e) {
+			catch (PeerRejectedException | IOException e) {
 				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
 			}
 		}

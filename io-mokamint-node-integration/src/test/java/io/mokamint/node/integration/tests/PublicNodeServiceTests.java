@@ -30,9 +30,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashSet;
@@ -103,12 +101,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	private final static int PORT = 8030;
 
 	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		URI = java.net.URI.create("ws://localhost:" + PORT);
 	}
 
 	private PublicNode mkNode() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, NodeException {
@@ -123,10 +116,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getPeerInfos() request reaches the service, it sends back the peers of the node")
-	public void serviceGetPeerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetPeerInfosWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var peerInfo1 = PeerInfos.of(Peers.of(new URI("ws://my.machine:8032")), 345, true);
-		var peerInfo2 = PeerInfos.of(Peers.of(new URI("ws://her.machine:8033")), 11, false);
+		var peerInfo1 = PeerInfos.of(Peers.of(java.net.URI.create("ws://my.machine:8032")), 345, true);
+		var peerInfo2 = PeerInfos.of(Peers.of(java.net.URI.create("ws://her.machine:8033")), 11, false);
 		var node = mkNode();
 		when(node.getPeerInfos()).thenReturn(Stream.of(peerInfo1, peerInfo2));
 
@@ -156,7 +149,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMinerInfos() request reaches the service, it sends back the miners of the node")
-	public void serviceGetMinerInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMinerInfosWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var minerInfo1 = MinerInfos.of(UUID.randomUUID(), 345L, "a miner");
 		var minerInfo2 = MinerInfos.of(UUID.randomUUID(), 11L, "a special miner");
@@ -189,7 +182,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTaskInfos() request reaches the service, it sends back the tasks of the node")
-	public void serviceGetTaskInfosWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetTaskInfosWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var taskInfo1 = TaskInfos.of("a great task");
 		var taskInfo2 = TaskInfos.of("a greater task");
@@ -222,7 +215,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetBlockEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -254,7 +247,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and there is a block with the requested hash, it sends back that block")
-	public void serviceGetBlockNonEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
+	public void serviceGetBlockNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var hashingForGenerations = sha256();
 		var hashingForBlocks = sha256();
@@ -310,7 +303,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and it goes in timeout, it sends back an exception")
-	public void serviceGetBlockTimeoutWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetBlockTimeoutWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -342,7 +335,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is no block with the requested hash, it sends back an empty optional")
-	public void serviceGetBlockDescriptionEmptyWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetBlockDescriptionEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -374,7 +367,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and there is a block with the requested hash, it sends back the description of that block")
-	public void serviceGetBlockDescriptionNonEmptyWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, InvalidKeyException, SignatureException, NodeException {
+	public void serviceGetBlockDescriptionNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		HashingAlgorithm shabal256 = shabal256();
 		var hashingForGenerations = sha256();
@@ -425,7 +418,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and it goes in timeout, it sends back an exception")
-	public void serviceGetBlockDescriptionNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetBlockDescriptionNodeExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -457,7 +450,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
-	public void serviceGetConfigWorks() throws DeploymentException, IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetConfigWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var config = ConsensusConfigBuilders.defaults().build();
 
@@ -488,7 +481,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getChainInfo() request reaches the service, it sends back its chain information")
-	public void serviceGetChainInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetChainInfoWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var info = ChainInfos.of(1973L, Optional.of(new byte[] { 1, 2, 3, 4 }), Optional.of(new byte[] { 13, 17, 19 }), Optional.of(new byte[] { 13, 17, 19 }));
 
@@ -520,7 +513,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getChainPortion() request reaches the service, it sends back its chain hashes")
-	public void serviceGetChainPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetChainPortionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var chain = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 13, 17, 19 }));
 
@@ -552,7 +545,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, TransactionRejectedException, NodeException {
+	public void serviceAddTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 		
@@ -583,7 +576,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMempoolInfo() request reaches the service, it sends back its mempool information")
-	public void serviceGetMempoolInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMempoolInfoWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var info = MempoolInfos.of(17L);
 
@@ -615,7 +608,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getMempoolPortion() request reaches the service, it sends back its mempool")
-	public void serviceGetMempoolPortionWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetMempoolPortionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var mempool = MempoolPortions.of(Stream.of(
 			MempoolEntries.of(new byte[] { 1, 2, 3, 4 }, 11L),
@@ -650,7 +643,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
-	public void serviceGetInfoWorks() throws DeploymentException, IOException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceGetInfoWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 
@@ -682,10 +675,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a service receives whispered peers from its node, they get whispered to the connected clients")
-	public void serviceSendsWhisperedPeersToClients() throws DeploymentException, IOException, URISyntaxException, InterruptedException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void serviceSendsWhisperedPeersToClients() throws Exception {
 		var semaphore = new Semaphore(0);
-		var peer1 = Peers.of(new URI("ws://my.machine:8032"));
-		var peer2 = Peers.of(new URI("ws://her.machine:8033"));
+		var peer1 = Peers.of(java.net.URI.create("ws://my.machine:8032"));
+		var peer2 = Peers.of(java.net.URI.create("ws://her.machine:8033"));
 		var allPeers = new HashSet<Peer>();
 		allPeers.add(peer1);
 		allPeers.add(peer2);
@@ -714,7 +707,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a public service gets closed, any remote using that service gets closed and its methods throw ClosedNodeException")
-	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws IOException, InterruptedException, DeploymentException, URISyntaxException, TimeoutException, NoSuchAlgorithmException, NodeException {
+	public void ifServiceClosedThenRemoteClosedAndNotUsable() throws Exception {
 		var node = mkNode();
 		var semaphore = new Semaphore(0);
 		
@@ -770,7 +763,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionEmptyWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetTransactionEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -790,7 +783,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransaction(hash)).thenReturn(Optional.empty());
 	
@@ -802,7 +795,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
-	public void serviceGetTransactionNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
 	
@@ -835,7 +828,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the node misbehaves, it sends back an exception")
-	public void serviceGetTransactionNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetTransactionNodeExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -855,7 +848,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransaction(hash)).thenThrow(NodeException.class);
 	
@@ -867,7 +860,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionRepresentationEmptyWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, TransactionRejectedException, NodeException {
+	public void serviceGetTransactionRepresentationEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -887,7 +880,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.empty());
 	
@@ -899,7 +892,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, it sends back the representation of that transaction")
-	public void serviceGetTransactionRepresentationNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, TransactionRejectedException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionRepresentationNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var representation = "hello";
 	
@@ -920,7 +913,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.of(representation));
 	
@@ -932,7 +925,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, but its representation cannot be computed, it sends back an exception")
-	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, TransactionRejectedException, NodeException {
+	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -952,7 +945,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionRepresentation(hash)).thenThrow(TransactionRejectedException.class);
 	
@@ -964,7 +957,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionAddressEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, IOException, DeploymentException, NodeException  {
+	public void serviceGetTransactionAddressEmptyWorks() throws Exception  {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -984,7 +977,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenReturn(Optional.empty());
 	
@@ -996,7 +989,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and there is a transaction with the requested hash, it sends back that transaction's address")
-	public void serviceGetTransactionAddressNonEmptyWorks() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, DeploymentException, IOException, NodeException {
+	public void serviceGetTransactionAddressNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var address = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 	
@@ -1017,7 +1010,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenReturn(Optional.of(address));
 	
@@ -1029,7 +1022,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and the node misbehaves, it throws back an exception")
-	public void serviceGetTransactionAddressNodeExceptionWorks() throws DeploymentException, IOException, InterruptedException, NoSuchAlgorithmException, TimeoutException, NodeException {
+	public void serviceGetTransactionAddressNodeExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -1049,7 +1042,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 		}
 	
-		var hash = new byte[] { 34, 32, 76, 11 };
+		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getTransactionAddress(hash)).thenThrow(NodeException.class);
 	
