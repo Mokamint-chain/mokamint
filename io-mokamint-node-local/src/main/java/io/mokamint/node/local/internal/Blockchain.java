@@ -83,9 +83,9 @@ import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
+import io.mokamint.node.local.PeerTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
-import io.mokamint.node.remote.api.RemotePublicNode;
 
 /**
  * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -1233,32 +1233,30 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private void downloadNextGroupFrom(Peer peer) throws InterruptedException, NodeException {
-			Optional<RemotePublicNode> maybeRemote = peers.getRemote(peer);
-			if (maybeRemote.isEmpty())
-				return;
-	
-			ChainPortion chain;
-	
+			Optional<ChainPortion> maybeChain;
+
 			try {
-				chain = maybeRemote.get().getChainPortion(height, synchronizationGroupSize);
+				maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize);
 			}
 			catch (NodeException e) {
 				// it is the peer that is misbehaving, not {@code node}
 				markAsMisbehaving(peer);
 				return;
 			}
-			catch (TimeoutException e) {
+			catch (PeerTimeoutException e) {
 				markAsUnreachable(peer);
 				return;
 			}
-	
-			var hashes = chain.getHashes().toArray(byte[][]::new);
-			if (hashes.length > synchronizationGroupSize)
-				markAsMisbehaving(peer); // if a peer sends inconsistent information, we take note
-			else if (groupIsUseless(hashes))
-				unusable.add(peer);
-			else
-				groups.put(peer, hashes);
+
+			if (maybeChain.isPresent()) {
+				var hashes = maybeChain.get().getHashes().toArray(byte[][]::new);
+				if (hashes.length > synchronizationGroupSize)
+					markAsMisbehaving(peer); // if a peer sends inconsistent information, we take note
+				else if (groupIsUseless(hashes))
+					unusable.add(peer);
+				else
+					groups.put(peer, hashes);
+			}
 		}
 	
 		/**
@@ -1435,34 +1433,28 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws NodeException if the node is misbehaving
 		 */
 		private void tryToDownloadBlockFrom(Peer peer, int h) throws InterruptedException, NodeException {
-			var maybeRemote = peers.getRemote(peer);
-			if (maybeRemote.isEmpty())
-				unusable.add(peer);
-			else {
-				var remote = maybeRemote.get();
-				Optional<Block> maybeBlock;
-	
-				try {
-					maybeBlock = remote.getBlock(chosenGroup[h]);
-				}
-				catch (NodeException e) {
+			Optional<Block> maybeBlock;
+
+			try {
+				maybeBlock = peers.getBlock(peer, chosenGroup[h]);
+			}
+			catch (NodeException e) {
+				markAsMisbehaving(peer);
+				return;
+			}
+			catch (PeerTimeoutException e) {
+				markAsUnreachable(peer);
+				return;
+			}
+
+			if (maybeBlock.isPresent()) {
+				Block block = maybeBlock.get();
+				if (!Arrays.equals(chosenGroup[h], block.getHash()))
+					// the peer answered with a block with the wrong hash!
 					markAsMisbehaving(peer);
-					return;
-				}
-				catch (TimeoutException e) {
-					markAsUnreachable(peer);
-					return;
-				}
-	
-				if (maybeBlock.isPresent()) {
-					Block block = maybeBlock.get();
-					if (!Arrays.equals(chosenGroup[h], block.getHash()))
-						// the peer answered with a block with the wrong hash!
-						markAsMisbehaving(peer);
-					else {
-						blocks.set(h, block);
-						downloaders.put(block, peer);
-					}
+				else {
+					blocks.set(h, block);
+					downloaders.put(block, peer);
 				}
 			}
 		}

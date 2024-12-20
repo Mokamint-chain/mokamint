@@ -43,7 +43,9 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
@@ -305,15 +307,61 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Yields the remote note that can be used to interact with the given peer.
+	 * Asks the block with the given hash to the given peer.
 	 * 
 	 * @param peer the peer
-	 * @return the remote, if any. This might be missing if, for instance, the
-	 *         peer is currently disconnected
+	 * @param hash the hash
+	 * @return the block, if any; this is missing if the peer is not in this set or
+	 *         if the peer does not know such block
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws NodeException if the peer is misbehaving
+	 * @throws PeerTimeoutException if the peer does not answer in time
 	 */
-	public Optional<RemotePublicNode> getRemote(Peer peer) {
-		synchronized (lock) {
-			return Optional.ofNullable(remotes.get(peer));
+	public Optional<Block> getBlock(Peer peer, byte[] hash) throws InterruptedException, NodeException, PeerTimeoutException {
+		var remote = getRemote(peer);
+		if (remote.isEmpty())
+			return Optional.empty();
+
+		try {
+			return remote.get().getBlock(hash);
+		}
+		catch (NodeException e) {
+			//markAsMisbehaving(peer);
+			throw e;
+		}
+		catch (TimeoutException e) {
+			//markAsUnreachable(peer);
+			throw new PeerTimeoutException(e);
+		}
+	}
+
+	/**
+	 * Yields a portion of the current best chain of the given peer, containing the hashes of the blocks
+	 * starting at height {@code start} (inclusive) and ending at height {@code start + count} (exclusive). The result
+	 * might actually be shorter if the current best chain is shorter than {@code start + count} blocks.
+	 * 
+	 * @param peer the peer
+	 * @param start the height of the first block whose hash is returned
+	 * @param count how many hashes (at most) must be reported
+	 * @return the portion with the hashes, in order, if any; this is empty if the peer is not in this set
+	 * @throws PeerTimeoutException if the peer does not answer in time
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 * @throws NodeException if the peer is misbehaving
+	 */
+	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, NodeException {
+		var remote = getRemote(peer);
+		if (remote.isEmpty())
+			return Optional.empty();
+
+		try {
+			return Optional.of(remote.get().getChainPortion(start, count));
+		}
+		catch (NodeException e) {
+			//markAsMisbehaving(peer);
+			throw e;
+		}
+		catch (TimeoutException e) {
+			throw new PeerTimeoutException(e);
 		}
 	}
 
@@ -357,6 +405,19 @@ public class PeersSet implements AutoCloseable {
 
 		if (removed)
 			node.onRemoved(peer);
+	}
+
+	/**
+	 * Yields the remote note that can be used to interact with the given peer.
+	 * 
+	 * @param peer the peer
+	 * @return the remote, if any. This might be missing if, for instance, the
+	 *         peer is currently disconnected
+	 */
+	private Optional<RemotePublicNode> getRemote(Peer peer) {
+		synchronized (lock) {
+			return Optional.ofNullable(remotes.get(peer));
+		}
 	}
 
 	@GuardedBy("this.lock")
