@@ -83,7 +83,6 @@ import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
-import io.mokamint.node.local.PeerTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 
@@ -1238,13 +1237,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			try {
 				maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize);
 			}
-			catch (NodeException e) {
-				// it is the peer that is misbehaving, not {@code node}
-				markAsMisbehaving(peer);
-				return;
-			}
-			catch (PeerTimeoutException e) {
-				markAsUnreachable(peer);
+			catch (PeerNodeException | PeerTimeoutException e) {
+				unusable.add(peer);
 				return;
 			}
 
@@ -1284,14 +1278,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return false;
 		}
 	
-		private void markAsMisbehaving(Peer peer) throws NodeException, InterruptedException {
+		private void markAsMisbehaving(Peer peer) throws NodeException {
 			unusable.add(peer);
 			peers.ban(peer);
-		}
-	
-		private void markAsUnreachable(Peer peer) throws NodeException, InterruptedException {
-			unusable.add(peer);
-			peers.punishBecauseUnreachable(peer);
 		}
 	
 		/**
@@ -1438,12 +1427,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			try {
 				maybeBlock = peers.getBlock(peer, chosenGroup[h]);
 			}
-			catch (NodeException e) {
-				markAsMisbehaving(peer);
-				return;
-			}
-			catch (PeerTimeoutException e) {
-				markAsUnreachable(peer);
+			catch (PeerNodeException | PeerTimeoutException e) {
+				unusable.add(peer);
 				return;
 			}
 

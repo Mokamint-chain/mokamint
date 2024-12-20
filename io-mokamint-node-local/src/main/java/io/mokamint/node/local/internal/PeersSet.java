@@ -54,7 +54,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.local.PeerTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -161,7 +160,19 @@ public class PeersSet implements AutoCloseable {
 			all.addAll(peers.getElements().collect(Collectors.toSet()));
 			reconnectOrAdd(all, seeds::contains);
 		}
-		catch (NodeException | InterruptedException e) {
+		catch (NodeException e) {
+			try {
+				close();
+			}
+			catch (NodeException e2) {
+				LOGGER.log(Level.SEVERE, "could not close the peers set", e2);
+			}
+
+			throw e;
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+
 			try {
 				close();
 			}
@@ -314,10 +325,11 @@ public class PeersSet implements AutoCloseable {
 	 * @return the block, if any; this is missing if the peer is not in this set or
 	 *         if the peer does not know such block
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the peer is misbehaving
+	 * @throws PeerNodeException if the peer is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 * @throws PeerTimeoutException if the peer does not answer in time
 	 */
-	public Optional<Block> getBlock(Peer peer, byte[] hash) throws InterruptedException, NodeException, PeerTimeoutException {
+	public Optional<Block> getBlock(Peer peer, byte[] hash) throws InterruptedException, NodeException, PeerNodeException, PeerTimeoutException {
 		var remote = getRemote(peer);
 		if (remote.isEmpty())
 			return Optional.empty();
@@ -326,11 +338,11 @@ public class PeersSet implements AutoCloseable {
 			return remote.get().getBlock(hash);
 		}
 		catch (NodeException e) {
-			//markAsMisbehaving(peer);
-			throw e;
+			ban(peer);
+			throw new PeerNodeException(e);
 		}
 		catch (TimeoutException e) {
-			//markAsUnreachable(peer);
+			punishBecauseUnreachable(peer);
 			throw new PeerTimeoutException(e);
 		}
 	}
@@ -346,9 +358,10 @@ public class PeersSet implements AutoCloseable {
 	 * @return the portion with the hashes, in order, if any; this is empty if the peer is not in this set
 	 * @throws PeerTimeoutException if the peer does not answer in time
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the peer is misbehaving
+	 * @throws PeerNodeException if the peer is misbehaving
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, NodeException {
+	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, NodeException, PeerNodeException {
 		var remote = getRemote(peer);
 		if (remote.isEmpty())
 			return Optional.empty();
@@ -357,10 +370,11 @@ public class PeersSet implements AutoCloseable {
 			return Optional.of(remote.get().getChainPortion(start, count));
 		}
 		catch (NodeException e) {
-			//markAsMisbehaving(peer);
-			throw e;
+			ban(peer);
+			throw new PeerNodeException(e);
 		}
 		catch (TimeoutException e) {
+			punishBecauseUnreachable(peer);
 			throw new PeerTimeoutException(e);
 		}
 	}
@@ -387,7 +401,7 @@ public class PeersSet implements AutoCloseable {
 		return reconnectOrAdd(unknownPeers, _peer -> false);
 	}
 
-	public void punishBecauseUnreachable(Peer peer) throws NodeException {
+	private void punishBecauseUnreachable(Peer peer) throws NodeException {
 		boolean removed = false;
 
 		synchronized (lock) {
@@ -449,8 +463,9 @@ public class PeersSet implements AutoCloseable {
 		synchronized (lock) {
 			if (peers.size() < config.getMaxPeers()) { // optimization
 				try {
-					var peerInfos = remote.getPeerInfos();
+					Stream<PeerInfo> peerInfos = remote.getPeerInfos();
 					pardonBecauseReachable(peer);
+
 					peerInfos.filter(PeerInfo::isConnected)
 						.map(PeerInfo::getPeer)
 						.filter(not(peers::contains))
