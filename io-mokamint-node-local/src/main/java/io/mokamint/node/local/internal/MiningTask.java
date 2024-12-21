@@ -35,9 +35,10 @@ public class MiningTask implements Task {
 	 */
 	private final LocalNodeImpl node;
 
-	private final Object onBlockAddedWaitingLock = new Object();
-	private final Object onMinerAddedWaitingLock = new Object();
-	private final Object onSynchronizationCompletedWaitingLock = new Object();
+	/**
+	 * A lock used to when mining is suspended, to wait for an event that might make it able to run again.
+	 */
+	private final Object waitingLock = new Object();
 
 	/**
 	 * The task that is performing the current mining. It gets swapped each time a new block starts being mined.
@@ -57,7 +58,7 @@ public class MiningTask implements Task {
 				mineOverHead();
 		}
 		catch (TaskRejectedExecutionException e) {
-			LOGGER.warning("mining: exiting since the node is shutting down");
+			LOGGER.warning("mining: exiting since the node is shutting down: " + e.getMessage());
 		}
 	}
 
@@ -71,35 +72,18 @@ public class MiningTask implements Task {
 	}
 
 	/**
-	 * Called when a new block gets added to the blockchain.
+	 * Continue mining, if suspended because some precondition was missing. For instance,
+	 * mining gets suspended if the blockchain is empty or there are no miners or the node is synchronizing.
 	 */
-	public void onBlockAdded() {
-		synchronized (onBlockAddedWaitingLock) {
-			onBlockAddedWaitingLock.notify();
-		}
-	}
-
-	/**
-	 * Called when a miner gets added to the node.
-	 */
-	public void onMinerAdded() {
-		synchronized (onMinerAddedWaitingLock) {
-			onMinerAddedWaitingLock.notify();
-		}
-	}
-
-	/**
-	 * Called when synchronization completes.
-	 */
-	public void onSynchronizationCompleted() {
-		synchronized (onSynchronizationCompletedWaitingLock) {
-			onSynchronizationCompletedWaitingLock.notify();
+	public void continueIfSuspended() {
+		synchronized (waitingLock) {
+			waitingLock.notify();
 		}
 	}
 
 	/**
 	 * Adds the given transaction to the mempool used by this task. This allows the task
-	 * to process transactions that arrive during the mining of the block.
+	 * to process transactions that arrive during the mining of a next block.
 	 * 
 	 * @param entry the transaction entry
 	 * @throws NodeException if the node is misbehaving
@@ -113,25 +97,16 @@ public class MiningTask implements Task {
 	private void mineOverHead() throws NodeException, InterruptedException, TaskRejectedExecutionException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
-
-			synchronized (onBlockAddedWaitingLock) {
-				onBlockAddedWaitingLock.wait(2000L);
-			}
+			suspendUntilSomethingChanges();
 		}
 		else if (node.getMiners().isEmpty()) {
 			LOGGER.warning("mining: cannot mine with no miners attached, will retry later");
 			node.onNoMinersAvailable();
-
-			synchronized (onMinerAddedWaitingLock) {
-				onMinerAddedWaitingLock.wait(2000L);
-			}
+			suspendUntilSomethingChanges();
 		}
 		else if (node.isSynchronizing()) {
-			LOGGER.warning("mining: delaying mining since synchronization is in progress, will retry later");
-
-			synchronized (onSynchronizationCompletedWaitingLock) {
-				onSynchronizationCompletedWaitingLock.wait(2000L);
-			}
+			LOGGER.warning("mining: cannot mine since synchronization is in progress, will retry later");
+			suspendUntilSomethingChanges();
 		}
 		else {
 			try {
@@ -144,6 +119,12 @@ public class MiningTask implements Task {
 				LOGGER.warning("mining: the application is unresponsive: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
 			}
+		}
+	}
+
+	private void suspendUntilSomethingChanges() throws InterruptedException {
+		synchronized (waitingLock) {
+			waitingLock.wait(2000L);
 		}
 	}
 }

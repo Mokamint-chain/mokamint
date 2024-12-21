@@ -221,12 +221,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.app = app;
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
+		this.miningTask = new MiningTask(this);
 		this.miners = new MinersSet(this);
 		this.blockchain = new Blockchain(this);
 		this.mempool = new Mempool(this);
 		this.peers = new PeersSet(this);
 		this.uuid = getInfo().getUUID();
-		this.miningTask = new MiningTask(this);
 
 		try {
 			if (init)
@@ -371,8 +371,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			throw new TimeoutException(e.getMessage()); // TODO
 		}
 
-		if (miningTask != null)
-			miningTask.add(result);
+		miningTask.add(result);
 
 		whisperWithoutAddition(transaction);
 
@@ -774,8 +773,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	protected void onAdded(Miner miner) {
 		LOGGER.info("added miner " + miner.getUUID() + " (" + miner + ")");
-		if (miningTask != null)
-			miningTask.onMinerAdded();
+		miningTask.continueIfSuspended();
 	}
 
 	/**
@@ -833,8 +831,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	protected void onSynchronizationCompleted() {
 		isSynchronizing.set(false);
-		if (miningTask != null)
-			miningTask.onSynchronizationCompleted();
+		miningTask.continueIfSuspended();
 	}
 
 	/**
@@ -843,8 +840,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param block the added block
 	 */
 	protected void onAdded(Block block) {
-		if (miningTask != null)
-			miningTask.onBlockAdded();
+		miningTask.continueIfSuspended();
 	}
 
 	/**
@@ -856,8 +852,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 *                      case the list is longer than a single element; in any case, this list is never empty
 	 */
 	protected void onHeadChanged(Deque<Block> pathToNewHead) {
-		if (miningTask != null)
-			miningTask.restartFromCurrentHead();
+		miningTask.restartFromCurrentHead();
 	}
 
 	/**

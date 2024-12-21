@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -123,7 +124,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(semaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
-			assertTrue(node1.getPeerInfos().count() == 2);
+			assertEquals(2L, node1.getPeerInfos().count());
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
 			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 		}
