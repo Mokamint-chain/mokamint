@@ -429,7 +429,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	
 		if (result.isPresent()) {
 			scheduleSynchronization();
-			scheduleWhisperingOfAllServices();
+			whisperAllServices();
 			whisperWithoutAddition(peer);
 		}
 	
@@ -673,13 +673,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Schedules the advertisement to its peers of the services published by this node.
-	 */
-	private void scheduleWhisperingOfAllServices() {
-		execute(this::whisperAllServices, "whispering of all node's services");
-	}
-
-	/**
 	 * Whispers a peer, but does not add it to this node.
 	 * 
 	 * @param peer the peer to whisper
@@ -687,10 +680,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void whisperWithoutAddition(Peer peer) {
 		var whisperPeerMessage = WhisperPeerMessages.of(peer, UUID.randomUUID().toString());
 
-		if (peersAlreadyWhispered.add(whisperPeerMessage)) {
-			String description = "peer " + peer;
-			whisperedPeersQueue.offer(new WhisperedInfo<>(whisperPeerMessage, isThis, description, false));
-		}
+		if (peersAlreadyWhispered.add(whisperPeerMessage))
+			whisperedPeersQueue.offer(new WhisperedInfo<>(whisperPeerMessage, isThis, "peer " + peer, false));
 	}
 
 	/**
@@ -701,8 +692,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void whisperWithoutAddition(Block block) {
 		if (alreadyWhispered.add(block)) {
 			var whisperBlockMessage = WhisperBlockMessages.of(block, UUID.randomUUID().toString());
-			String description = "block " + block.getHexHash();
-			whisperedBlocksQueue.offer(new WhisperedInfo<>(whisperBlockMessage, isThis, description, false));
+			whisperedBlocksQueue.offer(new WhisperedInfo<>(whisperBlockMessage, isThis, "block " + block.getHexHash(), false));
 		}
 	}
 
@@ -715,8 +705,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (alreadyWhispered.add(transaction)) {
 			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 			var hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
-			String description = "transaction " + transaction.getHexHash(hasherForTransactions);
-			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, description, false));
+			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(hasherForTransactions), false));
 		}
 	}
 
@@ -914,8 +903,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " exits since the node is misbehaving", e);
 			}
 			catch (InterruptedException e) {
-				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down");
 				Thread.currentThread().interrupt();
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down");
 			}
 			catch (Exception e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " failed", e);
@@ -1140,17 +1129,17 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			.forEach(this::whisperWithoutAddition);
 	}
 
-	private void identifyNonFrozenPartOfBlockchain() {
+	private void identifyNonFrozenPartOfBlockchain() throws InterruptedException, NodeException {
 		try {
 			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
 			if (maybeStartTimeOfNonFrozenPart.isPresent())
 				app.keepFrom(maybeStartTimeOfNonFrozenPart.get()); // TODO: this should be inside an exclusive transaction on the blockchain's database?
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+		catch (TimeoutException e) {
+			LOGGER.log(Level.WARNING, "cannot identify the non-frozen part of the blockchain because the application is unresponsive: " + e.getMessage());
 		}
-		catch (NodeException | TimeoutException | ApplicationException e) {
-			LOGGER.log(Level.SEVERE, "cannot identify the non-frozen part of the blockchain", e);
+		catch (ApplicationException e) {
+			throw new NodeException(e);
 		}
 	}
 
