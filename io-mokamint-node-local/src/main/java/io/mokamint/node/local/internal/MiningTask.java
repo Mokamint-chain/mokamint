@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.NodeException;
@@ -26,13 +25,13 @@ import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 
 /**
  * A task that mines blocks. It executes an internal thread that
- * takes the head of the blockchain and builds a new block on top of it.
- * This task only terminates by interruption (or exception).
+ * repeatedly takes the head of the blockchain and builds a new block on top of it.
+ * This task might terminate only because of an interruption (or exception).
  */
 public class MiningTask implements Task {
 
 	/**
-	 * The node for which blocks are being mined.
+	 * The node for which the block is being mined.
 	 */
 	private final LocalNodeImpl node;
 
@@ -41,7 +40,7 @@ public class MiningTask implements Task {
 	private final Object onSynchronizationCompletedWaitingLock = new Object();
 
 	/**
-	 * The code that performs the current mining. It gets swapped each time a new block is being mined.
+	 * The task that is performing the current mining. It gets swapped each time a new block starts being mined.
 	 */
 	private volatile BlockMiner blockMiner;
 
@@ -57,7 +56,7 @@ public class MiningTask implements Task {
 			while (true)
 				mineOverHead();
 		}
-		catch (RejectedExecutionException e) {
+		catch (TaskRejectedExecutionException e) {
 			LOGGER.warning("mining: exiting since the node is shutting down");
 		}
 	}
@@ -111,7 +110,7 @@ public class MiningTask implements Task {
 			blockMiner.add(entry);
 	}
 
-	private void mineOverHead() throws NodeException, InterruptedException {
+	private void mineOverHead() throws NodeException, InterruptedException, TaskRejectedExecutionException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
 

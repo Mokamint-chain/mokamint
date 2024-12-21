@@ -208,8 +208,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param config the configuration of the node
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
-	 * @param init if true, creates a genesis block and starts mining on top
-	 *             (initial synchronization is consequently skipped)
+	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 * @throws TimeoutException if some operation timed out
 	 * @throws NodeException if the node is not behaving correctly
@@ -229,19 +228,25 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.uuid = getInfo().getUUID();
 		this.miningTask = new MiningTask(this);
 
-		if (init)
-			blockchain.initialize();
-		else
-			scheduleSynchronization();
+		try {
+			if (init)
+				blockchain.initialize();
+			else
+				schedule(this::synchronize, "synchronization from the peers");
 
-		execute(this::processWhisperedPeers, "peers whispering process");
-		execute(this::processWhisperedBlocks, "blocks whispering process");
-		execute(this::processWhisperedTransactions, "transactions whispering process");
-		schedulePeriodicPingToAllPeersAndReconnection();
-		schedulePeriodicWhisperingOfAllServices();
-		schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-		schedulePeriodicSynchronization();
-		execute(miningTask, "blocks mining process");
+			schedule(this::processWhisperedPeers, "peers whispering process");
+			schedule(this::processWhisperedBlocks, "blocks whispering process");
+			schedule(this::processWhisperedTransactions, "transactions whispering process");
+			schedulePeriodicPingToAllPeersAndReconnection();
+			schedulePeriodicWhisperingOfAllServices();
+			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
+			schedulePeriodicSynchronization();
+			schedule(miningTask, "blocks mining process");
+		}
+		catch (TaskRejectedExecutionException e) {
+			// these tasks are essential: we cannot skip their creation
+			throw new NodeException("Could not spawn a node's task", e);
+		}
 	}
 
 	@Override
@@ -428,7 +433,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	
 		if (result.isPresent()) {
-			scheduleSynchronization();
+			scheduleSynchronizationIfPossible();
 			whisperAllServices();
 			whisperWithoutAddition(peer);
 		}
@@ -658,9 +663,15 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Schedules a synchronization of the blockchain in this node, from the peers of the node,
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
+	 * This method does nothing if the synchronization task is rejected.
 	 */
-	protected void scheduleSynchronization() {
-		execute(this::synchronize, "synchronization from the peers");
+	protected void scheduleSynchronizationIfPossible() {
+		try {
+			schedule(this::synchronize, "synchronization from the peers");
+		}
+		catch (TaskRejectedExecutionException e) {
+			LOGGER.warning("node " + uuid + ": synchronization request rejected, probably because the node is shutting down");
+		}
 	}
 
 	/**
@@ -714,9 +725,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param task the transactions executor task to start
 	 * @return the future to the result of the task
-	 * @throws RejectedExecutionException if the task could not be started
+	 * @throws TaskRejectedExecutionException if the task could not be started
 	 */
-	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws RejectedExecutionException {
+	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws TaskRejectedExecutionException {
 		return submit(task, "transactions execution over block " + task.getPrevious().getHexHash());
 	}
 
@@ -924,20 +935,24 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * Runs the given task, asynchronously, in one thread from the {@link #executors} executor.
 	 * 
 	 * @param task the task to run
+	 * @param description the description of the task
+	 * @throws TaskRejectedExecutionException if the task could not be spawned
 	 */
-	private void execute(Task task, String description) {
+	private void schedule(Task task, String description) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
+
 		try {
 			executors.execute(runnable);
 			LOGGER.info("node " + uuid + ": " + runnable + " scheduled");
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
+			throw new TaskRejectedExecutionException(e);
 		}
 	}
 
-	Future<?> submit(Task task, String description) throws RejectedExecutionException {
+	Future<?> submit(Task task, String description) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
+
 		try {
 			var future = executors.submit(runnable);
 			LOGGER.info("node " + uuid + ": " + runnable + " scheduled");
@@ -945,7 +960,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 		catch (RejectedExecutionException e) {
 			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
-			throw e;
+			throw new TaskRejectedExecutionException(e);
 		}
 	}
 
@@ -953,11 +968,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * Runs the given task, periodically, with the {@link #periodicExecutors} executor.
 	 * 
 	 * @param task the task to run
+	 * @param description the description of the task
 	 * @param initialDelay the time to wait before running the task
 	 * @param delay the time interval between successive, iterated executions
 	 * @param unit the time interval unit
+	 * @throws TaskRejectedExecutionException if the task could not be spawned
 	 */
-	private void scheduleWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) {
+	private void scheduleWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 	
 		try {
@@ -965,14 +982,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			LOGGER.info("node " + uuid + ": " + runnable + " scheduled every " + delay + " " + unit);
 		}
 		catch (RejectedExecutionException e) {
-			LOGGER.warning("node " + uuid + ": " + runnable + " rejected, probably because the node is shutting down");
+			throw new TaskRejectedExecutionException(e);
 		}
 	}
 
 	/**
 	 * Schedules a periodic task that whispers the services open on this node.
 	 */
-	private void schedulePeriodicWhisperingOfAllServices() {
+	private void schedulePeriodicWhisperingOfAllServices() throws TaskRejectedExecutionException {
 		long serviceBroadcastInterval = config.getServiceBrodcastInterval();
 		if (serviceBroadcastInterval >= 0)
 			scheduleWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
@@ -982,14 +999,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * Schedules a periodic task that identifies where the non-frozen part of the blockchain starts
 	 * and informs the application that states in the frozen part are eligible for garbage-collection.
 	 */
-	private void schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain() {
+	private void schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain() throws TaskRejectedExecutionException {
 		scheduleWithFixedDelay(this::identifyNonFrozenPartOfBlockchain, "identification of the non-frozen part of the blockchain", 10000L, 10000L, TimeUnit.MILLISECONDS);
 	}
 
 	/**
 	 * Schedules a periodic task that synchronizes the blockchain with its peers.
 	 */
-	private void schedulePeriodicSynchronization() {
+	private void schedulePeriodicSynchronization() throws TaskRejectedExecutionException {
 		// every 30 blocks, on average, and in any case no more frequently than every five minutes
 		scheduleWithFixedDelay(this::synchronize, "synchronization from the peers", 100000L, Math.max(5L * 60 * 1000, 30L * config.getTargetBlockCreationTime()), TimeUnit.MILLISECONDS);
 	}
@@ -1007,16 +1024,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Schedules a periodic task that pings all peers, reconnects to them and their peers.
 	 */
-	private void schedulePeriodicPingToAllPeersAndReconnection() {
+	private void schedulePeriodicPingToAllPeersAndReconnection() throws TaskRejectedExecutionException {
 		var interval = config.getPeerPingInterval();
 		if (interval >= 0)
 			scheduleWithFixedDelay(this::pingAllPeersAndReconnect,
-				"pinging all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
+				"ping of all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
 	private void pingAllPeersAndReconnect() throws NodeException, InterruptedException {
 		if (peers.pingAllAndReconnect())
-			scheduleSynchronization();
+			scheduleSynchronizationIfPossible();
 	}
 
 	/**

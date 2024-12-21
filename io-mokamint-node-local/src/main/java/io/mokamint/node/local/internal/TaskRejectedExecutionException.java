@@ -14,20 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.node.local.internal;
 
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
- * An exception thrown if the application connected to a local node is unresponsive.
+ * An exception thrown if a task of a local node has been rejected.
  */
 @SuppressWarnings("serial")
-public class ApplicationTimeoutException extends Exception {
+public class TaskRejectedExecutionException extends Exception {
 
 	/**
 	 * Creates the exception.
 	 */
-	public ApplicationTimeoutException() {
+	public TaskRejectedExecutionException() {
 	}
 
 	/**
@@ -35,7 +35,7 @@ public class ApplicationTimeoutException extends Exception {
 	 * 
 	 * @param message the message
 	 */
-	public ApplicationTimeoutException(String message) {
+	public TaskRejectedExecutionException(String message) {
 		super(message);
 	}
 
@@ -44,7 +44,7 @@ public class ApplicationTimeoutException extends Exception {
 	 * 
 	 * @param cause the cause of the exception
 	 */
-	public ApplicationTimeoutException(TimeoutException cause) {
+	public TaskRejectedExecutionException(RejectedExecutionException cause) {
 		super(cause);
 	}
 
@@ -54,7 +54,7 @@ public class ApplicationTimeoutException extends Exception {
 	 * @param message the message of the exception
 	 * @param cause the cause of the exception
 	 */
-	public ApplicationTimeoutException(String message, TimeoutException cause) {
+	public TaskRejectedExecutionException(String message, RejectedExecutionException cause) {
 		super(message, cause);
 	}
 }

@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -148,7 +147,7 @@ public class TransactionsExecutionTask implements Task {
 		}
 	}
 
-	public void start() throws RejectedExecutionException {
+	public void start() throws TaskRejectedExecutionException {
 		this.future = node.scheduleTransactionExecutor(this);
 	}
 

@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -175,10 +174,10 @@ public class BlockMiner {
 	 * 
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws RejectedExecutionException if the node is shutting down 
+	 * @throws TaskRejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void mine() throws NodeException, InterruptedException, ApplicationTimeoutException, RejectedExecutionException {
+	public void mine() throws NodeException, InterruptedException, ApplicationTimeoutException, TaskRejectedExecutionException {
 		LOGGER.info("mining: starting mining over block " + previous.getHexHash());
 		transactionExecutor.start();
 
@@ -196,21 +195,21 @@ public class BlockMiner {
 			if (!waitUntilFirstDeadlineArrives()) {
 				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
 				node.onNoDeadlineFound(previous);
-				return;
 			}
+			else {
+				waitUntilDeadlineExpires();
 
-			waitUntilDeadlineExpires();
+				if (interrupted)
+					return;
 
-			if (interrupted)
-				return;
+				var block = createNewBlock();
 
-			var block = createNewBlock();
+				if (interrupted)
+					return;
 
-			if (interrupted)
-				return;
-
-			if (block.isPresent())
-				commitIfBetterThanHead(block.get());
+				if (block.isPresent())
+					commitIfBetterThanHead(block.get());
+			}
 		}
 		finally {
 			cleanUp();
@@ -459,7 +458,7 @@ public class BlockMiner {
 					future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
 					LOGGER.info(heightMessage + "set up a waker in " + millisecondsToWait + " ms");
 				}
-				catch (RejectedExecutionException e) {
+				catch (TaskRejectedExecutionException e) {
 					LOGGER.warning(heightMessage + "could not set up a next waker, probably because the node is shutting down");
 				}
 			}

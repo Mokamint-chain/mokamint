@@ -743,7 +743,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			for (var newOrphan: blocksToAddAmongOrphans)
 				if (isBetterThanHead(newOrphan)) {
 					// the new orphan was better than our current head: we synchronize from our peers
-					node.scheduleSynchronization(); // TODO: this seems dangerous: forged orphans might schedule repeated synchronization
+					node.scheduleSynchronizationIfPossible(); // TODO: this seems dangerous: forged orphans might schedule repeated synchronization
 					break;
 				}
 		}
