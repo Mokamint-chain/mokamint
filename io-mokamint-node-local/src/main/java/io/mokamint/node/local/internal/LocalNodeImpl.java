@@ -237,7 +237,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		execute(this::processWhisperedPeers, "peers whispering process");
 		execute(this::processWhisperedBlocks, "blocks whispering process");
 		execute(this::processWhisperedTransactions, "transactions whispering process");
-		schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers();
+		schedulePeriodicPingToAllPeersAndReconnection();
 		schedulePeriodicWhisperingOfAllServices();
 		schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
 		schedulePeriodicSynchronization();
@@ -908,7 +908,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				task.body();
 			}
 			catch (ClosedDatabaseException e) {
-				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down: " + e.getMessage());
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the database has been closed: " + e.getMessage());
 			}
 			catch (NodeException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " exits since the node is misbehaving", e);
@@ -1016,17 +1016,17 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Schedules a periodic task that pings all peers, recreates their remotes and adds the peers of such peers.
+	 * Schedules a periodic task that pings all peers, reconnects to them and their peers.
 	 */
-	private void schedulePeriodicPingToAllPeersRecreateRemotesAndAddTheirPeers() {
+	private void schedulePeriodicPingToAllPeersAndReconnection() {
 		var interval = config.getPeerPingInterval();
 		if (interval >= 0)
-			scheduleWithFixedDelay(this::pingAllRecreateRemotesAndAddTheirPeers,
-				"pinging all peers to create missing remotes and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
+			scheduleWithFixedDelay(this::pingAllPeersAndReconnect,
+				"pinging all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
-	private void pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
-		if (peers.pingAllRecreateRemotesAndAddTheirPeers())
+	private void pingAllPeersAndReconnect() throws NodeException, InterruptedException {
+		if (peers.pingAllAndReconnect())
 			scheduleSynchronization();
 	}
 
@@ -1039,107 +1039,92 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void processWhisperedPeers() throws NodeException, InterruptedException {
 		while (!Thread.currentThread().isInterrupted()) {
 			var whisperedInfo = whisperedPeersQueue.take();
+			var whisperedPeerMessage = whisperedInfo.message;
+			var peer = whisperedPeerMessage.getWhispered();
 
-			try {
-				var whisperedPeerMessage = whisperedInfo.message;
-				var peer = whisperedPeerMessage.getWhispered();
-
-				if (whisperedInfo.add) {
-					try {
-						peers.add(peer);
-					}
-					catch (PeerTimeoutException e) {
-						LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is not responding: " + e.getMessage());
-					}
+			if (whisperedInfo.add) {
+				try {
+					peers.add(peer);
 				}
+				catch (PeerTimeoutException | IOException e) {
+					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is not responding: " + e.getMessage());
+				}
+				catch (PeerRejectedException e) {
+					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " has been rejected: " + e.getMessage());
+				}
+			}
 
-				Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-				peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
-				boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
-				onWhispered(peer);
-			}
-			catch (PeerRejectedException | IOException e) {
-				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
-			}
+			Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
+			peers.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description);
+			boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedPeerMessage, newSeen, whisperedInfo.description));
+			onWhispered(peer);
 		}
 	}
 
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
+	 * 
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void processWhisperedBlocks() {
-		try {
-			while (!Thread.currentThread().isInterrupted()) {
-				var whisperedInfo = whisperedBlocksQueue.take();
+	private void processWhisperedBlocks() throws InterruptedException, NodeException {
+		while (!Thread.currentThread().isInterrupted()) {
+			var whisperedInfo = whisperedBlocksQueue.take();
 
-				try {
-					var whisperedBlockMessage = whisperedInfo.message;
-					var block = whisperedBlockMessage.getWhispered();
+			try {
+				var whisperedBlockMessage = whisperedInfo.message;
+				var block = whisperedBlockMessage.getWhispered();
 
-					if (whisperedInfo.add) {
-						try {
-							blockchain.add(block);
-						}
-						catch (ApplicationTimeoutException e) {
-							LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
-						}
+				if (whisperedInfo.add) {
+					try {
+						blockchain.add(block);
 					}
+					catch (ApplicationTimeoutException e) {
+						LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
+					}
+				}
 
-					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
-					onWhispered(block);
-				}
-				catch (NodeException e) {
-					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
-				}
-				// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
-				catch (VerificationException e) {
-					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
-				}
+				Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
+				peers.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description);
+				boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
+				onWhispered(block);
 			}
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+			// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
+			catch (VerificationException e) {
+				// if verification fails, we do not pass the block to our peers
+				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " failed verification: " + e.getMessage());
+			}
 		}
 	}
 	
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
+	 * 
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws NodeException if the node is misbehaving
 	 */
-	private void processWhisperedTransactions() {
-		try {
-			while (!Thread.currentThread().isInterrupted()) {
-				var whisperedInfo = whisperedTransactionsQueue.take();
+	private void processWhisperedTransactions() throws InterruptedException, NodeException {
+		while (!Thread.currentThread().isInterrupted()) {
+			var whisperedInfo = whisperedTransactionsQueue.take();
+			var whisperedTransactionMessage = whisperedInfo.message;
+			var tx = whisperedTransactionMessage.getWhispered();
 
+			if (whisperedInfo.add) {
 				try {
-					var whisperedTransactionMessage = whisperedInfo.message;
-					var tx = whisperedTransactionMessage.getWhispered();
-
-					if (whisperedInfo.add) {
-						try {
-							mempool.add(tx);
-						}
-						catch (ApplicationTimeoutException e) {
-							LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
-						}
-					}
-
-					Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-					peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
-					boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
-					onWhispered(tx);
+					mempool.add(tx);
 				}
-				catch (NodeException e) {
-					LOGGER.log(Level.SEVERE, "node " + uuid + ": whispered " + whisperedInfo.description + " could not be added", e);
+				catch (ApplicationTimeoutException e) {
+					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
 				}
 				catch (TransactionRejectedException e) {
-					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added: " + e.getMessage());
+					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " has been rejected: " + e.getMessage());
 				}
 			}
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+
+			Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
+			peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
+			boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
+			onWhispered(tx);
 		}
 	}
 

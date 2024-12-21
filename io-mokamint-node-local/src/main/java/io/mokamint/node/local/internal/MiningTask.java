@@ -57,7 +57,7 @@ public class MiningTask implements Task {
 			while (true)
 				mineOverHead();
 		}
-		catch (RejectedExecutionException | ClosedDatabaseException e) {
+		catch (RejectedExecutionException e) {
 			LOGGER.warning("mining: exiting since the node is shutting down");
 		}
 	}

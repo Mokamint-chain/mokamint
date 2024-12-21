@@ -380,14 +380,14 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	/**
-	 * Pings all peers, tries to recreate their remote (if missing)
-	 * and collects their peers, in case they might be useful for the node.
+	 * Pings all peers, tries to reconnect to them (if disconnected)
+	 * and to their peers, in case they might be useful for the node.
 	 * 
 	 * @return true if some peer has been added or reconnected
 	 * @throws NodeException if the node misbehaves
 	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	public boolean pingAllRecreateRemotesAndAddTheirPeers() throws NodeException, InterruptedException {
+	public boolean pingAllAndReconnect() throws NodeException, InterruptedException {
 		Set<Peer> peers;
 
 		synchronized (lock) {
