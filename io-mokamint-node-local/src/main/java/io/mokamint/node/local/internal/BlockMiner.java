@@ -37,7 +37,6 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
@@ -251,7 +250,7 @@ public class BlockMiner {
 	/**
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutionTask}.
 	 * 
-	 * @return the block; this might be missing if some transaction could not be delivered successfully
+	 * @return the block; this is empty if {@link #interrupt()} has been called
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
@@ -269,7 +268,7 @@ public class BlockMiner {
 			else
 				return Optional.empty();
 		}
-		catch (ApplicationException | UnknownGroupIdException | InvalidKeyException | SignatureException e) {
+		catch (InvalidKeyException | SignatureException e) {
 			throw new NodeException(e);
 		}
 	}
@@ -288,13 +287,7 @@ public class BlockMiner {
 		// follows another chain, both with the same power. However, such forks would be
 		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.isBetterThanHead(block)) {
-			try {
-				transactionExecutionTask.commitBlock();
-			}
-			catch (ApplicationException | UnknownGroupIdException e) {
-				throw new NodeException(e);
-			}
-
+			transactionExecutionTask.commitBlock();
 			committed = true;
 			node.onMined(block);
 			addToBlockchain(block);
@@ -319,9 +312,6 @@ public class BlockMiner {
 				transactionExecutionTask.abortBlock();
 
 			node.onMiningCompleted(previous);
-		}
-		catch (UnknownGroupIdException | ApplicationException e) {
-			throw new NodeException(e);
 		}
 		finally {
 			punishMinersThatDidNotAnswer();

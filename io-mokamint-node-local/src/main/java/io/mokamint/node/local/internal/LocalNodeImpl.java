@@ -732,17 +732,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Schedules the execution of a transactions executor.
-	 * 
-	 * @param task the transactions executor task to start
-	 * @return the future to the result of the task
-	 * @throws TaskRejectedExecutionException if the task could not be started
-	 */
-	protected Future<?> scheduleTransactionExecutor(TransactionsExecutionTask task) throws TaskRejectedExecutionException {
-		return submit(task, "transactions execution over block " + task.getPrevious().getHexHash());
-	}
-
-	/**
 	 * Called when a peer has been added.
 	 * 
 	 * @param peer the added peer

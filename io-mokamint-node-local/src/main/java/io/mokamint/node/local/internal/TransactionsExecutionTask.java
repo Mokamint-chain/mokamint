@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -44,10 +43,10 @@ import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
 
 /**
- * A task that executes the transactions taken from a queue.
+ * A task that executes transactions taken from a queue.
  * It works while a block mining task waits for a deadline.
- * Once that deadline expires, all transactions executed by this task
- * can be added to the freshly mined block.
+ * Once that deadline expires, all transactions executed up to the moment
+ * get added to the freshly mined block.
  */
 public class TransactionsExecutionTask implements Task {
 
@@ -148,22 +147,13 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	public void start() throws TaskRejectedExecutionException {
-		this.future = node.scheduleTransactionExecutor(this);
+		this.future = node.submit(this, "transactions execution over block " + previous.getHexHash());
 	}
 
 	public void stop() {
 		synchronized (stopLock) {
 			future.cancel(true);
 		}
-	}
-
-	/**
-	 * Yields the block over which the transactions are executed.
-	 * 
-	 * @return the block
-	 */
-	public Block getPrevious() {
-		return previous;
 	}
 
 	@Override
@@ -179,6 +169,9 @@ public class TransactionsExecutionTask implements Task {
 			Thread.currentThread().interrupt();
 			// no warning log: interruption is the standard way of terminating this task
 		}
+		catch (ApplicationTimeoutException e) {
+			LOGGER.warning("mining: transactions execution stops here because the application is unresponsive: " + e.getMessage());
+		}
 		finally {
 			// this allows to commit or abort the execution in the database of the application
 			// (if any) and to access the set of processed transactions
@@ -191,14 +184,12 @@ public class TransactionsExecutionTask implements Task {
 	 * once the mining task has found a deadline.
 	 * 
 	 * @param deadline the deadline found by the mining task during the execution of the transactions
-	 * @return the processed transactions, if any; this might be missing if some transaction delivery failed
-	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
-	 *                              or for the application
+	 * @return the processed transactions, if any; this is empty if this task has been interrupted
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id of the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
+	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		done.await();
 
 		if (deliveryFailed)
@@ -212,6 +203,9 @@ public class TransactionsExecutionTask implements Task {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
+			catch (ApplicationException | UnknownGroupIdException e) {
+				throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+			}
 
 			return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, finalStateId));
 		}
@@ -221,13 +215,11 @@ public class TransactionsExecutionTask implements Task {
 	 * Waits for this task to terminate and commits the final state of the execution
 	 * of its processed transactions, in the database of the application (if any).
 	 * 
-	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
-	 *                              or for the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id for the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public void commitBlock() throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
+	public void commitBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		done.await();
 
 		try {
@@ -236,19 +228,20 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
+		catch (ApplicationException | UnknownGroupIdException e) {
+			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+		}
 	}
 
 	/**
 	 * Waits for this task to terminate and aborts the execution of its processed transactions,
 	 * so that it does not modify the database of the application (if any).
 	 * 
-	 * @throws InterruptedException if the current thread is interrupted while waiting for the termination of this task
-	 *                              or for the application
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application did not provide an answer in time
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws UnknownGroupIdException if the group id used for the transactions became invalid
+	 * @throws NodeException if the node is misbehaving
 	 */
-	public void abortBlock() throws InterruptedException, ApplicationTimeoutException, ApplicationException, UnknownGroupIdException {
+	public void abortBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		try {
 			done.await();
 		}
@@ -259,20 +252,21 @@ public class TransactionsExecutionTask implements Task {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
+			catch (ApplicationException | UnknownGroupIdException e) {
+				throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+			}
 		}
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, NodeException {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		var tx = next.getTransaction();
 
-		if (successfullyDeliveredTransactions.contains(tx) || rejectedTransactions.contains(tx))
-			// this might actually occur if a transaction arrives during the execution of this task
-			// and it was already processed with this task
-			return sizeUpToNow;
+		// the following might actually occur if a transaction arrives during the execution of this task
+		// and it was already processed with this task
+		if (!successfullyDeliveredTransactions.contains(tx) && !rejectedTransactions.contains(tx)) {
+			int txSize = tx.size();
 
-		int txSize = tx.size();
-		if (sizeUpToNow + txSize <= maxSize) {
-			try {
+			if (sizeUpToNow + txSize <= maxSize) {
 				// synchronization guarantees that requests to stop the execution
 				// leave the transactions list aligned with the state of the application 
 				synchronized (stopLock) {
@@ -282,25 +276,29 @@ public class TransactionsExecutionTask implements Task {
 					try {
 						app.deliverTransaction(id, tx);
 					}
+					catch (TransactionRejectedException e) {
+						// if tx is rejected, then it is just ignored
+						LOGGER.warning("mining: delivery of transaction " + next + " rejected: " + e.getMessage());
+						// we also remove the transaction from the mempool of the node
+						node.remove(next);
+						rejectedTransactions.add(tx);
+					}
 					catch (InterruptedException e) {
 						deliveryFailed = true;
 						throw e;
 					}
-					catch (ApplicationException | TimeoutException | UnknownGroupIdException e) {
+					catch (ApplicationException | UnknownGroupIdException e) {
 						deliveryFailed = true;
 						throw new NodeException(e);
+					}
+					catch (TimeoutException e) {
+						throw new ApplicationTimeoutException(e);
 					}
 
 					successfullyDeliveredTransactions.add(tx);
 				}
-				sizeUpToNow += txSize;
-			}
-			catch (TransactionRejectedException e) {
-				// if tx is rejected by deliverTransaction, then it is just ignored
-				LOGGER.log(Level.WARNING, "delivery of transaction " + next + " rejected: " + e.getMessage());
-				// we also remove the transaction from the mempool of the node
-				node.remove(next);
-				rejectedTransactions.add(tx);
+
+				return sizeUpToNow + txSize;
 			}
 		}
 
