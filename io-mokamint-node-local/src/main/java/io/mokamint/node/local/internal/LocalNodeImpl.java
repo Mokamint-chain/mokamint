@@ -450,7 +450,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws IOException, NodeException {
 		try (var scope = mkScope()) {
-			var miner = RemoteMiners.of(port, this::check);
+			var miner = RemoteMiners.of(port, this::checkForMiners);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
@@ -598,11 +598,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
-	 * @throws DeadlineValidityCheckException if the validity of the deadline could not be determined
+	 * @throws ApplicationException if the application is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
-	 * @throws TimeoutException if the application does not answer in time
+	 * @throws ApplicationTimeoutException if the application does not answer in time
 	 */
-	protected void check(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+	protected void check(Deadline deadline) throws IllegalDeadlineException, ApplicationTimeoutException, InterruptedException, ApplicationException {
 		var prolog = deadline.getProlog();
 	
 		if (!deadline.isValid())
@@ -620,9 +620,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				if (!app.checkPrologExtra(prolog.getExtra()))
 					throw new IllegalDeadlineException("Invalid extra data in deadline");
 			}
-			catch (ApplicationException e) {
-				throw new DeadlineValidityCheckException(e);
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
 			}
+		}
+	}
+
+	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+		try {
+			check(deadline);
+		}
+		catch (ApplicationTimeoutException e) {
+			throw new TimeoutException(e.getMessage()); // TODO
+		}
+		catch (ApplicationException e) {
+			throw new DeadlineValidityCheckException(e);
 		}
 	}
 

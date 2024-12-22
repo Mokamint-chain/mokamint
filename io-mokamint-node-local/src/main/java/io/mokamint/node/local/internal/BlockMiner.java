@@ -48,7 +48,6 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
@@ -133,7 +132,7 @@ public class BlockMiner {
 	 * The task that executes the transactions from the mempool, while waiting for the deadline to expire.
 	 * This is an infinite task, hence it must be cancelled explicitly when the deadline expires.
 	 */
-	private final TransactionsExecutionTask transactionExecutor;
+	private final TransactionsExecutionTask transactionExecutionTask;
 
 	/**
 	 * True if and only if a new block has been committed.
@@ -160,43 +159,39 @@ public class BlockMiner {
 	public BlockMiner(LocalNodeImpl node) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
-		this.previous = blockchain.getHead().get();
+		this.previous = blockchain.getHead().get(); // the blockchain is assumed to be non-empty
 		this.config = node.getConfig();
 		this.miners = node.getMiners();
-		this.creationTimeOfPrevious = blockchain.creationTimeOf(previous).get();
+		this.creationTimeOfPrevious = blockchain.creationTimeOf(previous).get(); // the genesis exists since the blockchain is assumed to be non-null
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 		this.challenge = previous.getDescription().getNextChallenge();
-		this.transactionExecutor = new TransactionsExecutionTask(node, mempool::take, previous, creationTimeOfPrevious);
+		this.transactionExecutionTask = new TransactionsExecutionTask(node, mempool::take, previous, creationTimeOfPrevious);
 	}
 
 	/**
 	 * Mines the new block.
 	 * 
-	 * @throws InterruptedException if the thread running this code gets interrupted
+	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws TaskRejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
 	 */
 	public void mine() throws NodeException, InterruptedException, ApplicationTimeoutException, TaskRejectedExecutionException {
-		LOGGER.info("mining: starting mining over block " + previous.getHexHash());
-		transactionExecutor.start();
+		LOGGER.info("mining: starting mining on top of block " + previous.getHexHash());
+		transactionExecutionTask.start();
 
 		try {
 			if (interrupted)
 				return;
 
-			node.forEachMempoolTransactionAt(previous, mempool::add);
 			node.onMiningStarted(previous);
+			node.forEachMempoolTransactionAt(previous, mempool::add);
 			requestDeadlineToEveryMiner();
 
 			if (interrupted)
 				return;
 
-			if (!waitUntilFirstDeadlineArrives()) {
-				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				node.onNoDeadlineFound(previous);
-			}
-			else {
+			if (waitUntilFirstDeadlineArrives()) {
 				waitUntilDeadlineExpires();
 
 				if (interrupted)
@@ -209,6 +204,10 @@ public class BlockMiner {
 
 				if (block.isPresent())
 					commitIfBetterThanHead(block.get());
+			}
+			else {
+				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
+				node.onNoDeadlineFound(previous);
 			}
 		}
 		finally {
@@ -237,9 +236,8 @@ public class BlockMiner {
 		waker.turnOff();
 	}
 
-	private void requestDeadlineToEveryMiner() throws InterruptedException {
-		for (var miner: miners.get().toArray(Miner[]::new))
-			requestDeadlineTo(miner);
+	private void requestDeadlineToEveryMiner() {
+		miners.get().forEach(this::requestDeadlineTo);
 	}
 
 	private boolean waitUntilFirstDeadlineArrives() throws InterruptedException {
@@ -251,7 +249,7 @@ public class BlockMiner {
 	}
 
 	/**
-	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutor}.
+	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutionTask}.
 	 * 
 	 * @return the block; this might be missing if some transaction could not be delivered successfully
 	 * @throws TimeoutException if the application did not answer in time
@@ -260,12 +258,12 @@ public class BlockMiner {
 	 */
 	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
-		transactionExecutor.stop();
+		transactionExecutionTask.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
 		var description = previous.getNextBlockDescription(deadline);
 		
 		try {
-			var processedTransactions = transactionExecutor.getProcessedTransactions(deadline);
+			var processedTransactions = transactionExecutionTask.getProcessedTransactions(deadline);
 			if (processedTransactions.isPresent())
 				return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
 			else
@@ -281,7 +279,7 @@ public class BlockMiner {
 	 *
 	 * @param block the block
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws TimeoutException if the application did not provide an answer in time
+	 * @throws ApplicationTimeoutException if the application did not provide an answer in time
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
@@ -291,7 +289,7 @@ public class BlockMiner {
 		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.isBetterThanHead(block)) {
 			try {
-				transactionExecutor.commitBlock();
+				transactionExecutionTask.commitBlock();
 			}
 			catch (ApplicationException | UnknownGroupIdException e) {
 				throw new NodeException(e);
@@ -314,11 +312,11 @@ public class BlockMiner {
 	 */
 	private void cleanUp() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		done = true;
-		transactionExecutor.stop();
+		transactionExecutionTask.stop();
 
 		try {
 			if (!committed)
-				transactionExecutor.abortBlock();
+				transactionExecutionTask.abortBlock();
 
 			node.onMiningCompleted(previous);
 		}
@@ -330,7 +328,7 @@ public class BlockMiner {
 		}
 	}
 
-	private void requestDeadlineTo(Miner miner) throws InterruptedException {
+	private void requestDeadlineTo(Miner miner) {
 		if (!interrupted) {
 			LOGGER.info(heightMessage + "challenging miner " + miner.getUUID() + " with: " + challenge);
 			minersThatDidNotAnswer.add(miner);
@@ -369,11 +367,13 @@ public class BlockMiner {
 			catch (IllegalDeadlineException e) {
 				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());
 				node.onIllegalDeadlineComputed(deadline, miner);
-				long points = config.getMinerPunishmentForIllegalDeadline();
-				node.punish(miner, points, "it provided an illegal deadline");
+				node.punish(miner, config.getMinerPunishmentForIllegalDeadline(), "it provided an illegal deadline");
 			}
-			catch (TimeoutException | DeadlineValidityCheckException e) {
-				LOGGER.log(Level.SEVERE, heightMessage + "discarding uncheckable deadline " + deadline + ": " + e.getMessage());
+			catch (ApplicationTimeoutException e) {
+				LOGGER.warning(heightMessage + "couldn't check a deadline since the application is unresponsive: " + e.getMessage());
+			}
+			catch (ApplicationException e) {
+				LOGGER.log(Level.SEVERE, heightMessage + "couldn't check a deadline since the application is misbehaving", e);
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

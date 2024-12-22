@@ -57,8 +57,8 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		};
 
 		try (var remote = RemoteMiners.of(8025, _deadline -> {});
-			 var client1 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived);
-			 var client2 = new TestClient(new URI("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
+			 var client1 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived);
+			 var client2 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			remote.requestDeadline(description, deadline -> {});
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
 		}

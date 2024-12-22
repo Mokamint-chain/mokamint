@@ -26,11 +26,12 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.KeyPair;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -89,8 +90,12 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
+		var allPeers = new HashSet<Peer>();
+		allPeers.add(peer2);
+		allPeers.add(peer3);
 
-		var semaphore = new Semaphore(0);
+		var connectionSemaphore = new Semaphore(0);
+		var disconnectionSemaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
@@ -99,10 +104,18 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			}
 
 			@Override
+			protected void onConnected(Peer peer) {
+				super.onConnected(peer);
+				allPeers.remove(peer);
+				if (allPeers.isEmpty())
+					connectionSemaphore.release();
+			}
+
+			@Override
 			protected void onDisconnected(Peer peer) {
 				super.onDisconnected(peer);
 				if (peer.equals(peer2))
-					semaphore.release();
+					disconnectionSemaphore.release();
 			}
 		}
 
@@ -111,20 +124,22 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			 var service3 = PublicNodeServices.open(node3, port3, 1800000, 1000, Optional.of(uri3))) {
 
 			// node1 has peer2 and peer3 as peers
-			node1.add(peer2);
-			node1.add(peer3);
+			assertTrue(node1.add(peer2).isPresent());
+			assertTrue(node1.add(peer3).isPresent());
 
 			// at this point, node1 has both its peers connected
+			assertTrue(connectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 			assertTrue(node1.getPeerInfos().allMatch(PeerInfo::isConnected));
-			assertTrue(node1.getPeerInfos().map(PeerInfo::getPeer).allMatch(Predicate.isEqual(peer2).or(Predicate.isEqual(peer3))));
 
 			// peer2 gets closed and disconnects
 			node2.close();
 
-			assertTrue(semaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
+			assertTrue(disconnectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
-			assertEquals(2L, node1.getPeerInfos().count());
+			var infos = node1.getPeerInfos().toArray(PeerInfo[]::new);
+			System.out.println(Arrays.toString(infos)); // TODO
+			assertEquals(2L, infos.length);
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
 			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 		}
