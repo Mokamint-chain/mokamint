@@ -18,13 +18,10 @@ package io.mokamint.node.local.internal;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -38,7 +35,6 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -180,33 +176,27 @@ public class BlockMiner {
 		transactionExecutionTask.start();
 
 		try {
-			if (interrupted)
-				return;
+			if (!interrupted) {
+				node.onMiningStarted(previous);
+				node.forEachMempoolTransactionAt(previous, mempool::add);
+				requestDeadlineToEveryMiner();
 
-			node.onMiningStarted(previous);
-			node.forEachMempoolTransactionAt(previous, mempool::add);
-			requestDeadlineToEveryMiner();
+				if (!interrupted) {
+					if (waitUntilFirstDeadlineArrives()) {
+						waitUntilDeadlineExpires();
 
-			if (interrupted)
-				return;
+						if (!interrupted) {
+							var block = createNewBlock();
 
-			if (waitUntilFirstDeadlineArrives()) {
-				waitUntilDeadlineExpires();
-
-				if (interrupted)
-					return;
-
-				var block = createNewBlock();
-
-				if (interrupted)
-					return;
-
-				if (block.isPresent())
-					commitIfBetterThanHead(block.get());
-			}
-			else {
-				LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
-				node.onNoDeadlineFound(previous);
+							if (!interrupted)
+								commitIfBetterThanHead(block);
+						}
+					}
+					else {
+						LOGGER.warning(heightMessage + "no deadline found (timed out while waiting for a deadline)");
+						node.onNoDeadlineFound(previous);
+					}
+				}
 			}
 		}
 		finally {
@@ -250,27 +240,16 @@ public class BlockMiner {
 	/**
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutionTask}.
 	 * 
-	 * @return the block; this is empty if {@link #interrupt()} has been called
+	 * @return the block
 	 * @throws TimeoutException if the application did not answer in time
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<NonGenesisBlock> createNewBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private NonGenesisBlock createNewBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
 		transactionExecutionTask.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
-		var description = previous.getNextBlockDescription(deadline);
-		
-		try {
-			var processedTransactions = transactionExecutionTask.getProcessedTransactions(deadline);
-			if (processedTransactions.isPresent())
-				return Optional.of(Blocks.of(description, processedTransactions.get().getSuccessfullyDeliveredTransactions(), processedTransactions.get().getStateId(), node.getKeys().getPrivate()));
-			else
-				return Optional.empty();
-		}
-		catch (InvalidKeyException | SignatureException e) {
-			throw new NodeException(e);
-		}
+		return transactionExecutionTask.getBlock(deadline);
 	}
 
 	/**

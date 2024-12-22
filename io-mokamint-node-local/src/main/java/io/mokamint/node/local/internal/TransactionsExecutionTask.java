@@ -16,25 +16,26 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
-import io.hotmoka.annotations.Immutable;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
@@ -119,11 +120,6 @@ public class TransactionsExecutionTask implements Task {
 
 	private volatile Future<?> future;
 
-	/**
-	 * True if and only if at least a transaction delivery failed.
-	 */
-	private volatile boolean deliveryFailed;
-
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
 	TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, NodeException {
@@ -180,34 +176,35 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	/**
-	 * Waits for this task to terminate and yields the transactions processed by this task,
-	 * once the mining task has found a deadline.
+	 * Waits for this task to terminate and yields the block including the transactions processed by this task,
+	 * on top of {@link #previous}, once the mining task has found a deadline.
 	 * 
 	 * @param deadline the deadline found by the mining task during the execution of the transactions
-	 * @return the processed transactions, if any; this is empty if this task has been interrupted
+	 * @return the block
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public Optional<ProcessedTransactions> getProcessedTransactions(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public NonGenesisBlock getBlock(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		done.await();
 
-		if (deliveryFailed)
-			return Optional.empty();
-		else {
-			byte[] finalStateId;
+		byte[] finalStateId;
 
-			try {
-				finalStateId = app.endBlock(id, deadline);
-			}
-			catch (TimeoutException e) {
-				throw new ApplicationTimeoutException(e);
-			}
-			catch (ApplicationException | UnknownGroupIdException e) {
-				throw new NodeException(e); // the node is misbehaving since the application is misbehaving
-			}
+		try {
+			finalStateId = app.endBlock(id, deadline);
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
+		catch (ApplicationException | UnknownGroupIdException e) {
+			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+		}
 
-			return Optional.of(new ProcessedTransactions(successfullyDeliveredTransactions, finalStateId));
+		try {
+			return Blocks.of(previous.getNextBlockDescription(deadline), successfullyDeliveredTransactions.stream(), finalStateId, node.getKeys().getPrivate());
+		}
+		catch (InvalidKeyException | SignatureException e) {
+			throw new NodeException(e);
 		}
 	}
 
@@ -283,12 +280,7 @@ public class TransactionsExecutionTask implements Task {
 						node.remove(next);
 						rejectedTransactions.add(tx);
 					}
-					catch (InterruptedException e) {
-						deliveryFailed = true;
-						throw e;
-					}
 					catch (ApplicationException | UnknownGroupIdException e) {
-						deliveryFailed = true;
 						throw new NodeException(e);
 					}
 					catch (TimeoutException e) {
@@ -303,49 +295,5 @@ public class TransactionsExecutionTask implements Task {
 		}
 
 		return sizeUpToNow;
-	}
-
-	/**
-	 * A sequence of transactions processed with an executor. It is guaranteed that
-	 * they are all different, they are different from those in blockchain from
-	 * {@link TransactionsExecutionTask#previous} towards the genesis block, they
-	 * all pass the {@link Application#checkTransaction(Transaction)} test and they
-	 * all lead to a successful {@link Application#deliverTransaction(Transaction, int)}
-	 * execution. Moreover, it is guaranteed that {@link ProcessedTransactions#stateId}
-	 * is the hash of the state resulting after the execution of
-	 * {@link ProcessedTransactions#successfullyDeliveredTransactions}, in order, from the final state
-	 * of {@link TransactionsExecutionTask#previous}, including potential coinbase
-	 * transactions executed at the end of all transactions (if the application adds them
-	 * inside its {@link Application#endBlock(int, Deadline)} method).
-	 */
-	@Immutable
-	public static class ProcessedTransactions {
-		private final Transaction[] successfullyDeliveredTransactions;
-		private final byte[] stateId;
-
-		private ProcessedTransactions(List<Transaction> transactions, byte[] stateId) {
-			this.successfullyDeliveredTransactions = transactions.toArray(Transaction[]::new);
-			this.stateId = stateId.clone();
-		}
-
-		/**
-		 * Yields the transactions successfully delivered with this executor, in order.
-		 * 
-		 * @return the transactions
-		 */
-		public Stream<Transaction> getSuccessfullyDeliveredTransactions() {
-			return Stream.of(successfullyDeliveredTransactions);
-		}
-
-		/**
-		 * Yields the identifier of the final state resulting at the end of the execution
-		 * of the successfully delivered transactions,
-		 * including potential coinbase transactions, if the application uses them.
-		 * 
-		 * @return the identifier of the final state
-		 */
-		public byte[] getStateId() {
-			return stateId.clone();
-		}
 	}
 }
