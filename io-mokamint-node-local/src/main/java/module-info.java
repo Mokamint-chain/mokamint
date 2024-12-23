@@ -22,21 +22,19 @@ module io.mokamint.node.local {
 	exports io.mokamint.node.local;
 
 	requires transitive io.mokamint.node.local.api;
-	requires io.mokamint.node;
 	requires transitive io.mokamint.application.api;
+	requires io.mokamint.node;
 	requires io.mokamint.miner.remote;
 	requires io.mokamint.node.remote;
+	requires io.mokamint.node.service.api;
+	requires io.mokamint.node.messages;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.closeables;
-	requires toml4j;
 	requires io.hotmoka.xodus;
+	requires io.hotmoka.marshalling;
+	requires io.hotmoka.crypto;
+	requires toml4j;
 	requires java.logging;
 	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
-
-	// only used for testing
-	requires static io.hotmoka.crypto;
-	requires static io.mokamint.node.messages;
-	requires static io.mokamint.node.service.api;
-	requires static io.mokamint.node.api;
 }

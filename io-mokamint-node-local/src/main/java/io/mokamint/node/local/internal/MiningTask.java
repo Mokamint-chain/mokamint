@@ -111,7 +111,7 @@ public class MiningTask implements Task {
 		else {
 			try {
 				// object construction must be separated from its execution, since this allows
-				// to have a reference trough which the block miner to be interrupted if the current head changes
+				// to have a reference trough which the block miner can be interrupted if the current head changes
 				blockMiner = new BlockMiner(node);
 				blockMiner.mine();
 			}

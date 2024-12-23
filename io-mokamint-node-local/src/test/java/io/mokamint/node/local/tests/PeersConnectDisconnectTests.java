@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.KeyPair;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -137,9 +136,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(disconnectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
-			var infos = node1.getPeerInfos().toArray(PeerInfo[]::new);
-			System.out.println(Arrays.toString(infos)); // TODO
-			assertEquals(2L, infos.length);
+			assertEquals(2L, node1.getPeerInfos().count());
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
 			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 		}

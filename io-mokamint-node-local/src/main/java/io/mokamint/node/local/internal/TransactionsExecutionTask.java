@@ -122,7 +122,7 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, NodeException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
@@ -143,7 +143,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	public void start() throws TaskRejectedExecutionException {
-		this.future = node.submit(this, "transactions execution over block " + previous.getHexHash());
+		future = node.submit(this, "transactions execution over block " + previous.getHexHash());
 	}
 
 	public void stop() {

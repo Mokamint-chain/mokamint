@@ -181,7 +181,7 @@ public class Mempool {
 		}
 	}
 
-	protected TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, ApplicationTimeoutException, InterruptedException {
+	public TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, ApplicationTimeoutException, InterruptedException {
 		long priority;
 
 		try {
