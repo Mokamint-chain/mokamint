@@ -57,13 +57,12 @@ public abstract class RemotePublicNodes {
 	 *                                 of the services opened on this node; use a negative value to
 	 *                                 disable service broadcasting
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
-	 *                              message again; higher numbers reduce the circulation of
-	 *                              spurious messages
+	 *                              message again; higher numbers reduce the circulation of spurious messages
 	 * @return the new remote node
 	 * @throws DeploymentException if the remote node endpoints could not be deployed
 	 * @throws IOException if the remote node could not be created
 	 */
-	public static RemotePublicNode of(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException, InterruptedException {
+	public static RemotePublicNode of(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
 		return new RemotePublicNodeImpl(uri, timeout, serviceBroadcastInterval, whisperedMessagesSize);
 	}
 }

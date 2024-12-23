@@ -136,7 +136,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(disconnectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
-			assertEquals(2L, node1.getPeerInfos().count());
+			assertEquals(2L, node1.getPeerInfos().count()); // TODO: this fails sometimes, with 2 <-> 1; in theory, waiting for onConnect should not be needed
 			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
 			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
 		}

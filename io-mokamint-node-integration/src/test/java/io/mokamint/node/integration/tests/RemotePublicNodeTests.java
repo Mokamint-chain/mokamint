@@ -117,13 +117,8 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemotePublicNodeTests extends AbstractLoggedTests {
-	private final static URI URI;
 	private final static int PORT = 8030;
-
-	static {
-		URI = java.net.URI.create("ws://localhost:" + PORT);
-	}
-
+	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 	private final static int TIME_OUT = 500;
 
 	/**

@@ -319,14 +319,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			});
 	}
 
-	private RuntimeException unexpectedException(Exception e) {
-		if (e instanceof RuntimeException re)
-			throw re;
-
-		LOGGER.log(Level.SEVERE, logPrefix + "remote: unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
-	}
-
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof GetInfoResultMessage girm)
@@ -372,28 +364,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetInfo(id);
-		try {
-			return waitForResult(id, this::processGetInfoSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetInfoResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetInfo(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private NodeInfo processGetInfoSuccess(RpcMessage message) {
-		return message instanceof GetInfoResultMessage girm ? girm.get() : null;
+		sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -401,28 +376,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMinerInfos(id);
-		try {
-			return waitForResult(id, this::processGetMinerInfosSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetMinerInfosResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetMinerInfos(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Stream<MinerInfo> processGetMinerInfosSuccess(RpcMessage message) {
-		return message instanceof GetMinerInfosResultMessage gmrm ? gmrm.get() : null;
+		sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -430,28 +388,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTaskInfos(id);
-		try {
-			return waitForResult(id, this::processGetTaskInfosSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetTaskInfosResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetTaskInfos(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Stream<TaskInfo> processGetTaskInfosSuccess(RpcMessage message) {
-		return message instanceof GetTaskInfosResultMessage gtirm ? gtirm.get() : null;
+		sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -459,28 +400,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetPeerInfos(id);
-		try {
-			return waitForResult(id, this::processGetPeerInfosSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetPeerInfosResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetPeerInfos(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Stream<PeerInfo> processGetPeerInfosSuccess(RpcMessage message) {
-		return message instanceof GetPeerInfosResultMessage gprm ? gprm.get() : null;
+		sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -488,28 +412,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlock(hash, id);
-		try {
-			return waitForResult(id, this::processGetBlockSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetBlockResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetBlock(byte[] hash, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Optional<Block> processGetBlockSuccess(RpcMessage message) {
-		return message instanceof GetBlockResultMessage gbrm ? gbrm.get() : null;
+		sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id), NodeException::new);
 	}
 
 	@Override
@@ -517,28 +424,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetBlockDescription(hash, id);
-		try {
-			return waitForResult(id, this::processGetBlockDescriptionSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetBlockDescriptionResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetBlockDescription(byte[] hash, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Optional<BlockDescription> processGetBlockDescriptionSuccess(RpcMessage message) {
-		return message instanceof GetBlockDescriptionResultMessage gbrm ? gbrm.get() : null;
+		sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id), NodeException::new);
 	}
 
 	@Override
@@ -546,28 +436,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetConfig(id);
-		try {
-			return waitForResult(id, this::processGetConfigSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetConfigResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetConfig(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private ConsensusConfig<?,?> processGetConfigSuccess(RpcMessage message) {
-		return message instanceof GetConfigResultMessage gcrm ? gcrm.get() : null;
+		sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -575,57 +448,23 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainInfo(id);
-		try {
-			return waitForResult(id, this::processGetChainInfoSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetChainInfoResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetChainInfo(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private ChainInfo processGetChainInfoSuccess(RpcMessage message) {
-		return message instanceof GetChainInfoResultMessage gcirm ? gcirm.get() : null;
+		sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id), NodeException::new);
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, NodeException {
+	public ChainPortion getChainPortion(long start, int count) throws InterruptedException, TimeoutException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
-		try {
-			return waitForResult(id, this::processGetChainPortionSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetChainPortionResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetChainPortion(long start, int count, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private ChainPortion processGetChainPortionSuccess(RpcMessage message) {
-		return message instanceof GetChainPortionResultMessage gcrm ? gcrm.get() : null;
+		sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id), NodeException::new);
 	}
 
 	@Override
@@ -633,34 +472,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendAddTransaction(transaction, id);
-		try {
-			return waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
-		}
-		catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendAddTransaction(Transaction transaction, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private MempoolEntry processAddTransactionSuccess(RpcMessage message) {
-		return message instanceof AddTransactionResultMessage atrm ? atrm.get() : null;
-	}
-
-	private boolean processAddTransactionException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id), NodeException::new);
 	}
 
 	@Override
@@ -668,28 +484,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMempoolInfo(id);
-		try {
-			return waitForResult(id, this::processGetMempoolInfoSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetMempoolInfoResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetMempoolInfo(String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private MempoolInfo processGetMempoolInfoSuccess(RpcMessage message) {
-		return message instanceof GetMempoolInfoResultMessage gmirm ? gmirm.get() : null;
+		sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id), NodeException::new);
 	}
 
 	@Override
@@ -697,28 +496,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMempoolPortion(start, count, id);
-		try {
-			return waitForResult(id, this::processGetMempoolPortionSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetMempoolPortionResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetMempoolPortion(int start, int count, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private MempoolPortion processGetMempoolPortionSuccess(RpcMessage message) {
-		return message instanceof GetMempoolPortionResultMessage gcrm ? gcrm.get() : null;
+		sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id), NodeException::new);
 	}
 
 	@Override
@@ -726,28 +508,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransaction(hash, id);
-		try {
-			return waitForResult(id, this::processGetTransactionSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetTransactionResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetTransaction(byte[] hash, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Optional<Transaction> processGetTransactionSuccess(RpcMessage message) {
-		return message instanceof GetTransactionResultMessage gtrm ? gtrm.get() : null;
+		sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id), NodeException::new);
 	}
 
 	@Override
@@ -755,34 +520,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
-		try {
-			return waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
-		}
-		catch (TransactionRejectedException | TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetTransactionRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetTransactionRepresentation(byte[] hash, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Optional<String> processGetTransactionRepresentationSuccess(RpcMessage message) {
-		return message instanceof GetTransactionRepresentationResultMessage gtrrm ? gtrrm.get() : null;
-	}
-
-	private boolean processGetTransactionRepresentationException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id), NodeException::new);
 	}
 
 	@Override
@@ -790,28 +532,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		ensureIsOpen();
 		var id = nextId();
 		sendGetTransactionAddress(hash, id);
-		try {
-			return waitForResult(id, this::processGetTransactionAddressSuccess, this::processStandardExceptions);
-		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetTransactionAddressResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	protected void sendGetTransactionAddress(byte[] hash, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private Optional<TransactionAddress> processGetTransactionAddressSuccess(RpcMessage message) {
-		return message instanceof GetTransactionAddressResultMessage gtarm ? gtarm.get() : null;
+		sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id), NodeException::new);
 	}
 
 	/**
