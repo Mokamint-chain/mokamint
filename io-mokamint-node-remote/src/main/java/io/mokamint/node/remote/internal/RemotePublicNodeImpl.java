@@ -222,7 +222,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt(); // TODO: throw it?
+			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
+			throw new IOException(e);
+		}
+		catch (TimeoutException | NodeException e) {
 			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
 			throw new IOException(e);
 		}
@@ -315,6 +320,9 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	private RuntimeException unexpectedException(Exception e) {
+		if (e instanceof RuntimeException re)
+			throw re;
+
 		LOGGER.log(Level.SEVERE, logPrefix + "remote: unexpected exception", e);
 		return new RuntimeException("Unexpected exception", e);
 	}
@@ -367,7 +375,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -396,7 +404,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetMinerInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -425,7 +433,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetTaskInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -454,7 +462,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetPeerInfosSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -483,7 +491,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetBlockSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -512,7 +520,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetBlockDescriptionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -541,7 +549,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetConfigSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -570,7 +578,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetChainInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -599,7 +607,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetChainPortionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -628,7 +636,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processAddTransactionSuccess, this::processAddTransactionException);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
+		catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -663,7 +671,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetMempoolInfoSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -692,7 +700,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetMempoolPortionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -721,7 +729,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetTransactionSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -750,7 +758,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetTransactionRepresentationSuccess, this::processGetTransactionRepresentationException);
 		}
-		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TransactionRejectedException | TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {
@@ -785,7 +793,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		try {
 			return waitForResult(id, this::processGetTransactionAddressSuccess, this::processStandardExceptions);
 		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | InterruptedException | NodeException e) {
 			throw e;
 		}
 		catch (Exception e) {

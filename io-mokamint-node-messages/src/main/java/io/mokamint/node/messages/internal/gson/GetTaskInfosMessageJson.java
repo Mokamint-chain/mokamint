@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
 
@@ -31,7 +30,7 @@ public abstract class GetTaskInfosMessageJson extends AbstractRpcMessageJsonRepr
 	}
 
 	@Override
-	public GetTaskInfosMessage unmap() throws InconsistentJsonException {
+	public GetTaskInfosMessage unmap() {
 		return GetTaskInfosMessages.of(getId());
 	}
 

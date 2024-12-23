@@ -27,6 +27,5 @@ module io.mokamint.node.remote {
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.websockets.client;
 	requires io.hotmoka.annotations;
-	requires io.hotmoka.closeables;
 	requires java.logging;
 }

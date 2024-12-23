@@ -684,7 +684,7 @@ public class PeersSet implements AutoCloseable {
 		return timeDifference;
 	}
 
-	private RemotePublicNode openRemote(Peer peer) throws IOException {
+	private RemotePublicNode openRemote(Peer peer) throws IOException, InterruptedException {
 		try {
 			// -1L: to disable the periodic broadcast of the remote node's services
 			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1, config.getWhisperingMemorySize());

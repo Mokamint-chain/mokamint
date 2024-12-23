@@ -26,13 +26,13 @@
     </dependency>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-node-messages</artifactId>
+      <artifactId>io-mokamint-node</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka.closeables</groupId>
-      <artifactId>io-hotmoka-closeables</artifactId>
-      <version>${io.hotmoka.closeables.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-messages</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.annotations</groupId>

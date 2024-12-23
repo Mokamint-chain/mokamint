@@ -49,8 +49,7 @@ public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<Remote
 	}
 
 	/**
-	 * Opens a remote node connected to the public uri of the remote service and runs
-	 * the given command body.
+	 * Opens a remote node connected to the public uri of the remote service and runs the given command body.
 	 * 
 	 * @param what the body
 	 * @throws CommandException if something erroneous must be logged and the user must be informed
