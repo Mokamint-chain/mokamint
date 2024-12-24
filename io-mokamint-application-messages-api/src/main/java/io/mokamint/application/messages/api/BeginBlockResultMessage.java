@@ -19,6 +19,7 @@ package io.mokamint.application.messages.api;
 import java.time.LocalDateTime;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.application.api.Application;
 
 /**

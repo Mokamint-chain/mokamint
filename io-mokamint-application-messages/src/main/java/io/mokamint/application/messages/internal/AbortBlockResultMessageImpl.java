@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 
@@ -24,7 +24,7 @@ import io.mokamint.application.messages.api.AbortBlockResultMessage;
  * Implementation of the network message corresponding to the result of the
  * {@link Application#abortBlock(int)} method.
  */
-public class AbortBlockResultMessageImpl extends AbstractRpcMessage implements AbortBlockResultMessage {
+public class AbortBlockResultMessageImpl extends AbstractVoidResultMessage implements AbortBlockResultMessage {
 
 	/**
 	 * Creates the message.

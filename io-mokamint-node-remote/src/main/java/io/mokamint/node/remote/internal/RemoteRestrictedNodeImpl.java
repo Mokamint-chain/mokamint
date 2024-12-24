@@ -26,7 +26,6 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -113,44 +112,19 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	protected void sendAddPeer(Peer peer, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
+		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id), NodeException::new);
 	}
 
 	protected void sendRemovePeer(Peer peer, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
+		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id), NodeException::new);
 	}
 
 	protected void sendOpenMiner(int port, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
+		sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id), NodeException::new);
 	}
 
 	protected void sendRemoveMiner(UUID uuid, String id) throws NodeException {
-		try {
-			sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id));
-		}
-		catch (IOException e) {
-			throw new NodeException(e);
-		}
-	}
-
-	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
+		sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id), NodeException::new);
 	}
 
 	/**
@@ -166,15 +140,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		ensureIsOpen();
 		var id = nextId();
 		sendAddPeer(peer, id);
-		try {
-			return waitForResult(id, this::processAddPeerSuccess, this::processAddPeerException);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException | PeerRejectedException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, IOException.class, PeerRejectedException.class);
 	}
 
 	private class AddPeerEndpoint extends Endpoint {
@@ -185,31 +151,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private Optional<PeerInfo> processAddPeerSuccess(RpcMessage message) {
-		return message instanceof AddPeerResultMessage aprm ? aprm.get() : null;
-	}
-
-	private boolean processAddPeerException(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return PeerRejectedException.class.isAssignableFrom(clazz) ||
-			IOException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
-	}
-
 	@Override
 	public boolean remove(Peer peer) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendRemovePeer(peer, id);
-		try {
-			return waitForResult(id, this::processRemovePeerSuccess, this::processStandardExceptions);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, RemovePeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	private class RemovePeerEndpoint extends Endpoint {
@@ -220,8 +167,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		}
 	}
 
-	private Boolean processRemovePeerSuccess(RpcMessage message) {
-		return message instanceof RemovePeerResultMessage rprm ? rprm.get() : null;
+	@Override
+	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException {
+		ensureIsOpen();
+		var id = nextId();
+		sendOpenMiner(port, id);
+		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, IOException.class);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {
@@ -233,28 +184,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException {
+	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
-		sendOpenMiner(port, id);
-		try {
-			return waitForResult(id, this::processOpenMinerSuccess, this::processOpenMinerException);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException | IOException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
-	}
-
-	private Optional<MinerInfo> processOpenMinerSuccess(RpcMessage message) {
-		return message instanceof OpenMinerResultMessage omrm ? omrm.get() : null;
-	}
-
-	private boolean processOpenMinerException(ExceptionMessage message) {
-		var exception = message.getExceptionClass();
-		return IOException.class.isAssignableFrom(exception) || processStandardExceptions(message);
+		sendRemoveMiner(uuid, id);
+		return waitForResult(id, RemoveMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
 	}
 
 	private class RemoveMinerEndpoint extends Endpoint {
@@ -263,25 +197,5 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
 		}
-	}
-
-	@Override
-	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
-		var id = nextId();
-		sendRemoveMiner(uuid, id);
-		try {
-			return waitForResult(id, this::processRemoveMinerSuccess, this::processStandardExceptions);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | NodeException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
-	}
-
-	private Boolean processRemoveMinerSuccess(RpcMessage message) {
-		return message instanceof RemoveMinerResultMessage rmrm ? rmrm.get() : null;
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages.api;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.node.api.RestrictedNode;
 
 /**

@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
 
@@ -24,7 +24,7 @@ import io.mokamint.application.messages.api.CommitBlockResultMessage;
  * Implementation of the network message corresponding to the result of the
  * {@link Application#commitBlock(int)} method.
  */
-public class CommitBlockResultMessageImpl extends AbstractRpcMessage implements CommitBlockResultMessage {
+public class CommitBlockResultMessageImpl extends AbstractVoidResultMessage implements CommitBlockResultMessage {
 
 	/**
 	 * Creates the message.

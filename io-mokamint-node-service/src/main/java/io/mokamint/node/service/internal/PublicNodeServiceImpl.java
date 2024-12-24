@@ -371,7 +371,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetInfoMessage message) -> getServer().onGetInfo(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetInfoMessage message) -> server.onGetInfo(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -400,7 +401,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetPeerInfosMessage message) -> getServer().onGetPeerInfos(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetPeerInfosMessage message) -> server.onGetPeerInfos(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -429,7 +431,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetMinerInfosMessage message) -> getServer().onGetMinerInfos(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetMinerInfosMessage message) -> server.onGetMinerInfos(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -458,7 +461,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetTaskInfosMessage message) -> getServer().onGetTaskInfos(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetTaskInfosMessage message) -> server.onGetTaskInfos(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -487,7 +491,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetTransactionMessage message) -> getServer().onGetTransaction(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetTransactionMessage message) -> server.onGetTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -516,7 +521,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetTransactionRepresentationMessage message) -> getServer().onGetTransactionRepresentation(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetTransactionRepresentationMessage message) -> server.onGetTransactionRepresentation(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -545,7 +551,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetTransactionAddressMessage message) -> getServer().onGetTransactionAddress(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetTransactionAddressMessage message) -> server.onGetTransactionAddress(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -574,7 +581,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetBlockMessage message) -> getServer().onGetBlock(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetBlockMessage message) -> server.onGetBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -603,7 +611,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetBlockDescriptionMessage message) -> getServer().onGetBlockDescription(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetBlockDescriptionMessage message) -> server.onGetBlockDescription(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -632,7 +641,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetConfigMessage message) -> getServer().onGetConfig(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetConfigMessage message) -> server.onGetConfig(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -661,7 +671,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetChainInfoMessage message) -> getServer().onGetChainInfo(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetChainInfoMessage message) -> server.onGetChainInfo(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -690,7 +701,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetChainPortionMessage message) -> getServer().onGetChainPortion(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetChainPortionMessage message) -> server.onGetChainPortion(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -719,7 +731,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (AddTransactionMessage message) -> getServer().onAddTransaction(message, session));
+			var server = getServer();
+			addMessageHandler(session, (AddTransactionMessage message) -> server.onAddTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -748,7 +761,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetMempoolInfoMessage message) -> getServer().onGetMempoolInfo(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetMempoolInfoMessage message) -> server.onGetMempoolInfo(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
@@ -777,7 +791,8 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetMempoolPortionMessage message) -> getServer().onGetMempoolPortion(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetMempoolPortionMessage message) -> server.onGetMempoolPortion(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {

@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.node.api.Transaction;
@@ -25,7 +25,7 @@ import io.mokamint.node.api.Transaction;
  * Implementation of the network message corresponding to the result of the
  * {@link Application#checkTransaction(Transaction)} method.
  */
-public class CheckTransactionResultMessageImpl extends AbstractRpcMessage implements CheckTransactionResultMessage {
+public class CheckTransactionResultMessageImpl extends AbstractVoidResultMessage implements CheckTransactionResultMessage {
 
 	/**
 	 * Creates the message.

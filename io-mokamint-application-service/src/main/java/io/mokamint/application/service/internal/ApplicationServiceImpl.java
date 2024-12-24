@@ -161,7 +161,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (CheckPrologExtraMessage message) -> getServer().onCheckPrologExtra(message, session));
+			var server = getServer();
+			addMessageHandler(session, (CheckPrologExtraMessage message) -> server.onCheckPrologExtra(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -191,7 +192,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (CheckTransactionMessage message) -> getServer().onCheckTransaction(message, session));
+			var server = getServer();
+			addMessageHandler(session, (CheckTransactionMessage message) -> server.onCheckTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -220,7 +222,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetPriorityMessage message) -> getServer().onGetPriority(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetPriorityMessage message) -> server.onGetPriority(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -249,7 +252,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetRepresentationMessage message) -> getServer().onGetRepresentation(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetRepresentationMessage message) -> server.onGetRepresentation(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -278,7 +282,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (GetInitialStateIdMessage message) -> getServer().onGetInitialStateId(message, session));
+			var server = getServer();
+			addMessageHandler(session, (GetInitialStateIdMessage message) -> server.onGetInitialStateId(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -307,7 +312,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (BeginBlockMessage message) -> getServer().onBeginBlock(message, session));
+			var server = getServer();
+			addMessageHandler(session, (BeginBlockMessage message) -> server.onBeginBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -337,7 +343,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (DeliverTransactionMessage message) -> getServer().onDeliverTransaction(message, session));
+			var server = getServer();
+			addMessageHandler(session, (DeliverTransactionMessage message) -> server.onDeliverTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -366,7 +373,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (EndBlockMessage message) -> getServer().onEndBlock(message, session));
+			var server = getServer();
+			addMessageHandler(session, (EndBlockMessage message) -> server.onEndBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -396,7 +404,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (CommitBlockMessage message) -> getServer().onCommitBlock(message, session));
+			var server = getServer();
+			addMessageHandler(session, (CommitBlockMessage message) -> server.onCommitBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -426,7 +435,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (AbortBlockMessage message) -> getServer().onAbortBlock(message, session));
+			var server = getServer();
+			addMessageHandler(session, (AbortBlockMessage message) -> server.onAbortBlock(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
@@ -456,7 +466,8 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (KeepFromMessage message) -> getServer().onKeepFrom(message, session));
+			var server = getServer();
+			addMessageHandler(session, (KeepFromMessage message) -> server.onKeepFrom(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {

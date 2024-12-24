@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.beans.api.VoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Transaction;
 
@@ -26,5 +26,5 @@ import io.mokamint.node.api.Transaction;
  * {@link Application#checkTransaction(Transaction)} method.
  */
 @Immutable
-public interface CheckTransactionResultMessage extends RpcMessage {
+public interface CheckTransactionResultMessage extends VoidResultMessage {
 }

@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.beans.api.VoidResultMessage;
 import io.mokamint.application.api.Application;
 
 /**
@@ -25,5 +25,5 @@ import io.mokamint.application.api.Application;
  * {@link Application#commitBlock(int)} method.
  */
 @Immutable
-public interface CommitBlockResultMessage extends RpcMessage {
+public interface CommitBlockResultMessage extends VoidResultMessage {
 }

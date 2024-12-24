@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 
@@ -24,7 +24,7 @@ import io.mokamint.application.messages.api.KeepFromResultMessage;
  * Implementation of the network message corresponding to the result of the
  * {@link Application#keepFrom(java.time.LocalDateTime)} method.
  */
-public class KeepFromResultMessageImpl extends AbstractRpcMessage implements KeepFromResultMessage {
+public class KeepFromResultMessageImpl extends AbstractVoidResultMessage implements KeepFromResultMessage {
 
 	/**
 	 * Creates the message.

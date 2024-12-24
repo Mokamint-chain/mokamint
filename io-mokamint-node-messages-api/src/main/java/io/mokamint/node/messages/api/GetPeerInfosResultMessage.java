@@ -19,6 +19,7 @@ package io.mokamint.node.messages.api;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 

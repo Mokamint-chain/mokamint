@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -144,11 +143,6 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
 
-	private RuntimeException unexpectedException(Exception e) {
-		LOGGER.log(Level.SEVERE, logPrefix + "unexpected exception", e);
-		return new RuntimeException("Unexpected exception", e);
-	}
-
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof CheckPrologExtraResultMessage cperm)
@@ -191,36 +185,12 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		return cause instanceof ApplicationException ae ? ae : new ApplicationException(cause);
 	}
 
-	/**
-	 * Determines if the given exception message deals with an exception that all
-	 * methods of a node are expected to throw. These are
-	 * {@code java.lang.TimeoutException}, {@code java.lang.InterruptedException}
-	 * and {@link ApplicationException}.
-	 * 
-	 * @param message the message
-	 * @return true if and only if that condition holds
-	 */
-	private boolean processStandardExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz) ||
-			ApplicationException.class.isAssignableFrom(clazz);
-	}
-
 	@Override
 	public boolean checkPrologExtra(byte[] extra) throws ApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendCheckPrologExtra(extra, id);
-		try {
-			return waitForResult(id, this::processCheckPrologExtraSuccess, this::processStandardExceptions);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, CheckPrologExtraResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -231,16 +201,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendCheckPrologExtra(byte[] extra, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(CHECK_PROLOG_EXTRA_ENDPOINT), CheckPrologExtraMessages.of(extra, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Boolean processCheckPrologExtraSuccess(RpcMessage message) {
-		return message instanceof CheckPrologExtraResultMessage cperm ? cperm.get() : null;
+		sendObjectAsync(getSession(CHECK_PROLOG_EXTRA_ENDPOINT), CheckPrologExtraMessages.of(extra, id), ApplicationException::new);
 	}
 
 	/**
@@ -263,15 +224,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
-		try {
-			waitForResult(id, this::processCheckTransactionSuccess, this::processCheckTransactionExceptions);
-		}
-		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -288,16 +241,6 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		catch (IOException e) {
 			throw new ApplicationException(e);
 		}
-	}
-
-	private Boolean processCheckTransactionSuccess(RpcMessage message) {
-		return message instanceof CheckTransactionResultMessage ? Boolean.TRUE : null;
-	}
-
-	private boolean processCheckTransactionExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
 	}
 
 	/**
@@ -320,15 +263,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetPriority(transaction, id);
-		try {
-			return waitForResult(id, this::processGetPrioritySuccess, this::processGetPriorityExceptions);
-		}
-		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -339,22 +274,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendGetPriority(Transaction transaction, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(GET_PRIORITY_ENDPOINT), GetPriorityMessages.of(transaction, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Long processGetPrioritySuccess(RpcMessage message) {
-		return message instanceof GetPriorityResultMessage gprm ? gprm.get() : null;
-	}
-
-	private boolean processGetPriorityExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(GET_PRIORITY_ENDPOINT), GetPriorityMessages.of(transaction, id), ApplicationException::new);
 	}
 
 	/**
@@ -377,15 +297,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
-		try {
-			return waitForResult(id, this::processGetRepresentationSuccess, this::processGetRepresentationExceptions);
-		}
-		catch (RuntimeException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -396,22 +308,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendGetRepresentation(Transaction transaction, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(GET_REPRESENTATION_ENDPOINT), GetRepresentationMessages.of(transaction, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private String processGetRepresentationSuccess(RpcMessage message) {
-		return message instanceof GetRepresentationResultMessage grrm ? grrm.get() : null;
-	}
-
-	private boolean processGetRepresentationExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(GET_REPRESENTATION_ENDPOINT), GetRepresentationMessages.of(transaction, id), ApplicationException::new);
 	}
 
 	/**
@@ -434,15 +331,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetInitialStateId(id);
-		try {
-			return waitForResult(id, this::processGetInitialStateIdSuccess, this::processStandardExceptions);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, GetInitialStateIdResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -452,16 +341,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendGetInitialStateId(String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(GET_INITIAL_STATE_ID_ENDPOINT), GetInitialStateIdMessages.of(id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private byte[] processGetInitialStateIdSuccess(RpcMessage message) {
-		return message instanceof GetInitialStateIdResultMessage gisirm ? gisirm.get() : null;
+		sendObjectAsync(getSession(GET_INITIAL_STATE_ID_ENDPOINT), GetInitialStateIdMessages.of(id), ApplicationException::new);
 	}
 
 	/**
@@ -484,15 +364,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendBeginBlock(height, when, stateId, id);
-		try {
-			return waitForResult(id, this::processBeginBlockSuccess, this::processBeginBlockExceptions);
-		}
-		catch (RuntimeException | UnknownStateException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -506,22 +378,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendBeginBlock(long height, LocalDateTime when, byte[] stateId, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(BEGIN_BLOCK_ENDPOINT), BeginBlockMessages.of(height, when, stateId, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Integer processBeginBlockSuccess(RpcMessage message) {
-		return message instanceof BeginBlockResultMessage bbrm ? bbrm.get() : null;
-	}
-
-	private boolean processBeginBlockExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return UnknownStateException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(BEGIN_BLOCK_ENDPOINT), BeginBlockMessages.of(height, when, stateId, id), ApplicationException::new);
 	}
 
 	/**
@@ -544,15 +401,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
-		try {
-			waitForResult(id, this::processDeliverTransactionSuccess, this::processDeliverTransactionExceptions);
-		}
-		catch (RuntimeException | TransactionRejectedException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -564,23 +413,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendDeliverTransaction(int groupId, Transaction transaction, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(DELIVER_TRANSACTION_ENDPOINT), DeliverTransactionMessages.of(groupId, transaction, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Boolean processDeliverTransactionSuccess(RpcMessage message) {
-		return message instanceof DeliverTransactionResultMessage ? Boolean.TRUE : null;
-	}
-
-	private boolean processDeliverTransactionExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TransactionRejectedException.class.isAssignableFrom(clazz) ||
-			UnknownGroupIdException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(DELIVER_TRANSACTION_ENDPOINT), DeliverTransactionMessages.of(groupId, transaction, id), ApplicationException::new);
 	}
 
 	/**
@@ -603,15 +436,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendEndBlock(groupId, deadline, id);
-		try {
-			return waitForResult(id, this::processEndBlockSuccess, this::processEndBlockExceptions);
-		}
-		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -623,22 +448,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendEndBlock(int groupId, Deadline deadline, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(END_BLOCK_ENDPOINT), EndBlockMessages.of(groupId, deadline, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private byte[] processEndBlockSuccess(RpcMessage message) {
-		return message instanceof EndBlockResultMessage ebrm ? ebrm.get() : null;
-	}
-
-	private boolean processEndBlockExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(END_BLOCK_ENDPOINT), EndBlockMessages.of(groupId, deadline, id), ApplicationException::new);
 	}
 
 	/**
@@ -661,15 +471,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendCommitBlock(groupId, id);
-		try {
-			waitForResult(id, this::processCommitBlockSuccess, this::processCommitBlockExceptions);
-		}
-		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		waitForResult(id, CommitBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -680,22 +482,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendCommitBlock(int groupId, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(COMMIT_BLOCK_ENDPOINT), CommitBlockMessages.of(groupId, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Boolean processCommitBlockSuccess(RpcMessage message) {
-		return message instanceof CommitBlockResultMessage ? Boolean.TRUE : null;
-	}
-
-	private boolean processCommitBlockExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(COMMIT_BLOCK_ENDPOINT), CommitBlockMessages.of(groupId, id), ApplicationException::new);
 	}
 
 	/**
@@ -718,15 +505,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendAbortBlock(groupId, id);
-		try {
-			waitForResult(id, this::processAbortBlockSuccess, this::processAbortBlockExceptions);
-		}
-		catch (RuntimeException | UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		waitForResult(id, AbortBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -737,22 +516,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendAbortBlock(int groupId, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(ABORT_BLOCK_ENDPOINT), AbortBlockMessages.of(groupId, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Boolean processAbortBlockSuccess(RpcMessage message) {
-		return message instanceof AbortBlockResultMessage ? Boolean.TRUE : null;
-	}
-
-	private boolean processAbortBlockExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return UnknownGroupIdException.class.isAssignableFrom(clazz) ||
-			processStandardExceptions(message);
+		sendObjectAsync(getSession(ABORT_BLOCK_ENDPOINT), AbortBlockMessages.of(groupId, id), ApplicationException::new);
 	}
 
 	/**
@@ -775,15 +539,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendKeepFrom(start, id);
-		try {
-			waitForResult(id, this::processKeepFromSuccess, this::processStandardExceptions);
-		}
-		catch (RuntimeException | TimeoutException | InterruptedException | ApplicationException e) {
-			throw e;
-		}
-		catch (Exception e) {
-			throw unexpectedException(e);
-		}
+		waitForResult(id, KeepFromResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
 	}
 
 	/**
@@ -794,16 +550,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendKeepFrom(LocalDateTime start, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(KEEP_FROM_ENDPOINT), KeepFromMessages.of(start, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
-	}
-
-	private Boolean processKeepFromSuccess(RpcMessage message) {
-		return message instanceof KeepFromResultMessage ? Boolean.TRUE : null;
+		sendObjectAsync(getSession(KEEP_FROM_ENDPOINT), KeepFromMessages.of(start, id), ApplicationException::new);
 	}
 
 	/**

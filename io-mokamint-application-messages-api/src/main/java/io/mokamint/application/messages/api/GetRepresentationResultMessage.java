@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.api;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Transaction;
 

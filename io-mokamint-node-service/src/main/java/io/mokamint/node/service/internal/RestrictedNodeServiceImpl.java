@@ -203,7 +203,8 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (AddPeerMessage message) -> getServer().onAddPeer(message, session));
+			var server = getServer();
+			addMessageHandler(session, (AddPeerMessage message) -> server.onAddPeer(message, session));
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
@@ -216,7 +217,8 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (RemovePeerMessage message) -> getServer().onRemovePeer(message, session));
+			var server = getServer();
+			addMessageHandler(session, (RemovePeerMessage message) -> server.onRemovePeer(message, session));
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
@@ -229,7 +231,8 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (OpenMinerMessage message) -> getServer().onOpenMiner(message, session));
+			var server = getServer();
+			addMessageHandler(session, (OpenMinerMessage message) -> server.onOpenMiner(message, session));
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
@@ -242,7 +245,8 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (RemoveMinerMessage message) -> getServer().onRemoveMiner(message, session));
+			var server = getServer();
+			addMessageHandler(session, (RemoveMinerMessage message) -> server.onRemoveMiner(message, session));
 	    }
 
 		private static ServerEndpointConfig config(RestrictedNodeServiceImpl server) {
