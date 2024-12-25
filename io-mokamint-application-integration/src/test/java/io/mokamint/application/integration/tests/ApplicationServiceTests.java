@@ -78,7 +78,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceCheckPrologExtraWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var extra = new byte[] { 13, 1, 19, 73 };
+		byte[] extra = { 13, 1, 19, 73 };
 		when(app.checkPrologExtra(eq(extra))).thenReturn(true);
 
 		class MyTestClient extends RemoteApplicationImpl {
