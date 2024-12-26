@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolPortionMessage;
+import io.mokamint.node.messages.internal.gson.GetMempoolPortionMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getMempoolPortion(int, int)} method.
@@ -39,6 +40,18 @@ public class GetMempoolPortionMessageImpl extends AbstractRpcMessage implements 
 
 		this.start = start;
 		this.count = count;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetMempoolPortionMessageImpl(GetMempoolPortionMessageJson json) {
+		super(json.getId());
+
+		this.start = json.getStart();
+		this.count = json.getCount();
 	}
 
 	@Override

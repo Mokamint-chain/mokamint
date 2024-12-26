@@ -16,14 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.messages.GetTaskInfosResultMessages;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
+import io.mokamint.node.messages.internal.GetTaskInfosResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTaskInfosResultMessage}.
@@ -37,13 +37,13 @@ public abstract class GetTaskInfosResultMessageJson extends AbstractRpcMessageJs
 		this.tasks = message.get().map(TaskInfos.Json::new).toArray(TaskInfos.Json[]::new);
 	}
 
+	public Optional<Stream<TaskInfos.Json>> getTasks() {
+		return tasks == null ? Optional.empty() : Optional.of(Stream.of(tasks));
+	}
+
 	@Override
 	public GetTaskInfosResultMessage unmap() throws InconsistentJsonException {
-		var taskInfos = new TaskInfo[tasks.length];
-		for (int pos = 0; pos < tasks.length; pos++)
-			taskInfos[pos] = tasks[pos].unmap();
-
-		return GetTaskInfosResultMessages.of(Stream.of(taskInfos), getId());
+		return new GetTaskInfosResultMessageImpl(this);
 	}
 
 	@Override

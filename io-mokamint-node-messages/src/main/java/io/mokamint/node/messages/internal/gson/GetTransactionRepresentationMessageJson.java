@@ -17,11 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetTransactionRepresentationMessages;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
+import io.mokamint.node.messages.internal.GetTransactionRepresentationMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTransactionRepresentationMessage}.
@@ -35,14 +34,13 @@ public abstract class GetTransactionRepresentationMessageJson extends AbstractRp
 		this.hash = Hex.toHexString(message.getHash());
 	}
 
+	public String getHash() {
+		return hash;
+	}
+
 	@Override
 	public GetTransactionRepresentationMessage unmap() throws InconsistentJsonException {
-		try {
-			return GetTransactionRepresentationMessages.of(Hex.fromHexString(hash), getId());
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new GetTransactionRepresentationMessageImpl(this);
 	}
 
 	@Override

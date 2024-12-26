@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
+import io.mokamint.node.messages.internal.gson.GetMinerInfosMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getMinerInfos()} method of a node.
@@ -32,6 +33,15 @@ public class GetMinerInfosMessageImpl extends AbstractRpcMessage implements GetM
 	 */
 	public GetMinerInfosMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetMinerInfosMessageImpl(GetMinerInfosMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

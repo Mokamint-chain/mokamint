@@ -34,7 +34,7 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 	/**
 	 * The result of the call.
 	 */
-	private final PeerInfo info;
+	private final Optional<PeerInfo> info;
 
 	/**
 	 * Creates the message.
@@ -45,7 +45,7 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 	public AddPeerResultMessageImpl(Optional<PeerInfo> info, String id) {
 		super(id);
 
-		this.info = Objects.requireNonNull(info, "info cannot be null").orElse(null);
+		this.info = Objects.requireNonNull(info, "info cannot be null");
 	}
 
 	/**
@@ -58,12 +58,12 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 		super(json.getId());
 
 		var info = json.getInfo();
-		this.info = info == null ? null : info.unmap();
+		this.info = info.isEmpty() ? Optional.empty() : Optional.of(info.get().unmap());
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddPeerResultMessage aprm && super.equals(other) && Objects.equals(get(), aprm.get());
+		return other instanceof AddPeerResultMessage aprm && super.equals(other) && get().equals(aprm.get());
 	}
 
 	@Override
@@ -73,6 +73,6 @@ public class AddPeerResultMessageImpl extends AbstractRpcMessage implements AddP
 
 	@Override
 	public Optional<PeerInfo> get() {
-		return Optional.ofNullable(info);
+		return info;
 	}
 }

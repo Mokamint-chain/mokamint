@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
 import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
+import io.mokamint.node.messages.internal.GetTransactionRepresentationResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTransactionRepresentationResultMessage}.
@@ -34,9 +34,13 @@ public abstract class GetTransactionRepresentationResultMessageJson extends Abst
 		this.representation = message.get().orElse(null);
 	}
 
+	public Optional<String> getRepresentation() {
+		return Optional.ofNullable(representation);
+	}
+
 	@Override
 	public GetTransactionRepresentationResultMessage unmap() {
-		return GetTransactionRepresentationResultMessages.of(Optional.ofNullable(representation), getId());
+		return new GetTransactionRepresentationResultMessageImpl(this);
 	}
 
 	@Override

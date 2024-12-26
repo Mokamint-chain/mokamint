@@ -17,9 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetMinerInfosMessages;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
+import io.mokamint.node.messages.internal.GetMinerInfosMessageImpl;
 
 /**
  * The JSON representation of a {@link GetMinerInfosMessage}.
@@ -31,8 +30,8 @@ public abstract class GetMinerInfosMessageJson extends AbstractRpcMessageJsonRep
 	}
 
 	@Override
-	public GetMinerInfosMessage unmap() throws InconsistentJsonException {
-		return GetMinerInfosMessages.of(getId());
+	public GetMinerInfosMessage unmap() {
+		return new GetMinerInfosMessageImpl(this);
 	}
 
 	@Override

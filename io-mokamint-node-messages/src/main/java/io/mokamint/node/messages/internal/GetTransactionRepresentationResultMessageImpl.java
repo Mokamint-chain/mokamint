@@ -20,8 +20,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
+import io.mokamint.node.messages.internal.gson.GetTransactionRepresentationResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
@@ -38,9 +40,19 @@ public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMe
 	public GetTransactionRepresentationResultMessageImpl(Optional<String> representation, String id) {
 		super(id);
 
-		Objects.requireNonNull(representation, "representation cannot be null");
-		representation.map(Objects::requireNonNull);
-		this.representation = representation;
+		this.representation = Objects.requireNonNull(representation, "representation cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetTransactionRepresentationResultMessageImpl(GetTransactionRepresentationResultMessageJson json) {
+		super(json.getId());
+
+		this.representation = json.getRepresentation();
 	}
 
 	@Override

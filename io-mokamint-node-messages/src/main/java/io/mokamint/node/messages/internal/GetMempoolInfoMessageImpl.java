@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
+import io.mokamint.node.messages.internal.gson.GetMempoolInfoMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getMempoolInfo()} method of a node.
@@ -32,6 +33,15 @@ public class GetMempoolInfoMessageImpl extends AbstractRpcMessage implements Get
 	 */
 	public GetMempoolInfoMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetMempoolInfoMessageImpl(GetMempoolInfoMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

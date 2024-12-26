@@ -16,12 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
+import io.mokamint.node.messages.internal.gson.GetConfigResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getConfig()} method.
@@ -40,6 +43,23 @@ public class GetConfigResultMessageImpl extends AbstractRpcMessage implements Ge
 		super(id);
 
 		this.config = Objects.requireNonNull(config, "config cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available cryptographic algorithm
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetConfigResultMessageImpl(GetConfigResultMessageJson json) throws NoSuchAlgorithmException, InconsistentJsonException {
+		super(json.getId());
+
+		var config = json.getConfig();
+		if (config == null)
+			throw new InconsistentJsonException("config cannot be null");
+
+		this.config = config.unmap();
 	}
 
 	@Override

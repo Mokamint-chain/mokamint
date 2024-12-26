@@ -19,9 +19,11 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolInfoResultMessage;
+import io.mokamint.node.messages.internal.gson.GetMempoolInfoResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMempoolInfo()} method.
@@ -40,6 +42,22 @@ public class GetMempoolInfoResultMessageImpl extends AbstractRpcMessage implemen
 		super(id);
 
 		this.info = Objects.requireNonNull(info, "info cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetMempoolInfoResultMessageImpl(GetMempoolInfoResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var info = json.getInfo();
+		if (info == null)
+			throw new InconsistentJsonException("info cannot be null");
+
+		this.info = info.unmap();
 	}
 
 	@Override

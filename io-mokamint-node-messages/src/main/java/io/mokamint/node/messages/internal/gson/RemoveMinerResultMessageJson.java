@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.RemoveMinerResultMessages;
 import io.mokamint.node.messages.api.RemoveMinerResultMessage;
+import io.mokamint.node.messages.internal.RemoveMinerResultMessageImpl;
 
 /**
  * The JSON representation of a {@link RemoveMinerResultMessage}.
@@ -32,9 +32,13 @@ public abstract class RemoveMinerResultMessageJson extends AbstractRpcMessageJso
 		this.result = message.get();
 	}
 
+	public boolean getResult() {
+		return result;
+	}
+
 	@Override
 	public RemoveMinerResultMessage unmap() {
-		return RemoveMinerResultMessages.of(result, getId());
+		return new RemoveMinerResultMessageImpl(this);
 	}
 
 	@Override

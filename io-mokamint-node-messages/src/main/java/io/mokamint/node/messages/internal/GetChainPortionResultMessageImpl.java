@@ -19,9 +19,11 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
+import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainPortion(long, int)} method.
@@ -40,6 +42,22 @@ public class GetChainPortionResultMessageImpl extends AbstractRpcMessage impleme
 		super(id);
 
 		this.chain = Objects.requireNonNull(chain, "chain cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetChainPortionResultMessageImpl(GetChainPortionResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var chain = json.getChain();
+		if (chain == null)
+			throw new InconsistentJsonException("chain cannot be null");
+
+		this.chain = chain.unmap();
 	}
 
 	@Override

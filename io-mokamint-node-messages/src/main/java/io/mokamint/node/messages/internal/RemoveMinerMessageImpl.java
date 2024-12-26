@@ -20,8 +20,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
+import io.mokamint.node.messages.internal.gson.RemoveMinerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#removeMiner(java.util.UUID)}.
@@ -40,6 +42,27 @@ public class RemoveMinerMessageImpl extends AbstractRpcMessage implements Remove
 		super(id);
 
 		this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public RemoveMinerMessageImpl(RemoveMinerMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var uuid = json.getUUID();
+		if (uuid == null)
+			throw new InconsistentJsonException("UUID cannot be null");
+
+		try {
+			this.uuid = UUID.fromString(uuid);
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

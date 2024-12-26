@@ -21,9 +21,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method.
@@ -44,6 +47,30 @@ public class GetPeerInfosResultMessageImpl extends AbstractRpcMessage implements
 		this.peers = peers
 			.map(Objects::requireNonNull)
 			.toArray(PeerInfo[]::new);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetPeerInfosResultMessageImpl(GetPeerInfosResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var maybePeers = json.getPeers();
+		if (maybePeers.isEmpty())
+			throw new InconsistentJsonException("peers must be specified");
+
+		var peers = maybePeers.get().toArray(PeerInfos.Json[]::new);
+		this.peers = new PeerInfo[peers.length];
+		for (int pos = 0; pos < peers.length; pos++) {
+			var peer = peers[pos];
+			if (peer == null)
+				throw new InconsistentJsonException("peers cannot hold null elements");
+
+			this.peers[pos] = peer.unmap();
+		}
 	}
 
 	@Override

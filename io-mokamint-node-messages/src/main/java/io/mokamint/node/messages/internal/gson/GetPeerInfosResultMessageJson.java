@@ -16,14 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
+import io.mokamint.node.messages.internal.GetPeerInfosResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetPeerInfosResultMessage}.
@@ -37,13 +37,13 @@ public abstract class GetPeerInfosResultMessageJson extends AbstractRpcMessageJs
 		this.peers = message.get().map(PeerInfos.Json::new).toArray(PeerInfos.Json[]::new);
 	}
 
+	public Optional<Stream<PeerInfos.Json>> getPeers() {
+		return peers == null ? Optional.empty() : Optional.of(Stream.of(peers));
+	}
+
 	@Override
 	public GetPeerInfosResultMessage unmap() throws InconsistentJsonException {
-		var peerInfos = new PeerInfo[peers.length];
-		for (int pos = 0; pos < peers.length; pos++)
-			peerInfos[pos] = peers[pos].unmap();
-
-		return GetPeerInfosResultMessages.of(Stream.of(peerInfos), getId());
+		return new GetPeerInfosResultMessageImpl(this);
 	}
 
 	@Override

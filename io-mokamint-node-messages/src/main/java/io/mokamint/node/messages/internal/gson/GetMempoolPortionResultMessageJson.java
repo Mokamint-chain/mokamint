@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MempoolPortions;
-import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
+import io.mokamint.node.messages.internal.GetMempoolPortionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetMempoolPortionResultMessage}.
@@ -34,9 +34,13 @@ public abstract class GetMempoolPortionResultMessageJson extends AbstractRpcMess
 		this.mempool = new MempoolPortions.Json(message.get());
 	}
 
+	public MempoolPortions.Json getMempool() {
+		return mempool;
+	}
+
 	@Override
 	public GetMempoolPortionResultMessage unmap() throws InconsistentJsonException {
-		return GetMempoolPortionResultMessages.of(mempool.unmap(), getId());
+		return new GetMempoolPortionResultMessageImpl(this);
 	}
 
 	@Override

@@ -21,8 +21,8 @@ import java.util.Optional;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.messages.GetTransactionAddressResultMessages;
 import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
+import io.mokamint.node.messages.internal.GetTransactionAddressResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTransactionAddressResultMessage}.
@@ -36,9 +36,13 @@ public abstract class GetTransactionAddressResultMessageJson extends AbstractRpc
 		this.address = message.get().map(TransactionAddresses.Json::new).orElse(null);
 	}
 
+	public Optional<TransactionAddresses.Json> getAddress() {
+		return Optional.ofNullable(address);
+	}
+
 	@Override
 	public GetTransactionAddressResultMessage unmap() throws InconsistentJsonException {
-		return GetTransactionAddressResultMessages.of(Optional.ofNullable(address == null ? null : address.unmap()), getId());
+		return new GetTransactionAddressResultMessageImpl(this);
 	}
 
 	@Override

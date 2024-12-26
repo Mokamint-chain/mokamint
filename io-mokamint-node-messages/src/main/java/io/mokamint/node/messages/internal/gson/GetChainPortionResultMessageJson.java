@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.messages.GetChainPortionResultMessages;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
+import io.mokamint.node.messages.internal.GetChainPortionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetChainPortionResultMessage}.
@@ -34,9 +34,13 @@ public abstract class GetChainPortionResultMessageJson extends AbstractRpcMessag
 		this.chain = new ChainPortions.Json(message.get());
 	}
 
+	public ChainPortions.Json getChain() {
+		return chain;
+	}
+
 	@Override
 	public GetChainPortionResultMessage unmap() throws InconsistentJsonException {
-		return GetChainPortionResultMessages.of(chain.unmap(), getId());
+		return new GetChainPortionResultMessageImpl(this);
 	}
 
 	@Override

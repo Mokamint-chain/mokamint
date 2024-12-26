@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.PeerInfos;
@@ -34,8 +36,8 @@ public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRep
 		this.info = message.get().map(PeerInfos.Json::new).orElse(null);
 	}
 
-	public PeerInfos.Json getInfo() {
-		return info;
+	public Optional<PeerInfos.Json> getInfo() {
+		return Optional.ofNullable(info);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
+import io.mokamint.node.messages.internal.gson.GetPeerInfosMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getPeerInfos()} method of a node.
@@ -32,6 +33,15 @@ public class GetPeerInfosMessageImpl extends AbstractRpcMessage implements GetPe
 	 */
 	public GetPeerInfosMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetPeerInfosMessageImpl(GetPeerInfosMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

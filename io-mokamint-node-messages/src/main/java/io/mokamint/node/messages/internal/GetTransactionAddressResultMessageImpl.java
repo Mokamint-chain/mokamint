@@ -20,9 +20,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
+import io.mokamint.node.messages.internal.gson.GetTransactionAddressResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.
@@ -43,6 +45,19 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 		address.map(Objects::requireNonNull);
 	}
 
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetTransactionAddressResultMessageImpl(GetTransactionAddressResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var address = json.getAddress();
+		this.address = address.isEmpty() ? Optional.empty() : Optional.of(address.get().unmap());
+	}
+
 	@Override
 	public Optional<TransactionAddress> get() {
 		return address;
@@ -50,7 +65,7 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetTransactionAddressResultMessage gtarm && super.equals(other) && Objects.equals(address, gtarm.get());
+		return other instanceof GetTransactionAddressResultMessage gtarm && super.equals(other) && address.equals(gtarm.get());
 	}
 
 	@Override

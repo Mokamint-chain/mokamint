@@ -16,14 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MinerInfos;
-import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
+import io.mokamint.node.messages.internal.GetMinerInfosResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetMinerInfosResultMessage}.
@@ -37,13 +37,13 @@ public abstract class GetMinerInfosResultMessageJson extends AbstractRpcMessageJ
 		this.miners = message.get().map(MinerInfos.Json::new).toArray(MinerInfos.Json[]::new);
 	}
 
+	public Optional<Stream<MinerInfos.Json>> getMiners() {
+		return miners == null ? Optional.empty() : Optional.of(Stream.of(miners));
+	}
+
 	@Override
 	public GetMinerInfosResultMessage unmap() throws InconsistentJsonException {
-		var minerInfos = new MinerInfo[miners.length];
-		for (int pos = 0; pos < miners.length; pos++)
-			minerInfos[pos] = miners[pos].unmap();
-
-		return GetMinerInfosResultMessages.of(Stream.of(minerInfos), getId());
+		return new GetMinerInfosResultMessageImpl(this);
 	}
 
 	@Override

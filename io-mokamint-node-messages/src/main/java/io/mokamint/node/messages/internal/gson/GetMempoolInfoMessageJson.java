@@ -17,9 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetMempoolInfoMessages;
 import io.mokamint.node.messages.api.GetMempoolInfoMessage;
+import io.mokamint.node.messages.internal.GetMempoolInfoMessageImpl;
 
 /**
  * The JSON representation of a {@link GetMempoolInfoMessage}.
@@ -31,8 +30,8 @@ public abstract class GetMempoolInfoMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public GetMempoolInfoMessage unmap() throws InconsistentJsonException {
-		return GetMempoolInfoMessages.of(getId());
+	public GetMempoolInfoMessage unmap() {
+		return new GetMempoolInfoMessageImpl(this);
 	}
 
 	@Override

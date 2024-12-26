@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.internal.gson.GetTaskInfosMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getTaskInfos()} method of a node.
@@ -32,6 +33,15 @@ public class GetTaskInfosMessageImpl extends AbstractRpcMessage implements GetTa
 	 */
 	public GetTaskInfosMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetTaskInfosMessageImpl(GetTaskInfosMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

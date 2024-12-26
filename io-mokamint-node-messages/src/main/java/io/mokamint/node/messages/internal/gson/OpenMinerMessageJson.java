@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.OpenMinerMessages;
 import io.mokamint.node.messages.api.OpenMinerMessage;
+import io.mokamint.node.messages.internal.OpenMinerMessageImpl;
 
 /**
  * The JSON representation of an {@link OpenMinerMessage}.
@@ -32,9 +32,13 @@ public abstract class OpenMinerMessageJson extends AbstractRpcMessageJsonReprese
 		this.port = message.getPort();
 	}
 
+	public int getPort() {
+		return port;
+	}
+
 	@Override
 	public OpenMinerMessage unmap() {
-		return OpenMinerMessages.of(port, getId());
+		return new OpenMinerMessageImpl(this);
 	}
 
 	@Override

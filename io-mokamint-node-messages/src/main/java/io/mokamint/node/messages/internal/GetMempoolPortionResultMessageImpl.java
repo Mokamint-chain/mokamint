@@ -19,9 +19,11 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
+import io.mokamint.node.messages.internal.gson.GetMempoolPortionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMempoolPortion(int, int)} method.
@@ -40,6 +42,22 @@ public class GetMempoolPortionResultMessageImpl extends AbstractRpcMessage imple
 		super(id);
 
 		this.mempool = Objects.requireNonNull(mempool, "mempool cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetMempoolPortionResultMessageImpl(GetMempoolPortionResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var mempool = json.getMempool();
+		if (mempool == null)
+			throw new InconsistentJsonException("mempool cannot be null");
+
+		this.mempool = mempool.unmap();
 	}
 
 	@Override

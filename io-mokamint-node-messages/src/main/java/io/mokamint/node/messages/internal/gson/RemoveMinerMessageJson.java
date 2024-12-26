@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.UUID;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.RemoveMinerMessages;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
+import io.mokamint.node.messages.internal.RemoveMinerMessageImpl;
 
 /**
  * The JSON representation of a {@link RemoveMinerMessage}.
@@ -35,14 +33,13 @@ public abstract class RemoveMinerMessageJson extends AbstractRpcMessageJsonRepre
 		this.uuid = message.getUUID().toString();
 	}
 
+	public String getUUID() {
+		return uuid;
+	}
+
 	@Override
 	public RemoveMinerMessage unmap() throws InconsistentJsonException {
-		try {
-			return RemoveMinerMessages.of(UUID.fromString(uuid), getId());
-		}
-		catch (IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new RemoveMinerMessageImpl(this);
 	}
 
 	@Override

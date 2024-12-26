@@ -57,7 +57,7 @@ public class GetBlockDescriptionResultMessageImpl extends AbstractRpcMessage imp
 		super(json.getId());
 
 		var description = json.getDescription();
-		this.description = Optional.ofNullable(description == null ? null : description.unmap());
+		this.description = description.isEmpty() ? Optional.empty() : Optional.ofNullable(description.get().unmap());
 	}
 
 	@Override

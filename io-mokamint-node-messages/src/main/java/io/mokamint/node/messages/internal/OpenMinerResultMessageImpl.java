@@ -20,9 +20,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
+import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the info of the {@link RestrictedNode#openMiner(int)} method.
@@ -44,7 +46,19 @@ public class OpenMinerResultMessageImpl extends AbstractRpcMessage implements Op
 		super(id);
 
 		this.info = Objects.requireNonNull(info, "info cannot be null");
-		info.map(Objects::requireNonNull);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public OpenMinerResultMessageImpl(OpenMinerResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var info = json.getInfo();
+		this.info = info.isPresent() ? Optional.of(info.get().unmap()) : Optional.empty();
 	}
 
 	@Override

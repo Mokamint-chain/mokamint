@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.RemovePeerMessages;
 import io.mokamint.node.messages.api.RemovePeerMessage;
+import io.mokamint.node.messages.internal.RemovePeerMessageImpl;
 
 /**
  * The JSON representation of a {@link RemovePeerMessage}.
@@ -34,9 +34,13 @@ public abstract class RemovePeerMessageJson extends AbstractRpcMessageJsonRepres
 		this.peer = new Peers.Json(message.getPeer());
 	}
 
+	public Peers.Json getPeer() {
+		return peer;
+	}
+
 	@Override
 	public RemovePeerMessage unmap() throws InconsistentJsonException {
-		return RemovePeerMessages.of(peer.unmap(), getId());
+		return new RemovePeerMessageImpl(this);
 	}
 
 	@Override

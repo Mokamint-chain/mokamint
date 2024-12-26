@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.GetConfigMessages;
 import io.mokamint.node.messages.api.GetConfigMessage;
+import io.mokamint.node.messages.internal.GetConfigMessageImpl;
 
 /**
  * The JSON representation of a {@link GetConfigMessage}.
@@ -31,7 +31,7 @@ public abstract class GetConfigMessageJson extends AbstractRpcMessageJsonReprese
 
 	@Override
 	public GetConfigMessage unmap() {
-		return GetConfigMessages.of(getId());
+		return new GetConfigMessageImpl(this);
 	}
 
 	@Override

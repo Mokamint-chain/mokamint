@@ -18,6 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.messages.api.GetConfigMessage;
+import io.mokamint.node.messages.internal.gson.GetConfigMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@code getConfig} method of a node.
@@ -31,6 +32,15 @@ public class GetConfigMessageImpl extends AbstractRpcMessage implements GetConfi
 	 */
 	public GetConfigMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetConfigMessageImpl(GetConfigMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

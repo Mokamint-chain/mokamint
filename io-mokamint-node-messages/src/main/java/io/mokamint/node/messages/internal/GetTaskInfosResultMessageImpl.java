@@ -21,9 +21,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
+import io.mokamint.node.messages.internal.gson.GetTaskInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTaskInfos()} method.
@@ -44,6 +47,30 @@ public class GetTaskInfosResultMessageImpl extends AbstractRpcMessage implements
 		this.tasks = tasks
 			.map(Objects::requireNonNull)
 			.toArray(TaskInfo[]::new);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetTaskInfosResultMessageImpl(GetTaskInfosResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var maybeTasks = json.getTasks();
+		if (maybeTasks.isEmpty())
+			throw new InconsistentJsonException("tasks must be specified");
+
+		var tasks = maybeTasks.get().toArray(TaskInfos.Json[]::new);
+		this.tasks = new TaskInfo[tasks.length];
+		for (int pos = 0; pos < tasks.length; pos++) {
+			var task = tasks[pos];
+			if (task == null)
+				throw new InconsistentJsonException("tasks cannot hold null elements");
+
+			this.tasks[pos] = task.unmap();
+		}
 	}
 
 	@Override

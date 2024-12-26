@@ -57,7 +57,7 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 		super(json.getId());
 
 		var block = json.getBlock();
-		this.block = Optional.ofNullable(block == null ? null : block.unmap());
+		this.block = block.isEmpty() ? Optional.empty() : Optional.of(block.get().unmap());
 	}
 
 	@Override

@@ -17,9 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetChainPortionMessages;
 import io.mokamint.node.messages.api.GetChainPortionMessage;
+import io.mokamint.node.messages.internal.GetChainPortionMessageImpl;
 
 /**
  * The JSON representation of a {@link GetChainPortionMessage}.
@@ -35,9 +34,17 @@ public abstract class GetChainPortionMessageJson extends AbstractRpcMessageJsonR
 		this.count = message.getCount();
 	}
 
+	public long getStart() {
+		return start;
+	}
+
+	public int getCount() {
+		return count;
+	}
+
 	@Override
-	public GetChainPortionMessage unmap() throws InconsistentJsonException {
-		return GetChainPortionMessages.of(start, count, getId());
+	public GetChainPortionMessage unmap() {
+		return new GetChainPortionMessageImpl(this);
 	}
 
 	@Override

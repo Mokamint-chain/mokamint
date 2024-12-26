@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
+import io.mokamint.node.messages.internal.GetPeerInfosMessageImpl;
 
 /**
  * The JSON representation of a {@link GetPeerInfosMessage}.
@@ -31,7 +31,7 @@ public abstract class GetPeerInfosMessageJson extends AbstractRpcMessageJsonRepr
 
 	@Override
 	public GetPeerInfosMessage unmap() {
-		return GetPeerInfosMessages.of(getId());
+		return new GetPeerInfosMessageImpl(this);
 	}
 
 	@Override

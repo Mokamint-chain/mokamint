@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemoveMinerResultMessage;
+import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link RestrictedNode#removeMiner(java.util.UUID)} method.
@@ -40,6 +41,17 @@ public class RemoveMinerResultMessageImpl extends AbstractRpcMessage implements 
 		super(id);
 
 		this.result = result;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public RemoveMinerResultMessageImpl(RemoveMinerResultMessageJson json) {
+		super(json.getId());
+
+		this.result = json.getResult();
 	}
 
 	@Override

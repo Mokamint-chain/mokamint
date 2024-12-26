@@ -21,9 +21,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
+import io.mokamint.node.messages.internal.gson.GetMinerInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMinerInfos()} method.
@@ -44,6 +47,30 @@ public class GetMinerInfosResultMessageImpl extends AbstractRpcMessage implement
 		this.miners = miners
 			.map(Objects::requireNonNull)
 			.toArray(MinerInfo[]::new);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetMinerInfosResultMessageImpl(GetMinerInfosResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var maybeMiners = json.getMiners();
+		if (maybeMiners.isEmpty())
+			throw new InconsistentJsonException("miners must be specified");
+
+		var miners = maybeMiners.get().toArray(MinerInfos.Json[]::new);
+		this.miners = new MinerInfo[miners.length];
+		for (int pos = 0; pos < miners.length; pos++) {
+			var miner = miners[pos];
+			if (miner == null)
+				throw new InconsistentJsonException("miners cannot hold null elements");
+
+			this.miners[pos] = miner.unmap();
+		}
 	}
 
 	@Override

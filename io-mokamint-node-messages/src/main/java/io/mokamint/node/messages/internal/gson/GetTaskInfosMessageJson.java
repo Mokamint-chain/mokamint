@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
+import io.mokamint.node.messages.internal.GetTaskInfosMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTaskInfosMessage}.
@@ -31,7 +31,7 @@ public abstract class GetTaskInfosMessageJson extends AbstractRpcMessageJsonRepr
 
 	@Override
 	public GetTaskInfosMessage unmap() {
-		return GetTaskInfosMessages.of(getId());
+		return new GetTaskInfosMessageImpl(this);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerMessage;
+import io.mokamint.node.messages.internal.gson.OpenMinerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#openMiner(int)}.
@@ -40,6 +41,17 @@ public class OpenMinerMessageImpl extends AbstractRpcMessage implements OpenMine
 			throw new IllegalArgumentException("The port number " + port + " is illegal: it must be between 0 and 65535 inclusive");
 
 		this.port = port;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public OpenMinerMessageImpl(OpenMinerMessageJson json) {
+		super(json.getId());
+
+		this.port = json.getPort();
 	}
 
 	@Override

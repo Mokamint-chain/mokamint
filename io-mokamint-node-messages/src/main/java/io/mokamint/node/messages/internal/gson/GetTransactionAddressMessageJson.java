@@ -17,11 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetTransactionAddressMessages;
 import io.mokamint.node.messages.api.GetTransactionAddressMessage;
+import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
 
 /**
  * The JSON representation of a {@link GetTransactionAddressMessage}.
@@ -35,14 +34,13 @@ public abstract class GetTransactionAddressMessageJson extends AbstractRpcMessag
 		this.hash = Hex.toHexString(message.getHash());
 	}
 
+	public String getHash() {
+		return hash;
+	}
+
 	@Override
 	public GetTransactionAddressMessage unmap() throws InconsistentJsonException {
-		try {
-			return GetTransactionAddressMessages.of(Hex.fromHexString(hash), getId());
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new GetTransactionAddressMessageImpl(this);
 	}
 
 	@Override
