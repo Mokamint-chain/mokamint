@@ -19,9 +19,11 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.AddPeerMessage;
+import io.mokamint.node.messages.internal.gson.AddPeerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#add(Peer)}.
@@ -40,6 +42,22 @@ public class AddPeerMessageImpl extends AbstractRpcMessage implements AddPeerMes
 		super(id);
 
 		this.peer = Objects.requireNonNull(peer, "peer cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public AddPeerMessageImpl(AddPeerMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var peer = json.getPeer();
+		if (peer == null)
+			throw new InconsistentJsonException("peer cannot be null");
+
+		this.peer = peer.unmap();
 	}
 
 	@Override

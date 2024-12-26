@@ -21,8 +21,8 @@ import java.security.NoSuchAlgorithmException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
+import io.mokamint.node.messages.internal.WhisperBlockMessageImpl;
 
 /**
  * The JSON representation of an {@link WhisperBlockMessage}.
@@ -36,9 +36,13 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 		this.block = new Blocks.Json(message.getWhispered());
 	}
 
+	public Blocks.Json getBlock() {
+		return block;
+	}
+
 	@Override
 	public WhisperBlockMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		return WhisperBlockMessages.of(block.unmap(), getId());
+		return new WhisperBlockMessageImpl(this);
 	}
 
 	@Override

@@ -67,7 +67,12 @@ public class List extends AbstractPublicRpcCommand {
 			this.nodePublicKey = nodePublicKey;
 			this.minerPublicKey = minerPublicKey;
 		}
-	
+
+		@Override
+		public int numberOfColumns() {
+			return 5;
+		}
+
 		@Override
 		public String getColumn(int index) {
 			switch (index) {
@@ -99,7 +104,7 @@ public class List extends AbstractPublicRpcCommand {
 		private final LocalDateTime startDateTimeUTC;
 
 		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			super(mkHeader(remote), 5, json());
+			super(mkHeader(remote), json());
 
 			this.remote = remote;
 

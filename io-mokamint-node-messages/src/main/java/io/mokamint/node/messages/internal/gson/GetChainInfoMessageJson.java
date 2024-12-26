@@ -17,9 +17,8 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetChainInfoMessages;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
+import io.mokamint.node.messages.internal.GetChainInfoMessageImpl;
 
 /**
  * The JSON representation of a {@link GetChainInfoMessage}.
@@ -31,8 +30,8 @@ public abstract class GetChainInfoMessageJson extends AbstractRpcMessageJsonRepr
 	}
 
 	@Override
-	public GetChainInfoMessage unmap() throws InconsistentJsonException {
-		return GetChainInfoMessages.of(getId());
+	public GetChainInfoMessage unmap() {
+		return new GetChainInfoMessageImpl(this);
 	}
 
 	@Override

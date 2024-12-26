@@ -64,6 +64,11 @@ public class List extends AbstractPublicRpcCommand {
 		}
 
 		@Override
+		public int numberOfColumns() {
+			return 5;
+		}
+
+		@Override
 		public String getColumn(int index) {
 			switch (index) {
 			case 0: return URI;
@@ -121,7 +126,7 @@ public class List extends AbstractPublicRpcCommand {
 	private class MyTable extends AbstractTable  {
 
 		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			super(verbose ? new RowVerbose("URI", "points", "status", "UUID", "version") : new Row("URI", "points", "status"), 5, json());
+			super(verbose ? new RowVerbose("URI", "points", "status", "UUID", "version") : new Row("URI", "points", "status"), json());
 			remote.getPeerInfos().sorted().forEach(this::add);
 		}
 

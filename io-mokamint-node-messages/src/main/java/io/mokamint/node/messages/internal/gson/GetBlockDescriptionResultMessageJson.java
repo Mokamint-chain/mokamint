@@ -17,13 +17,12 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.BlockDescriptions;
-import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
+import io.mokamint.node.messages.internal.GetBlockDescriptionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetBlockDescriptionResultMessage}.
@@ -37,9 +36,13 @@ public abstract class GetBlockDescriptionResultMessageJson extends AbstractRpcMe
 		this.description = message.get().map(BlockDescriptions.Json::new).orElse(null);
 	}
 
+	public BlockDescriptions.Json getDescription() {
+		return description;
+	}
+
 	@Override
 	public GetBlockDescriptionResultMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		return GetBlockDescriptionResultMessages.of(Optional.ofNullable(description == null ? null : description.unmap()), getId());
+		return new GetBlockDescriptionResultMessageImpl(this);
 	}
 
 	@Override

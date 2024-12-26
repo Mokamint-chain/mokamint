@@ -46,7 +46,12 @@ public class List extends AbstractPublicRpcCommand {
 			this.points = points;
 			this.description = description;
 		}
-	
+
+		@Override
+		public int numberOfColumns() {
+			return 3;
+		}
+
 		@Override
 		public String getColumn(int index) {
 			switch (index) {
@@ -75,7 +80,7 @@ public class List extends AbstractPublicRpcCommand {
 	private class MyTable extends AbstractTable {
 
 		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			super(new Row("UUID", "points", "description"), 3, json());
+			super(new Row("UUID", "points", "description"), json());
 			remote.getMinerInfos().sorted().forEach(this::add);
 		}
 

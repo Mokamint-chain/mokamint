@@ -18,9 +18,8 @@ package io.mokamint.application.cli;
 
 import java.io.IOException;
 
-import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.hotmoka.cli.AbstractCLI;
-import io.mokamint.application.cli.MokamintApplication.POMVersionProvider;
+import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.mokamint.application.cli.internal.List;
 import io.mokamint.application.cli.internal.Start;
 import picocli.CommandLine.Command;
@@ -35,8 +34,8 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-application",
 	header = "This is the command-line tool for Mokamint applications.",
-	footer = "Copyright (c) 2024 Fausto Spoto",
-	versionProvider = POMVersionProvider.class,
+	footer = "Copyright (c) 2024 Fausto Spoto (fausto.spoto@mokamint.io)",
+	versionProvider = MokamintApplication.POMVersionProvider.class,
 	subcommands = {
 		List.class,
 		Start.class
@@ -60,8 +59,7 @@ public class MokamintApplication extends AbstractCLI {
 	}
 
 	/**
-	 * A provider of the version of this tool, taken from the property
-	 * declaration into the POM file.
+	 * A provider of the version of this tool, taken from the property declaration into the POM file.
 	 */
 	public static class POMVersionProvider extends AbstractPropertyFileVersionProvider {
 

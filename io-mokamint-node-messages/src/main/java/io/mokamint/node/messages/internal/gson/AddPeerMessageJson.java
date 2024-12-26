@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.api.AddPeerMessage;
+import io.mokamint.node.messages.internal.AddPeerMessageImpl;
 
 /**
  * The JSON representation of an {@link AddPeerMessage}.
@@ -34,9 +34,13 @@ public abstract class AddPeerMessageJson extends AbstractRpcMessageJsonRepresent
 		this.peer = new Peers.Json(message.getPeer());
 	}
 
+	public Peers.Json getPeer() {
+		return peer;
+	}
+
 	@Override
 	public AddPeerMessage unmap() throws InconsistentJsonException {
-		return AddPeerMessages.of(peer.unmap(), getId());
+		return new AddPeerMessageImpl(this);
 	}
 
 	@Override

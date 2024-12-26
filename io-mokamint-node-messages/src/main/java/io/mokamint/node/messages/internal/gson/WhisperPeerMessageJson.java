@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
+import io.mokamint.node.messages.internal.WhisperPeerMessageImpl;
 
 /**
  * The JSON representation of an {@link WhisperPeerMessage}.
@@ -34,9 +34,13 @@ public abstract class WhisperPeerMessageJson extends AbstractRpcMessageJsonRepre
 		this.peer = new Peers.Json(message.getWhispered());
 	}
 
+	public Peers.Json getPeer() {
+		return peer;
+	}
+
 	@Override
 	public WhisperPeerMessage unmap() throws InconsistentJsonException {
-		return WhisperPeerMessages.of(peer.unmap(), getId());
+		return new WhisperPeerMessageImpl(this);
 	}
 
 	@Override

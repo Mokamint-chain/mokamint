@@ -19,9 +19,11 @@ package io.mokamint.node.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
+import io.mokamint.node.messages.internal.gson.AddTransactionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method.
@@ -43,6 +45,22 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 		super(id);
 
 		this.result = Objects.requireNonNull(result, "result cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public AddTransactionResultMessageImpl(AddTransactionResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var result = json.getResult();
+		if (result == null)
+			throw new InconsistentJsonException("result cannot be null");
+
+		this.result = result.unmap();
 	}
 
 	@Override

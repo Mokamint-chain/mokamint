@@ -18,6 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
+import io.mokamint.node.messages.internal.gson.GetChainInfoMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@code PublicNode#getChainInfo()} method.
@@ -31,6 +32,15 @@ public class GetChainInfoMessageImpl extends AbstractRpcMessage implements GetCh
 	 */
 	public GetChainInfoMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetChainInfoMessageImpl(GetChainInfoMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

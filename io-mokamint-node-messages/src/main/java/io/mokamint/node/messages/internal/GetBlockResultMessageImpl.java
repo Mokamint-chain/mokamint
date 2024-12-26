@@ -16,13 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
+import io.mokamint.node.messages.internal.gson.GetBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getBlock(byte[])} method.
@@ -41,7 +44,20 @@ public class GetBlockResultMessageImpl extends AbstractRpcMessage implements Get
 		super(id);
 
 		this.block = Objects.requireNonNull(block, "block cannot be null");
-		block.map(Objects::requireNonNull);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available cryptographic algorithm
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetBlockResultMessageImpl(GetBlockResultMessageJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		super(json.getId());
+
+		var block = json.getBlock();
+		this.block = Optional.ofNullable(block == null ? null : block.unmap());
 	}
 
 	@Override

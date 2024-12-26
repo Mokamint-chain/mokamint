@@ -17,11 +17,10 @@ limitations under the License.
 package io.mokamint.node.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
+import io.mokamint.node.messages.internal.GetBlockDescriptionMessageImpl;
 
 /**
  * The JSON representation of a {@link GetBlockDescriptionMessage}.
@@ -35,14 +34,13 @@ public abstract class GetBlockDescriptionMessageJson extends AbstractRpcMessageJ
 		this.hash = Hex.toHexString(message.getHash());
 	}
 
+	public String getHash() {
+		return hash;
+	}
+
 	@Override
 	public GetBlockDescriptionMessage unmap() throws InconsistentJsonException {
-		try {
-			return GetBlockDescriptionMessages.of(Hex.fromHexString(hash), getId());
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new GetBlockDescriptionMessageImpl(this);
 	}
 
 	@Override

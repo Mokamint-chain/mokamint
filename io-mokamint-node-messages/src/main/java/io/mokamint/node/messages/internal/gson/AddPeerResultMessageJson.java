@@ -16,13 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal.gson;
 
-import java.util.Optional;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.PeerInfos;
-import io.mokamint.node.messages.AddPeerResultMessages;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
+import io.mokamint.node.messages.internal.AddPeerResultMessageImpl;
 
 /**
  * The JSON representation of a {@link AddPeerResultMessage}.
@@ -36,9 +34,13 @@ public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRep
 		this.info = message.get().map(PeerInfos.Json::new).orElse(null);
 	}
 
+	public PeerInfos.Json getInfo() {
+		return info;
+	}
+
 	@Override
 	public AddPeerResultMessage unmap() throws InconsistentJsonException {
-		return AddPeerResultMessages.of(Optional.ofNullable(info == null ? null : info.unmap()), getId());
+		return new AddPeerResultMessageImpl(this);
 	}
 
 	@Override

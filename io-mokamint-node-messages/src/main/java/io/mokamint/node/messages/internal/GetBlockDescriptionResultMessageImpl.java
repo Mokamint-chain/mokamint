@@ -16,13 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
+import io.mokamint.node.messages.internal.gson.GetBlockDescriptionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getBlockDescription(byte[])} method.
@@ -41,7 +44,20 @@ public class GetBlockDescriptionResultMessageImpl extends AbstractRpcMessage imp
 		super(id);
 
 		this.description = Objects.requireNonNull(description, "description cannot be null");
-		description.map(Objects::requireNonNull);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available cryptographic algorithm
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetBlockDescriptionResultMessageImpl(GetBlockDescriptionResultMessageJson json) throws NoSuchAlgorithmException, InconsistentJsonException {
+		super(json.getId());
+
+		var description = json.getDescription();
+		this.description = Optional.ofNullable(description == null ? null : description.unmap());
 	}
 
 	@Override

@@ -59,7 +59,7 @@ public class Start extends AbstractCommand {
 			}
 			catch (IOException e) {
 				System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
-				LOGGER.log(Level.WARNING, "cannot access the standard input", e);
+				LOGGER.log(Level.SEVERE, "cannot access the standard input", e);
 			}
 		}
 		catch (ApplicationNotFoundException e) {

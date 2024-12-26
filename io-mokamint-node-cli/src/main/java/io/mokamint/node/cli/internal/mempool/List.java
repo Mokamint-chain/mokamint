@@ -67,7 +67,12 @@ public class List extends AbstractPublicRpcCommand {
 			this.hash = hash;
 			this.priority = priority;
 		}
-	
+
+		@Override
+		public int numberOfColumns() {
+			return 3;
+		}
+
 		@Override
 		public String getColumn(int index) {
 			switch (index) {
@@ -93,7 +98,7 @@ public class List extends AbstractPublicRpcCommand {
 		private final MempoolEntry[] entries;
 
 		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			super(mkHeader(remote), 3, json());
+			super(mkHeader(remote), json());
 
 			LOGGER.info("requesting mempool entries with index in the interval [" + from + ", " + (from + count) + ")");
 			this.entries = remote.getMempoolPortion(from, count).getEntries().toArray(MempoolEntry[]::new);

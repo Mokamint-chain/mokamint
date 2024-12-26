@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MempoolEntries;
-import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
+import io.mokamint.node.messages.internal.AddTransactionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link AddTransactionResultMessage}.
@@ -34,9 +34,13 @@ public abstract class AddTransactionResultMessageJson extends AbstractRpcMessage
 		this.result = new MempoolEntries.Json(message.get());
 	}
 
+	public MempoolEntries.Json getResult() {
+		return result;
+	}
+
 	@Override
 	public AddTransactionResultMessage unmap() throws InconsistentJsonException {
-		return AddTransactionResultMessages.of(result.unmap(), getId());
+		return new AddTransactionResultMessageImpl(this);
 	}
 
 	@Override

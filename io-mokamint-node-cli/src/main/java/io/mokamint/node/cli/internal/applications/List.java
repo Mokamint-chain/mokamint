@@ -54,7 +54,12 @@ public class List extends AbstractCommand {
 			this.className = className;
 			this.description = description;
 		}
-	
+
+		@Override
+		public int numberOfColumns() {
+			return 3;
+		}
+
 		@Override
 		public String getColumn(int index) {
 			switch (index) {
@@ -86,7 +91,7 @@ public class List extends AbstractCommand {
 
 	private class MyTable extends AbstractTable {
 		private MyTable() {
-			super(new Row("name", "class", "description"), 3, json);
+			super(new Row("name", "class", "description"), json);
 			Applications.available().forEach(this::add);
 		}
 

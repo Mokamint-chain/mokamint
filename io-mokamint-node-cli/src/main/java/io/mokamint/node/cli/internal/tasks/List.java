@@ -42,7 +42,12 @@ public class List extends AbstractPublicRpcCommand {
 		private Row(String description) {
 			this.description = description;
 		}
-	
+
+		@Override
+		public int numberOfColumns() {
+			return 1;
+		}
+
 		@Override
 		public String getColumn(int index) {
 			if (index == 0)
@@ -63,8 +68,7 @@ public class List extends AbstractPublicRpcCommand {
 	private class MyTable extends AbstractTable {
 
 		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
-			super(new Row("description"), 1, json());
-
+			super(new Row("description"), json());
 			remote.getTaskInfos().sorted().map(TaskInfo::getDescription).map(Row::new).forEach(this::add);
 		}
 	}

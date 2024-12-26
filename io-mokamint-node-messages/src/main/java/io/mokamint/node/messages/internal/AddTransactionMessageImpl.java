@@ -51,7 +51,7 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
-	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public AddTransactionMessageImpl(AddTransactionMessageJson json) throws InconsistentJsonException {
 		super(json.getId());

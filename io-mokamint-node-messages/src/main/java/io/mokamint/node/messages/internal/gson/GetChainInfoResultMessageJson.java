@@ -19,8 +19,8 @@ package io.mokamint.node.messages.internal.gson;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.ChainInfos;
-import io.mokamint.node.messages.GetChainInfoResultMessages;
 import io.mokamint.node.messages.api.GetChainInfoResultMessage;
+import io.mokamint.node.messages.internal.GetChainInfoResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetChainInfoResultMessage}.
@@ -34,9 +34,13 @@ public abstract class GetChainInfoResultMessageJson extends AbstractRpcMessageJs
 		this.info = new ChainInfos.Json(message.get());
 	}
 
+	public ChainInfos.Json getInfo() {
+		return info;
+	}
+
 	@Override
 	public GetChainInfoResultMessage unmap() throws InconsistentJsonException {
-		return GetChainInfoResultMessages.of(info.unmap(), getId());
+		return new GetChainInfoResultMessageImpl(this);
 	}
 
 	@Override
