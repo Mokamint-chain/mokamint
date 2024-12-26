@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
+import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#beginBlock(long, byte[], LocalDateTime)} method.
@@ -42,6 +43,17 @@ public class BeginBlockResultMessageImpl extends AbstractRpcMessage implements B
 		super(id);
 
 		this.result = result;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public BeginBlockResultMessageImpl(BeginBlockResultMessageJson json) {
+		super(json.getId());
+
+		this.result = json.getResult();
 	}
 
 	@Override

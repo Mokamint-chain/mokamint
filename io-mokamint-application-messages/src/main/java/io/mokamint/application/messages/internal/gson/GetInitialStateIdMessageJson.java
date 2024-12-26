@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
+import io.mokamint.application.messages.internal.GetInitialStateIdMessageImpl;
 
 /**
  * The JSON representation of an {@link GetInitialStateIdMessage}.
@@ -31,7 +31,7 @@ public abstract class GetInitialStateIdMessageJson extends AbstractRpcMessageJso
 
 	@Override
 	public GetInitialStateIdMessage unmap() {
-		return GetInitialStateIdMessages.of(getId());
+		return new GetInitialStateIdMessageImpl(this);
 	}
 
 	@Override

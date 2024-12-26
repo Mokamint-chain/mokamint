@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CommitBlockMessage;
+import io.mokamint.application.messages.internal.gson.CommitBlockMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#commitBlock(int)}.
@@ -36,6 +37,17 @@ public class CommitBlockMessageImpl extends AbstractRpcMessage implements Commit
 		super(id);
 
 		this.groupId = groupId;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public CommitBlockMessageImpl(CommitBlockMessageJson json) {
+		super(json.getId());
+
+		this.groupId = json.getGroupId();
 	}
 
 	@Override

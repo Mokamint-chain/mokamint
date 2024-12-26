@@ -19,10 +19,20 @@
       <artifactId>io-mokamint-node-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
     <dependency>
        <groupId>io.hotmoka.annotations</groupId>
        <artifactId>io-hotmoka-annotations</artifactId>
        <version>${io.hotmoka.annotations.version}</version>
+    </dependency>
+    <dependency>
+       <groupId>io.hotmoka.closeables</groupId>
+       <artifactId>io-hotmoka-closeables</artifactId>
+       <version>${io.hotmoka.closeables.version}</version>
     </dependency>
   </dependencies>
 

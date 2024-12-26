@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
+import io.mokamint.application.messages.internal.gson.AbortBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the
@@ -33,6 +34,15 @@ public class AbortBlockResultMessageImpl extends AbstractVoidResultMessage imple
 	 */
 	public AbortBlockResultMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public AbortBlockResultMessageImpl(AbortBlockResultMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

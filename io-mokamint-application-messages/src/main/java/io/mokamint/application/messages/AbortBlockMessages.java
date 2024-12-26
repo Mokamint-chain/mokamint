@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.AbortBlockMessageJson;
 /**
  * A provider of {@link AbortBlockMessage}.
  */
-public final class AbortBlockMessages {
+public abstract class AbortBlockMessages {
 
 	private AbortBlockMessages() {}
 

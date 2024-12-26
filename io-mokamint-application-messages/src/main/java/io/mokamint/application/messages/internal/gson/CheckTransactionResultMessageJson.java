@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.internal.CheckTransactionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link CheckTransactionResultMessage}.
@@ -31,7 +31,7 @@ public abstract class CheckTransactionResultMessageJson extends AbstractRpcMessa
 
 	@Override
 	public CheckTransactionResultMessage unmap() {
-		return CheckTransactionResultMessages.of(getId());
+		return new CheckTransactionResultMessageImpl(this);
 	}
 
 	@Override

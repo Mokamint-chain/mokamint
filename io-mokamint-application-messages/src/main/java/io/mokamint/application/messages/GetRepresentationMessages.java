@@ -26,7 +26,7 @@ import io.mokamint.node.api.Transaction;
 /**
  * A provider of {@link GetRepresentationMessage}.
  */
-public final class GetRepresentationMessages {
+public abstract class GetRepresentationMessages {
 
 	private GetRepresentationMessages() {}
 

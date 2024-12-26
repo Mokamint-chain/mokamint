@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.GetInitialStateIdResultMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
+import io.mokamint.application.messages.internal.GetInitialStateIdResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetInitialStateIdResultMessage}.
@@ -34,9 +34,13 @@ public abstract class GetInitialStateIdResultMessageJson extends AbstractRpcMess
 		this.result = Hex.toHexString(message.get());
 	}
 
+	public String getResult() {
+		return result;
+	}
+
 	@Override
-	public GetInitialStateIdResultMessage unmap() throws HexConversionException {
-		return GetInitialStateIdResultMessages.of(Hex.fromHexString(result), getId());
+	public GetInitialStateIdResultMessage unmap() throws InconsistentJsonException {
+		return new GetInitialStateIdResultMessageImpl(this);
 	}
 
 	@Override

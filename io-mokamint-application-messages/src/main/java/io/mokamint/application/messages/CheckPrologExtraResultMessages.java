@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMess
 /**
  * A provider of {@link CheckPrologExtraResultMessage}.
  */
-public final class CheckPrologExtraResultMessages {
+public abstract class CheckPrologExtraResultMessages {
 
 	private CheckPrologExtraResultMessages() {}
 

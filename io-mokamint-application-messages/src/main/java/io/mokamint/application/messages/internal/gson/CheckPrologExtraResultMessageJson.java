@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.internal.CheckPrologExtraResultMessageImpl;
 
 /**
  * The JSON representation of a {@link CheckPrologExtraResultMessage}.
@@ -32,9 +32,13 @@ public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessa
 		this.result = message.get();
 	}
 
+	public boolean getResult() {
+		return result;
+	}
+
 	@Override
 	public CheckPrologExtraResultMessage unmap() {
-		return CheckPrologExtraResultMessages.of(result, getId());
+		return new CheckPrologExtraResultMessageImpl(this);
 	}
 
 	@Override

@@ -18,9 +18,13 @@ package io.mokamint.application.messages.internal;
 
 import java.util.Arrays;
 
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
+import io.mokamint.application.messages.internal.gson.GetInitialStateIdResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#getInitialStateId()} method.
@@ -42,6 +46,27 @@ public class GetInitialStateIdResultMessageImpl extends AbstractRpcMessage imple
 		super(id);
 
 		this.result = result.clone();
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public GetInitialStateIdResultMessageImpl(GetInitialStateIdResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var result = json.getResult();
+		if (result == null)
+			throw new InconsistentJsonException("result cannot be null");
+
+		try {
+			this.result = Hex.fromHexString(result);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

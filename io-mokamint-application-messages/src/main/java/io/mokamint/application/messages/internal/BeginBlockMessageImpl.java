@@ -16,13 +16,20 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.BeginBlockMessage;
+import io.mokamint.application.messages.internal.gson.BeginBlockMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#beginBlock(long, byte[], LocalDateTime)}.
@@ -49,6 +56,40 @@ public class BeginBlockMessageImpl extends AbstractRpcMessage implements BeginBl
 
 		this.stateId = stateId.clone();
 		this.when = Objects.requireNonNull(when, "when cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public BeginBlockMessageImpl(BeginBlockMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		this.height = json.getHeight();
+
+		var stateId = json.getStateId();
+		if (stateId == null)
+			throw new InconsistentJsonException("stateId cannot be null");
+
+		var when = json.getWhen();
+		if (when == null)
+			throw new InconsistentJsonException("when cannot be null");
+
+		try {
+			this.stateId = Hex.fromHexString(stateId);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
+
+		try {
+			this.when = LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME);
+		}
+		catch (DateTimeParseException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

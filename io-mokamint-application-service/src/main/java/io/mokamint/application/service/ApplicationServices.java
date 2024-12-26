@@ -26,7 +26,7 @@ import jakarta.websocket.DeploymentException;
 /**
  * A provider of application services for the public API of an application.
  */
-public final class ApplicationServices {
+public abstract class ApplicationServices {
 
 	private ApplicationServices() {}
 

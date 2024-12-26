@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.EndBlockMessage;
+import io.mokamint.application.messages.internal.gson.EndBlockMessageJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -42,6 +45,25 @@ public class EndBlockMessageImpl extends AbstractRpcMessage implements EndBlockM
 
 		this.groupId = groupId;
 		this.deadline = Objects.requireNonNull(deadline, "deadline cannot be null");
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws NoSuchAlgorithmException if the message refers to a non-available cryptographic algorithm
+	 */
+	public EndBlockMessageImpl(EndBlockMessageJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		super(json.getId());
+
+		this.groupId = json.getGroupId();
+
+		var deadline = json.getDeadline();
+		if (deadline == null)
+			throw new InconsistentJsonException("deadline cannot be null");
+
+		this.deadline = deadline.unmap();
 	}
 
 	@Override

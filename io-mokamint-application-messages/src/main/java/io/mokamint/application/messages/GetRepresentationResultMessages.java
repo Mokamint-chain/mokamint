@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.GetRepresentationResultMes
 /**
  * A provider of {@link GetRepresentationResultMessage}.
  */
-public final class GetRepresentationResultMessages {
+public abstract class GetRepresentationResultMessages {
 
 	private GetRepresentationResultMessages() {}
 

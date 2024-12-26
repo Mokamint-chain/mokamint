@@ -25,6 +25,11 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-nonce</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.crypto</groupId>
       <artifactId>io-hotmoka-crypto</artifactId>
       <version>${io.hotmoka.crypto.version}</version>
@@ -33,6 +38,11 @@
       <groupId>io.hotmoka.websockets</groupId>
       <artifactId>io-hotmoka-websockets-beans</artifactId>
       <version>${io.hotmoka.websockets.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
 

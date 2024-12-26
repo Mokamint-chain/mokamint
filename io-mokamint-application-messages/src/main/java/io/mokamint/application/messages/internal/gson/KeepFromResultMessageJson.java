@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
+import io.mokamint.application.messages.internal.KeepFromResultMessageImpl;
 
 /**
  * The JSON representation of a {@link KeepFromResultMessage}.
@@ -31,7 +31,7 @@ public abstract class KeepFromResultMessageJson extends AbstractRpcMessageJsonRe
 
 	@Override
 	public KeepFromResultMessage unmap() {
-		return KeepFromResultMessages.of(getId());
+		return new KeepFromResultMessageImpl(this);
 	}
 
 	@Override

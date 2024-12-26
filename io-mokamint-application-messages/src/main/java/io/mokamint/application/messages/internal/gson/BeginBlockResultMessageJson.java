@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
+import io.mokamint.application.messages.internal.BeginBlockResultMessageImpl;
 
 /**
  * The JSON representation of a {@link BeginBlockResultMessage}.
@@ -32,9 +32,13 @@ public abstract class BeginBlockResultMessageJson extends AbstractRpcMessageJson
 		this.result = message.get();
 	}
 
+	public int getResult() {
+		return result;
+	}
+
 	@Override
 	public BeginBlockResultMessage unmap() {
-		return BeginBlockResultMessages.of(result, getId());
+		return new BeginBlockResultMessageImpl(this);
 	}
 
 	@Override

@@ -34,10 +34,10 @@ public abstract class Applications {
 	 * 
 	 * @param name the name of the required application
 	 * @return the application
-	 * @throws IllegalArgumentException if there is no application with the given name
-	 *                                  or if there is more than one
+	 * @throws ApplicationNotFoundException if there is no application with the given name
+	 *                                      or if there is more than one
 	 */
-	public static Application load(String name) {
+	public static Application load(String name) throws ApplicationNotFoundException {
 		return ApplicationLoader.load(name);
 	}
 

@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.internal.gson.DeliverTransactionResultMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**
@@ -34,6 +35,15 @@ public class DeliverTransactionResultMessageImpl extends AbstractVoidResultMessa
 	 */
 	public DeliverTransactionResultMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public DeliverTransactionResultMessageImpl(DeliverTransactionResultMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

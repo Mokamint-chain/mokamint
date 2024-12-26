@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.AbortBlockResultMessageJso
 /**
  * A provider of {@link AbortBlockResultMessage}.
  */
-public final class AbortBlockResultMessages {
+public abstract class AbortBlockResultMessages {
 
 	private AbortBlockResultMessages() {}
 

@@ -27,7 +27,7 @@ import io.mokamint.application.messages.internal.gson.KeepFromMessageJson;
 /**
  * A provider of {@link KeepFromMessage}.
  */
-public final class KeepFromMessages {
+public abstract class KeepFromMessages {
 
 	private KeepFromMessages() {}
 

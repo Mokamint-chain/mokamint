@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CheckPrologExtraMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.internal.CheckPrologExtraMessageImpl;
 
 /**
  * The JSON representation of an {@link CheckPrologExtraMessage}.
@@ -34,9 +34,13 @@ public abstract class CheckPrologExtraMessageJson extends AbstractRpcMessageJson
 		this.extra = Hex.toHexString(message.getExtra());
 	}
 
+	public String getExtra() {
+		return extra;
+	}
+
 	@Override
-	public CheckPrologExtraMessage unmap() throws HexConversionException {
-		return CheckPrologExtraMessages.of(Hex.fromHexString(extra), getId());
+	public CheckPrologExtraMessage unmap() throws InconsistentJsonException {
+		return new CheckPrologExtraMessageImpl(this);
 	}
 
 	@Override

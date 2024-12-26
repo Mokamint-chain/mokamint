@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.GetPriorityResultMessageJs
 /**
  * A provider of {@link GetPriorityResultMessage}.
  */
-public final class GetPriorityResultMessages {
+public abstract class GetPriorityResultMessages {
 
 	private GetPriorityResultMessages() {}
 

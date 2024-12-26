@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.DeliverTransactionResultMe
 /**
  * A provider of {@link DeliverTransactionResultMessage}.
  */
-public final class DeliverTransactionResultMessages {
+public abstract class DeliverTransactionResultMessages {
 
 	private DeliverTransactionResultMessages() {}
 

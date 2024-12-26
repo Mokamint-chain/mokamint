@@ -22,5 +22,8 @@ module io.mokamint.application.service.api {
 	exports io.mokamint.application.service.api;
 
 	requires io.hotmoka.websockets.server.api;
-	requires io.mokamint.application.api;
+
+	// these are only used in the JavaDoc
+	requires static io.mokamint.application.api;
+	requires static io.mokamint.node.api;
 }

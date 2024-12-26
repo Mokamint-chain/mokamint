@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
+import io.mokamint.application.messages.internal.GetPriorityResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetPriorityResultMessage}.
@@ -32,9 +32,13 @@ public abstract class GetPriorityResultMessageJson extends AbstractRpcMessageJso
 		this.result = message.get();
 	}
 
+	public long getResult() {
+		return result;
+	}
+
 	@Override
 	public GetPriorityResultMessage unmap() {
-		return GetPriorityResultMessages.of(result, getId());
+		return new GetPriorityResultMessageImpl(this);
 	}
 
 	@Override

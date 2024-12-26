@@ -16,16 +16,12 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.gson;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.crypto.Base58ConversionException;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.api.EndBlockMessage;
+import io.mokamint.application.messages.internal.EndBlockMessageImpl;
 import io.mokamint.nonce.Deadlines;
 
 /**
@@ -42,9 +38,17 @@ public abstract class EndBlockMessageJson extends AbstractRpcMessageJsonRepresen
 		this.groupId = message.getGroupId();
 	}
 
+	public Deadlines.Json getDeadline() {
+		return deadline;
+	}
+
+	public int getGroupId() {
+		return groupId;
+	}
+
 	@Override
-	public EndBlockMessage unmap() throws InvalidKeyException, NoSuchAlgorithmException, InconsistentJsonException, InvalidKeySpecException, IllegalArgumentException, HexConversionException, Base58ConversionException {
-		return EndBlockMessages.of(groupId, deadline.unmap(), getId());
+	public EndBlockMessage unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
+		return new EndBlockMessageImpl(this);
 	}
 
 	@Override

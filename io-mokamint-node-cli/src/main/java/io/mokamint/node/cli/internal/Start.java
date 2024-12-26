@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Entropies;
+import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
@@ -374,7 +375,7 @@ public class Start extends AbstractCommand {
 				try {
 					app = Applications.load(application);
 				}
-				catch (IllegalArgumentException e) {
+				catch (ApplicationNotFoundException e) {
 					throw new CommandException(e.getMessage());
 				}
 			}

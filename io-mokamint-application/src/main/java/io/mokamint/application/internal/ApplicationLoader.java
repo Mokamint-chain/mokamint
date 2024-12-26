@@ -22,6 +22,7 @@ import java.util.ServiceLoader.Provider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.Name;
 
@@ -34,18 +35,18 @@ public class ApplicationLoader {
 	 * Loads from the module path the application with the given name.
 	 * 
 	 * @return the application
-	 * @throws IllegalArgumentException if there is no application with the given name
-	 *                                  or if there is more than one
+	 * @throws ApplicationNotFoundException if there is no application with the given name
+	 *                                      or if there is more than one
 	 */
-	public static Application load(String name) {
+	public static Application load(String name) throws ApplicationNotFoundException {
 		List<Provider<Application>> providers = available()
 			.filter(app -> provides(name, app))
 			.collect(Collectors.toList());
 
 		if (providers.size() == 0)
-			throw new IllegalArgumentException("There are no providers for application " + name);
+			throw new ApplicationNotFoundException("There are no providers for application " + name);
 		else if (providers.size() > 1)
-			throw new IllegalArgumentException("There is more than one provider for application " + name);
+			throw new ApplicationNotFoundException("There is more than one provider for application " + name);
 
 		return providers.get(0).get();
 	}

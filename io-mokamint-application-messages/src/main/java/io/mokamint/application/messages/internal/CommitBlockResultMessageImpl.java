@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
+import io.mokamint.application.messages.internal.gson.CommitBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the
@@ -33,6 +34,15 @@ public class CommitBlockResultMessageImpl extends AbstractVoidResultMessage impl
 	 */
 	public CommitBlockResultMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public CommitBlockResultMessageImpl(CommitBlockResultMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

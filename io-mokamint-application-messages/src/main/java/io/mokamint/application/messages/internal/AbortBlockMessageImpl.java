@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.AbortBlockMessage;
+import io.mokamint.application.messages.internal.gson.AbortBlockMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#abortBlock(int)}.
@@ -36,6 +37,17 @@ public class AbortBlockMessageImpl extends AbstractRpcMessage implements AbortBl
 		super(id);
 
 		this.groupId = groupId;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public AbortBlockMessageImpl(AbortBlockMessageJson json) {
+		super (json.getId());
+
+		this.groupId = json.getGroupId();
 	}
 
 	@Override

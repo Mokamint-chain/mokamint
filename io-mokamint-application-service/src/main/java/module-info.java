@@ -31,6 +31,5 @@ module io.mokamint.application.service {
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.closeables.api;
-	requires org.glassfish.tyrus.core;
 	requires java.logging;
 }

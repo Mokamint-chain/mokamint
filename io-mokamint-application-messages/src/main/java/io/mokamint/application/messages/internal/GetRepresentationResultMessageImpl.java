@@ -19,8 +19,10 @@ package io.mokamint.application.messages.internal;
 import java.util.Objects;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
+import io.mokamint.application.messages.internal.gson.GetRepresentationResultMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**
@@ -41,6 +43,22 @@ public class GetRepresentationResultMessageImpl extends AbstractRpcMessage imple
 	 */
 	public GetRepresentationResultMessageImpl(String result, String id) {
 		super(id);
+
+		this.result = result;
+	}
+
+	/**
+	 * Creates a message from its JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public GetRepresentationResultMessageImpl(GetRepresentationResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		String result = json.getResult();
+		if (result == null)
+			throw new InconsistentJsonException("result cannot be null");
 
 		this.result = result;
 	}

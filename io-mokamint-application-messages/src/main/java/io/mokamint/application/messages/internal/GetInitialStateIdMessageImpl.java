@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
+import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#getInitialStateId()}.
@@ -32,6 +33,15 @@ public class GetInitialStateIdMessageImpl extends AbstractRpcMessage implements 
 	 */
 	public GetInitialStateIdMessageImpl(String id) {
 		super(id);
+	}
+
+	/**
+	 * Creates a message from its JSOn representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetInitialStateIdMessageImpl(GetInitialStateIdMessageJson json) {
+		super(json.getId());
 	}
 
 	@Override

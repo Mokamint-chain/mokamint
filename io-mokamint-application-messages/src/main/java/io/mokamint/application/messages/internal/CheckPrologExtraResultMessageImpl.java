@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#checkPrologExtra(byte[])} method.
@@ -40,6 +41,17 @@ public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implem
 		super(id);
 
 		this.result = result;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public CheckPrologExtraResultMessageImpl(CheckPrologExtraResultMessageJson json) {
+		super(json.getId());
+
+		this.result = json.getResult();
 	}
 
 	@Override

@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.internal.DeliverTransactionResultMessageImpl;
 
 /**
  * The JSON representation of a {@link DeliverTransactionResultMessage}.
@@ -31,7 +31,7 @@ public abstract class DeliverTransactionResultMessageJson extends AbstractRpcMes
 
 	@Override
 	public DeliverTransactionResultMessage unmap() {
-		return DeliverTransactionResultMessages.of(getId());
+		return new DeliverTransactionResultMessageImpl(this);
 	}
 
 	@Override

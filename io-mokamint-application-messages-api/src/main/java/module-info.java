@@ -20,9 +20,10 @@ limitations under the License.
 module io.mokamint.application.messages.api {
 	exports io.mokamint.application.messages.api;
 
-	requires io.mokamint.application.api;
 	requires transitive io.mokamint.node.api;
-	requires transitive io.hotmoka.websockets.beans.api;
-	requires io.hotmoka.websockets.beans;
+	requires io.hotmoka.websockets.beans.api;
 	requires io.hotmoka.annotations;
+
+	// this is used only in the JavaDoc
+	requires static io.mokamint.application.api;
 }

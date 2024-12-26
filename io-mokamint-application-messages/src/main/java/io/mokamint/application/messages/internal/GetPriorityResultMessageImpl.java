@@ -19,6 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
+import io.mokamint.application.messages.internal.gson.GetPriorityResultMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**
@@ -41,6 +42,17 @@ public class GetPriorityResultMessageImpl extends AbstractRpcMessage implements 
 		super(id);
 
 		this.result = result;
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 */
+	public GetPriorityResultMessageImpl(GetPriorityResultMessageJson json) {
+		super(json.getId());
+
+		this.result = json.getResult();
 	}
 
 	@Override

@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.EndBlockResultMessageJson;
 /**
  * A provider of {@link EndBlockResultMessage}.
  */
-public final class EndBlockResultMessages {
+public abstract class EndBlockResultMessages {
 
 	private EndBlockResultMessages() {}
 

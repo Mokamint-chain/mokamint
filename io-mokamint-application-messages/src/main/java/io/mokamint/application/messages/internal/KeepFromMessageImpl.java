@@ -16,11 +16,16 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.KeepFromMessage;
+import io.mokamint.application.messages.internal.gson.KeepFromMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#keepFrom(java.time.LocalDateTime)}.
@@ -38,6 +43,27 @@ public class KeepFromMessageImpl extends AbstractRpcMessage implements KeepFromM
 		super(id);
 
 		this.start = start;
+	}
+
+	/**
+	 * Creates a message from its JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public KeepFromMessageImpl(KeepFromMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var start = json.getStart();
+		if (start == null)
+			throw new InconsistentJsonException("start cannot be nul");
+
+		try {
+			this.start = LocalDateTime.parse(start, ISO_LOCAL_DATE_TIME);
+		}
+		catch (DateTimeParseException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

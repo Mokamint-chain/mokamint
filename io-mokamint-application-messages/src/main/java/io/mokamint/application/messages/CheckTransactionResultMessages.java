@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.CheckTransactionResultMess
 /**
  * A provider of {@link CheckTransactionResultMessage}.
  */
-public final class CheckTransactionResultMessages {
+public abstract class CheckTransactionResultMessages {
 
 	private CheckTransactionResultMessages() {}
 

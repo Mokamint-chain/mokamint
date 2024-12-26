@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageJso
 /**
  * A provider of {@link BeginBlockResultMessage}.
  */
-public final class BeginBlockResultMessages {
+public abstract class BeginBlockResultMessages {
 
 	private BeginBlockResultMessages() {}
 

@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageJs
 /**
  * A provider of {@link GetInitialStateIdMessage}.
  */
-public final class GetInitialStateIdMessages {
+public abstract class GetInitialStateIdMessages {
 
 	private GetInitialStateIdMessages() {}
 

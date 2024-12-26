@@ -18,7 +18,6 @@ package io.mokamint.application.service.internal;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -153,7 +152,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -184,7 +183,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -214,7 +213,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -244,7 +243,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -274,7 +273,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -304,7 +303,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -335,7 +334,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -365,7 +364,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -396,7 +395,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -427,7 +426,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -458,7 +457,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 

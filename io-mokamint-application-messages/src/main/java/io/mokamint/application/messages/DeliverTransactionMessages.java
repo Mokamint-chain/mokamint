@@ -26,7 +26,7 @@ import io.mokamint.node.api.Transaction;
 /**
  * A provider of {@link DeliverTransactionMessage}.
  */
-public final class DeliverTransactionMessages {
+public abstract class DeliverTransactionMessages {
 
 	private DeliverTransactionMessages() {}
 

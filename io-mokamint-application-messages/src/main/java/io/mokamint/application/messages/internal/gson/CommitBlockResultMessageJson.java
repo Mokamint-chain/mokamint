@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
+import io.mokamint.application.messages.internal.CommitBlockResultMessageImpl;
 
 /**
  * The JSON representation of a {@link CommitBlockResultMessage}.
@@ -31,7 +31,7 @@ public abstract class CommitBlockResultMessageJson extends AbstractRpcMessageJso
 
 	@Override
 	public CommitBlockResultMessage unmap() {
-		return CommitBlockResultMessages.of(getId());
+		return new CommitBlockResultMessageImpl(this);
 	}
 
 	@Override

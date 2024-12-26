@@ -19,6 +19,7 @@ limitations under the License.
  */
 module io.mokamint.application {
 	exports io.mokamint.application;
+
 	requires transitive io.mokamint.application.api;
 	requires io.hotmoka.closeables;
 	requires io.hotmoka.annotations;

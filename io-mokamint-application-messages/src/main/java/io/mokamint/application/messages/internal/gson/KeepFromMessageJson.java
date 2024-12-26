@@ -18,11 +18,10 @@ package io.mokamint.application.messages.internal.gson;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-import java.time.LocalDateTime;
-
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.KeepFromMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.KeepFromMessage;
+import io.mokamint.application.messages.internal.KeepFromMessageImpl;
 
 /**
  * The JSON representation of an {@link KeepFromMessage}.
@@ -36,9 +35,13 @@ public abstract class KeepFromMessageJson extends AbstractRpcMessageJsonRepresen
 		this.start = ISO_LOCAL_DATE_TIME.format(message.getStart());
 	}
 
+	public String getStart() {
+		return start;
+	}
+
 	@Override
-	public KeepFromMessage unmap() {
-		return KeepFromMessages.of(LocalDateTime.parse(start, ISO_LOCAL_DATE_TIME), getId());
+	public KeepFromMessage unmap() throws InconsistentJsonException {
+		return new KeepFromMessageImpl(this);
 	}
 
 	@Override

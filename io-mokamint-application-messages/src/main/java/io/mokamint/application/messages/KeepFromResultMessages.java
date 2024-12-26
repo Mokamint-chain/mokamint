@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.KeepFromResultMessageJson;
 /**
  * A provider of {@link KeepFromResultMessage}.
  */
-public final class KeepFromResultMessages {
+public abstract class KeepFromResultMessages {
 
 	private KeepFromResultMessages() {}
 

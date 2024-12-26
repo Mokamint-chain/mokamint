@@ -25,7 +25,7 @@ import io.mokamint.application.messages.internal.gson.CommitBlockResultMessageJs
 /**
  * A provider of {@link CommitBlockResultMessage}.
  */
-public final class CommitBlockResultMessages {
+public abstract class CommitBlockResultMessages {
 
 	private CommitBlockResultMessages() {}
 

@@ -17,8 +17,9 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.GetRepresentationResultMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
+import io.mokamint.application.messages.internal.GetRepresentationResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetRepresentationResultMessage}.
@@ -33,12 +34,16 @@ public abstract class GetRepresentationResultMessageJson extends AbstractRpcMess
 	}
 
 	@Override
-	public GetRepresentationResultMessage unmap() {
-		return GetRepresentationResultMessages.of(result, getId());
+	public GetRepresentationResultMessage unmap() throws InconsistentJsonException {
+		return new GetRepresentationResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
 		return GetRepresentationResultMessage.class.getName();
+	}
+
+	public String getResult() {
+		return result;
 	}
 }

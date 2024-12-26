@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
+import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.service.ApplicationServices;
@@ -60,6 +61,9 @@ public class Start extends AbstractCommand {
 				System.out.println(Ansi.AUTO.string("@|red Cannot access the standard input!|@"));
 				LOGGER.log(Level.WARNING, "cannot access the standard input", e);
 			}
+		}
+		catch (ApplicationNotFoundException e) {
+			throw new CommandException(e.getMessage());
 		}
 		catch (DeploymentException | IOException e) {
 			throw new CommandException("Failed to open the application service. Is port " + port + " available?", e);

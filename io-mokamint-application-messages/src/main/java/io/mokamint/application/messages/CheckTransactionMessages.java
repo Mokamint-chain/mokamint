@@ -26,7 +26,7 @@ import io.mokamint.node.api.Transaction;
 /**
  * A provider of {@link CheckTransactionMessage}.
  */
-public final class CheckTransactionMessages {
+public abstract class CheckTransactionMessages {
 
 	private CheckTransactionMessages() {}
 

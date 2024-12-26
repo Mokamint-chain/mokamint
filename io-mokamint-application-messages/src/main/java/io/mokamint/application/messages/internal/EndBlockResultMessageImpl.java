@@ -18,9 +18,13 @@ package io.mokamint.application.messages.internal;
 
 import java.util.Arrays;
 
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.internal.gson.EndBlockResultMessageJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -43,6 +47,27 @@ public class EndBlockResultMessageImpl extends AbstractRpcMessage implements End
 		super(id);
 
 		this.result = result.clone();
+	}
+
+	/**
+	 * Creates a message from its JSOn representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public EndBlockResultMessageImpl(EndBlockResultMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var result = json.getResult();
+		if (result == null)
+			throw new InconsistentJsonException("result cannot be null");
+
+		try {
+			this.result = Hex.fromHexString(result);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

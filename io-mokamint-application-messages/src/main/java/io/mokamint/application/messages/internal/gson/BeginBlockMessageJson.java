@@ -18,13 +18,11 @@ package io.mokamint.application.messages.internal.gson;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-import java.time.LocalDateTime;
-
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.BeginBlockMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.BeginBlockMessage;
+import io.mokamint.application.messages.internal.BeginBlockMessageImpl;
 
 /**
  * The JSON representation of an {@link BeginBlockMessage}.
@@ -42,9 +40,21 @@ public abstract class BeginBlockMessageJson extends AbstractRpcMessageJsonRepres
 		this.when = ISO_LOCAL_DATE_TIME.format(message.getWhen());
 	}
 
+	public long getHeight() {
+		return height;
+	}
+
+	public String getStateId() {
+		return stateId;
+	}
+
+	public String getWhen() {
+		return when;
+	}
+
 	@Override
-	public BeginBlockMessage unmap() throws HexConversionException {
-		return BeginBlockMessages.of(height, LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME), Hex.fromHexString(stateId), getId());
+	public BeginBlockMessage unmap() throws InconsistentJsonException {
+		return new BeginBlockMessageImpl(this);
 	}
 
 	@Override

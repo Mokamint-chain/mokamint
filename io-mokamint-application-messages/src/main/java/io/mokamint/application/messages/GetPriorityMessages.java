@@ -26,7 +26,7 @@ import io.mokamint.node.api.Transaction;
 /**
  * A provider of {@link GetPriorityMessage}.
  */
-public final class GetPriorityMessages {
+public abstract class GetPriorityMessages {
 
 	private GetPriorityMessages() {}
 

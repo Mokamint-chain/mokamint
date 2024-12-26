@@ -19,9 +19,13 @@ package io.mokamint.application.messages.internal;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.hotmoka.crypto.Hex;
+import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.internal.gson.CheckPrologExtraMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#checkPrologExtra(byte[])}.
@@ -39,6 +43,27 @@ public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements C
 		super(id);
 
 		this.extra = Objects.requireNonNull(extra);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 */
+	public CheckPrologExtraMessageImpl(CheckPrologExtraMessageJson json) throws InconsistentJsonException {
+		super(json.getId());
+
+		var extra = json.getExtra();
+		if (extra == null)
+			throw new InconsistentJsonException("extra cannot be null");
+
+		try {
+			this.extra = Hex.fromHexString(extra);
+		}
+		catch (HexConversionException e) {
+			throw new InconsistentJsonException(e);
+		}
 	}
 
 	@Override

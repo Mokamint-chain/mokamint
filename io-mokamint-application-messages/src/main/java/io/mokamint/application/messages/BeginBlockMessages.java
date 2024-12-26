@@ -27,7 +27,7 @@ import io.mokamint.application.messages.internal.gson.BeginBlockMessageJson;
 /**
  * A provider of {@link BeginBlockMessage}.
  */
-public final class BeginBlockMessages {
+public abstract class BeginBlockMessages {
 
 	private BeginBlockMessages() {}
 

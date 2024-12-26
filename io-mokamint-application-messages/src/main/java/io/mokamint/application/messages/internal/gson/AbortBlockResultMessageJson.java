@@ -17,8 +17,8 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
+import io.mokamint.application.messages.internal.AbortBlockResultMessageImpl;
 
 /**
  * The JSON representation of a {@link AbortBlockResultMessage}.
@@ -31,7 +31,7 @@ public abstract class AbortBlockResultMessageJson extends AbstractRpcMessageJson
 
 	@Override
 	public AbortBlockResultMessage unmap() {
-		return AbortBlockResultMessages.of(getId());
+		return new AbortBlockResultMessageImpl(this);
 	}
 
 	@Override

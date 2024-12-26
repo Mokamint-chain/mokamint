@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.application.messages.internal.gson;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.application.messages.EndBlockResultMessages;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.internal.EndBlockResultMessageImpl;
 
 /**
  * The JSON representation of a {@link EndBlockResultMessage}.
@@ -34,9 +34,13 @@ public abstract class EndBlockResultMessageJson extends AbstractRpcMessageJsonRe
 		this.result = Hex.toHexString(message.get());
 	}
 
+	public String getResult() {
+		return result;
+	}
+
 	@Override
-	public EndBlockResultMessage unmap() throws HexConversionException {
-		return EndBlockResultMessages.of(Hex.fromHexString(result), getId());
+	public EndBlockResultMessage unmap() throws InconsistentJsonException {
+		return new EndBlockResultMessageImpl(this);
 	}
 
 	@Override

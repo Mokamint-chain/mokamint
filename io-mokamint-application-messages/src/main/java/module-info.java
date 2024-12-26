@@ -23,7 +23,6 @@ module io.mokamint.application.messages {
 	opens io.mokamint.application.messages.internal.gson to com.google.gson;
 
 	requires transitive io.mokamint.application.messages.api;
-	requires io.mokamint.application.api;
 	requires io.mokamint.node;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.websockets.beans;
@@ -33,4 +32,7 @@ module io.mokamint.application.messages {
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
 	// classes without the no-args constructor
 	requires jdk.unsupported;
+
+	// this is only used in JavaDoc
+	requires static io.mokamint.application.api;
 }

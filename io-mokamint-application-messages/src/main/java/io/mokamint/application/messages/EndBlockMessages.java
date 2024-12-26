@@ -26,7 +26,7 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * A provider of {@link EndBlockMessage}.
  */
-public final class EndBlockMessages {
+public abstract class EndBlockMessages {
 
 	private EndBlockMessages() {}
 
