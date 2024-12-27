@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,11 +29,11 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.remote.RemoteMiner;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.DeadlineValidityCheck;
 import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
@@ -48,7 +49,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where mining services can connect and provide their deadlines.
  */
 @ThreadSafe
-public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
+public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMiner {
 
 	/**
 	 * The unique identifier of the miner.
@@ -80,14 +81,13 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	 * Creates a remote miner.
 	 * 
 	 * @param port the port where the remote miner will receive the deadlines
-	 * @param chainId the chain identifier of the blockchain for which the deadlines will be used
-	 * @param nodePublicKey the public key of the node for which the deadlines are computed
+	 * @param check the check to determine if a deadline is valid
 	 * @throws DeploymentException if the miner cannot be deployed
 	 * @throws IOException if an I/O error occurs
 	 */
 	public RemoteMinerImpl(int port, DeadlineValidityCheck check) throws DeploymentException, IOException {
 		this.port = port;
-		this.check = check;
+		this.check = Objects.requireNonNull(check);
 
 		startContainer("", port, RemoteMinerEndpoint.config(this));
     	LOGGER.info(logPrefix + "published at ws://localhost:" + port);
@@ -99,22 +99,20 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	}
 
 	@Override
-	public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
-		requests.add(description, onDeadlineComputed);
-
-		LOGGER.info(logPrefix + "requesting " + description + " to " + sessions.size() + " open sessions");
-
+	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
+		requests.add(challenge, onDeadlineComputed);
+		LOGGER.info(logPrefix + "requesting " + challenge + " to " + sessions.size() + " open sessions");
 		sessions.stream()
 			.filter(Session::isOpen)
-			.forEach(session -> sendDescription(session, description));
+			.forEach(session -> sendChallenge(session, challenge));
 	}
 
-	private void sendDescription(Session session, Challenge description) {
+	private void sendChallenge(Session session, Challenge challenge) {
 		try {
-			sendObjectAsync(session, description);
+			sendObjectAsync(session, challenge);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to miner service " + session.getId(), e);
+			LOGGER.warning(logPrefix + "cannot send to miner service " + session.getId() + ": " + e.getMessage());
 		}
 	}
 
@@ -128,16 +126,14 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 	public String toString() {
 		int sessionsCount = sessions.size();
 		String openSessions = sessionsCount == 1 ? "1 open session" : (sessionsCount + " open sessions");
-
-		return "a remote miner published at port " + port + ", with " + openSessions;
+		return "a remote miner published at ws://localhost:" + port + ", with " + openSessions;
 	}
 
 	private void addSession(Session session) {
 		sessions.add(session);
 		LOGGER.info(logPrefix + "bound miner service " + session.getId());
-
 		// we inform the newly arrived about work that it can already start doing
-		requests.forAllDescriptions(description -> sendDescription(session, description));
+		requests.forAllChallenges(challenge -> sendChallenge(session, challenge));
 	}
 
 	private void removeSession(Session session) {
@@ -162,7 +158,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements Miner {
 			return;
 		}
 		catch (TimeoutException | DeadlineValidityCheckException e) {
-			LOGGER.warning(logPrefix + "could not check the validity of " + deadline + ": " + e.getMessage());
+			LOGGER.log(Level.SEVERE, logPrefix + "could not check the validity of " + deadline, e);
 			return;
 		}
 

@@ -83,12 +83,13 @@ public class ListOfMiningRequests {
 	 */
 	public void runAllActionsFor(Deadline deadline) {
 		var filtered = new ArrayList<Consumer<Deadline>>();
+		Challenge challengeOfDeadline = deadline.getChallenge();
 
 		synchronized (lock) {
 			Iterator<Consumer<Deadline>> it = actions.iterator();
 			for (var challenge: challenges) {
 				Consumer<Deadline> action = it.next();
-				if (challenge.equals(deadline.getChallenge()))
+				if (challenge.equals(challengeOfDeadline))
 					filtered.add(action);
 			}
 		}
@@ -97,11 +98,11 @@ public class ListOfMiningRequests {
 	}
 
 	/**
-	 * Runs the given code for the descriptions of the deadline still waiting to be computed.
+	 * Runs the given code for the challenges still waiting to be processed.
 	 * 
 	 * @param what the code to run
 	 */
-	public void forAllDescriptions(Consumer<Challenge> what) {
+	public void forAllChallenges(Consumer<Challenge> what) {
 		List<Challenge> copy;
 
 		synchronized (lock) {
