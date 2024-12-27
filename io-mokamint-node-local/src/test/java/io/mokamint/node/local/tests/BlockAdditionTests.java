@@ -64,7 +64,9 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotException;
 
 public class BlockAdditionTests extends AbstractLoggedTests {
 
@@ -462,11 +464,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		}
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+	private NonGenesisBlock computeNextBlock(Block previous) throws IOException, InvalidKeyException, SignatureException, InterruptedException, PlotException, IncompatibleChallengeException {
 		return computeNextBlock(previous, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException {
+	private NonGenesisBlock computeNextBlock(Block previous, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, PlotException, IncompatibleChallengeException {
 		var challenge = previous.getDescription().getNextChallenge();
 		var deadline = plot.getSmallestDeadline(challenge, plotPrivateKey);
 		var description = previous.getNextBlockDescription(deadline);

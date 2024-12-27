@@ -20,7 +20,6 @@ limitations under the License.
 
 package io.mokamint.plotter.api;
 
-import java.io.IOException;
 import java.security.KeyPair;
 
 /**
@@ -46,5 +45,5 @@ public interface PlotAndKeyPair extends AutoCloseable {
 	KeyPair getKeyPair();
 
 	@Override
-	void close() throws IOException;
+	void close() throws PlotException;
 }

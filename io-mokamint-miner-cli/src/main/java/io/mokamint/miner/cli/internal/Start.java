@@ -30,11 +30,13 @@ import java.util.logging.Logger;
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.api.PlotException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -122,6 +124,10 @@ public class Start extends AbstractCommand {
 					LOGGER.log(Level.WARNING, "the plot file \"" + plotArg + "\" uses an unknown hashing algorithm", e);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
+				catch (PlotException e) {
+					System.out.println(Ansi.AUTO.string("@|red cannot close plot file " + plotArg.getPlot() + "!|@"));
+					LOGGER.log(Level.SEVERE, "cannot close file \"" + plotArg.getPlot() + "\"", e);
+				}
 			}
 			else if (plotsAndKeyPairs.isEmpty())
 				throw new CommandException("No plot file could be loaded!");
@@ -129,7 +135,7 @@ public class Start extends AbstractCommand {
 				try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 					startMiningService(miner);
 				}
-				catch (IOException e) {
+				catch (MinerException e) {
 					throw new CommandException("Failed to close the local miner", e);
 				}
 			}

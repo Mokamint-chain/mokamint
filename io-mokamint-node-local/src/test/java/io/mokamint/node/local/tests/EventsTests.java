@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -57,7 +56,9 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotException;
 
 public class EventsTests extends AbstractLoggedTests {
 
@@ -132,8 +133,8 @@ public class EventsTests extends AbstractLoggedTests {
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IOException | InvalidKeyException | SignatureException e) {
-					e.printStackTrace();
+				catch (IncompatibleChallengeException | PlotException | InvalidKeyException | SignatureException e) {
+					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
 
@@ -193,8 +194,8 @@ public class EventsTests extends AbstractLoggedTests {
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IOException | InvalidKeyException | SignatureException e) {
-					e.printStackTrace();
+				catch (IncompatibleChallengeException | PlotException | InvalidKeyException | SignatureException e) {
+					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
 
@@ -309,8 +310,8 @@ public class EventsTests extends AbstractLoggedTests {
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IOException | InvalidKeyException | SignatureException e) {
-					e.printStackTrace();
+				catch (IncompatibleChallengeException | PlotException | InvalidKeyException | SignatureException e) {
+					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
 

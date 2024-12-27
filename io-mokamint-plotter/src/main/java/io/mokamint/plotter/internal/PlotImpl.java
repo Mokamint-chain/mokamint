@@ -58,7 +58,9 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.internal.gson.PlotJson;
 
 /**
@@ -322,9 +324,9 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
+	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws PlotException, InterruptedException, InvalidKeyException, SignatureException, IncompatibleChallengeException {
 		if (!challenge.getHashingForDeadlines().equals(hashing))
-			throw new IllegalArgumentException("The challenge and the plot file use different hashing algorithms");
+			throw new IncompatibleChallengeException("The challenge and the plot file use different hashing algorithms");
 
 		// we run this is its own thread, since it uses nio channels that would be closed
 		// if the executing thread is interrupted, which is not what we want
@@ -332,13 +334,13 @@ public class PlotImpl implements Plot {
 			return executors.submit(() -> new SmallestDeadlineFinder(challenge, privateKey).deadline).get();
 		}
 		catch (RejectedExecutionException e) {
-			throw new IOException("Cannot look for the smallest deadline", e);
+			throw new PlotException("Cannot execute the deadline finder task", e);
 		}
 		catch (ExecutionException e) {
 			var cause = e.getCause();
 
-			if (cause instanceof IOException io)
-				throw io;
+			if (cause instanceof PlotException pe)
+				throw pe;
 			else if (cause instanceof InvalidKeyException ike)
 				throw ike;
 			else if (cause instanceof SignatureException se)
@@ -371,24 +373,24 @@ public class PlotImpl implements Plot {
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
+		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws PlotException, InvalidKeyException, SignatureException {
 			this.challenge = challenge;
 			this.scoopNumber = challenge.getScoopNumber();
 			this.generationSignature = challenge.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
-			FunctionWithExceptions3<Long, Deadline, IOException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
-			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->
+			FunctionWithExceptions3<Long, Deadline, PlotException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
+			this.deadline = CheckSupplier.check(PlotException.class, InvalidKeyException.class, SignatureException.class, () ->
 				LongStream.range(start, start + length)
 						.parallel()
 						.mapToObj(Long::valueOf)
-						.map(UncheckFunction.uncheck(IOException.class, InvalidKeyException.class, SignatureException.class, mkDeadline))
+						.map(UncheckFunction.uncheck(PlotException.class, InvalidKeyException.class, SignatureException.class, mkDeadline))
 						.min(Deadline::compareByValue)
 						.get() // OK, since plots contain at least one nonce
 			);
 		}
 
-		private Deadline mkDeadline(long n) throws IOException, InvalidKeyException, SignatureException {
+		private Deadline mkDeadline(long n) throws PlotException, InvalidKeyException, SignatureException {
 			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), challenge, privateKey);
 		}
 
@@ -399,26 +401,37 @@ public class PlotImpl implements Plot {
 		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
 		 *                    between 0 (inclusive) and {@code length} (exclusive)
 		 * @return the scoop data (two hashes)
-		 * @throws IOException if an I/O error occurs
+		 * @throws PlotException if the operation cannot be performed correctly
 		 */
-		private byte[] extractScoopAndConcatData(long progressive) throws IOException {
+		private byte[] extractScoopAndConcatData(long progressive) throws PlotException {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
 				destination.write(ByteBuffer.wrap(generationSignature));
 				return os.toByteArray();
 			}
+			catch (IOException e) {
+				throw new PlotException(e);
+			}
 		}
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws PlotException {
 		executors.shutdownNow();
 
 		try {
 			reader.close();
 		}
+		catch (IOException e) {
+			throw new PlotException(e);
+		}
 		finally {
-			channel.close();
+			try {
+				channel.close();
+			}
+			catch (IOException e) {
+				throw new PlotException(e);
+			}
 		}
 	}
 

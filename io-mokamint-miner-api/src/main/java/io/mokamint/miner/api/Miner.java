@@ -16,13 +16,12 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
-import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A miner in an object that computes deadlines on request.
@@ -46,10 +45,10 @@ public interface Miner extends AutoCloseable {
 	/**
 	 * Closes the miner.
 	 * 
-	 * @throws IOException if the miner failed to close
+	 * @throws MinerException if the miner is misbehaving
 	 */
 	@Override
-	void close() throws IOException;
+	void close() throws MinerException;
 
 	/**
 	 * Yields the unique identifier of the miner.

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.KeyPair;
@@ -138,7 +137,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@AfterAll
-	public static void afterAll() throws IOException, InterruptedException {
+	public static void afterAll() throws Exception {
 		plot.close();
 	}
 

@@ -16,15 +16,14 @@ limitations under the License.
 
 package io.mokamint.plotter.api;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 
 /**
@@ -63,7 +62,7 @@ public interface Plot extends AutoCloseable {
 	HashingAlgorithm getHashing();
 
 	@Override
-	void close() throws IOException;
+	void close() throws PlotException;
 
 	/**
 	 * Yields the smallest deadline in this plot file, matching the given challenge.
@@ -77,13 +76,13 @@ public interface Plot extends AutoCloseable {
 	 * @return the smallest deadline
 	 * @throws InterruptedException if the thread is interrupted while waiting for the computation
 	 *                              of the smallest deadline
-	 * @throws IOException if the plot file cannot be read
-	 * @throws IllegalArgumentException if the challenge is for a deadline using a different
-	 *                                  hashing algorithm than that used to create this plot file
+	 * @throws PlotException if the plot file is misbehaving
+	 * @throws IncompatibleChallengeException if the challenge is for a deadline using a different
+	 *                                        hashing algorithm than the one used to create this plot file
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException;
+	Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws InterruptedException, PlotException, InvalidKeyException, SignatureException, IncompatibleChallengeException;
 
 	/**
 	 * Determines if this plot is semantically equivalent to the {@code other}.

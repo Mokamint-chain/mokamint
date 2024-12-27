@@ -46,8 +46,8 @@ import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.remote.RemoteMiners;
-import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
@@ -454,14 +454,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
-			else {
-				try {
-					miner.close();
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot close miner " + miner.getUUID() + ": " + e.getMessage());
-				}
-			}
+			else
+				tryToClose(miner);
 
 			return maybeInfo;
 		}
@@ -483,16 +477,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
 			for (var miner: toRemove) {
 				miners.remove(miner);
-				if (minersToCloseAtTheEnd.contains(miner)) {
-					try {
-						miner.close();
-					}
-					catch (IOException e) {
-						// the requested operation has been performed: hence just report a warning
-						// in the logs, do not throw any exception
-						LOGGER.warning("cannot close miner " + uuid + ": " + e.getMessage());
-					}
-				}
+				if (minersToCloseAtTheEnd.contains(miner))
+					tryToClose(miner);
 			}
 
 			return toRemove.length > 0;
@@ -560,13 +546,16 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void punish(Miner miner, long points, String reason) {
 		LOGGER.warning("punishing miner " + miner.getUUID() + " by removing " + points + " points since " + reason);
 	
-		if (miners.punish(miner, points) && minersToCloseAtTheEnd.contains(miner)) {
-			try {
-				miner.close();
-			}
-			catch (IOException e) {
-				LOGGER.warning("cannot close miner " + miner.getUUID() + ": " + e.getMessage());
-			}
+		if (miners.punish(miner, points) && minersToCloseAtTheEnd.contains(miner))
+			tryToClose(miner);
+	}
+
+	private void tryToClose(Miner miner) {
+		try {
+			miner.close();
+		}
+		catch (MinerException e) {
+			LOGGER.warning("cannot close miner " + miner.getUUID() + ": " + e.getMessage());
 		}
 	}
 
@@ -626,7 +615,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, DeadlineValidityCheckException {
+	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, MinerException {
 		try {
 			check(deadline);
 		}
@@ -634,7 +623,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			throw new TimeoutException(e.getMessage()); // TODO
 		}
 		catch (ApplicationException e) {
-			throw new DeadlineValidityCheckException(e);
+			throw new MinerException(e);
 		}
 	}
 
@@ -1184,7 +1173,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				miners[pos].close();
 			}
-			catch (IOException e) {
+			catch (MinerException e) {
 				throw new NodeException(e);
 			}
 			finally {

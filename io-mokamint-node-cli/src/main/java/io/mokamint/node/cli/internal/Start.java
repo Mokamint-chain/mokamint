@@ -42,6 +42,7 @@ import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -54,6 +55,7 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.api.PlotException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -221,6 +223,10 @@ public class Start extends AbstractCommand {
 					LOGGER.log(Level.SEVERE, "the plot file \"" + plotArg.getPlot() + "\" uses an unknown hashing algorithm", e);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
+				catch (PlotException e) {
+					System.out.println(Ansi.AUTO.string("@|red cannot close plot file " + plotArg.getPlot() + "!|@"));
+					LOGGER.log(Level.SEVERE, "cannot close file \"" + plotArg.getPlot() + "\"", e);
+				}
 			}
 			else
 				startNodeOpenLocalMinerAndPublishNodeServices();
@@ -266,8 +272,8 @@ public class Start extends AbstractCommand {
 					else
 						publishPublicAndRestrictedNodeServices(0);
 				}
-				catch (IOException e) {
-					throw new CommandException("The database seems corrupted!", e);
+				catch (MinerException e) {
+					throw new CommandException("Failed to close the local miner", e);
 				}
 				catch (AlreadyInitializedException e) {
 					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);

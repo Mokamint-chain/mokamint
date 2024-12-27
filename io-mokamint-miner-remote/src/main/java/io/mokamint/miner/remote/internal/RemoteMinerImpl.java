@@ -29,8 +29,8 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
-import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -157,8 +157,12 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 			Thread.currentThread().interrupt();
 			return;
 		}
-		catch (TimeoutException | DeadlineValidityCheckException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "could not check the validity of " + deadline, e);
+		catch (MinerException e) {
+			LOGGER.log(Level.SEVERE, logPrefix + " cannot check the validity of " + deadline + " sinc ethe miner is misbehaving", e);
+			return;
+		}
+		catch (TimeoutException e) {
+			LOGGER.warning(logPrefix + "timed-out while checking the validity of " + deadline + ": " + e.getMessage());
 			return;
 		}
 

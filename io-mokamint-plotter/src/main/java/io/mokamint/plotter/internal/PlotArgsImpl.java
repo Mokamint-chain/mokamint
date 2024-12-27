@@ -43,7 +43,7 @@ public abstract class PlotArgsImpl implements PlotArgs {
 
 		if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic()))
 			throw new IllegalArgumentException("The public key for signing the deadlines of the plot file " + getPlot() +
-				" does not coincide with the public key in the key pair " + getKeyPair());
+				" does not coincide with the public key in the key pair " + getKeyPair()); // TODO: change exception
 
 		try {
 			return PlotAndKeyPairs.of(plot, keyPair);

@@ -24,6 +24,7 @@ import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.PlotException;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -69,6 +70,9 @@ public class Show extends AbstractCommand {
 		}
 		catch (IOException e) {
 			throw new CommandException("Cannot read the plot file!", e);
+		}
+		catch (PlotException e) {
+			throw new CommandException("The plot file is misbehaving", e);
 		}
 	}
 }

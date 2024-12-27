@@ -31,6 +31,7 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.PlotException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -96,6 +97,9 @@ public class Create extends AbstractCommand {
 		}
 		catch (IOException e) {
 			throw new CommandException("Cannot write the plot file!", e);
+		}
+		catch (PlotException e) {
+			throw new CommandException("Cannot close the plot file!", e);
 		}
 
 		System.out.println();

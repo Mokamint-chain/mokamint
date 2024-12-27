@@ -16,13 +16,11 @@ limitations under the License.
 
 package io.mokamint.miner.local.internal;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -31,8 +29,10 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.api.PlotException;
 
 /**
  * The implementation of a local miner.
@@ -87,16 +87,18 @@ public class LocalMinerImpl implements LocalMiner {
 
 		if (plots.length == 0)
 			LOGGER.warning(logPrefix + "no matching plot for hashing " + hashingForDeadlines);
-		else try {
-			CheckRunnable.check(InterruptedException.class, () ->
+		else {
+			try {
+				CheckRunnable.check(InterruptedException.class, () ->
 				Stream.of(plots)
 					.map(UncheckFunction.uncheck(InterruptedException.class, plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
 					.flatMap(Optional::stream)
 					.min(Deadline::compareByValue)
 					.ifPresent(onDeadlineComputed::accept));
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 	}
 
@@ -113,8 +115,8 @@ public class LocalMinerImpl implements LocalMiner {
 		try {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(challenge, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
-		catch (IOException | InvalidKeyException | SignatureException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot access a plot file: ", e.getMessage());
+		catch (PlotException | InvalidKeyException | SignatureException | IncompatibleChallengeException e) {
+			LOGGER.warning(logPrefix + "cannot use a plot file: " + e.getMessage());
 			return Optional.empty();
 		}
 	}
