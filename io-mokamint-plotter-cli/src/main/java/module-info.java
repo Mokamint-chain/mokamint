@@ -25,5 +25,4 @@ module io.mokamint.plotter.cli {
 	requires io.mokamint.nonce;
 	requires io.hotmoka.cli;
 	requires io.hotmoka.crypto;
-	requires io.hotmoka.websockets.beans;
 }

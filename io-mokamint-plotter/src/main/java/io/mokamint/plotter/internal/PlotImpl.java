@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +51,7 @@ import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.marshalling.UnmarshallingContexts;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
@@ -57,6 +59,7 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.internal.gson.PlotJson;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
@@ -65,7 +68,7 @@ import io.mokamint.plotter.api.Plot;
 @Immutable
 public class PlotImpl implements Plot {
 
-	private final static Logger logger = Logger.getLogger(PlotImpl.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(PlotImpl.class.getName());
 
 	/**
 	 * The file that backs up this plot.
@@ -96,7 +99,7 @@ public class PlotImpl implements Plot {
 	/**
 	 * The hashing algorithm used by this plot.
 	 */
-	private final HashingAlgorithm hashingForDeadlines;
+	private final HashingAlgorithm hashing;
 
 	/**
 	 * The executors used to look for the smallest deadlines.
@@ -138,7 +141,7 @@ public class PlotImpl implements Plot {
 		if (reader.read(hashingNameBytes) != hashingNameLength)
 			throw new IOException("Cannot read the name of the hashing algorithm used for the plot file");
 		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
-		this.hashingForDeadlines = HashingAlgorithms.of(hashingName);
+		this.hashing = HashingAlgorithms.of(hashingName);
 	}
 
 	/**
@@ -152,11 +155,11 @@ public class PlotImpl implements Plot {
 	 * @param start the starting progressive number of the nonces to generate in the plot.
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive
-	 * @param hashingForDeadlines the hashing algorithm to use for creating the nonces
+	 * @param hashing the hashing algorithm to use for creating the nonces
 	 * @param onNewPercent a handler called with the percent of work already alreadyDone, for feedback
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
-	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashingForDeadlines, IntConsumer onNewPercent) throws IOException {
+	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		if (start < 0)
 			throw new IllegalArgumentException("start cannot be negative");
 		
@@ -166,9 +169,49 @@ public class PlotImpl implements Plot {
 		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null");
 		this.start = start;
 		this.length = length;
-		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
+		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
 
 		new Dumper(path, Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null"));
+
+		this.reader = new RandomAccessFile(path.toFile(), "r");
+		this.channel = reader.getChannel();
+	}
+
+	/**
+	 * Creates a plot from the given json.
+	 * 
+	 * @param json the json
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available hashing algorithm
+	 * @throws IOException if the plot file cannot be written into a temporary file
+	 */
+	public PlotImpl(PlotJson json) throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
+		var prolog = json.getProlog();
+		if (prolog == null)
+			throw new InconsistentJsonException("prolog cannot be null");
+
+		this.prolog = prolog.unmap();
+
+		var start = json.getStart();
+		if (start < 0)
+			throw new InconsistentJsonException("start cannot be negative");
+
+		this.start = start;
+
+		var length = json.getLength();
+		if (length < 1)
+			throw new IllegalArgumentException("length must be positive");
+
+		this.length = length;
+
+		var hashing = json.getHashing();
+		if (hashing == null)
+			throw new InconsistentJsonException("hashing cannot be null");
+
+		this.hashing = HashingAlgorithms.of(hashing);
+
+		var path = Files.createTempFile("tmp", ".plot");
+		new Dumper(path, __ -> {});
 
 		this.reader = new RandomAccessFile(path.toFile(), "r");
 		this.channel = reader.getChannel();
@@ -179,7 +222,7 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = Challenge.SCOOPS_PER_NONCE * 2 * hashingForDeadlines.length();
+		private final int nonceSize = Challenge.SCOOPS_PER_NONCE * 2 * hashing.length();
 		private final int metadataSize = getMetadataSize();
 		private final long plotSize = metadataSize + length * nonceSize;
 		private final IntConsumer onNewPercent;
@@ -187,7 +230,7 @@ public class PlotImpl implements Plot {
 
 		private Dumper(Path where, IntConsumer onNewPercent) throws IOException {
 			long startTime = System.currentTimeMillis();
-			logger.info("Starting creating a plot file of " + plotSize + " bytes");
+			LOGGER.info("Starting creating a plot file of " + plotSize + " bytes");
 
 			this.onNewPercent = onNewPercent;
 		
@@ -197,7 +240,7 @@ public class PlotImpl implements Plot {
 				dumpNonces();
 			}
 		
-			logger.info("Plot file created in " + (System.currentTimeMillis() - startTime) + "ms");
+			LOGGER.info("Plot file created in " + (System.currentTimeMillis() - startTime) + "ms");
 		}
 
 		/**
@@ -220,7 +263,7 @@ public class PlotImpl implements Plot {
 			buffer.put(prologBytes);
 			buffer.putLong(start);
 			buffer.putLong(length);
-			var name = hashingForDeadlines.getName().getBytes(Charset.forName("UTF-8"));
+			var name = hashing.getName().getBytes(Charset.forName("UTF-8"));
 			buffer.putInt(name.length);
 			buffer.put(name);
 
@@ -248,7 +291,7 @@ public class PlotImpl implements Plot {
 		 */
 		private void dumpNonce(long n) throws IOException {
 			// the hashing algorithm is cloned to avoid thread contention
-			Nonces.of(prolog, n, hashingForDeadlines.clone())
+			Nonces.of(prolog, n, hashing.clone())
 				.dumpInto(channel, metadataSize, n - start, length);
 
 			int counter = alreadyDone.getAndIncrement();
@@ -275,12 +318,12 @@ public class PlotImpl implements Plot {
 
 	@Override
 	public HashingAlgorithm getHashing() {
-		return hashingForDeadlines;
+		return hashing;
 	}
 
 	@Override
 	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException {
-		if (!challenge.getHashingForDeadlines().equals(hashingForDeadlines))
+		if (!challenge.getHashingForDeadlines().equals(hashing))
 			throw new IllegalArgumentException("The challenge and the plot file use different hashing algorithms");
 
 		// we run this is its own thread, since it uses nio channels that would be closed
@@ -301,7 +344,7 @@ public class PlotImpl implements Plot {
 			else if (cause instanceof SignatureException se)
 				throw se;
 			else
-				throw new IOException("Unexpected exception", e);
+				throw new RuntimeException("Unexpected exception", e);
 		}
 	}
 
@@ -314,7 +357,7 @@ public class PlotImpl implements Plot {
 		return 4 + prolog.toByteArray().length // prolog
 			+ 8 // start
 			+ 8 // length
-			+ 4 + hashingForDeadlines.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
+			+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
 	}
 
 	private class SmallestDeadlineFinder {
@@ -322,7 +365,7 @@ public class PlotImpl implements Plot {
 		private final int scoopNumber;
 		private final byte[] generationSignature;
 		private final Deadline deadline;
-		private final int scoopSize = 2 * hashingForDeadlines.length();
+		private final int scoopSize = 2 * hashing.length();
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = getMetadataSize();
 		private final Hasher<byte[]> hasher;
@@ -332,7 +375,7 @@ public class PlotImpl implements Plot {
 			this.challenge = challenge;
 			this.scoopNumber = challenge.getScoopNumber();
 			this.generationSignature = challenge.getGenerationSignature();
-			this.hasher = hashingForDeadlines.getHasher(Function.identity());
+			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
 			FunctionWithExceptions3<Long, Deadline, IOException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
 			this.deadline = CheckSupplier.check(IOException.class, InvalidKeyException.class, SignatureException.class, () ->
@@ -382,11 +425,11 @@ public class PlotImpl implements Plot {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof Plot otherAsPlot && prolog.equals(otherAsPlot.getProlog()) && start == otherAsPlot.getStart()
-				&& length == otherAsPlot.getLength() && hashingForDeadlines.equals(otherAsPlot.getHashing());
+				&& length == otherAsPlot.getLength() && hashing.equals(otherAsPlot.getHashing());
 	}
 
 	@Override
 	public int hashCode() {
-		return prolog.hashCode() ^ Long.hashCode(start) ^ Long.hashCode(length) ^ hashingForDeadlines.hashCode();
+		return prolog.hashCode() ^ Long.hashCode(start) ^ Long.hashCode(length) ^ hashing.hashCode();
 	}
 }

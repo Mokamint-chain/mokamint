@@ -61,7 +61,7 @@ public class Show extends AbstractCommand {
 				System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
 				long start = plot.getStart();
 				System.out.println("* nonces: [" + start + "," + (start + plot.getLength()) + ")");
-				System.out.println("* hashing for deadlines: " + plot.getHashing());
+				System.out.println("* hashing: " + plot.getHashing());
 			}
 		}
 		catch (NoSuchAlgorithmException e) {

@@ -92,7 +92,7 @@ public interface Plot extends AutoCloseable {
 	 * same requests for smallest deadlines.
 	 * 
 	 * @param other the other object
-	 * @return if and only if {@code other} is a {@link Plot} with the same structuyre as this
+	 * @return if and only if {@code other} is a {@link Plot} with the same structure as this
 	 */
 	@Override
 	boolean equals(Object other);

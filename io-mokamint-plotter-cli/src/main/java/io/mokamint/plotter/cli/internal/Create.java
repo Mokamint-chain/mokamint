@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.cli.AbstractCommand;
@@ -89,9 +88,6 @@ public class Create extends AbstractCommand {
 		try {
 			prolog = computeProlog();
 		}
-		catch (NoSuchAlgorithmException e) {
-			throw new CommandException("The ed25519 signature algorithm is not available!", e);
-		}
 		catch (InvalidKeySpecException | InvalidKeyException e) {
 			throw new CommandException("Invalid public key!", e);
 		}
@@ -112,7 +108,7 @@ public class Create extends AbstractCommand {
 			System.out.print(percent + "% ");
 	}
 
-	private Prolog computeProlog() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, CommandException {
+	private Prolog computeProlog() throws InvalidKeySpecException, InvalidKeyException, CommandException {
 		return Prologs.of(
 			chainId,
 			signatureOfNode, signatureOfNode.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),

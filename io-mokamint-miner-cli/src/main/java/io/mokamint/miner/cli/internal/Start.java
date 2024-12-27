@@ -112,10 +112,6 @@ public class Start extends AbstractCommand {
 					plotsAndKeyPairs.add(plotAndKeyPair);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					throw new CommandException("Interrupted while closing a plot!", e);
-				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
 					LOGGER.log(Level.WARNING, "I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair", e);

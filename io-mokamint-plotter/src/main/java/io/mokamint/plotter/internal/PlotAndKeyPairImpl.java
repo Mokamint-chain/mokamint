@@ -68,7 +68,7 @@ public class PlotAndKeyPairImpl implements PlotAndKeyPair {
 	}
 
 	@Override
-	public void close() throws IOException, InterruptedException {
+	public void close() throws IOException {
 		plot.close();
 	}
 }

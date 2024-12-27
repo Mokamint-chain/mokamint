@@ -17,15 +17,13 @@ limitations under the License.
 package io.mokamint.plotter.internal.gson;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.internal.PlotImpl;
 
 /**
  * The JSON representation of a {@link Plot}.
@@ -43,8 +41,24 @@ public abstract class PlotJson implements JsonRepresentation<Plot> {
 		this.hashing = plot.getHashing().getName();
 	}
 
+	public Prologs.Json getProlog() {
+		return prolog;
+	}
+
+	public long getStart() {
+		return start;
+	}
+
+	public long getLength() {
+		return length;
+	}
+
+	public String getHashing() {
+		return hashing;
+	}
+
 	@Override
 	public Plot unmap() throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
-		return Plots.create(Files.createTempFile("tmp", ".plot"), prolog.unmap(), start, length, HashingAlgorithms.of(hashing), __ -> {});
+		return new PlotImpl(this);
 	}
 }

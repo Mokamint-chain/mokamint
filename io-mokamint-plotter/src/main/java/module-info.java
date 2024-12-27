@@ -23,11 +23,12 @@ module io.mokamint.plotter {
 	opens io.mokamint.plotter.internal.gson to com.google.gson;
 
 	requires transitive io.mokamint.plotter.api;
-	requires transitive io.hotmoka.marshalling.api;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
+	requires com.google.gson;
 	requires java.logging;
 }

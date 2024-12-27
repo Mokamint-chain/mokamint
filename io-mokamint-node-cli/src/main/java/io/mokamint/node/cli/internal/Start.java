@@ -211,9 +211,6 @@ public class Start extends AbstractCommand {
 					plotsAndKeyPairs.add(plotAndKeyPair);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
-				catch (InterruptedException e) {
-					throw new CommandException("Interrupted while waiting!", e);
-				}
 				catch (IOException e) {
 					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
 					LOGGER.log(Level.SEVERE, "I/O error while loading plot file \"" + plotArg.getPlot() + "\" and its key pair", e);

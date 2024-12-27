@@ -25,6 +25,11 @@
       <version>${io.hotmoka.exceptions.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.hotmoka.marshalling</groupId>
+      <artifactId>io-hotmoka-marshalling</artifactId>
+      <version>${io.hotmoka.marshalling.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.annotations</groupId>
       <artifactId>io-hotmoka-annotations</artifactId>
       <version>${io.hotmoka.annotations.version}</version>
