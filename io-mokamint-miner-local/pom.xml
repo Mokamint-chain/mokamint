@@ -16,7 +16,7 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-api</artifactId>
+      <artifactId>io-mokamint-miner-local-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>

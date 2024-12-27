@@ -73,12 +73,12 @@ public interface Plot extends AutoCloseable {
 	 * It returns the pair (progressive of the nonce, deadline value) with the smallest value.
 	 * 
 	 * @param challenge the challenge of the requested deadline
-	 * @param privateKey the private key used to sign the deadline
+	 * @param privateKey the private key that will be used to sign the deadline
 	 * @return the smallest deadline
 	 * @throws InterruptedException if the thread is interrupted while waiting for the computation
 	 *                              of the smallest deadline
 	 * @throws IOException if the plot file cannot be read
-	 * @throws IllegalArgumentException if the description is for a deadline using a different
+	 * @throws IllegalArgumentException if the challenge is for a deadline using a different
 	 *                                  hashing algorithm than that used to create this plot file
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed

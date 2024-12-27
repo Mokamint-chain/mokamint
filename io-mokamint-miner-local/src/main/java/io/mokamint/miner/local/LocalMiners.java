@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.local;
 
-import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.miner.local.internal.LocalMinerImpl;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 
@@ -34,7 +34,7 @@ public abstract class LocalMiners {
 	 *                         deadlines generated from them; this cannot be empty
 	 * @return the new local miner
 	 */
-	public static Miner of(PlotAndKeyPair... plotsAndKeyPairs) {
+	public static LocalMiner of(PlotAndKeyPair... plotsAndKeyPairs) {
 		return new LocalMinerImpl(plotsAndKeyPairs);
 	}
 }

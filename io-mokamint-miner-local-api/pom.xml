@@ -1,10 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>io-mokamint-miner-remote</artifactId>
-  <name>io-mokamint-miner-remote</name>
+
+  <artifactId>io-mokamint-miner-local-api</artifactId>
+  <name>io-mokamint-miner-local-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements a remote miner, that is, a miner that works by forwarding its work to remote services connected by network.</description>
+  <description>This defines the API of a local miner, that is, a miner that actually executes on the local machine.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -14,30 +15,14 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-server</artifactId>
-      <version>${io.hotmoka.websockets.version}</version>
-    </dependency>
-    <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-remote-api</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce</artifactId>
+      <artifactId>io-mokamint-miner-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.annotations</groupId>
       <artifactId>io-hotmoka-annotations</artifactId>
       <version>${io.hotmoka.annotations.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-client</artifactId>
-      <version>${io.hotmoka.websockets.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

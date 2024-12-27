@@ -23,7 +23,6 @@ module io.mokamint.miner.remote {
 	// needed to allow the endpoint to be created by reflection although it is not exported
 	opens io.mokamint.miner.remote.internal to org.glassfish.tyrus.core;
 
-	requires transitive io.mokamint.miner.api;
 	requires transitive io.mokamint.miner.remote.api;
 	requires transitive io.mokamint.nonce;
 	requires transitive io.hotmoka.websockets.server;

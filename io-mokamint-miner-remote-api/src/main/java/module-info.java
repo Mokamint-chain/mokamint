@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,6 @@ limitations under the License.
 module io.mokamint.miner.remote.api {
 	exports io.mokamint.miner.remote.api;
 
-	requires io.mokamint.miner.api;
+	requires transitive io.mokamint.miner.api;
 	requires io.hotmoka.annotations;
 }

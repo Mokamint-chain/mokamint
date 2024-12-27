@@ -28,9 +28,9 @@ import java.util.stream.Stream;
 
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
-import io.mokamint.miner.api.Miner;
-import io.mokamint.nonce.api.Deadline;
+import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 
@@ -38,7 +38,7 @@ import io.mokamint.plotter.api.PlotAndKeyPair;
  * The implementation of a local miner.
  * It uses a set of plot files to find deadlines on-demand.
  */
-public class LocalMinerImpl implements Miner {
+public class LocalMinerImpl implements LocalMiner {
 
 	/**
 	 * The unique identifier of the miner.

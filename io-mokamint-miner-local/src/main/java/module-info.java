@@ -21,7 +21,7 @@ limitations under the License.
 module io.mokamint.miner.local {
 	exports io.mokamint.miner.local;
 
-	requires transitive io.mokamint.miner.api;
+	requires transitive io.mokamint.miner.local.api;
 	requires transitive io.mokamint.plotter.api;
 	requires io.mokamint.nonce.api;
 	requires io.hotmoka.crypto.api;

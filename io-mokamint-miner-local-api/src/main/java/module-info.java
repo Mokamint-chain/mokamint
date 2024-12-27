@@ -14,15 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.miner.remote.api;
-
-import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.miner.api.Miner;
-
 /**
- * A remote miner. It publishes an endpoint at a URL,
- * where mining services can connect and provide their deadlines.
+ * This defines the API of a local miner, that is, a miner that actually executes on the local machine.
  */
-@ThreadSafe
-public interface RemoteMiner extends Miner {
+module io.mokamint.miner.local.api {
+	exports io.mokamint.miner.local.api;
+
+	requires transitive io.mokamint.miner.api;
+	requires io.hotmoka.annotations;
 }
