@@ -22,7 +22,7 @@ import io.mokamint.node.api.Node;
 import io.mokamint.node.api.NodeException;
 
 /**
- * A remote node of a Mokamint blockchain, just seen as a closeable object.
+ * A remote node of a Mokamint blockchain.
  */
 @ThreadSafe
 public interface RemoteNode extends Node, Remote<NodeException> {

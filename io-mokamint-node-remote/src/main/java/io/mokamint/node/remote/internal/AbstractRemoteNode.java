@@ -16,10 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.remote.internal;
 
-import java.util.concurrent.TimeoutException;
-
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.api.NodeException;
@@ -50,21 +47,5 @@ abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implemen
 	@Override
 	protected NodeException mkException(Exception cause) {
 		return cause instanceof NodeException ne ? ne : new NodeException(cause);
-	}
-
-	/**
-	 * Determines if the given exception message deals with an exception that all
-	 * methods of a node are expected to throw. These are
-	 * {@code java.lang.TimeoutException}, {@code java.lang.InterruptedException}
-	 * and {@link NodeException}.
-	 * 
-	 * @param message the message
-	 * @return true if and only if that condition holds
-	 */
-	protected final boolean processStandardExceptions(ExceptionMessage message) {
-		var clazz = message.getExceptionClass();
-		return TimeoutException.class.isAssignableFrom(clazz) ||
-			InterruptedException.class.isAssignableFrom(clazz) ||
-			NodeException.class.isAssignableFrom(clazz);
 	}
 }

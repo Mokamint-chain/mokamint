@@ -16,9 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.service.internal;
 
-import static io.hotmoka.exceptions.CheckSupplier.check;
-import static io.hotmoka.exceptions.UncheckFunction.uncheck;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -30,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -41,6 +37,7 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
@@ -48,7 +45,6 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.api.Memory;
 import io.mokamint.node.messages.AddTransactionMessages;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
@@ -209,14 +205,18 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		try {
 			this.config = node.getConfig();
 		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt(); // TODO: throw it?
+			throw new IOException(e);
+		}
+		catch (TimeoutException | NodeException e) {
 			throw new IOException(e);
 		}
 
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
-		this.uri = check(DeploymentException.class, () -> uri.or(() -> determinePublicURI().map(uncheck(DeploymentException.class, u -> addPort(u, port)))));
+		this.uri = processURI(port, uri);
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
@@ -277,7 +277,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		else if (message instanceof WhisperTransactionMessage)
 			sessions = whisperTransactionSessions;
 		else {
-			LOGGER.log(Level.SEVERE, "unexpected whispered message of class " + message.getClass().getName());
+			LOGGER.severe("unexpected whispered message of class " + message.getClass().getName());
 			sessions = Collections.emptySet();
 		}
 
@@ -294,17 +294,25 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			sendObjectAsync(session, message);
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot whisper " + description + " to session: it might be closed: " + e.getMessage());
 		}
 	}
 
-	private static URI addPort(URI uri, int port) throws DeploymentException {
-		try {
-			return new URI(uri.toString() + ":" + port);
+	private Optional<URI> processURI(int port, Optional<URI> uri) throws DeploymentException {
+		if (uri.isEmpty()) {
+			uri = determinePublicURI();
+	
+			if (uri.isPresent()) {
+				try {
+					uri =Optional.of(new URI(uri.get() + ":" + port));
+				}
+				catch (URISyntaxException e) {
+					throw new DeploymentException("The public URI of the machine seems incorrect", e);
+				}
+			}
 		}
-		catch (URISyntaxException e) {
-			throw new DeploymentException("The public URI of the machine seems incorrect", e);
-		}
+	
+		return uri;
 	}
 
 	/**
@@ -324,13 +332,13 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		};
 	
 		for (var url: urls) {
-			try (var br = new BufferedReader(new InputStreamReader(new URI(url).toURL().openStream()))) {
+			try (var br = new BufferedReader(new InputStreamReader(URI.create(url).toURL().openStream()))) {
 				String ip = br.readLine();
 				LOGGER.info(logPrefix + url + " provided " + ip + " as the IP of the local machine");
 				return Optional.of(new URI("ws://" + ip));
 			}
 			catch (IOException | URISyntaxException e) {
-				LOGGER.log(Level.WARNING, logPrefix + url + " failed to provide an IP for the local machine: " + e.getMessage());
+				LOGGER.warning(logPrefix + url + " failed to provide an IP for the local machine: " + e.getMessage());
 			}
 		}
 	
@@ -363,7 +371,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -393,7 +401,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -423,7 +431,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -453,7 +461,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -483,7 +491,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -513,7 +521,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -543,7 +551,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 
@@ -573,7 +581,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -603,7 +611,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -633,7 +641,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -663,7 +671,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -693,7 +701,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -723,7 +731,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -753,7 +761,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -783,7 +791,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			}
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	}
 

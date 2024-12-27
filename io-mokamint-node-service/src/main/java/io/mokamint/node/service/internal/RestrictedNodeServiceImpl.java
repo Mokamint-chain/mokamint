@@ -19,7 +19,6 @@ package io.mokamint.node.service.internal;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
@@ -132,7 +131,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, AddPeerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -153,7 +152,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, RemovePeerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -174,7 +173,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, OpenMinerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
@@ -195,7 +194,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			sendObjectAsync(session, RemoveMinerResultMessages.of(result, message.getId()));
 		}
 		catch (IOException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
 		}
 	};
 
