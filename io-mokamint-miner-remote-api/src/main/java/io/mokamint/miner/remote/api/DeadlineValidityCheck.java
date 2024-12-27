@@ -14,9 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.api;
+package io.mokamint.miner.remote.api;
 
 import java.util.concurrent.TimeoutException;
+
+import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A check of validity for a deadline.

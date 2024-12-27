@@ -18,9 +18,9 @@ package io.mokamint.miner.remote;
 
 import java.io.IOException;
 
+import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
-import io.mokamint.nonce.api.DeadlineValidityCheck;
 import jakarta.websocket.DeploymentException;
 
 /**

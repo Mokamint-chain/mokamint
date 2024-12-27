@@ -37,4 +37,6 @@ module io.mokamint.node.local {
 	requires toml4j;
 	requires java.logging;
 	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
+
+	requires static io.mokamint.nonce;
 }

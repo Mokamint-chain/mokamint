@@ -47,6 +47,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.RemoteMiners;
+import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
@@ -84,7 +85,6 @@ import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.DeadlineValidityCheckException;
 import io.mokamint.nonce.api.IllegalDeadlineException;
 import jakarta.websocket.DeploymentException;
 
