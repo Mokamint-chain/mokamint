@@ -32,5 +32,4 @@ module io.mokamint.miner.remote {
 
 	// only used for testing
 	requires static io.hotmoka.crypto;
-	requires static org.glassfish.tyrus.client;
 }

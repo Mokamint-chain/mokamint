@@ -20,15 +20,14 @@ limitations under the License.
  */
 module io.mokamint.miner.service {
 	exports io.mokamint.miner.service;
+
 	requires transitive io.mokamint.miner.service.api;
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.nonce;
-	requires transitive io.hotmoka.websockets.client;
-	requires transitive jakarta.websocket.client;
+	requires io.hotmoka.websockets.client;
 	requires java.logging;
 
 	// only used for tests
 	requires static io.hotmoka.crypto;
 	requires static jakarta.websocket;
-	requires static org.glassfish.tyrus.spi;
 }
