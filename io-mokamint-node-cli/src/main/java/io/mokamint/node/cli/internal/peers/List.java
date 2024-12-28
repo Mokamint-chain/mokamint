@@ -16,21 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.peers;
 
-import java.io.IOException;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.cli.AbstractRow;
 import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
+import io.hotmoka.exceptions.CheckRunnable;
+import io.hotmoka.exceptions.UncheckConsumer;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -127,10 +126,11 @@ public class List extends AbstractPublicRpcCommand {
 
 		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
 			super(verbose ? new RowVerbose("URI", "points", "status", "UUID", "version") : new Row("URI", "points", "status"), json());
-			remote.getPeerInfos().sorted().forEach(this::add);
+			var peers = remote.getPeerInfos().sorted().parallel();
+			CheckRunnable.check(InterruptedException.class, () -> peers.forEachOrdered(UncheckConsumer.uncheck(InterruptedException.class, this::add)));
 		}
 
-		private void add(PeerInfo info) {
+		private void add(PeerInfo info) throws InterruptedException {
 			String URI = info.getPeer().toString();
 			if (URI.length() > MAX_PEER_LENGTH)
 				URI = URI.substring(0, MAX_PEER_LENGTH) + "...";
@@ -146,11 +146,8 @@ public class List extends AbstractPublicRpcCommand {
 					UUID = peerInfo.getUUID().toString();
 					version = peerInfo.getVersion().toString();
 				}
-				catch (NodeException | IOException | DeploymentException | TimeoutException | InterruptedException e) {
-					if (e instanceof InterruptedException)
-						Thread.currentThread().interrupt();
-
-					LOGGER.log(Level.WARNING, "cannot contact " + info.getPeer() + ": " + e.getMessage());
+				catch (NodeException | TimeoutException e) {
+					LOGGER.warning("cannot contact " + info.getPeer() + ": " + e.getMessage());
 					UUID = version = "<unknown>";
 				}
 

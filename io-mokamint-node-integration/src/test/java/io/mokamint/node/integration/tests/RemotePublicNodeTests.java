@@ -113,7 +113,6 @@ import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemotePublicNodeTests extends AbstractLoggedTests {
@@ -127,17 +126,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@ThreadSafe
 	private static class PublicTestServer extends PublicNodeServiceImpl {
 
-		/**
-		 * Creates a new test server.
-		 * 
-		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws IOException if an I/O error occurs
-		 */
-		private PublicTestServer() throws DeploymentException, IOException {
+		private PublicTestServer() throws NodeException, InterruptedException, TimeoutException {
 			super(mockedNode(), PORT, 180000, 1000, Optional.of(URI));
 		}
 
-		private static PublicNode mockedNode() throws IOException {
+		private static PublicNode mockedNode() throws NodeException, InterruptedException, TimeoutException {
 			PublicNode result = mock();
 			
 			try {
@@ -148,8 +141,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				//when(result.getConfig()).thenReturn(config);
 				return result;
 			}
-			catch (InterruptedException | NoSuchAlgorithmException | TimeoutException | NodeException e) {
-				throw new IOException(e);
+			catch (NoSuchAlgorithmException e) {
+				throw new NodeException(e);
 			}
 		}
 	}
@@ -162,7 +155,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -186,7 +179,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -210,7 +203,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -234,7 +227,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -259,7 +252,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -285,7 +278,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getPeerInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -306,7 +299,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getPeerInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -329,8 +322,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -353,8 +346,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "time-out";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -377,8 +370,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "node is closed";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -401,8 +394,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "interrupted";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -426,15 +419,17 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
 				try {
 					Thread.sleep(TIME_OUT * 4); // <----
 				}
-				catch (InterruptedException e) {}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 	
 				try {
 					sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()));
@@ -452,8 +447,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@DisplayName("getMinerInfos() ignores unexpected exceptions")
 	public void getMinerInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -474,7 +469,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getMinerInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -496,8 +491,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var taskInfos1 = Set.of(TaskInfos.of("a wonderful task"), TaskInfos.of("a special task"));
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -520,8 +515,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "time-out";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -544,8 +539,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "node is closed";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -568,8 +563,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "interrupted";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -592,8 +587,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var taskInfos1 = Set.of(TaskInfos.of("a task"), TaskInfos.of("a special task"));
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -618,8 +613,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@DisplayName("getTaskInfos() ignores unexpected exceptions")
 	public void getTaskInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -640,7 +635,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getTaskInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -686,7 +681,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -711,7 +706,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -737,7 +732,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -763,7 +758,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -806,7 +801,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -831,7 +826,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -857,7 +852,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -883,7 +878,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -908,7 +903,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetConfig(GetConfigMessage message, Session session) {
@@ -932,7 +927,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
@@ -955,8 +950,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
@@ -980,7 +975,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
@@ -1004,7 +999,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
@@ -1027,8 +1022,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetInfo(GetInfoMessage message, Session session) {
@@ -1051,8 +1046,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var info1 = MempoolInfos.of(17L);
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
@@ -1077,7 +1072,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -1103,7 +1098,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -1128,7 +1123,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -1153,7 +1148,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -1180,7 +1175,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
@@ -1276,7 +1271,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 	
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1300,8 +1295,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1326,8 +1321,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1352,8 +1347,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "interrupted";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1378,8 +1373,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1403,8 +1398,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1429,8 +1424,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "rejected";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1455,8 +1450,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "timeout";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1481,8 +1476,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
@@ -1506,8 +1501,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
@@ -1532,8 +1527,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
-	
-			private MyServer() throws DeploymentException, IOException {}
+
+			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {

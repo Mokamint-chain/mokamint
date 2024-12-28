@@ -375,7 +375,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("exception result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForExceptionResult() throws Exception {
-		var exceptionResultMessage1 = ExceptionMessages.of(NoSuchAlgorithmException.class, "something went wrong", "id");
+		var exceptionResultMessage1 = ExceptionMessages.of(NoSuchAlgorithmException.class, Optional.of("something went wrong"), "id");
 		String encoded = new ExceptionMessages.Encoder().encode(exceptionResultMessage1);
 		var exceptionResultMessage2 = new ExceptionMessages.Decoder().decode(encoded);
 		assertEquals(exceptionResultMessage1, exceptionResultMessage2);
@@ -619,7 +619,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("exception result messages cannot be decoded from Json if the class type is not an exception")
 	public void decodeFailsForExceptionResultIfNotException() {
-		String encoded = "{\"clazz\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
+		String encoded = "{\"className\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
 		DecodeException e = assertThrows(DecodeException.class, () -> new ExceptionMessages.Decoder().decode(encoded));
 		assertTrue(e.getCause() instanceof ClassCastException);
 	}

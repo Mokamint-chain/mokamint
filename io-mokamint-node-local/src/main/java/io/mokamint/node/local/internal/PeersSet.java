@@ -57,7 +57,6 @@ import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import jakarta.websocket.DeploymentException;
 
 /**
  * The set of peers of a local node. This class guarantees that,
@@ -472,7 +471,7 @@ public class PeersSet implements AutoCloseable {
 						.forEach(container::add);
 				}
 				catch (TimeoutException | NodeException e) {
-					LOGGER.log(Level.WARNING, "peers: cannot contact " + peer + ": " + e.getMessage());
+					LOGGER.warning("peers: cannot contact " + peer + ": " + e.getMessage());
 					punishBecauseUnreachable(peer);
 				}
 			}
@@ -497,9 +496,8 @@ public class PeersSet implements AutoCloseable {
 	 * @throws NodeException if the node is misbehaving
 	 * @throws PeerRejectedException if the peer was rejected for some reason
 	 * @throws PeerTimeoutException if the peer did not answer in time
-	 * @throws IOException if the connection to the peer failed
 	 */
-	private boolean reconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, IOException, PeerTimeoutException {
+	private boolean reconnectOrAdd(Peer peer, boolean force) throws NodeException, InterruptedException, PeerRejectedException, PeerTimeoutException {
 		synchronized (lock) {
 			if (bannedURIs.contains(peer.getURI()))
 				return false;
@@ -531,7 +529,7 @@ public class PeersSet implements AutoCloseable {
 			try {
 				somethingChanged |= reconnectOrAdd(peer, force.test(peer));
 			}
-			catch (PeerRejectedException | IOException | PeerTimeoutException e) {
+			catch (PeerRejectedException | PeerTimeoutException e) {
 				LOGGER.warning("peers: cannot connect to " + peer + ": " + e.getMessage());
 			}
 		}
@@ -540,7 +538,7 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	@GuardedBy("this.lock")
-	private boolean add(Peer peer, boolean force) throws IOException, PeerRejectedException, PeerTimeoutException, InterruptedException, NodeException {
+	private boolean add(Peer peer, boolean force) throws PeerRejectedException, PeerTimeoutException, InterruptedException, NodeException {
 		boolean added = false;
 
 		if (force || peers.size() < config.getMaxPeers()) { // optimization: this is checked by db.add as well, but better avoid creating a useless remote
@@ -608,7 +606,7 @@ public class PeersSet implements AutoCloseable {
 					remote.close();
 			}
 		}
-		catch (IOException | PeerTimeoutException e) {
+		catch (PeerTimeoutException e) {
 			LOGGER.log(Level.WARNING, "peers: cannot contact " + peer + ": " + e.getMessage());
 			punishBecauseUnreachable(peer);
 		}
@@ -684,13 +682,16 @@ public class PeersSet implements AutoCloseable {
 		return timeDifference;
 	}
 
-	private RemotePublicNode openRemote(Peer peer) throws IOException, InterruptedException {
+	private RemotePublicNode openRemote(Peer peer) throws InterruptedException, PeerRejectedException, PeerTimeoutException {
 		try {
 			// -1L: to disable the periodic broadcast of the remote node's services
 			return RemotePublicNodes.of(peer.getURI(), config.getPeerTimeout(), -1, config.getWhisperingMemorySize());
 		}
-		catch (DeploymentException e) {
-			throw new IOException("Cannot deploy a remote connected to " + peer, e);  // we consider it as a special case of IOException
+		catch (TimeoutException e) {
+			throw new PeerTimeoutException(e);
+		}
+		catch (NodeException e) {
+			throw new PeerRejectedException(e);
 		}
 	}
 

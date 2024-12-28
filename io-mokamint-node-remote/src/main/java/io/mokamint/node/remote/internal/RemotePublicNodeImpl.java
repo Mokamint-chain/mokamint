@@ -190,47 +190,42 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of
 	 *                              spurious messages
-	 * @throws DeploymentException if the remote node endpoints could not be deployed
-	 * @throws IOException if the remote node could not be created
+	 * @throws NodeException if the remote node could not be created
+	 * @throws InterruptedException if the current thread has been interrupted
+	 * @throws TimeoutException if the creation has timed out
 	 */
-	public RemotePublicNodeImpl(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws DeploymentException, IOException {
+	public RemotePublicNodeImpl(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws NodeException, TimeoutException, InterruptedException {
 		super(timeout);
 
 		this.logPrefix = "public remote(" + uri + "): ";
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 
-		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
-		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
-		addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
-		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
-		addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
-		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
-		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
-		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
-		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
-		addSession(GET_TRANSACTION_ADDRESS_ENDPOINT, uri, GetTransactionAddressEndpoint::new);
-		addSession(GET_TRANSACTION_ENDPOINT, uri, GetTransactionEndpoint::new);
-		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
-		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
-		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
-		addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
-		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
-		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
-
 		try {
-			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+			addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
+			addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
+			addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
+			addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
+			addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
+			addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
+			addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
+			addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
+			addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
+			addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
+			addSession(GET_TRANSACTION_ADDRESS_ENDPOINT, uri, GetTransactionAddressEndpoint::new);
+			addSession(GET_TRANSACTION_ENDPOINT, uri, GetTransactionEndpoint::new);
+			addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
+			addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
+			addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
+			addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
+			addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
+			addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt(); // TODO: throw it?
-			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
-			throw new IOException(e);
+		catch (IOException | DeploymentException e) {
+			throw new NodeException(e);
 		}
-		catch (TimeoutException | NodeException e) {
-			LOGGER.warning(logPrefix + "failed to deploy the remote: " + e.getMessage());
-			throw new IOException(e);
-		}
+
+		this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 
 		if (serviceBroadcastInterval >= 0)
 			periodicTasks.scheduleWithFixedDelay(this::whisperAllServices, 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);

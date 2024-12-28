@@ -24,5 +24,6 @@ module io.mokamint.application.cli {
     requires io.mokamint.application;
     requires io.mokamint.application.service;
     requires io.hotmoka.cli;
+    requires jakarta.websocket.client;
 	requires java.logging;
 }

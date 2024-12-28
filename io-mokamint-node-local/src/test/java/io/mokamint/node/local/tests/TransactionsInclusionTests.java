@@ -74,7 +74,6 @@ import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Tests about the inclusion of transactions in blockchain.
@@ -287,7 +286,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, InterruptedException, DeploymentException, ApplicationTimeoutException, NodeException, WrongKeyException {
+			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ApplicationTimeoutException, NodeException, WrongKeyException, IOException {
 				LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 
 				var uri = getPeer(num).getURI();

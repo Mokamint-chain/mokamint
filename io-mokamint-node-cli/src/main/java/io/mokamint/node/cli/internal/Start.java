@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -298,31 +299,23 @@ public class Start extends AbstractCommand {
 			}
 		}
 
-		private void publishPublicAndRestrictedNodeServices(int pos) throws CommandException {
+		private void publishPublicAndRestrictedNodeServices(int pos) throws CommandException, InterruptedException {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
 				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(uri))) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
-				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + publicPorts[pos], e);
-					publishPublicAndRestrictedNodeServices(pos + 1);
-				}
-				catch (DeploymentException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
+				catch (NodeException | TimeoutException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed to deploy: " + e.getMessage() + "|@"));
 					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
-				catch (IllegalArgumentException e) {
+				catch (IllegalArgumentException e) { // TODO: ????
 					// for instance, the port number is illegal
 					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
 					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
 					publishPublicAndRestrictedNodeServices(pos + 1);
-				}
-				catch (InterruptedException e) {
-					throw new CommandException("The close operation of the service at port \" + publicPorts[pos] + \" got interrupted!", e);
 				}
 			}
 			else

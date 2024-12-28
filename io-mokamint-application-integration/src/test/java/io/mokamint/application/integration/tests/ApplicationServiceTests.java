@@ -152,7 +152,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -215,7 +215,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -279,7 +279,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -341,7 +341,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -409,7 +409,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -474,7 +474,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -507,7 +507,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -595,7 +595,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -658,7 +658,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -721,7 +721,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage()))
+				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	

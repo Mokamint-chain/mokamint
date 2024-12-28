@@ -195,24 +195,14 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 *            the latter is the port of the service in the local machine where it runs;
 	 *            these two might differ if the service runs inside a docker container
 	 *            that maps ports
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws NodeException if the service cannot be deployed
+	 * @throws InterruptedException if the current thread has been interrupted
+	 * @throws TimeoutException if the creation of the service timed out
 	 */
-	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws DeploymentException, IOException {
+	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws NodeException, InterruptedException, TimeoutException {
 		this.node = node;
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
-
-		try {
-			this.config = node.getConfig();
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt(); // TODO: throw it?
-			throw new IOException(e);
-		}
-		catch (TimeoutException | NodeException e) {
-			throw new IOException(e);
-		}
-
+		this.config = node.getConfig();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
@@ -221,14 +211,19 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
 
-		startContainer("", port,
-			GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
-			GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
-			GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-			GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionEndpoint.config(this),
-			GetTransactionRepresentationEndpoint.config(this), GetTransactionAddressEndpoint.config(this),
-			AddTransactionEndpoint.config(this),
-			WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+		try {
+			startContainer("", port,
+				GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
+				GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
+				GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
+				GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionEndpoint.config(this),
+				GetTransactionRepresentationEndpoint.config(this), GetTransactionAddressEndpoint.config(this),
+				AddTransactionEndpoint.config(this),
+				WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+		}
+		catch (IOException | DeploymentException e) {
+			throw new NodeException(e);
+		}
 
 		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);
@@ -298,16 +293,16 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private Optional<URI> processURI(int port, Optional<URI> uri) throws DeploymentException {
+	private Optional<URI> processURI(int port, Optional<URI> uri) throws NodeException {
 		if (uri.isEmpty()) {
 			uri = determinePublicURI();
 	
 			if (uri.isPresent()) {
 				try {
-					uri =Optional.of(new URI(uri.get() + ":" + port));
+					uri = Optional.of(new URI(uri.get() + ":" + port));
 				}
 				catch (URISyntaxException e) {
-					throw new DeploymentException("The public URI of the machine seems incorrect", e);
+					throw new NodeException("The public URI of the machine seems incorrect", e);
 				}
 			}
 		}

@@ -16,12 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.remote;
 
-import java.io.IOException;
 import java.net.URI;
 
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Providers of remote restricted nodes. They present a programmatic interface
@@ -38,10 +37,9 @@ public abstract class RemoteRestrictedNodes {
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the new remote node
-	 * @throws DeploymentException if the remote node endpoints could not be deployed
-	 * @throws IOException if the remote node could not be created
+	 * @throws NodeException if the remote node could not be created
 	 */
-	public static RemoteRestrictedNode of(URI uri, int timeout) throws DeploymentException, IOException {
+	public static RemoteRestrictedNode of(URI uri, int timeout) throws NodeException {
 		return new RemoteRestrictedNodeImpl(uri, timeout);
 	}
 }

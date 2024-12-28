@@ -74,17 +74,22 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws DeploymentException if the remote node endpoints could not be deployed
-	 * @throws IOException if the remote node could not be created
+	 * @throws NodeException if the remote node could not be created
 	 */
-	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws DeploymentException, IOException {
+	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws NodeException {
 		super(timeout);
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
-		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
-		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
-		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
-		addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
+
+		try {
+			addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
+			addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
+			addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
+			addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
+		}
+		catch (IOException | DeploymentException e) {
+			throw new NodeException(e);
+		}
 	}
 
 	@Override

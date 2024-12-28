@@ -43,7 +43,7 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException;
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException; // TODO: remove IOException
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.

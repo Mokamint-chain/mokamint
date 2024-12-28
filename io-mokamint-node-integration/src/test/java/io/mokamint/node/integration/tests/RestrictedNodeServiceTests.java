@@ -23,9 +23,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -43,7 +41,6 @@ import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 
 public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 	private final static URI URI;
@@ -71,7 +68,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws NodeException {
 				super(URI, 2000);
 			}
 
@@ -108,7 +105,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws NodeException {
 				super(URI, 2000);
 			}
 
@@ -144,7 +141,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws NodeException {
 				super(URI, 2000);
 			}
 
@@ -180,7 +177,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws NodeException {
 				super(URI, 2000);
 			}
 
@@ -203,7 +200,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
-			private MyRemoteRestrictedNode() throws DeploymentException, IOException, URISyntaxException {
+			private MyRemoteRestrictedNode() throws NodeException {
 				super(java.net.URI.create("ws://localhost:8031"), 2000);
 			}
 
