@@ -98,10 +98,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				try {
-					sendObjectAsync(session, AddPeerResultMessages.of(Optional.of(PeerInfos.of(message.getPeer(), 1000, true)), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, AddPeerResultMessages.of(Optional.of(PeerInfos.of(message.getPeer(), 1000, true)), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -125,10 +122,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -150,10 +144,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -175,10 +166,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -200,10 +188,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new PeerRejectedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new PeerRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -225,10 +210,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -252,12 +234,11 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 				try {
 					Thread.sleep(TIME_OUT * 4); // <----
 				}
-				catch (InterruptedException e) {}
-
-				try {
-					sendObjectAsync(session, AddPeerMessages.of(peer, message.getId()));
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
-				catch (IOException e) {}
+
+				sendObjectAsync(session, AddPeerMessages.of(peer, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -278,10 +259,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -303,10 +281,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
 				peers2.add(message.getPeer());
-				try {
-					sendObjectAsync(session, RemovePeerResultMessages.of(true, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, RemovePeerResultMessages.of(true, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -330,10 +305,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -355,10 +327,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -381,10 +350,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
 				ports2.add(message.getPort());
-				try {
-					sendObjectAsync(session, OpenMinerResultMessages.of(Optional.of(MinerInfos.of(UUID.randomUUID(), 42, "a miner")), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, OpenMinerResultMessages.of(Optional.of(MinerInfos.of(UUID.randomUUID(), 42, "a miner")), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -407,10 +373,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -431,10 +394,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -457,10 +417,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
 				uuids2.add(message.getUUID());
-				try {
-					sendObjectAsync(session, RemoveMinerResultMessages.of(true, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, RemoveMinerResultMessages.of(true, message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -483,10 +440,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -507,10 +461,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 

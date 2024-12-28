@@ -239,12 +239,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @throws ApplicationException if the application could not send the message
 	 */
 	protected void sendCheckTransaction(Transaction transaction, String id) throws ApplicationException {
-		try {
-			sendObjectAsync(getSession(CHECK_TRANSACTION_ENDPOINT), CheckTransactionMessages.of(transaction, id));
-		}
-		catch (IOException e) {
-			throw new ApplicationException(e);
-		}
+		sendObjectAsync(getSession(CHECK_TRANSACTION_ENDPOINT), CheckTransactionMessages.of(transaction, id), ApplicationException::new);
 	}
 
 	/**

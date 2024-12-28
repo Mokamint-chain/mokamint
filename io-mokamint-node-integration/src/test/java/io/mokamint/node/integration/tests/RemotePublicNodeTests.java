@@ -26,7 +26,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
@@ -159,10 +158,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -183,10 +179,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -207,10 +200,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -231,10 +221,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -259,12 +246,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				try {
 					Thread.sleep(TIME_OUT * 4); // <----
 				}
-				catch (InterruptedException e) {}
-
-				try {
-					sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()));
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
-				catch (IOException e) {}
+
+				sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -282,10 +268,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -303,10 +286,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -327,10 +307,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -351,10 +328,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -375,10 +349,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -399,10 +370,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -431,10 +399,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 					Thread.currentThread().interrupt();
 				}
 	
-				try {
-					sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -452,10 +417,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -473,10 +435,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -496,10 +455,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -520,10 +476,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -544,10 +497,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -568,10 +518,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -595,12 +542,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				try {
 					Thread.sleep(TIME_OUT * 4); // <----
 				}
-				catch (InterruptedException e) {}
-	
-				try {
-					sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()));
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
-				catch (IOException e) {}
+	
+				sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -618,10 +564,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -639,10 +582,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -686,10 +626,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetBlockResultMessages.of(Optional.of(block1), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetBlockResultMessages.of(Optional.of(block1), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -711,10 +648,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetBlockResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -737,10 +671,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -763,10 +694,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -806,10 +734,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.of(description1), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.of(description1), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -831,10 +756,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.empty(), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetBlockDescriptionResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -857,10 +779,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -883,10 +802,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -907,10 +823,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetConfig(GetConfigMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetConfigResultMessages.of(config1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetConfigResultMessages.of(config1, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -931,10 +844,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetChainInfoResultMessages.of(info1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetChainInfoResultMessages.of(info1, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -955,10 +865,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -979,10 +886,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetChainPortionResultMessages.of(chain1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetChainPortionResultMessages.of(chain1, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1003,10 +907,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1027,10 +928,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetInfo(GetInfoMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetInfoResultMessages.of(info1, message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1051,10 +949,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetMempoolInfoResultMessages.of(info1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetMempoolInfoResultMessages.of(info1, message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1077,10 +972,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
 				transaction2.set(message.getTransaction());
-				try {
-					sendObjectAsync(session, AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1102,10 +994,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1127,10 +1016,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1152,10 +1038,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1179,10 +1062,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetMempoolPortionResultMessages.of(mempool1, message.getId()));
-				}
-				catch (IOException e) {}
+				sendObjectAsync(session, GetMempoolPortionResultMessages.of(mempool1, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -1276,10 +1156,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionResultMessages.of(Optional.of(tx1), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionResultMessages.of(Optional.of(tx1), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1301,10 +1178,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionResultMessages.of(Optional.empty(), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1327,10 +1201,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1353,10 +1224,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1379,10 +1247,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.of(representation1), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.of(representation1), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1404,10 +1269,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.empty(), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1430,10 +1292,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1456,10 +1315,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1482,10 +1338,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.of(address1), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.of(address1), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1507,10 +1360,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.empty(), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
@@ -1533,10 +1383,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {}
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	

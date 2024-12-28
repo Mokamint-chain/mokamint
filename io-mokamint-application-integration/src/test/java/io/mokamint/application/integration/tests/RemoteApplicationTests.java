@@ -24,11 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -76,7 +74,6 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	private final static int PORT = 8030;
 	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 	private final static int TIME_OUT = 2000;
-	private final static Logger LOGGER = Logger.getLogger(RemoteApplicationTests.class.getName());
 
 	/**
 	 * Test server implementation.
@@ -106,14 +103,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
-				if (Arrays.equals(extra, message.getExtra())) {
-					try {
-						sendObjectAsync(session, CheckPrologExtraResultMessages.of(result1, message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (Arrays.equals(extra, message.getExtra()))
+					sendObjectAsync(session, CheckPrologExtraResultMessages.of(result1, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -134,14 +125,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -165,14 +150,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -194,14 +173,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, GetPriorityResultMessages.of(priority, message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, GetPriorityResultMessages.of(priority, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -222,14 +195,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -251,14 +218,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, GetRepresentationResultMessages.of(representation, message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, GetRepresentationResultMessages.of(representation, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -279,14 +240,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
-				if (transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -307,12 +262,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
-				try {
-					sendObjectAsync(session, GetInitialStateIdResultMessages.of(initialStateId, message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, GetInitialStateIdResultMessages.of(initialStateId, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -332,12 +282,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -361,14 +306,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
-				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId())) {
-					try {
-						sendObjectAsync(session, BeginBlockResultMessages.of(groupId, message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId()))
+					sendObjectAsync(session, BeginBlockResultMessages.of(groupId, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -391,14 +330,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
-				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (message.getHeight() == height && when.equals(message.getWhen()) && Arrays.equals(stateId, message.getStateId()))
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -420,14 +353,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -452,14 +379,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -482,14 +403,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction())) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (groupId == message.getGroupId() && transaction.equals(message.getTransaction()))
+					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -523,14 +438,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
-				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline)) {
-					try {
-						sendObjectAsync(session, EndBlockResultMessages.of(finalStateId, message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline))
+					sendObjectAsync(session, EndBlockResultMessages.of(finalStateId, message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -563,14 +472,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
-				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline)) {
-					try {
-						sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
-					}
-					catch (IOException e) {
-						LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-					}
-				}
+				if (message.getGroupId() == groupId && message.getDeadline().equals(deadline))
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -591,12 +494,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -620,12 +518,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -646,12 +539,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -675,12 +563,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, ExceptionMessages.of(new UnknownGroupIdException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -701,12 +584,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {
-				try {
-					sendObjectAsync(session, KeepFromResultMessages.of(message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, KeepFromResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -728,12 +606,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {
-				try {
-					sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()));
-				}
-				catch (IOException e) {
-					LOGGER.warning("cannot send to session: it might be closed: " + e.getMessage());
-				}
+				sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
