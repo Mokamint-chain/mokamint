@@ -28,7 +28,6 @@ import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.service.ApplicationServices;
-import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Parameters;
@@ -65,15 +64,12 @@ public class Start extends AbstractCommand {
 		catch (ApplicationNotFoundException e) {
 			throw new CommandException(e.getMessage());
 		}
-		catch (DeploymentException | IOException e) {
-			throw new CommandException("Failed to open the application service. Is port " + port + " available?", e);
-		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new CommandException("The application service has been interrupted", e);
 		}
 		catch (ApplicationException e) {
-			throw new CommandException("The application is misbehaving", e);
+			throw new CommandException("The application is misbehaving: is port " + port + " available?", e);
 		}
 	}
 }

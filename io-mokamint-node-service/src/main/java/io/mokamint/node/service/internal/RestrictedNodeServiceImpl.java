@@ -79,19 +79,23 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 * 
 	 * @param node the node
 	 * @param port the port
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws NodeException if the service cannot be deployed
 	 */
-	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws DeploymentException, IOException {
+	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws NodeException {
 		this.node = node;
 		this.logPrefix = "restricted service(ws://localhost:" + port + "): ";
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
 
-		startContainer("", port,
-			AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
-			OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
+		try {
+			startContainer("", port,
+					AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
+					OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
+		}
+		catch (IOException | DeploymentException e) {
+			throw new NodeException(e);
+		}
 
 		LOGGER.info(logPrefix + "published");
 	}

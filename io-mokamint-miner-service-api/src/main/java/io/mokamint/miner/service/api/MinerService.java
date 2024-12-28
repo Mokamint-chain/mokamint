@@ -16,9 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.service.api;
 
-import java.io.IOException;
-
 import io.hotmoka.websockets.client.api.WebSocketClient;
+import io.mokamint.miner.api.MinerException;
 
 /**
  * A websocket client that connects to a remote miner exported
@@ -38,8 +37,8 @@ public interface MinerService extends WebSocketClient {
 	/**
 	 * Closes the service.
 	 * 
-	 * @throws IOException if an I/O error occurred
+	 * @throws MinerException if the miner is misbehaving
 	 */
 	@Override
-	void close() throws IOException;
+	void close() throws MinerException;
 }

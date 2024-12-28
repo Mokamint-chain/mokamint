@@ -70,7 +70,6 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemoteApplicationTests extends AbstractLoggedTests {
@@ -88,10 +87,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		/**
 		 * Creates a new test server.
 		 * 
-		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws IOException if an I/O error occurs
+		 * @throws ApplicationException if the service cannot be deployed
 		 */
-		private PublicTestServer() throws DeploymentException, IOException {
+		private PublicTestServer() throws ApplicationException {
 			super(mock(), PORT);
 		}
 	}
@@ -104,7 +102,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
@@ -132,7 +130,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
@@ -163,7 +161,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
@@ -192,7 +190,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
@@ -220,7 +218,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
@@ -249,7 +247,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
@@ -277,7 +275,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
@@ -305,7 +303,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
@@ -330,7 +328,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
@@ -359,7 +357,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
@@ -389,7 +387,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
@@ -418,7 +416,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -450,7 +448,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -480,7 +478,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -521,7 +519,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
@@ -561,7 +559,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
@@ -589,7 +587,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
@@ -618,7 +616,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
@@ -644,7 +642,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
@@ -673,7 +671,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
@@ -699,7 +697,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {
@@ -726,7 +724,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws ApplicationException {}
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {

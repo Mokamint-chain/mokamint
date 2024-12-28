@@ -52,7 +52,6 @@ import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
@@ -79,10 +78,9 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 		/**
 		 * Creates a new test server.
 		 * 
-		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws IOException if an I/O error occurs
+		 * @throws NodeException if the service cannot be deployed
 		 */
-		private RestrictedTestServer() throws DeploymentException, IOException {
+		private RestrictedTestServer() throws NodeException {
 			super(mock(), PORT);
 		}
 	}
@@ -95,7 +93,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -123,7 +121,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -148,7 +146,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -173,7 +171,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -198,7 +196,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -223,7 +221,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -247,7 +245,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -276,7 +274,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
@@ -300,7 +298,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
@@ -328,7 +326,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
@@ -353,7 +351,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onRemovePeer(RemovePeerMessage message, Session session) {
@@ -378,7 +376,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends RestrictedTestServer {
 	
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 	
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
@@ -405,7 +403,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
@@ -429,7 +427,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
@@ -454,7 +452,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends RestrictedTestServer {
 	
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 	
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
@@ -481,7 +479,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
@@ -505,7 +503,7 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends RestrictedTestServer {
 
-			private MyServer() throws DeploymentException, IOException {}
+			private MyServer() throws NodeException {}
 
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {

@@ -116,25 +116,29 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	 * @param uri the URI of the network service that will get bound to the remote application
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws DeploymentException if the remote application could not be deployed
-	 * @throws IOException if the remote application could not be created
+	 * @throws ApplicationException if the remote application could not be deployed
 	 */
-	public RemoteApplicationImpl(URI uri, int timeout) throws DeploymentException, IOException {
+	public RemoteApplicationImpl(URI uri, int timeout) throws ApplicationException {
 		super(timeout);
 
 		this.logPrefix = "application remote(" + uri + "): ";
 
-		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
-		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
-		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
-		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
-		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
-		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
-		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
-		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
-		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
-		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
-		addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
+		try {
+			addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
+			addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
+			addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
+			addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
+			addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
+			addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
+			addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
+			addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
+			addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
+			addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
+			addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
+		}
+		catch (IOException | DeploymentException e) {
+			throw new ApplicationException(e);
+		}
 	}
 
 	@Override

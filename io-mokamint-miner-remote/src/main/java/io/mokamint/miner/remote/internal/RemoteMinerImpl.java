@@ -82,15 +82,20 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	 * 
 	 * @param port the port where the remote miner will receive the deadlines
 	 * @param check the check to determine if a deadline is valid
-	 * @throws DeploymentException if the miner cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws MinerException if the miner cannot be deployed
 	 */
-	public RemoteMinerImpl(int port, DeadlineValidityCheck check) throws DeploymentException, IOException {
+	public RemoteMinerImpl(int port, DeadlineValidityCheck check) throws MinerException {
 		this.port = port;
 		this.check = Objects.requireNonNull(check);
 
-		startContainer("", port, RemoteMinerEndpoint.config(this));
-    	LOGGER.info(logPrefix + "published at ws://localhost:" + port);
+		try {
+			startContainer("", port, RemoteMinerEndpoint.config(this));
+		}
+		catch (IOException | DeploymentException e) {
+			throw new MinerException(e);
+		}
+
+		LOGGER.info(logPrefix + "published at ws://localhost:" + port);
 	}
 
 	@Override

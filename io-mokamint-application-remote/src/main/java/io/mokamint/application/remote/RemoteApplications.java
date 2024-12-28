@@ -16,12 +16,11 @@ limitations under the License.
 
 package io.mokamint.application.remote;
 
-import java.io.IOException;
 import java.net.URI;
 
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Providers of remote applications.
@@ -37,10 +36,9 @@ public abstract class RemoteApplications {
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the remote application
-	 * @throws DeploymentException if the remote application could not be deployed
-	 * @throws IOException if the remote application could not be created
+	 * @throws ApplicationException if the remote application could not be deployed
 	 */
-	public static RemoteApplication of(URI uri, int timeout) throws DeploymentException, IOException {
+	public static RemoteApplication of(URI uri, int timeout) throws ApplicationException {
 		return new RemoteApplicationImpl(uri, timeout);
 	}
 }

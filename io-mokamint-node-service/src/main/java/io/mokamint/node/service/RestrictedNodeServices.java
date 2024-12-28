@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.service;
 
-import java.io.IOException;
-
+import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
-import jakarta.websocket.DeploymentException;
 
 /**
  * A provider of node services for the restricted API of a node.
@@ -36,10 +34,9 @@ public final class RestrictedNodeServices {
 	 * @param node the node
 	 * @param port the port
 	 * @return the new service
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws NodeException if the service cannot be deployed
 	 */
-	public static RestrictedNodeService open(RestrictedNode node, int port) throws DeploymentException, IOException {
+	public static RestrictedNodeService open(RestrictedNode node, int port) throws NodeException {
 		return new RestrictedNodeServiceImpl(node, port);
 	}
 }

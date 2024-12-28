@@ -24,7 +24,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -61,7 +60,6 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
-import jakarta.websocket.DeploymentException;
 
 public class ApplicationServiceTests extends AbstractLoggedTests {
 	private final static int PORT = 8030;
@@ -83,7 +81,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -114,7 +112,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -146,7 +144,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -177,7 +175,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -209,7 +207,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -241,7 +239,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -273,7 +271,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -304,7 +302,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -335,7 +333,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -369,7 +367,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -403,7 +401,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -435,7 +433,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -468,7 +466,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -501,7 +499,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -545,7 +543,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -589,7 +587,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -620,7 +618,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -652,7 +650,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -683,7 +681,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 
@@ -715,7 +713,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -746,7 +744,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws DeploymentException, IOException {
+			public MyTestClient() throws ApplicationException {
 				super(URI, TIME_OUT);
 			}
 

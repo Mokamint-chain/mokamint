@@ -26,11 +26,12 @@ import java.util.logging.Logger;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
@@ -80,13 +81,19 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
-	 * @throws IOException if an I/O error occurs
-	 * @throws DeploymentException if the service cannot be deployed
+	 * @throws MinerException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(Miner miner, URI uri) throws DeploymentException, IOException {
+	public MinerServiceImpl(Miner miner, URI uri) throws MinerException {
 		this.miner = miner;
 		this.uri = uri;
-		this.session = new MinerServiceEndpoint().deployAt(uri);
+
+		try {
+			this.session = new MinerServiceEndpoint().deployAt(uri);
+		}
+		catch (IOException | DeploymentException e) {
+			throw new MinerException(e);
+		}
+
 		LOGGER.info("miner service bound to " + uri);
 	}
 
@@ -97,11 +104,11 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() throws MinerException {
 		close(new CloseReason(CloseCodes.NORMAL_CLOSURE, "Closed normally."));
 	}
 
-	private void close(CloseReason reason) throws IOException {
+	private void close(CloseReason reason) throws MinerException {
 		if (!isClosed.getAndSet(true)) {
 			closeReason = reason.getReasonPhrase();
 			LOGGER.info("miner service being closed with reason: " + closeReason);
@@ -109,6 +116,9 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 			try {
 				session.close();
 				LOGGER.info("miner service unbound from " + uri);
+			}
+			catch (IOException e) {
+				throw new MinerException(e);
 			}
 			finally {
 				latch.countDown();
@@ -164,7 +174,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 			try {
 				close(reason);
 			}
-			catch (IOException e) {
+			catch (MinerException e) {
 				LOGGER.log(Level.WARNING, "cannot close the session", e);
 			}
 		}

@@ -16,13 +16,12 @@ limitations under the License.
 
 package io.mokamint.miner.service;
 
-import java.io.IOException;
 import java.net.URI;
 
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.miner.service.internal.MinerServiceImpl;
-import jakarta.websocket.DeploymentException;
 
 /**
  * Providers of miner services.
@@ -37,10 +36,9 @@ public final class MinerServices {
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @return the miner service
-	 * @throws IOException if an I/O error occurs
-	 * @throws DeploymentException if the service cannot be deployed
+	 * @throws MinerException if the service cannot be deployed
 	 */
-	public static MinerService open(Miner miner, URI uri) throws DeploymentException, IOException {
+	public static MinerService open(Miner miner, URI uri) throws MinerException {
 		return new MinerServiceImpl(miner, uri);
 	}
 }

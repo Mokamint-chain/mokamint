@@ -38,7 +38,6 @@ import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
-import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
@@ -155,7 +154,7 @@ public class Start extends AbstractCommand {
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
 				System.out.println("Service terminated: " + service.waitUntilDisconnected());
 			}
-			catch (DeploymentException | IOException e) {
+			catch (MinerException e) {
 				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
 			}
 			catch (InterruptedException e) {
@@ -177,7 +176,7 @@ public class Start extends AbstractCommand {
 			try {
 				service.close(); // this will unlock the waitUntilDisconnected() above
 			}
-			catch (IOException e) {
+			catch (MinerException e) {
 				System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
 				LOGGER.log(Level.WARNING, "cannot close the service", e);
 			}

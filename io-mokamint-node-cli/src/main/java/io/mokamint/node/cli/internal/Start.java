@@ -58,7 +58,6 @@ import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
-import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
@@ -329,17 +328,12 @@ public class Start extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishRestrictedNodeServices(pos + 1);
 				}
-				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error!|@"));
-					LOGGER.log(Level.SEVERE, "I/O error while creating a node service at port " + restrictedPorts[pos], e);
-					publishRestrictedNodeServices(pos + 1);
-				}
-				catch (DeploymentException e) {
+				catch (NodeException e) {
 					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
 					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
 					publishRestrictedNodeServices(pos + 1);
 				}
-				catch (IllegalArgumentException e) {
+				catch (IllegalArgumentException e) { // TODO: ????
 					// for instance, the port number is illegal
 					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
 					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
@@ -388,7 +382,7 @@ public class Start extends AbstractCommand {
 					app = RemoteApplications.of(applicationUri, 5000);
 					app.addOnCloseHandler(this::onRemoteApplicationClosed);
 				}
-				catch (DeploymentException | IOException e) {
+				catch (ApplicationException e) {
 					throw new CommandException("Cannot connect to the remote application at " + applicationUri + ": " + e.getMessage());
 				}
 			}

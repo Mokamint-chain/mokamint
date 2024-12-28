@@ -16,12 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.service;
 
-import java.io.IOException;
-
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
-import jakarta.websocket.DeploymentException;
 
 /**
  * A provider of application services for the public API of an application.
@@ -36,10 +34,9 @@ public abstract class ApplicationServices {
 	 * @param application the application
 	 * @param port the port
 	 * @return the new service
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws ApplicationException if the service cannot be deployed
 	 */
-	public static ApplicationService open(Application application, int port) throws DeploymentException, IOException {
+	public static ApplicationService open(Application application, int port) throws ApplicationException {
 		return new ApplicationServiceImpl(application, port);
 	}
 }

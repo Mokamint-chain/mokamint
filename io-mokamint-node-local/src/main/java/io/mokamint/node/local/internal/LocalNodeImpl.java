@@ -86,7 +86,6 @@ import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.IllegalDeadlineException;
-import jakarta.websocket.DeploymentException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -459,7 +458,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 			return maybeInfo;
 		}
-		catch (DeploymentException e) {
+		catch (MinerException e) {
 			throw new IOException(e);
 		}
 	}

@@ -99,21 +99,25 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * 
 	 * @param application the application
 	 * @param port the port
-	 * @throws DeploymentException if the service cannot be deployed
-	 * @throws IOException if an I/O error occurs
+	 * @throws ApplicationException if the service cannot be deployed
 	 */
-	public ApplicationServiceImpl(Application application, int port) throws DeploymentException, IOException {
+	public ApplicationServiceImpl(Application application, int port) throws ApplicationException {
 		this.application = application;
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
-		startContainer("", port,
-			CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
-			GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
-			GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
-			DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
-			CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
-			KeepFromEndpoint.config(this)
-		);
+		try {
+			startContainer("", port,
+				CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
+				GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
+				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
+				DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
+				CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
+				KeepFromEndpoint.config(this)
+			);
+		}
+		catch (IOException | DeploymentException e) {
+			throw new ApplicationException(e);
+		}
 
 		// if the application gets closed, then this service will be closed as well
 		application.addOnCloseHandler(this_close);
