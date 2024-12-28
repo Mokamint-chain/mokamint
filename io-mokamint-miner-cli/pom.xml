@@ -34,6 +34,11 @@
       <artifactId>io-hotmoka-cli</artifactId>
       <version>${io.hotmoka.cli.version}</version>
     </dependency>
+	<dependency>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-server</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

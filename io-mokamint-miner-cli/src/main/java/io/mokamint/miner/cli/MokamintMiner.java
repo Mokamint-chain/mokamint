@@ -34,7 +34,7 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-miner",
 	header = "This is the command-line tool for Mokamint miners.",
-	footer = "Copyright (c) 2023 Fausto Spoto",
+	footer = "Copyright (c) 2023 Fausto Spoto (fausto.spoto@mokamint.io)",
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Start.class

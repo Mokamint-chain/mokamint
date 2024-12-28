@@ -46,6 +46,7 @@ module io.mokamint.node.cli {
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
+	requires io.hotmoka.websockets.client.api;
 	requires com.google.gson;
 	requires java.logging;
 }

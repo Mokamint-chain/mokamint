@@ -44,7 +44,7 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-node",
 	header = "This is the command-line tool for controlling Mokamint nodes.",
-	footer = "Copyright (c) 2024 Fausto Spoto",
+	footer = "Copyright (c) 2024 Fausto Spoto (fausto.spoto@mokamint.io)",
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Applications.class,
