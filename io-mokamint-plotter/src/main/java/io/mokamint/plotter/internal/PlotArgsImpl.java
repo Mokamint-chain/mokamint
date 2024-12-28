@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * 
- */
 package io.mokamint.plotter.internal;
 
 import java.io.IOException;
@@ -27,6 +24,7 @@ import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotArgs;
+import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Partial implementation of the arguments specifying a plot, its key pair and the associated password.
@@ -34,22 +32,15 @@ import io.mokamint.plotter.api.PlotArgs;
 public abstract class PlotArgsImpl implements PlotArgs {
 
 	@Override
-	public final PlotAndKeyPair load() throws IOException, NoSuchAlgorithmException {
+	public final PlotAndKeyPair load() throws IOException, NoSuchAlgorithmException, WrongKeyException {
 		var plot = Plots.load(getPlot());
 		var entropy = Entropies.load(getKeyPair());
-		var passwordAsString = new String(getPassword());
 		var prolog = plot.getProlog();
-		var keyPair = entropy.keys(passwordAsString, prolog.getSignatureForBlocks());
-
-		if (!prolog.getPublicKeyForSigningDeadlines().equals(keyPair.getPublic()))
-			throw new IllegalArgumentException("The public key for signing the deadlines of the plot file " + getPlot() +
-				" does not coincide with the public key in the key pair " + getKeyPair()); // TODO: change exception
+		var passwordAsString = new String(getPassword());
 
 		try {
+			var keyPair = entropy.keys(passwordAsString, prolog.getSignatureForDeadlines());
 			return PlotAndKeyPairs.of(plot, keyPair);
-		}
-		catch (IllegalArgumentException e) {
-			throw new IOException(e.getMessage());
 		}
 		finally {
 			passwordAsString = null;

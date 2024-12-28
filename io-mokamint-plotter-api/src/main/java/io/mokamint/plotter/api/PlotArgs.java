@@ -59,9 +59,10 @@ public interface PlotArgs {
 	 * 
 	 * @return the plot and key pair
 	 * @throws NoSuchAlgorithmException if the plot refers to a missing hashing algorithm
-	 * @throws IOException if the plot or the key pair cannot be accessed, or if
-	 *                     the public key of the key pair does not coincide with the
-	 *                     public key in the prolog of the plot
+	 * @throws IOException if the plot or the key pair cannot be accessed
+	 * @throws WrongKeyException if the public key of the key pair does not coincide with the
+	 *                           public key in the prolog of the plot
+	 * 
 	 */
-	PlotAndKeyPair load() throws IOException, NoSuchAlgorithmException;
+	PlotAndKeyPair load() throws IOException, NoSuchAlgorithmException, WrongKeyException;
 }

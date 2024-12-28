@@ -57,6 +57,7 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Tests about the synchronization of the chain from the peers.
@@ -133,7 +134,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
+		private MiningNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException, WrongKeyException {
 			super(config, nodeKeys, app, true);
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}

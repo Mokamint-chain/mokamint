@@ -24,6 +24,7 @@ import java.security.KeyPair;
 
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.api.WrongKeyException;
 import io.mokamint.plotter.internal.PlotAndKeyPairImpl;
 
 /**
@@ -39,10 +40,10 @@ public abstract class PlotAndKeyPairs {
 	 * @param plot the plot file
 	 * @param keyPair the key pair
 	 * @return the pair
-	 * @throws IllegalArgumentException if the public key for signing deadlines of the plot file
-	 *                                  does not coincide with the public key of the key pair
+	 * @throws WrongKeyException if the public key for signing deadlines of the plot file
+	 *                           does not coincide with the public key of the key pair
 	 */
-	public static PlotAndKeyPair of(Plot plot, KeyPair keyPair) throws IllegalArgumentException {
+	public static PlotAndKeyPair of(Plot plot, KeyPair keyPair) throws WrongKeyException {
 		return new PlotAndKeyPairImpl(plot, keyPair);
 	}
 }

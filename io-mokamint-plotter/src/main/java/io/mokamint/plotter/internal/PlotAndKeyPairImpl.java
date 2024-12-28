@@ -24,6 +24,7 @@ import java.security.KeyPair;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotException;
+import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Implementation of a plot file and of the key pair for signing the deadlines
@@ -46,12 +47,12 @@ public class PlotAndKeyPairImpl implements PlotAndKeyPair {
 	 * 
 	 * @param plot the plot file
 	 * @param keyPair the key pair
-	 * @throws IllegalArgumentException if the public key for signing deadlines of the plot file
-	 *                                  does not coincide with the public key of the key pair
+	 * @throws WrongKeyException if the public key for signing deadlines of the plot file
+	 *                           does not coincide with the public key of the key pair
 	 */
-	public PlotAndKeyPairImpl(Plot plot, KeyPair keyPair) throws IllegalArgumentException {
+	public PlotAndKeyPairImpl(Plot plot, KeyPair keyPair) throws WrongKeyException {
 		if (!plot.getProlog().getPublicKeyForSigningDeadlines().equals(keyPair.getPublic()))
-			throw new IllegalArgumentException("The public key for signing the deadlines of the plot file does not coincide with the public key in the key pair");
+			throw new WrongKeyException("The public key for signing the deadlines of the plot file does not coincide with the public key in the key pair");
 
 		this.plot = plot;
 		this.keyPair = keyPair;

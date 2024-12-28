@@ -37,6 +37,7 @@ import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
 import io.mokamint.plotter.api.PlotException;
+import io.mokamint.plotter.api.WrongKeyException;
 import jakarta.websocket.DeploymentException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -115,13 +116,18 @@ public class Start extends AbstractCommand {
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error! " + e.getMessage() + "|@"));
-					LOGGER.log(Level.WARNING, "I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair", e);
+					System.out.println(Ansi.AUTO.string("@|red I/O error while accessing plot file " + plotArg.plot + " and its key pair " + plotArg.keyPair + "! " + e.getMessage() + "|@"));
+					LOGGER.warning("I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair: " + e.getMessage());
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed since the plot file uses an unknown hashing algorithm!|@"));
-					LOGGER.log(Level.WARNING, "the plot file \"" + plotArg + "\" uses an unknown hashing algorithm", e);
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses an unknown hashing algorithm!|@"));
+					LOGGER.warning("the plot file \"" + plotArg + "\" uses an unknown hashing algorithm: " + e.getMessage());
+					loadPlotsAndStartMiningService(pos + 1);
+				}
+				catch (WrongKeyException e) {
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses a different key pair than " + plotArg.keyPair + "!|@"));
+					LOGGER.warning("the plot file \"" + plotArg + "\" uses a different key pair than " + plotArg.keyPair + ": " + e.getMessage());
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (PlotException e) {

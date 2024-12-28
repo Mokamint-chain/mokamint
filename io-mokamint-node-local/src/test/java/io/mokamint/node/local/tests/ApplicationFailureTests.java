@@ -55,6 +55,7 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Tests about the possible failures of the application of a node.
@@ -115,7 +116,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, NodeException, ApplicationTimeoutException, WrongKeyException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}

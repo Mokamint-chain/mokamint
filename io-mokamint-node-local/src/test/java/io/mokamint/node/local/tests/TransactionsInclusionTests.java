@@ -73,6 +73,7 @@ import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotException;
+import io.mokamint.plotter.api.WrongKeyException;
 import jakarta.websocket.DeploymentException;
 
 /**
@@ -107,7 +108,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException, WrongKeyException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -150,7 +151,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, ApplicationTimeoutException, NodeException {
+			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, ApplicationTimeoutException, NodeException, WrongKeyException {
 				super(config, init);
 			}
 
@@ -203,7 +204,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException {
+				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException, WrongKeyException {
 					super(config, init);
 				}
 
@@ -286,7 +287,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, InterruptedException, DeploymentException, ApplicationTimeoutException, NodeException {
+			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, IOException, InterruptedException, DeploymentException, ApplicationTimeoutException, NodeException, WrongKeyException {
 				LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 
 				var uri = getPeer(num).getURI();
