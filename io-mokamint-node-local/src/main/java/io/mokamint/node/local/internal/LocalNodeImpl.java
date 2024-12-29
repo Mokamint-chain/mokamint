@@ -62,6 +62,7 @@ import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
@@ -837,7 +838,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param block the mined block
 	 */
-	protected void onMined(Block block) {} // TODO: call it also for the creation of a genesis block
+	protected void onMined(NonGenesisBlock block) {}
 
 	/**
 	 * Called when some peer has been whispered to our peers.
