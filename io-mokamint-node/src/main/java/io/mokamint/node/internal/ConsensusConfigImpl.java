@@ -28,8 +28,10 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
+import io.mokamint.node.internal.gson.BasicConsensusConfigJson;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree
@@ -331,70 +333,96 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.oblivion = config.getOblivion();
 		}
 
+		/**
+		 * Creates a consensus builder from the given JSON representation.
+		 * 
+		 * @param json the JSON representation
+		 * @throws InconsistentJsonException if {@code json} is inconsistent
+		 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available cryptographic algorithm
+		 */
+		protected ConsensusConfigBuilderImpl(BasicConsensusConfigJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+			Objects.requireNonNull(json);
+
+			try {
+				setChainId(json.getChainId());
+				setHashingForDeadlines(json.getHashingForDeadlines());
+				setHashingForGenerations(json.getHashingForGenerations());
+				setHashingForBlocks(json.getHashingForBlocks());
+				setHashingForTransactions(json.getHashingForTransactions());
+				setSignatureForBlocks(json.getSignatureForBlocks());
+				setSignatureForDeadlines(json.getSignatureForDeadlines());
+				setTargetBlockCreationTime(json.getTargetBlockCreationTime());
+				setMaxBlockSize(json.getMaxBlockSize());
+				setOblivion(json.getOblivion());
+			}
+			catch (NullPointerException | IllegalArgumentException e) {
+				throw new InconsistentJsonException(e.getMessage());
+			}
+		}
+
 		@Override
 		public B setChainId(String chainId) {
-			Objects.requireNonNull(chainId, "chainId cannot be null");
-			this.chainId = chainId;
+			this.chainId = Objects.requireNonNull(chainId, "chainId cannot be null");
 			return getThis();
 		}
 
 		private void setHashingForDeadlines(String hashingForDeadlines) throws NoSuchAlgorithmException {
-			this.hashingForDeadlines = HashingAlgorithms.of(hashingForDeadlines);
+			this.hashingForDeadlines = HashingAlgorithms.of(Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null"));
 		}
 
 		private void setHashingForGenerations(String hashingForGenerations) throws NoSuchAlgorithmException {
-			this.hashingForGenerations = HashingAlgorithms.of(hashingForGenerations);
+			this.hashingForGenerations = HashingAlgorithms.of(Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null"));
 		}
 
 		private void setHashingForBlocks(String hashingForBlocks) throws NoSuchAlgorithmException {
-			this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks);
+			this.hashingForBlocks = HashingAlgorithms.of(Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null"));
 		}
 
 		private void setHashingForTransactions(String hashingForTransactions) throws NoSuchAlgorithmException {
-			this.hashingForTransactions = HashingAlgorithms.of(hashingForTransactions);
+			this.hashingForTransactions = HashingAlgorithms.of(Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null"));
 		}
 
 		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
-			this.signatureForBlocks = SignatureAlgorithms.of(signatureForBlocks);
+			this.signatureForBlocks = SignatureAlgorithms.of(Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null"));
 		}
 
 		private void setSignatureForDeadlines(String signatureForDeadlines) throws NoSuchAlgorithmException {
-			this.signatureForDeadlines = SignatureAlgorithms.of(signatureForDeadlines);
+			this.signatureForDeadlines = SignatureAlgorithms.of(Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null"));
 		}
 
 		@Override
 		public B setHashingForDeadlines(HashingAlgorithm hashingForDeadlines) {
-			this.hashingForDeadlines = hashingForDeadlines;
+			this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null");
 			return getThis();
 		}
 
 		@Override
 		public B setHashingForGenerations(HashingAlgorithm hashingForGenerations) {
-			this.hashingForGenerations = hashingForGenerations;
+			this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations, "hashingForGenerations cannot be null");
 			return getThis();
 		}
 
 		@Override
 		public B setHashingForBlocks(HashingAlgorithm hashingForBlocks) {
-			this.hashingForBlocks = hashingForBlocks;
+			this.hashingForBlocks = Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null");
 			return getThis();
 		}
 
 		@Override
 		public B setHashingForTransactions(HashingAlgorithm hashingForTransactions) {
-			this.hashingForTransactions = hashingForTransactions;
+			this.hashingForTransactions = Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null");
 			return getThis();
 		}
 
 		@Override
 		public B setSignatureForBlocks(SignatureAlgorithm signatureForBlocks) {
-			this.signatureForBlocks = signatureForBlocks;
+			this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
 			return getThis();
 		}
 
 		@Override
 		public B setSignatureForDeadlines(SignatureAlgorithm signatureForDeadlines) {
-			this.signatureForDeadlines = signatureForDeadlines;
+			this.signatureForDeadlines = Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
 			return getThis();
 		}
 

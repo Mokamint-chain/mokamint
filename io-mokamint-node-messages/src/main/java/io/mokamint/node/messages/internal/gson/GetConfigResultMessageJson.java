@@ -20,7 +20,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
 import io.mokamint.node.messages.internal.GetConfigResultMessageImpl;
 
@@ -28,15 +28,15 @@ import io.mokamint.node.messages.internal.GetConfigResultMessageImpl;
  * The JSON representation of a {@link GetConfigResultMessage}.
  */
 public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetConfigResultMessage> {
-	private final ConsensusConfigBuilders.Json config;
+	private final BasicConsensusConfigBuilders.Json config;
 
 	protected GetConfigResultMessageJson(GetConfigResultMessage message) {
 		super(message);
 
-		this.config = new ConsensusConfigBuilders.Json(message.get());
+		this.config = new BasicConsensusConfigBuilders.Json(message.get());
 	}
 
-	public ConsensusConfigBuilders.Json getConfig() {
+	public BasicConsensusConfigBuilders.Json getConfig() {
 		return config;
 	}
 

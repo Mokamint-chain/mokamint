@@ -41,7 +41,7 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -365,7 +365,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getConfig result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetConfigResult() throws Exception {
-		var config = ConsensusConfigBuilders.defaults().build();
+		var config = BasicConsensusConfigBuilders.defaults().build();
 		var getConfigResultMessage1 = GetConfigResultMessages.of(config, "id");
 		String encoded = new GetConfigResultMessages.Encoder().encode(getConfigResultMessage1);
 		var getConfigResultMessage2 = new GetConfigResultMessages.Decoder().decode(encoded);

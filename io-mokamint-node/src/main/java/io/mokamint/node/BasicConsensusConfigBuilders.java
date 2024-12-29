@@ -22,72 +22,30 @@ import java.security.NoSuchAlgorithmException;
 
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
-import io.mokamint.node.internal.gson.ConsensusConfigDecoder;
-import io.mokamint.node.internal.gson.ConsensusConfigEncoder;
-import io.mokamint.node.internal.gson.ConsensusConfigJson;
+import io.mokamint.node.internal.BasicConsensusConfigBuilder;
+import io.mokamint.node.internal.gson.BasicConsensusConfigDecoder;
+import io.mokamint.node.internal.gson.BasicConsensusConfigEncoder;
+import io.mokamint.node.internal.gson.BasicConsensusConfigJson;
 
 /**
- * Providers of consensus configurations.
+ * Providers of basic consensus configurations.
  */
-public abstract class ConsensusConfigBuilders {
+public abstract class BasicConsensusConfigBuilders {
 
-	private ConsensusConfigBuilders() {}
-
-	private static class MyConsensusConfig extends AbstractConsensusConfig<MyConsensusConfig, MyConsensusConfigBuilder> {
-		
-		/**
-		 * Full constructor for the builder pattern.
-		 * 
-		 * @param builder the builder where information is extracted from
-		 */
-		private MyConsensusConfig(MyConsensusConfigBuilder builder) {
-			super(builder);
-		}
-
-		@Override
-		public MyConsensusConfigBuilder toBuilder() {
-			return new MyConsensusConfigBuilder(this);
-		}
-	}
+	private BasicConsensusConfigBuilders() {}
 
 	/**
-	 * The builder of consensus configurations, according to the builder pattern.
-	 */
-	private static class MyConsensusConfigBuilder extends AbstractConsensusConfigBuilder<MyConsensusConfig, MyConsensusConfigBuilder> {
-
-		private MyConsensusConfigBuilder() throws NoSuchAlgorithmException {}
-
-		private MyConsensusConfigBuilder(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
-			super(readToml(path));
-		}
-
-		private MyConsensusConfigBuilder(MyConsensusConfig config) {
-			super(config);
-		}
-
-		@Override
-		public MyConsensusConfig build() {
-			return new MyConsensusConfig(this);
-		}
-
-		@Override
-		protected MyConsensusConfigBuilder getThis() {
-			return this;
-		}
-	}
-
-	/**
-	 * Creates a builder containing default data.
+	 * Creates a configuration builder containing default data.
 	 * 
 	 * @return the builder
 	 * @throws NoSuchAlgorithmException if some hashing algorithm used in the default configuration is not available
 	 */
 	public static ConsensusConfigBuilder<?,?> defaults() throws NoSuchAlgorithmException {
-		return new MyConsensusConfigBuilder();
+		return new BasicConsensusConfigBuilder();
 	}
 
 	/**
-	 * Creates a builder from the given TOML configuration file.
+	 * Creates a configuration builder from the given TOML configuration file.
 	 * The resulting builder will contain the information in the file,
 	 * and use defaults for the data not contained in the file.
 	 * 
@@ -97,13 +55,13 @@ public abstract class ConsensusConfigBuilders {
 	 * @throws NoSuchAlgorithmException if the configuration file refers to some non-available hashing algorithm
 	 */
 	public static ConsensusConfigBuilder<?,?> load(Path path) throws NoSuchAlgorithmException, FileNotFoundException {
-		return new MyConsensusConfigBuilder(path);
+		return new BasicConsensusConfigBuilder(path);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ConsensusConfigEncoder {
+	public static class Encoder extends BasicConsensusConfigEncoder {
 
 		/**
 		 * Creates a new encoder.
@@ -114,7 +72,7 @@ public abstract class ConsensusConfigBuilders {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ConsensusConfigDecoder {
+	public static class Decoder extends BasicConsensusConfigDecoder {
 
 		/**
 		 * Creates a new decoder.
@@ -125,7 +83,7 @@ public abstract class ConsensusConfigBuilders {
     /**
      * Json representation.
      */
-    public static class Json extends ConsensusConfigJson {
+    public static class Json extends BasicConsensusConfigJson {
 
     	/**
     	 * Creates the Json representation for the given configuration.

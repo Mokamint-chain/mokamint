@@ -54,7 +54,7 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.ConsensusConfigBuilders;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -105,7 +105,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var node = mock(PublicNode.class);
 		// compilation fails if the following is not split in two...
 		OngoingStubbing<ConsensusConfig<?,?>> w = when(node.getConfig());
-		var config = ConsensusConfigBuilders.defaults().build();
+		var config = BasicConsensusConfigBuilders.defaults().build();
 		w.thenReturn(config);
 		
 		return node;
@@ -449,7 +449,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getConfig() request reaches the service, it sends back its consensus configuration")
 	public void serviceGetConfigWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var config = ConsensusConfigBuilders.defaults().build();
+		var config = BasicConsensusConfigBuilders.defaults().build();
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

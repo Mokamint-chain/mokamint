@@ -18,17 +18,15 @@ package io.mokamint.node.internal.gson;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.ConsensusConfigBuilders;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.internal.BasicConsensusConfigBuilder;
 
 /**
- * The JSON representation of a {@code Config}.
+ * The JSON representation of a {@link ConsensusConfig}.
  */
-public abstract class ConsensusConfigJson implements JsonRepresentation<ConsensusConfig<?,?>> {
+public abstract class BasicConsensusConfigJson implements JsonRepresentation<ConsensusConfig<?,?>> {
 	private final String chainId;
 	private final String hashingForDeadlines;
 	private final String hashingForGenerations;
@@ -40,7 +38,7 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 	private final int maxBlockSize;
 	private final int oblivion;
 
-	protected ConsensusConfigJson(ConsensusConfig<?,?> config) {
+	protected BasicConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();
 		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
 		this.hashingForGenerations = config.getHashingForGenerations().getName();
@@ -53,24 +51,48 @@ public abstract class ConsensusConfigJson implements JsonRepresentation<Consensu
 		this.oblivion = config.getOblivion();
 	}
 
+	public String getChainId() {
+		return chainId;
+	}
+
+	public String getHashingForDeadlines() {
+		return hashingForDeadlines;
+	}
+
+	public String getHashingForGenerations() {
+		return hashingForGenerations;
+	}
+
+	public String getHashingForBlocks() {
+		return hashingForBlocks;
+	}
+
+	public String getHashingForTransactions() {
+		return hashingForTransactions;
+	}
+
+	public String getSignatureForBlocks() {
+		return signatureForBlocks;
+	}
+
+	public String getSignatureForDeadlines() {
+		return signatureForDeadlines;
+	}
+
+	public int getTargetBlockCreationTime() {
+		return targetBlockCreationTime;
+	}
+
+	public int getMaxBlockSize() {
+		return maxBlockSize;
+	}
+
+	public int getOblivion() {
+		return oblivion;
+	}
+
 	@Override
 	public ConsensusConfig<?,?> unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		try {
-			return ConsensusConfigBuilders.defaults() // TODO: maybe add constructor with JSON
-					.setChainId(chainId)
-					.setHashingForDeadlines(HashingAlgorithms.of(hashingForDeadlines))
-					.setHashingForGenerations(HashingAlgorithms.of(hashingForGenerations))
-					.setHashingForBlocks(HashingAlgorithms.of(hashingForBlocks))
-					.setHashingForTransactions(HashingAlgorithms.of(hashingForTransactions))
-					.setSignatureForBlocks(SignatureAlgorithms.of(signatureForBlocks))
-					.setSignatureForDeadlines(SignatureAlgorithms.of(signatureForDeadlines))
-					.setTargetBlockCreationTime(targetBlockCreationTime)
-					.setMaxBlockSize(maxBlockSize)
-					.setOblivion(oblivion)
-					.build();
-		}
-		catch (NullPointerException | IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new BasicConsensusConfigBuilder(this).build();
 	}
 }
