@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import java.io.IOException;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.util.Deque;
@@ -448,7 +447,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws IOException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws MinerException, NodeException {
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.of(port, this::checkForMiners);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
@@ -458,9 +457,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				tryToClose(miner);
 
 			return maybeInfo;
-		}
-		catch (MinerException e) {
-			throw new IOException(e);
 		}
 	}
 

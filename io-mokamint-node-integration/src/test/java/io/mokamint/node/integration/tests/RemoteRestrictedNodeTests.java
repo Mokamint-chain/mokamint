@@ -20,9 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -56,17 +55,8 @@ import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
 import jakarta.websocket.Session;
 
 public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
-	private final static URI URI;
 	private final static int PORT = 8031;
-
-	static {
-		try {
-			URI = new URI("ws://localhost:" + PORT);
-		}
-		catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 
 	private final static int TIME_OUT = 500;
 
@@ -364,8 +354,8 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("openMiner() works in case of IOException")
-	public void openMinerWorksInCaseOfIOException() throws Exception {
+	@DisplayName("openMiner() works in case of MinerException")
+	public void openMinerWorksInCaseOfMinerException() throws Exception {
 		var exceptionMessage = "I/O exception";
 
 		class MyServer extends RestrictedTestServer {
@@ -374,12 +364,12 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new MinerException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.openMiner(8025));
+			var exception = assertThrows(MinerException.class, () -> remote.openMiner(8025));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

@@ -32,6 +32,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -174,11 +175,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, MinerException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendOpenMiner(port, id);
-		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, IOException.class);
+		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, MinerException.class);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {

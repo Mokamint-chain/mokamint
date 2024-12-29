@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.miners;
 
-import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
+import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
@@ -57,7 +57,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 		try {
 			return remote.openMiner(port).orElseThrow(() -> new CommandException("No remote miner has been opened"));
 		}
-		catch (IOException e) {
+		catch (MinerException e) {
 			throw new CommandException("Cannot open a remote miner at port " + port + "! Are you sure that the port is available?", e);
 		}
 	}

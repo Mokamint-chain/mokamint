@@ -20,6 +20,11 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.crypto</groupId>
       <artifactId>io-hotmoka-crypto-api</artifactId>
       <version>${io.hotmoka.crypto.version}</version>

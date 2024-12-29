@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.miner.api.MinerException;
 
 /**
  * The restricted interface of a node of a Mokamint blockchain.
@@ -62,11 +62,11 @@ public interface RestrictedNode extends Node {
 	 * @param port the port
 	 * @return the information about the opened miner; this is empty if the miner has not been opened
 	 * @throws TimeoutException if no answer arrives within a time window
-	 * @throws IOException if a connection cannot be established (for instance, if the port is already bound to some service)
+	 * @throws MinerException if a connection cannot be established (for instance, if the port is already bound to some service)
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException; // TODO: remoe IOException
+	Optional<MinerInfo> openMiner(int port) throws TimeoutException, MinerException, InterruptedException, NodeException;
 
 	/**
 	 * Removes a miner. If that miner has been created through {@link #openMiner(int)}, it gets closed as well.
