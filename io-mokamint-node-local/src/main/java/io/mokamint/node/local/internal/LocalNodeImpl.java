@@ -423,9 +423,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
-		catch (PeerTimeoutException e) { // TODO
-			throw new TimeoutException(e.getMessage());
-		}
 	
 		if (result.isPresent()) {
 			scheduleSynchronizationIfPossible();

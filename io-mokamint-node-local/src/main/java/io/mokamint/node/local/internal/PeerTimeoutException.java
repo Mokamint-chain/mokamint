@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
  * An exception thrown if a peer connected to a local node is unresponsive.
  */
 @SuppressWarnings("serial")
-public class PeerTimeoutException extends Exception {
+public class PeerTimeoutException extends TimeoutException {
 
 	/**
 	 * Creates the exception.
@@ -30,6 +30,6 @@ public class PeerTimeoutException extends Exception {
 	 * @param cause the cause of the exception
 	 */
 	public PeerTimeoutException(TimeoutException cause) {
-		super(cause);
+		super(cause.getMessage());
 	}
 }
