@@ -366,9 +366,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = mempool.add(transaction);
 		}
-		catch (ApplicationTimeoutException e) {
-			throw new TimeoutException(e.getMessage()); // TODO
-		}
 
 		miningTask.add(result);
 
@@ -614,9 +611,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, MinerException {
 		try {
 			check(deadline);
-		}
-		catch (ApplicationTimeoutException e) {
-			throw new TimeoutException(e.getMessage()); // TODO
 		}
 		catch (ApplicationException e) {
 			throw new MinerException(e);

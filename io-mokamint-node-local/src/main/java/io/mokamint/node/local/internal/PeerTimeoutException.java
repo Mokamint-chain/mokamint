@@ -26,35 +26,10 @@ public class PeerTimeoutException extends Exception {
 
 	/**
 	 * Creates the exception.
-	 */
-	public PeerTimeoutException() {
-	}
-
-	/**
-	 * Creates the exception.
-	 * 
-	 * @param message the message
-	 */
-	public PeerTimeoutException(String message) {
-		super(message);
-	}
-
-	/**
-	 * Creates the exception.
 	 * 
 	 * @param cause the cause of the exception
 	 */
 	public PeerTimeoutException(TimeoutException cause) {
 		super(cause);
-	}
-
-	/**
-	 * Creates the exception.
-	 * 
-	 * @param message the message of the exception
-	 * @param cause the cause of the exception
-	 */
-	public PeerTimeoutException(String message, TimeoutException cause) {
-		super(message, cause);
 	}
 }

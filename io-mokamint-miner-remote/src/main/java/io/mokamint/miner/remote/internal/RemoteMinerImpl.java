@@ -163,7 +163,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 			return;
 		}
 		catch (MinerException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + " cannot check the validity of " + deadline + " sinc ethe miner is misbehaving", e);
+			LOGGER.log(Level.SEVERE, logPrefix + " cannot check the validity of " + deadline + " since the miner is misbehaving", e);
 			return;
 		}
 		catch (TimeoutException e) {

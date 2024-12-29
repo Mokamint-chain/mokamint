@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.internal.gson.OpenMinerMessageJson;
@@ -47,11 +48,16 @@ public class OpenMinerMessageImpl extends AbstractRpcMessage implements OpenMine
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public OpenMinerMessageImpl(OpenMinerMessageJson json) {
+	public OpenMinerMessageImpl(OpenMinerMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
-		this.port = json.getPort();
+		var port = json.getPort();
+		if (port < 0 || port > 65535)
+			throw new InconsistentJsonException("The port number " + port + " is illegal: it must be between 0 and 65535 inclusive");
+
+		this.port = port;
 	}
 
 	@Override
