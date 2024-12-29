@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.KeyPair;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -89,25 +88,13 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var config3 = LocalNodeConfigBuilders.defaults().setDir(chain3).build();
-		var allPeers = new HashSet<Peer>();
-		allPeers.add(peer2);
-		allPeers.add(peer3);
 
-		var connectionSemaphore = new Semaphore(0);
 		var disconnectionSemaphore = new Semaphore(0);
 
 		class MyLocalNode extends AbstractLocalNode {
 
 			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
-			}
-
-			@Override
-			protected void onConnected(Peer peer) {
-				super.onConnected(peer);
-				allPeers.remove(peer);
-				if (allPeers.isEmpty())
-					connectionSemaphore.release();
 			}
 
 			@Override
@@ -127,7 +114,6 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(node1.add(peer3).isPresent());
 
 			// at this point, node1 has both its peers connected
-			assertTrue(connectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 			assertTrue(node1.getPeerInfos().allMatch(PeerInfo::isConnected));
 
 			// peer2 gets closed and disconnects
@@ -136,9 +122,9 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 			assertTrue(disconnectionSemaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 
 			// at this point, the peers are always the same, but peer2 is disconnected
-			assertEquals(2L, node1.getPeerInfos().count()); // TODO: this fails sometimes, with 2 <-> 1; in theory, waiting for onConnect should not be needed
-			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && info.getPeer().equals(peer3)));
-			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && info.getPeer().equals(peer2)));
+			assertEquals(2L, node1.getPeerInfos().count());
+			assertTrue(node1.getPeerInfos().anyMatch(info -> info.isConnected() && peer3.equals(info.getPeer())));
+			assertTrue(node1.getPeerInfos().anyMatch(info -> !info.isConnected() && peer2.equals(info.getPeer())));
 		}
 	}
 

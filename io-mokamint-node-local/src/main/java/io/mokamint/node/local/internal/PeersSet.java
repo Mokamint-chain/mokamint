@@ -339,7 +339,7 @@ public class PeersSet implements AutoCloseable {
 		}
 		catch (NodeException e) {
 			// it's the peer that is misbehaving, not our node
-			ban(peer);
+			punishBecauseUnreachable(peer);
 			throw new PeerException(e);
 		}
 		catch (TimeoutException e) {
@@ -372,7 +372,7 @@ public class PeersSet implements AutoCloseable {
 		}
 		catch (NodeException e) {
 			// it's the peer that is misbehaving, not our node
-			ban(peer);
+			punishBecauseUnreachable(peer);
 			throw new PeerException(e);
 		}
 		catch (TimeoutException e) {
