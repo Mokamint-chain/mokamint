@@ -40,6 +40,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -155,8 +156,8 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Peer) works in case of IOException")
-	public void addPeerWorksInCaseOfIOException() throws Exception {
+	@DisplayName("add(Peer) works in case of PeerException")
+	public void addPeerWorksInCaseOfPeerException() throws Exception {
 		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
 		var exceptionMessage = "I/O error";
 
@@ -166,12 +167,12 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new IOException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new PeerException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(IOException.class, () -> remote.add(peer));
+			var exception = assertThrows(PeerException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

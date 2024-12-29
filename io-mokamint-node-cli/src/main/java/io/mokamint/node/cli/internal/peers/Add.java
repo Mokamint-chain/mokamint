@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal.peers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
@@ -24,6 +23,7 @@ import io.hotmoka.cli.CommandException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
@@ -57,11 +57,11 @@ public class Add extends AbstractRestrictedRpcCommand {
 		try {
 			return remote.add(Peers.of(uri)).orElseThrow(() -> new CommandException("Peer " + uri + " has not been added to the set of peers: was it already present?"));
 		}
-		catch (IOException e) {
+		catch (PeerException e) {
 			throw new CommandException("Cannot establish a connection to " + uri, e);
 		}
 		catch (PeerRejectedException e) {
-			throw new CommandException(e.getMessage(), e);
+			throw new CommandException(e);
 		}
 	}
 

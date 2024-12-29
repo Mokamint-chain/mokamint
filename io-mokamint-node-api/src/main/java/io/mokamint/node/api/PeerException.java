@@ -14,20 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal;
-
-import io.mokamint.node.api.NodeException;
+package io.mokamint.node.api;
 
 /**
- * An exception thrown if a peer connected to a local node is misbehaving.
+ * An exception thrown if a peer is misbehaving.
  */
 @SuppressWarnings("serial")
-public class PeerNodeException extends Exception {
+public class PeerException extends Exception {
 
 	/**
 	 * Creates the exception.
 	 */
-	public PeerNodeException() {
+	public PeerException() {
 	}
 
 	/**
@@ -35,7 +33,7 @@ public class PeerNodeException extends Exception {
 	 * 
 	 * @param message the message
 	 */
-	public PeerNodeException(String message) {
+	public PeerException(String message) {
 		super(message);
 	}
 
@@ -44,7 +42,7 @@ public class PeerNodeException extends Exception {
 	 * 
 	 * @param cause the cause of the exception
 	 */
-	public PeerNodeException(NodeException cause) {
+	public PeerException(NodeException cause) {
 		super(cause);
 	}
 
@@ -54,7 +52,7 @@ public class PeerNodeException extends Exception {
 	 * @param message the message of the exception
 	 * @param cause the cause of the exception
 	 */
-	public PeerNodeException(String message, NodeException cause) {
+	public PeerException(String message, NodeException cause) {
 		super(message, cause);
 	}
 }

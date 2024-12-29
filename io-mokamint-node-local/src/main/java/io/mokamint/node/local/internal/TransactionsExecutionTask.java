@@ -279,6 +279,7 @@ public class TransactionsExecutionTask implements Task {
 						// we also remove the transaction from the mempool of the node
 						node.remove(next);
 						rejectedTransactions.add(tx);
+						return sizeUpToNow;
 					}
 					catch (ApplicationException | UnknownGroupIdException e) {
 						throw new NodeException(e);

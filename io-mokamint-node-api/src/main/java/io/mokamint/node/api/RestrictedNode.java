@@ -37,13 +37,13 @@ public interface RestrictedNode extends Node {
 	 * @param peer the peer to add
 	 * @return the information about the added peer; this is empty if the peer has not been added nor reconnected,
 	 *         for instance because it was already present or the node has already reached a maximum number of peers
-	 * @throws IOException if a connection to {@code peer} cannot be established
+	 * @throws PeerException if {@code peer} is misbehaving
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException; // TODO: remove IOException
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, NodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.
@@ -66,7 +66,7 @@ public interface RestrictedNode extends Node {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws NodeException if the node could not complete the operation
 	 */
-	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException;
+	Optional<MinerInfo> openMiner(int port) throws TimeoutException, IOException, InterruptedException, NodeException; // TODO: remoe IOException
 
 	/**
 	 * Removes a miner. If that miner has been created through {@link #openMiner(int)}, it gets closed as well.

@@ -365,6 +365,8 @@ public class BlockVerification {
 						app.deliverTransaction(id, tx);
 					}
 					catch (TransactionRejectedException e) {
+						// TODO: is this correct? For instance, NodeFromNetwork sends a transaction with a partial
+						// classpath that misses Contract and this yields a transaction rejected when computing the classloader
 						throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
 					}
 				}

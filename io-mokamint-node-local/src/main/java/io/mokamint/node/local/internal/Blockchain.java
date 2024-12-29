@@ -78,6 +78,7 @@ import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -1237,7 +1238,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			try {
 				maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize);
 			}
-			catch (PeerNodeException | PeerTimeoutException e) {
+			catch (PeerException | PeerTimeoutException e) {
 				unusable.add(peer);
 				return;
 			}
@@ -1427,7 +1428,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			try {
 				maybeBlock = peers.getBlock(peer, chosenGroup[h]);
 			}
-			catch (PeerNodeException | PeerTimeoutException e) {
+			catch (PeerException | PeerTimeoutException e) {
 				unusable.add(peer);
 				return;
 			}

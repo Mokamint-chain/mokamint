@@ -64,6 +64,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.TaskInfo;
@@ -420,7 +421,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, IOException, PeerRejectedException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, PeerException, PeerRejectedException {
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
@@ -1036,8 +1037,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				try {
 					peers.add(peer);
 				}
-				catch (PeerTimeoutException | IOException e) {
-					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is not responding: " + e.getMessage());
+				catch (PeerTimeoutException | PeerException e) {
+					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is misbehaving: " + e.getMessage());
 				}
 				catch (PeerRejectedException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " has been rejected: " + e.getMessage());

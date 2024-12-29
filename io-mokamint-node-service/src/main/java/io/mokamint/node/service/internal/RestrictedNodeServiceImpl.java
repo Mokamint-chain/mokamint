@@ -28,6 +28,7 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
@@ -127,7 +128,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.add(message.getPeer());
 			}
-			catch (TimeoutException | InterruptedException | NodeException | IOException | PeerRejectedException e) {
+			catch (TimeoutException | InterruptedException | NodeException | PeerException | PeerRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

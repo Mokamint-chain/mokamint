@@ -35,6 +35,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -141,11 +142,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onCloseMinerResult() {}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, IOException, TimeoutException, InterruptedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendAddPeer(peer, id);
-		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, IOException.class, PeerRejectedException.class);
+		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, PeerException.class, PeerRejectedException.class);
 	}
 
 	private class AddPeerEndpoint extends Endpoint {

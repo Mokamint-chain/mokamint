@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -48,6 +47,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
@@ -57,6 +57,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
@@ -64,7 +65,6 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
-import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
@@ -228,7 +228,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, IOException, PeerRejectedException, NodeException {
+			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, NodeException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -257,10 +257,12 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					node.getSeenAll().acquire();
 			}
 
-			private TestNode[] openNodes(Path dir) throws InterruptedException {
-				return CheckSupplier.check(InterruptedException.class, () -> 
+			private TestNode[] openNodes(Path dir) throws InterruptedException, NodeException, TimeoutException {
+				FunctionWithExceptions3<Integer, TestNode, InterruptedException, NodeException, TimeoutException> function = num -> mkNode(dir, num);
+
+				return CheckSupplier.check(InterruptedException.class, NodeException.class, TimeoutException.class, () -> 
 					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
-						.map(UncheckFunction.uncheck(num -> mkNode(dir, num))).toArray(TestNode[]::new));
+						.map(UncheckFunction.uncheck(InterruptedException.class, NodeException.class, TimeoutException.class, function)).toArray(TestNode[]::new));
 			}
 
 			private void closeNodes() throws InterruptedException, NodeException {
@@ -281,13 +283,23 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 			}
 
-			private void addPeers() throws InterruptedException, TimeoutException, IOException, PeerRejectedException, NodeException {
+			private void addPeers() throws InterruptedException, TimeoutException, PeerException, PeerRejectedException, NodeException {
 				for (int pos = 0; pos < nodes.length; pos++)
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private LocalNode mkNode(Path dir, int num) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, TimeoutException, InterruptedException, ApplicationTimeoutException, NodeException, WrongKeyException, IOException {
-				LocalNode result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
+			private TestNode mkNode(Path dir, int num) throws NodeException, TimeoutException, InterruptedException {
+				TestNode result;
+
+				try {
+					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
+				}
+				catch (InvalidKeyException | NoSuchAlgorithmException | IOException | WrongKeyException e) {
+					throw new NodeException(e);
+				}
+				catch (ApplicationTimeoutException e) {
+					throw new TimeoutException(e.getMessage());
+				}
 
 				var uri = getPeer(num).getURI();
 				// this service will be closed automatically when the node will get closed
