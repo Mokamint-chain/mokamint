@@ -306,14 +306,8 @@ public class Start extends AbstractCommand {
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
 				catch (NodeException | TimeoutException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed to deploy: " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
-					publishPublicAndRestrictedNodeServices(pos + 1);
-				}
-				catch (IllegalArgumentException e) { // TODO: ????
-					// for instance, the port number is illegal
-					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + publicPorts[pos], e);
+					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
+					LOGGER.warning("cannot deploy a node service at port " + publicPorts[pos] + ": " + e.getMessage());
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
 			}
@@ -329,14 +323,8 @@ public class Start extends AbstractCommand {
 					publishRestrictedNodeServices(pos + 1);
 				}
 				catch (NodeException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed to deploy!|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
-					publishRestrictedNodeServices(pos + 1);
-				}
-				catch (IllegalArgumentException e) { // TODO: ????
-					// for instance, the port number is illegal
-					System.out.println(Ansi.AUTO.string("@|red " + e.getMessage() + "|@"));
-					LOGGER.log(Level.SEVERE, "cannot deploy a node service at port " + restrictedPorts[pos], e);
+					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
+					LOGGER.warning("cannot deploy a node service at port " + restrictedPorts[pos] + ": " + e.getMessage());
 					publishRestrictedNodeServices(pos + 1);
 				}
 			}
