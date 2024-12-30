@@ -48,7 +48,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	/**
 	 * The maximal number of non-forced peers kept in the database.
 	 */
-	private final long maxPeers;
+	private final int maxPeers;
 
 	/**
 	 * The Xodus environment that holds the database.

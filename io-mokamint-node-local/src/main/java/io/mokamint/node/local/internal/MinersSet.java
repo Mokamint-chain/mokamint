@@ -85,9 +85,12 @@ public class MinersSet {
 	 */
 	public Optional<MinerInfo> add(Miner miner) {
 		if (miners.add(miner)) {
-			var result = Optional.of(MinerInfos.of(miner.getUUID(), node.getConfig().getMinerInitialPoints(), miner.toString()));
-			node.onAdded(miner);
-			return result;
+			try {
+				return Optional.of(MinerInfos.of(miner.getUUID(), node.getConfig().getMinerInitialPoints(), miner.toString()));
+			}
+			finally {
+				node.onAdded(miner);
+			}
 		}
 		else
 			return Optional.empty();

@@ -735,21 +735,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Schedules a synchronization operation if it might be worthwhile, since, for instance,
-		 * an orphan block has been added, that is better than the current head.
-		 * 
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private void scheduleSynchronizationIfUseful() throws NodeException {
-			for (var newOrphan: blocksToAddAmongOrphans)
-				if (isBetterThanHead(newOrphan)) {
-					// the new orphan was better than our current head: we synchronize from our peers
-					node.scheduleSynchronizationIfPossible(); // TODO: this seems dangerous: forged orphans might schedule repeated synchronization
-					break;
-				}
-		}
-
-		/**
 		 * Determines if this blockchain has been expanded with this adder, not necessarily
 		 * along its best chain. The addition of orphan blocks is not considered as an expansion.
 		 * 
@@ -1634,7 +1619,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 		adder.informNode();
 		adder.updateMempool();
-		adder.scheduleSynchronizationIfUseful();
 	
 		return adder.somethingHasBeenAdded();
 	}

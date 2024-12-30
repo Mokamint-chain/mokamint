@@ -25,13 +25,10 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -41,8 +38,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
@@ -84,7 +79,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 	private static KeyPair plotKeys;
 
 	@BeforeAll
-	public static void beforeAll() throws NoSuchAlgorithmException, InvalidKeyException, TimeoutException, InterruptedException, ApplicationException, UnknownGroupIdException {
+	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 3 };
@@ -103,7 +98,11 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var port2 = 8032;
 		var peer1 = Peers.of(URI.create("ws://localhost:" + port1));
 		var peer2 = Peers.of(URI.create("ws://localhost:" + port2));
-		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).setTargetBlockCreationTime(500).build();
+		var config1 = LocalNodeConfigBuilders.defaults()
+				.setDir(chain1)
+				.setTargetBlockCreationTime(500)
+				.setSynchronizationInterval(5000) // to guarantee a quick synchronization
+				.build();
 		var config2 = config1.toBuilder().setDir(chain2).build();
 		var miningPort = 8025;
 
@@ -121,7 +120,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 				super(config1, node1Keys, app, true);
 			}
 
-			protected void onNoDeadlineFound(io.mokamint.node.api.Block previous) {
+			protected void onNoDeadlineFound(Block previous) {
 				super.onNoDeadlineFound(previous);
 				node1CannotMine.release();
 			}
@@ -153,8 +152,8 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		}
 
 		try (var node1 = new MyLocalNode1(); var node2 = new MyLocalNode2();
-			 var service1 = PublicNodeServices.open(node1, port1, 10000, node1.getConfig().getWhisperingMemorySize(), Optional.of(peer1.getURI()));
-             var service2 = PublicNodeServices.open(node2, port2, 10000, node2.getConfig().getWhisperingMemorySize(), Optional.of(peer2.getURI()));
+			 var service1 = PublicNodeServices.open(node1, port1, 10000, config1.getWhisperingMemorySize(), Optional.of(peer1.getURI()));
+             var service2 = PublicNodeServices.open(node2, port2, 10000, config2.getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
 			 var miner = LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys))) {
 
@@ -191,9 +190,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			assertTrue(node2HasAddedBlock.tryAcquire((int) (node1ChainInfo.getLength() - 5), 20, TimeUnit.SECONDS));
 
 			// both chain should coincide now
-			var node2ChainInfo = node2.getChainInfo();
-
-			assertEquals(node1ChainInfo, node2ChainInfo);
+			assertEquals(node1ChainInfo, node2.getChainInfo());
 		}
 	}
 }

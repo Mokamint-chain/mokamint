@@ -231,16 +231,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			if (init)
 				blockchain.initialize();
-			else
-				schedule(this::synchronize, "synchronization from the peers");
 
+			schedulePeriodicSynchronization();
 			schedule(this::processWhisperedPeers, "peers whispering process");
 			schedule(this::processWhisperedBlocks, "blocks whispering process");
 			schedule(this::processWhisperedTransactions, "transactions whispering process");
 			schedulePeriodicPingToAllPeersAndReconnection();
 			schedulePeriodicWhisperingOfAllServices();
 			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-			schedulePeriodicSynchronization();
 			schedule(miningTask, "blocks mining process");
 		}
 		catch (TaskRejectedExecutionException e) {
@@ -653,7 +651,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * if the node is not currently performing a synchronization. Otherwise, nothing happens.
 	 * This method does nothing if the synchronization task is rejected.
 	 */
-	protected void scheduleSynchronizationIfPossible() {
+	private void scheduleSynchronizationIfPossible() {
 		try {
 			schedule(this::synchronize, "synchronization from the peers");
 		}
@@ -980,8 +978,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * Schedules a periodic task that synchronizes the blockchain with its peers.
 	 */
 	private void schedulePeriodicSynchronization() throws TaskRejectedExecutionException {
-		// every 30 blocks, on average, and in any case no more frequently than every five minutes
-		scheduleWithFixedDelay(this::synchronize, "synchronization from the peers", 100000L, Math.max(5L * 60 * 1000, 30L * config.getTargetBlockCreationTime()), TimeUnit.MILLISECONDS);
+		var interval = config.getSynchronizationInterval();
+		if (interval >= 0)
+			scheduleWithFixedDelay(this::synchronize,
+				"synchronization from the peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
 	private void synchronize() throws InterruptedException, NodeException {
@@ -1023,7 +1023,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 			if (whisperedInfo.add) {
 				try {
-					peers.add(peer);
+					if (peers.add(peer).isPresent())
+						scheduleSynchronizationIfPossible();
 				}
 				catch (PeerTimeoutException | PeerException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is misbehaving: " + e.getMessage());

@@ -92,7 +92,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @param maxPeers the maximum number of peers
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setMaxPeers(long maxPeers);
+	LocalNodeConfigBuilder setMaxPeers(int maxPeers);
 
 	/**
 	 * Sets the initial points of a peer, freshly added to a node.
@@ -148,6 +148,16 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * @return this builder
 	 */
 	LocalNodeConfigBuilder setServiceBroadcastInterval(int serviceBroadcastInterval);
+
+	/**
+	 * Sets the time between success synchronizations of a node.
+	 * 
+	 * @param synchronizationInterval the time between successive synchronizations;
+	 *                                use a negative value to disable successive synchronizations,
+	 *                                in which case synchronizations only occurs for other reasons,
+	 *                                for instance, if a peer gets added or reconnects
+	 */
+	LocalNodeConfigBuilder setSynchronizationInterval(int synchronizationInterval);
 
 	/**
 	 * Sets the size of the memory used to avoid whispering the same

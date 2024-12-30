@@ -397,10 +397,11 @@ public class PeersSet implements AutoCloseable {
 		}
 
 		var unknownPeers = new HashSet<Peer>();
+		boolean addedOrReconnected = false;
 		for (var peer: peers)
-			pingPeerRecreateRemoteAndCollectUnknownPeers(peer, unknownPeers);
+			addedOrReconnected |= reconnectAndCollectUnknownPeers(peer, unknownPeers);
 
-		return reconnectOrAdd(unknownPeers, _peer -> false);
+		return reconnectOrAdd(unknownPeers, _peer -> false) || addedOrReconnected;
 	}
 
 	private void punishBecauseUnreachable(Peer peer) throws NodeException {
@@ -449,16 +450,24 @@ public class PeersSet implements AutoCloseable {
 	 * 
 	 * @param peer the peer to contact
 	 * @param container the container where the peers get added
+	 * @return true if and only if the peer has been reconnected
 	 * @throws NodeException if {@link #node} could not complete the operation
-	 * @throws InterruptedException if the execution was interrupted while waiting to establish a connection to the peer
+	 * @throws InterruptedException if the current thread has been interrupted
 	 */
-	private void pingPeerRecreateRemoteAndCollectUnknownPeers(Peer peer, Set<Peer> container) throws NodeException, InterruptedException {
+	private boolean reconnectAndCollectUnknownPeers(Peer peer, Set<Peer> container) throws NodeException, InterruptedException {
+		boolean reconnected = false;
 		Optional<RemotePublicNode> remote = getRemote(peer);
-		if (remote.isEmpty())
+
+		if (remote.isEmpty()) {
 			remote = reconnect(peer);
+			if (remote.isPresent())
+				reconnected = true;
+		}
 
 		if (remote.isPresent())
 			collectUnknownPeers(peer, remote.get(), container);
+
+		return reconnected;
 	}
 
 	private void collectUnknownPeers(Peer peer, RemotePublicNode remote, Set<Peer> container) throws NodeException, InterruptedException {

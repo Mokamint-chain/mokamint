@@ -87,10 +87,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	/**
 	 * The maximum number of peers kept by a node. The actual number of peers can
 	 * be larger only if peers are explicitly added as seeds or through the
-	 * {@link RestrictedNode#add(Peer)} method.
-	 * It defaults to 20.
+	 * {@link RestrictedNode#add(Peer)} method. It defaults to 20.
 	 */
-	public final long maxPeers;
+	public final int maxPeers;
 
 	/**
 	 * The initial points of a peer, freshly added to a node.
@@ -130,6 +129,14 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * of a service open on a node. It defaults to 240,000 (ie, 4 minutes).
 	 */
 	public final int serviceBroadcastInterval;
+
+	/**
+	 * The time between success synchronizations;
+	 * a negative value means that successive synchronizations are disabled
+	 * and synchronizations only occurs for other reasons, for instance, if a peer
+	 * gets added or reconnects.
+	 */
+	public final int synchronizationInterval;
 
 	/**
 	 * The size of the memory used to avoid whispering the same
@@ -195,6 +202,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.peerTimeout = builder.peerTimeout;
 		this.peerPingInterval = builder.peerPingInterval;
 		this.serviceBroadcastInterval = builder.serviceBroadcastInterval;
+		this.synchronizationInterval = builder.synchronizationInterval;
 		this.whisperingMemorySize = builder.whisperingMemorySize;
 		this.orphansMemorySize = builder.orphansMemorySize;
 		this.mempoolSize = builder.mempoolSize;
@@ -234,7 +242,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getMaxPeers() {
+	public int getMaxPeers() {
 		return maxPeers;
 	}
 
@@ -266,6 +274,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	@Override
 	public int getServiceBrodcastInterval() {
 		return serviceBroadcastInterval;
+	}
+
+	@Override
+	public int getSynchronizationInterval() {
+		return synchronizationInterval;
 	}
 
 	@Override
@@ -359,6 +372,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("# the size of the group of blocks whose hashes get downloaded in one shot during synchronization\n");
 		sb.append("synchronization_group_size = " + synchronizationGroupSize + "\n");
 		sb.append("\n");
+		sb.append("# the time, in milliseconds, between successive synchronizations\n");
+		sb.append("synchronization_interval = " + synchronizationInterval + "\n");
+		sb.append("\n");
 		sb.append("# the maximal creation time in the future (in milliseconds) of a block\n");
 		sb.append("block_max_time_in_the_future = " + blockMaxTimeInTheFuture + "\n");
 		sb.append("\n");
@@ -390,6 +406,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				peerTimeout == otherConfig.peerTimeout &&
 				peerPingInterval == otherConfig.peerPingInterval &&
 				serviceBroadcastInterval == otherConfig.serviceBroadcastInterval &&
+				synchronizationInterval == otherConfig.synchronizationInterval &&
 				whisperingMemorySize == otherConfig.whisperingMemorySize &&
 				orphansMemorySize == otherConfig.orphansMemorySize &&
 				mempoolSize == otherConfig.mempoolSize &&
@@ -408,19 +425,20 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long minerPunishmentForTimeout = 1L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
-		private long maxPeers = 20L;
+		private int maxPeers = 20;
 		private long peerInitialPoints = 1000L;
 		private int peerMaxTimeDifference = 15000;
 		private long peerPunishmentForUnreachable = 1L;
 		private int peerTimeout = 10000;
 		private int peerPingInterval = 120_000;
 		private int serviceBroadcastInterval = 240_000;
+		private int synchronizationInterval = 300_000;
 		private int whisperingMemorySize = 1000;
 		private int orphansMemorySize = 1000;
 		private int mempoolSize = 100_000;
 		private int synchronizationGroupSize = 500;
 		private long blockMaxTimeInTheFuture = 15000L;
-		private long maximalHistoryChangeTime = 60 * 60 * 1000; // one hour
+		private long maximalHistoryChangeTime = 60L * 60 * 1000; // one hour
 
 		/**
 		 * Creates a configuration builder with initial default values.
@@ -489,6 +507,10 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (serviceBroadcastInterval != null)
 				setServiceBroadcastInterval(serviceBroadcastInterval);
 
+			var synhronizationInterval = toml.getLong("synchronization_interval");
+			if (synhronizationInterval != null)
+				setSynchronizationInterval(synhronizationInterval);
+
 			var whisperingMemorySize = toml.getLong("whispering_memory_size");
 			if (whisperingMemorySize != null)
 				setWhisperingMemorySize(whisperingMemorySize);
@@ -548,6 +570,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.peerTimeout = config.peerTimeout;
 			this.peerPingInterval = config.peerPingInterval;
 			this.serviceBroadcastInterval = config.serviceBroadcastInterval;
+			this.synchronizationInterval = config.synchronizationInterval;
 			this.whisperingMemorySize = config.whisperingMemorySize;
 			this.orphansMemorySize = config.orphansMemorySize;
 			this.mempoolSize = config.mempoolSize;
@@ -614,12 +637,19 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		}
 
 		@Override
-		public LocalNodeConfigBuilder setMaxPeers(long maxPeers) {
-			if (maxPeers < 0L)
+		public LocalNodeConfigBuilder setMaxPeers(int maxPeers) {
+			if (maxPeers < 0)
 				throw new IllegalArgumentException("maxPeers must be non-negative");
 
 			this.maxPeers = maxPeers;
 			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setMaxPeers(long maxPeers) {
+			if (maxPeers < 0L || maxPeers > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxPeers must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMaxPeers((int) maxPeers);
 		}
 
 		@Override
@@ -696,6 +726,19 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				throw new IllegalArgumentException("serviceBroadcastInterval must be between " + Integer.MIN_VALUE + " and " + Integer.MAX_VALUE + " inclusive");
 
 			return setServiceBroadcastInterval((int) serviceBroadcastInterval);
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setSynchronizationInterval(int synchronizationInterval) {
+			this.synchronizationInterval = synchronizationInterval;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setSynchronizationInterval(long synchronizationInterval) {
+			if (synchronizationInterval < Integer.MIN_VALUE || synchronizationInterval > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("synchronizationInterval must be between " + Integer.MIN_VALUE + " and " + Integer.MAX_VALUE + " inclusive");
+
+			return setSynchronizationInterval((int) synchronizationInterval);
 		}
 
 		@Override

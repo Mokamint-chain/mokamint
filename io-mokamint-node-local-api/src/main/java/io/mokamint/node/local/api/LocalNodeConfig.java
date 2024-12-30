@@ -88,7 +88,7 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * 
 	 * @return the maximum number of peers kept by a node
 	 */
-	long getMaxPeers();
+	int getMaxPeers();
 
 	/**
 	 * Yields the initial points of a peer, freshly added to a node.
@@ -143,6 +143,18 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 *         a negative value means that broadcast is disabled
 	 */
 	int getServiceBrodcastInterval();
+
+	/**
+	 * Yields the time between successive synchronizations. Note that synchronizations
+	 * might be scheduled more frequently if, for instance, a peer gets added or reconnects.
+	 * It defaults to 300,000 (ie, 5 minutes).
+	 * 
+	 * @return the time between success synchronizations;
+	 *         a negative value means that successive synchronizations are disabled
+	 *         and synchronizations only occurs for other reasons, for instance, if a peer
+	 *         gets added or reconnects
+	 */
+	int getSynchronizationInterval();
 
 	/**
 	 * Yields the size of the memory used to avoid whispering the same
