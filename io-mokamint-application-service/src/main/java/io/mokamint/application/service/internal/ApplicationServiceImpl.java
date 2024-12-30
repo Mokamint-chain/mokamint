@@ -141,7 +141,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * @throws IOException if there was an I/O problem
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		sendObjectAsync(session, ExceptionMessages.of(e, id));
+		if (e instanceof InterruptedException) {
+			// if the serviced node gets interrupted, then the external vision of the application
+			// is that of an application that is not working properly
+			sendObjectAsync(session, ExceptionMessages.of(new ApplicationException("The service has been interrupted"), id));
+			// we take note that we have been interrupted
+			Thread.currentThread().interrupt();
+		}
+		else
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
 	}
 
 	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {

@@ -194,7 +194,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendCheckPrologExtra(extra, id);
-		return waitForResult(id, CheckPrologExtraResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, CheckPrologExtraResultMessage.class, TimeoutException.class,  ApplicationException.class);
 	}
 
 	/**
@@ -228,7 +228,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
-		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -262,7 +262,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetPriority(transaction, id);
-		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -296,7 +296,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
-		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -330,7 +330,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetInitialStateId(id);
-		return waitForResult(id, GetInitialStateIdResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, GetInitialStateIdResultMessage.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -363,7 +363,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendBeginBlock(height, when, stateId, id);
-		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -400,7 +400,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
-		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -435,7 +435,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendEndBlock(groupId, deadline, id);
-		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -470,7 +470,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendCommitBlock(groupId, id);
-		waitForResult(id, CommitBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		waitForResult(id, CommitBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -504,7 +504,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendAbortBlock(groupId, id);
-		waitForResult(id, AbortBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		waitForResult(id, AbortBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**
@@ -538,7 +538,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 		ensureIsOpen();
 		var id = nextId();
 		sendKeepFrom(start, id);
-		waitForResult(id, KeepFromResultMessage.class, TimeoutException.class, InterruptedException.class, ApplicationException.class);
+		waitForResult(id, KeepFromResultMessage.class, TimeoutException.class, ApplicationException.class);
 	}
 
 	/**

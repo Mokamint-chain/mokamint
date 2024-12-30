@@ -190,9 +190,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getPeerInfos() works if it throws ClosedNodeException")
-	public void getPeerInfosWorksInCaseOfClosedNodeException() throws Exception {
-		var exceptionMessage = "node is closed";
+	@DisplayName("getPeerInfos() works if it throws NodeException")
+	public void getPeerInfosWorksInCaseOfNodeException() throws Exception {
+		var exceptionMessage = "the node is misbehaving";
 
 		class MyServer extends PublicTestServer {
 
@@ -206,27 +206,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NodeException.class, remote::getPeerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getPeerInfos() works if it throws InterruptedException")
-	public void getPeerInfosWorksInCaseOfInterruptedException() throws Exception {
-		var exceptionMessage = "interrupted";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, remote::getPeerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -339,9 +318,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getMinerInfos() works if it throws ClosedNodeException")
-	public void getMinerInfosWorksInCaseOfClosedNodeException() throws Exception {
-		var exceptionMessage = "node is closed";
+	@DisplayName("getMinerInfos() works if it throws NodeException")
+	public void getMinerInfosWorksInCaseOfNodeException() throws Exception {
+		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
 
@@ -355,27 +334,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NodeException.class, remote::getMinerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getMinerInfos() works if it throws InterruptedException")
-	public void getMinerInfosWorksInCaseOfInterruptedException() throws Exception {
-		var exceptionMessage = "interrupted";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, remote::getMinerInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -487,9 +445,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTaskInfos() works if it throws ClosedNodeException")
-	public void getTaskInfosWorksInCaseOfClosedNodeException() throws Exception {
-		var exceptionMessage = "node is closed";
+	@DisplayName("getTaskInfos() works if it throws NodeException")
+	public void getTaskInfosWorksInCaseOfNodeException() throws Exception {
+		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
 
@@ -503,27 +461,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(NodeException.class, remote::getTaskInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getTaskInfos() works if it throws InterruptedException")
-	public void getTaskInfosWorksInCaseOfInterruptedException() throws Exception {
-		var exceptionMessage = "interrupted";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, remote::getTaskInfos);
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -682,10 +619,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getBlock() works if it throws InterruptedException")
-	public void getBlockWorksInCaseOfInterruptedException() throws Exception {
+	@DisplayName("getBlock() works if it throws NodeException")
+	public void getBlockWorksInCaseOfNodeException() throws Exception {
 		var hash = new byte[] { 67, 56, 43 };
-		var exceptionMessage = "interrupted";
+		var exceptionMessage = "the node is misbehaving";
 
 		class MyServer extends PublicTestServer {
 
@@ -694,12 +631,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getBlock(hash));
+			var exception = assertThrows(NodeException.class, () -> remote.getBlock(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -790,10 +727,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getBlockDescription() works if it throws InterruptedException")
-	public void getBlockDescriptionWorksInCaseOfInterruptedException() throws Exception {
+	@DisplayName("getBlockDescription() works if it throws TimeoutException")
+	public void getBlockDescriptionWorksInCaseOfTimeoutException() throws Exception {
 		byte[] hash = { 67, 56, 43 };
-		var exceptionMessage = "interrupted";
+		var exceptionMessage = "time-out";
 
 		class MyServer extends PublicTestServer {
 
@@ -802,12 +739,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getBlockDescription(hash));
+			var exception = assertThrows(TimeoutException.class, () -> remote.getBlockDescription(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -1212,10 +1149,10 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransaction() works if it throws InterruptedException")
-	public void getTransactionRepresentationWorksInCaseOfInterruptedException() throws Exception {
+	@DisplayName("getTransaction() works if it throws NodeException")
+	public void getTransactionRepresentationWorksInCaseOfNodeException() throws Exception {
 		byte[] hash = { 67, 56, 43 };
-		var exceptionMessage = "interrupted";
+		var exceptionMessage = "the node is misbehaving";
 	
 		class MyServer extends PublicTestServer {
 
@@ -1224,12 +1161,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.getTransaction(hash));
+			var exception = assertThrows(NodeException.class, () -> remote.getTransaction(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

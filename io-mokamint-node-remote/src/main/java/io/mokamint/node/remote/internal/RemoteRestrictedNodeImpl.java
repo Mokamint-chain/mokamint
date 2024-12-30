@@ -147,7 +147,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		ensureIsOpen();
 		var id = nextId();
 		sendAddPeer(peer, id);
-		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, PeerException.class, PeerRejectedException.class);
+		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, NodeException.class, PeerException.class, PeerRejectedException.class);
 	}
 
 	private class AddPeerEndpoint extends Endpoint {
@@ -163,7 +163,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		ensureIsOpen();
 		var id = nextId();
 		sendRemovePeer(peer, id);
-		return waitForResult(id, RemovePeerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
+		return waitForResult(id, RemovePeerResultMessage.class, TimeoutException.class, NodeException.class);
 	}
 
 	private class RemovePeerEndpoint extends Endpoint {
@@ -179,7 +179,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		ensureIsOpen();
 		var id = nextId();
 		sendOpenMiner(port, id);
-		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class, MinerException.class);
+		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, NodeException.class, MinerException.class);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {
@@ -195,7 +195,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		ensureIsOpen();
 		var id = nextId();
 		sendRemoveMiner(uuid, id);
-		return waitForResult(id, RemoveMinerResultMessage.class, TimeoutException.class, InterruptedException.class, NodeException.class);
+		return waitForResult(id, RemoveMinerResultMessage.class, TimeoutException.class, NodeException.class);
 	}
 
 	private class RemoveMinerEndpoint extends Endpoint {

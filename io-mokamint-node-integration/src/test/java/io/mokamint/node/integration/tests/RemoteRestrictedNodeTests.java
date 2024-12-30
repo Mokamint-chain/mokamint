@@ -124,28 +124,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Peer) works in case of InterruptedException")
-	public void addPeerWorksInCaseOfInterruptedException() throws Exception {
-		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
-		var exceptionMessage = "interrupted";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws NodeException {}
-
-			@Override
-			protected void onAddPeer(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.add(peer));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("add(Peer) works in case of PeerException")
 	public void addPeerWorksInCaseOfPeerException() throws Exception {
 		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
@@ -285,28 +263,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("remove(Peer) works in case of InterruptedException")
-	public void removePeerWorksInCaseOfInterruptedException() throws Exception {
-		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
-		var exceptionMessage = "interrupted";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws NodeException {}
-
-			@Override
-			protected void onRemovePeer(RemovePeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.remove(peer));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("remove(Peer) works in case of TimeoutException")
 	public void removePeerWorksInCaseOfTimeoutException() throws Exception {
 		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
@@ -396,8 +352,8 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("closeMiner() works")
-	public void closeMinerWorks() throws Exception {
+	@DisplayName("removeMiner() works")
+	public void removeMinerWorks() throws Exception {
 		var uuids1 = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 		var uuids2 = new HashSet<UUID>();
 	
@@ -421,9 +377,9 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("closeMiner() works in case of InterruptedException")
-	public void closeMinerWorksInCaseOfIOException() throws Exception {
-		var exceptionMessage = "interrupted exception";
+	@DisplayName("removeMiner() works in case of NodeException")
+	public void removeMinerWorksInCaseOfNodeException() throws Exception {
+		var exceptionMessage = "the node is misbehaving";
 
 		class MyServer extends RestrictedTestServer {
 
@@ -431,19 +387,19 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new InterruptedException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(InterruptedException.class, () -> remote.removeMiner(UUID.randomUUID()));
+			var exception = assertThrows(NodeException.class, () -> remote.removeMiner(UUID.randomUUID()));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
 	@Test
-	@DisplayName("closeMiner() works in case of TimeoutException")
-	public void closeMinerWorksInCaseOfTimeoutException() throws Exception {
+	@DisplayName("removeMiner() works in case of TimeoutException")
+	public void removeMinerWorksInCaseOfTimeoutException() throws Exception {
 		var exceptionMessage = "timeout exception";
 
 		class MyServer extends RestrictedTestServer {
