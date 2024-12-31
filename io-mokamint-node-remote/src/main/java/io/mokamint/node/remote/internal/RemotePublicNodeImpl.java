@@ -316,42 +316,33 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
-		if (message instanceof GetInfoResultMessage girm)
-			onGetInfoResult(girm.get());
-		else if (message instanceof GetPeerInfosResultMessage gprm)
-			onGetPeerInfosResult(gprm.get());
-		else if (message instanceof GetMinerInfosResultMessage gmrm)
-			onGetMinerInfosResult(gmrm.get());
-		else if (message instanceof GetTaskInfosResultMessage gtirm)
-			onGetTaskInfosResult(gtirm.get());
-		else if (message instanceof GetBlockResultMessage gbrm)
-			onGetBlockResult(gbrm.get());
-		else if (message instanceof GetBlockDescriptionResultMessage gbrm)
-			onGetBlockDescriptionResult(gbrm.get());
-		else if (message instanceof GetConfigResultMessage gcrm)
-			onGetConfigResult(gcrm.get());
-		else if (message instanceof GetChainInfoResultMessage gcirm)
-			onGetChainInfoResult(gcirm.get());
-		else if (message instanceof GetChainPortionResultMessage gcprm)
-			onGetChainPortionResult(gcprm.get());
-		else if (message instanceof AddTransactionResultMessage ptrm)
-			onAddTransactionResult(ptrm.get());
-		else if (message instanceof GetMempoolInfoResultMessage gmirm)
-			onGetMempoolInfoResult(gmirm.get());
-		else if (message instanceof GetMempoolPortionResultMessage gmprm)
-			onGetMempoolPortionResult(gmprm.get());
-		else if (message instanceof GetTransactionResultMessage gtrm)
-			onGetTransactionResult(gtrm.get());
-		else if (message instanceof GetTransactionRepresentationResultMessage gtrrm)
-			onGetTransactionRepresentationResult(gtrrm.get());
-		else if (message instanceof GetTransactionAddressResultMessage gtarm)
-			onGetTransactionAddressResult(gtarm.get());
-		else if (message != null && !(message instanceof ExceptionMessage)) {
-			LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
-			return;
+		boolean unexpected = false;
+
+		switch (message) {
+		case GetInfoResultMessage girm -> onGetInfoResult(girm.get());
+		case GetPeerInfosResultMessage gprm -> onGetPeerInfosResult(gprm.get());
+		case GetMinerInfosResultMessage gmrm -> onGetMinerInfosResult(gmrm.get());
+		case GetTaskInfosResultMessage gtirm -> onGetTaskInfosResult(gtirm.get());
+		case GetBlockResultMessage gbrm -> onGetBlockResult(gbrm.get());
+		case GetBlockDescriptionResultMessage gbrm -> onGetBlockDescriptionResult(gbrm.get());
+		case GetConfigResultMessage gcrm -> onGetConfigResult(gcrm.get());
+		case GetChainInfoResultMessage gcirm -> onGetChainInfoResult(gcirm.get());
+		case GetChainPortionResultMessage gcprm -> onGetChainPortionResult(gcprm.get());
+		case AddTransactionResultMessage ptrm -> onAddTransactionResult(ptrm.get());
+		case GetMempoolInfoResultMessage gmirm -> onGetMempoolInfoResult(gmirm.get());
+		case GetMempoolPortionResultMessage gmprm -> onGetMempoolPortionResult(gmprm.get());
+		case GetTransactionResultMessage gtrm -> onGetTransactionResult(gtrm.get());
+		case GetTransactionRepresentationResultMessage gtrrm -> onGetTransactionRepresentationResult(gtrrm.get());
+		case GetTransactionAddressResultMessage gtarm -> onGetTransactionAddressResult(gtarm.get());
+		default -> { // TODO: modify the websockets library in order to avoid this complication
+			unexpected = message != null && !(message instanceof ExceptionMessage);
+		}
 		}
 
-		super.notifyResult(message);
+		if (unexpected)
+			LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
+		else
+			super.notifyResult(message);
 	}
 
 	@Override

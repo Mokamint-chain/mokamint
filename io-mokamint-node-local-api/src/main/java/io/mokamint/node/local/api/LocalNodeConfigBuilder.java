@@ -156,6 +156,7 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 *                                use a negative value to disable successive synchronizations,
 	 *                                in which case synchronizations only occurs for other reasons,
 	 *                                for instance, if a peer gets added or reconnects
+	 * @return this builder
 	 */
 	LocalNodeConfigBuilder setSynchronizationInterval(int synchronizationInterval);
 
