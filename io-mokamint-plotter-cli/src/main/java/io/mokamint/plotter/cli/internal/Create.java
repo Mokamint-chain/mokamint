@@ -25,7 +25,6 @@ import java.security.spec.InvalidKeySpecException;
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
-import io.hotmoka.crypto.Base58ConversionException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.nonce.Prologs;
@@ -122,11 +121,6 @@ public class Create extends AbstractCommand {
 	}
 
 	private byte[] bytesFromBase58(String base58) throws CommandException {
-		try {
-			return Base58.decode(base58);
-		}
-		catch (Base58ConversionException e) {
-			throw new CommandException("The string " + base58 + " is not in Base58 format!", e);
-		}
+		return Base58.fromBase58String(base58, s -> new CommandException("The string " + base58 + " is not in Base58 format!"));
 	}
 }

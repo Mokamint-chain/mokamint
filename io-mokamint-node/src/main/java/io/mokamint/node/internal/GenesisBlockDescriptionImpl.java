@@ -98,7 +98,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 		this.hashingForGenerations = Objects.requireNonNull(hashingForGenerations);
 		this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks);
 		this.publicKey = Objects.requireNonNull(publicKey);
-		this.publicKeyBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKey));
+		this.publicKeyBase58 = Base58.toBase58String(signatureForBlocks.encodingOf(publicKey));
 	}
 
 	/**
@@ -145,14 +145,14 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			throw new InconsistentJsonException("publicKey cannot be null");
 
 		try {
-			this.publicKey = this.signatureForBlocks.publicKeyFromEncoding(Base58.decode(publicKey));
+			this.publicKey = this.signatureForBlocks.publicKeyFromEncoding(Base58.fromBase58String(publicKey));
 		}
 		catch (Base58ConversionException | InvalidKeySpecException e) {
 			throw new InconsistentJsonException(e);
 		}
 
 		try {
-			this.publicKeyBase58 = Base58.encode(this.signatureForBlocks.encodingOf(this.publicKey));
+			this.publicKeyBase58 = Base58.toBase58String(this.signatureForBlocks.encodingOf(this.publicKey));
 		}
 		catch (InvalidKeyException e) {
 			throw new InconsistentJsonException(e);
@@ -177,7 +177,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringUnshared());
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
-			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
+			this.publicKeyBase58 = Base58.toBase58String(publicKeyEncoding);
 		}
 		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);
@@ -202,7 +202,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 			this.signatureForBlocks = config.getSignatureForBlocks();
 			byte[] publicKeyEncoding = readPublicKeyEncoding(context);
 			this.publicKey = signatureForBlocks.publicKeyFromEncoding(publicKeyEncoding);
-			this.publicKeyBase58 = Base58.encode(publicKeyEncoding);
+			this.publicKeyBase58 = Base58.toBase58String(publicKeyEncoding);
 		}
 		catch (DateTimeParseException | InvalidKeySpecException e) {
 			throw new IOException(e);

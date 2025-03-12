@@ -61,11 +61,11 @@ public class Show extends AbstractCommand {
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
 
-			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
+			var publicKeyBase58 = Base58.toBase58String(signature.encodingOf(keys.getPublic()));
 			if (!full && publicKeyBase58.length() > 100)
 				publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
 			
-			var privateKeyBase58 = Base58.encode(signature.encodingOf(keys.getPrivate()));
+			var privateKeyBase58 = Base58.toBase58String(signature.encodingOf(keys.getPrivate()));
 			if (!full && privateKeyBase58.length() > 100)
 				privateKeyBase58 = privateKeyBase58.substring(0, 100) + "...";
 

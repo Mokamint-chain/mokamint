@@ -118,8 +118,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 
 		verify();
 
-		this.publicKeyForSigningBlocksBase58 = Base58.encode(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
-		this.publicKeyForSigningDeadlinesBase58 = Base58.encode(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+		this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
+		this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
 	}
 
 	/**
@@ -144,8 +144,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 
 			verify();
 
-			this.publicKeyForSigningBlocksBase58 = Base58.encode(publicKeyForSigningBlocksEncoding);
-			this.publicKeyForSigningDeadlinesBase58 = Base58.encode(plotPublicKeyEncoding);
+			this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocksEncoding);
+			this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(plotPublicKeyEncoding);
 		}
 		catch (RuntimeException | InvalidKeySpecException e) {
 			throw new IOException(e);
@@ -175,8 +175,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 
 			verify();
 
-			this.publicKeyForSigningBlocksBase58 = Base58.encode(publicKeyForSigningBlocksEncoding);
-			this.publicKeyForSigningDeadlinesBase58 = Base58.encode(plotPublicKeyEncoding);
+			this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocksEncoding);
+			this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(plotPublicKeyEncoding);
 		}
 		catch (RuntimeException | InvalidKeySpecException e) {
 			throw new IOException(e);

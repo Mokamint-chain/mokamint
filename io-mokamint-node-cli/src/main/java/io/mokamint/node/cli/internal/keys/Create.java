@@ -57,7 +57,7 @@ public class Create extends AbstractCommand {
 			var entropy = Entropies.random();
 			passwordAsString = new String(password);
 			KeyPair keys = entropy.keys(passwordAsString, signature);
-			var publicKeyBase58 = Base58.encode(signature.encodingOf(keys.getPublic()));
+			var publicKeyBase58 = Base58.toBase58String(signature.encodingOf(keys.getPublic()));
 			entropy.dump(path);
 
 			if (json) {
