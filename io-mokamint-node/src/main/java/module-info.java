@@ -29,6 +29,7 @@ module io.mokamint.node {
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.exceptions;
 	requires com.google.gson;
 	requires toml4j;
 	requires java.logging;

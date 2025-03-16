@@ -24,13 +24,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Function;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -85,24 +84,9 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	protected AbstractBlock(D description, BlockJson json) throws InconsistentJsonException {
-		try {
-			this.description = description;
-
-			String stateId = json.getStateId();
-			if (stateId == null)
-				throw new InconsistentJsonException("stateId cannot be null");
-
-			this.stateId = Hex.fromHexString(stateId);
-
-			String signature = json.getSignature();
-			if (signature == null)
-				throw new InconsistentJsonException("signature cannot be null");
-
-			this.signature = Hex.fromHexString(signature);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		this.description = description;
+		this.stateId = Hex.fromHexString(Objects.requireNonNull(json.getStateId(), "stateId cannot be null", InconsistentJsonException::new), InconsistentJsonException::new);
+		this.signature = Hex.fromHexString(Objects.requireNonNull(json.getSignature(), "signature cannot be null", InconsistentJsonException::new), InconsistentJsonException::new);
 	}
 
 	/**
@@ -116,8 +100,8 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @throws InvalidKeyException if {@code privateKey} is illegal
 	 */
 	protected AbstractBlock(D description, byte[] stateId, PrivateKey privateKey, Function<B, byte[]> marshaller) throws InvalidKeyException, SignatureException {
-		this.description = Objects.requireNonNull(description);
-		this.stateId = Objects.requireNonNull(stateId).clone();
+		this.description = Objects.requireNonNull(description, "description cannot be null", NullPointerException::new);
+		this.stateId = Objects.requireNonNull(stateId, "stateId cannot be null", NullPointerException::new).clone();
 		this.signature = description.getSignatureForBlocks().getSigner(privateKey, Function.identity()).sign(marshaller.apply(getThis()));
 	}
 
