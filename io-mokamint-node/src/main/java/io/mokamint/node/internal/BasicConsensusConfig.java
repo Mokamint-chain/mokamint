@@ -17,7 +17,7 @@ limitations under the License.
 package io.mokamint.node.internal;
 
 /**
- * The a consensus configuration, according to the builder pattern.
+ * The consensus configuration, according to the builder pattern.
  */
 public class BasicConsensusConfig extends ConsensusConfigImpl<BasicConsensusConfig, BasicConsensusConfigBuilder> {
 

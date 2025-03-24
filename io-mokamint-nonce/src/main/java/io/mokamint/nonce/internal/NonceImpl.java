@@ -185,10 +185,35 @@ public final class NonceImpl implements Nonce {
 		 * a prolog at its end. This method will add scoops before that prolog.
 		 */
 		private void fillWithScoops() {
+			byte[] previous = new byte[32];
 			for (int i = nonceSize; i > 0; i -= hashSize) {
 				int len = Math.min(buffer.length - i, HASH_CAP);
-				System.arraycopy(hasher.hash(buffer, i, len), 0, buffer, i - hashSize, hashSize);
+				// we use a floating hashing window of size HASH_CAP instead of hashing always
+				// the first HASH_CAP initialized bytes of the buffer;
+				// this is a deviation from Signum's algorithm that forces
+				// to keep all hashes in memory during the computation, not just the latest ones
+				int offset;
+				if (HASH_CAP < buffer.length - i) {
+					long previousLong = previousAsLong(previous);
+					offset = (int) (previousLong  % (buffer.length - i - HASH_CAP));
+					//System.out.println(Hex.toHexString(previous) + ": previousLong " + previousLong + " offset = " + offset + " [" + (i + offset) + "," + (i + offset + len) + "[");
+				}
+				else {
+					offset = 0;
+					//System.out.println(Hex.toHexString(previous) + ": previousLong ? " + " offset = " + offset + " [" + (i + offset) + "," + (i + offset + len) + "[");
+				}
+
+				// if + offset is removed below, then the algorithm becomes that of Signum
+				System.arraycopy(previous = hasher.hash(buffer, i + offset, len), 0, buffer, i - hashSize, hashSize);
 			}
+		}
+
+		private long previousAsLong(byte[] previous) {
+			int b3 = 3 < hashSize ? (previous[3]&0xFF) : 0;
+			int b2 = 2 < hashSize ? (previous[2]&0xFF) : 0;
+			int b1 = 1 < hashSize ? (previous[1]&0xFF) : 0;
+			int b0 = 0 < hashSize ? (previous[0]&0xFF) : 0;
+			return b0 + (b1 + (b2 + b3 * 256L) * 256L) * 256L;
 		}
 
 		/**

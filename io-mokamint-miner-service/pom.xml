@@ -43,22 +43,6 @@
   </dependencies>
 
   <!-- we need to open the test package in order to create endpoints by reflection -->
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>*.java</include>
-          </includes>
-          <argLine>
-            --add-opens io.mokamint.miner.service/io.mokamint.miner.service.tests=org.glassfish.tyrus.core
-		  </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>release</id>
