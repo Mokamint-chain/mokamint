@@ -61,7 +61,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 			throw new CommandException("Cannot establish a connection to " + uri, e);
 		}
 		catch (PeerRejectedException e) {
-			throw new CommandException(e);
+			throw new CommandException("The peer at " + uri + " has been rejected", e);
 		}
 	}
 

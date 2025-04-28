@@ -360,7 +360,7 @@ public class Start extends AbstractCommand {
 					app = Applications.load(application);
 				}
 				catch (ApplicationNotFoundException e) {
-					throw new CommandException(e.getMessage());
+					throw new CommandException("The application " + application + " has not beend found", e);
 				}
 			}
 			else {
@@ -371,7 +371,7 @@ public class Start extends AbstractCommand {
 					app.addOnCloseHandler(this::onRemoteApplicationClosed);
 				}
 				catch (ApplicationException e) {
-					throw new CommandException("Cannot connect to the remote application at " + applicationUri + ": " + e.getMessage());
+					throw new CommandException("Cannot connect to the remote application at " + applicationUri, e);
 				}
 			}
 		

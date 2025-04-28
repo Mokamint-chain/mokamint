@@ -62,7 +62,7 @@ public class Start extends AbstractCommand {
 			}
 		}
 		catch (ApplicationNotFoundException e) {
-			throw new CommandException(e.getMessage());
+			throw new CommandException("The application " + application + " has not been found", e);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
