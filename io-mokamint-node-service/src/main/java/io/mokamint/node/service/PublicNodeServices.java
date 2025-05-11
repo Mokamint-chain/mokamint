@@ -55,7 +55,7 @@ public final class PublicNodeServices {
 
 	/**
 	 * Opens and yields a new service for the given node, at the given network port.
-	 * It allows one to specify the public URL of the machine, which will be suggested as a peer
+	 * It allows one to specify the public URI of the machine, which will be suggested as a peer
 	 * for the connected remotes. 
 	 * 
 	 * @param node the node
@@ -67,7 +67,7 @@ public final class PublicNodeServices {
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of
 	 *                              spurious messages
-	 * @param uri the URI that will be suggested as URL of the machine where the service is running; this might be
+	 * @param uri the URI that will be suggested as URI of the machine where the service is running; this might be
 	 *            empty, which means that the service will try to guess its public IP and use it as its public URI
 	 * @return the new service
 	 * @throws NodeException if the service cannot be deployed
