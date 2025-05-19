@@ -438,7 +438,8 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private int mempoolSize = 100_000;
 		private int synchronizationGroupSize = 500;
 		private long blockMaxTimeInTheFuture = 15000L;
-		private long maximalHistoryChangeTime = 60L * 60 * 1000; // one hour
+		// TODO: should this be computed rather than be a configuration option?
+		private long maximalHistoryChangeTime = 5 * synchronizationGroupSize * getTargetBlockCreationTime(); // 5 times the span of a synchronization group size
 
 		/**
 		 * Creates a configuration builder with initial default values.

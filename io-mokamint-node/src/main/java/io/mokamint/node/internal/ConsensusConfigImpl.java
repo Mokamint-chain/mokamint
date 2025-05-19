@@ -481,6 +481,15 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		protected abstract B getThis();
 
 		/**
+		 * Yields the target block creation time.
+		 * 
+		 * @return the target block creation time, in milliseconds
+		 */
+		protected int getTargetBlockCreationTime() {
+			return targetBlockCreationTime;
+		}
+
+		/**
 		 * Loads the TOML file at the given path.
 		 * 
 		 * @param path the path
