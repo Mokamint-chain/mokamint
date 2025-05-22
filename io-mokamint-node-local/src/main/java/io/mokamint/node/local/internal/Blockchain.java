@@ -37,8 +37,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -160,6 +166,17 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final Memory<NonGenesisBlock> orphans;
 
 	/**
+	 * The executor of synchronization tasks.
+	 */
+	private final ExecutorService executors = Executors.newCachedThreadPool();
+
+	/**
+	 * The queue of blocks to absolutely verify. They have just been downloaded during
+	 * synchronization, need verification and can later be added to the blockchain.
+	 */
+	private final BlockingQueue<BlockPeer> blocksForAbsoluteVerification = new LinkedBlockingQueue<>();
+
+	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the hash of the genesis block.
 	 */
 	private final static ByteIterable HASH_OF_GENESIS = fromByte((byte) 0);
@@ -233,6 +250,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					// TODO not sure while this happens, it seems there might be transactions run for garbage collection,
 					// that will consequently find a closed environment
 					LOGGER.log(Level.SEVERE, "blockchain: failed to close the blocks database", e);
+				}
+				finally {
+					executors.shutdownNow();
 				}
 			}
 		}
@@ -1064,6 +1084,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
+	private record BlockPeer(Block block, Peer peer, int h) {
+	}
+
 	private class DownloadedGroupOfBlocks {
 	
 		/**
@@ -1199,10 +1222,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private boolean downloadNextGroupFromEachPeer() throws InterruptedException, NodeException {
 			stopIfInterrupted();
 			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + ")");
-	
+
 			for (var peer: connectedUsablePeers())
 				downloadNextGroupFrom(peer);
-	
+
 			return !groups.isEmpty();
 		}
 	
@@ -1346,8 +1369,27 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
+			var verifiers = new AbsoluteVerifier[Runtime.getRuntime().availableProcessors()];
+			var futures = new Future<?>[verifiers.length];
+
+			for (int pos = 0; pos < verifiers.length; pos++)
+				futures[pos] = executors.submit(verifiers[pos] = new AbsoluteVerifier());
+
 			for (var peer: connectedUsablePeers()) // TODO: this is not parallelism at all...
 				downloadBlocksFrom(peer);
+
+			// we send the deadly pills
+			for (int pos = 0; pos < verifiers.length; pos++)
+				blocksForAbsoluteVerification.add(new BlockPeer(null, null, 0));
+				
+			for (var future: futures) {
+				try {
+					future.get();
+				}
+				catch (ExecutionException e) {
+					throw new NodeException(e.getCause());
+				}
+			}
 		}
 
 		private Set<Peer> connectedUsablePeers() {
@@ -1420,26 +1462,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				if (!Arrays.equals(chosenGroup[h], block.getHash()))
 					// the peer answered with a block with the wrong hash!
 					markAsMisbehaving(peer);
-				else {
-					// TODO: possibly add the block to a queue where workers will verify the blocks, otherwise we do not
-					// exploit the available parallelism if there are very few peers
-
-					try {
-						// we can only perform an absolute verification, since the previous blocks might not be available yet:
-						// later (when adding the block to the blockchain) we will perform the verification relative to the previous block;
-						// the advantage of performing this partial check here is that we exploit the available
-						// multicores for the heavy absolute checks about the validity of the deadline of the blocks
-						new BlockVerification(txn, node, block, Optional.empty(), Mode.ABSOLUTE);
-					}
-					catch (VerificationException e) {
-						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
-						markAsMisbehaving(peer);
-						return;
-					}
-
-					blocks.set(h, block);
-					downloaders.put(block, peer);
-				}
+				else
+					blocksForAbsoluteVerification.add(new BlockPeer(block, peer, h));
 			}
 		}
 	
@@ -1491,6 +1515,50 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			for (var entry: groups.entrySet())
 				if (!Arrays.deepEquals(chosenGroup, entry.getValue()))
 					unusable.add(entry.getKey());
+		}
+
+		private class AbsoluteVerifier implements Runnable {
+
+			private AbsoluteVerifier() {
+			}
+
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						BlockPeer bp = blocksForAbsoluteVerification.take();
+						if (bp.block == null) // deadly pill
+							return;
+
+						try {
+							try {
+								// we can only perform an absolute verification, since the previous blocks might not be available yet:
+								// later (when adding the block to the blockchain) we will perform the verification relative to the previous block;
+								// the advantage of performing this partial check here is that we exploit the available
+								// multicores for the heavy absolute checks about the validity of the deadline of the blocks
+								new BlockVerification(null, node, bp.block, Optional.empty(), Mode.ABSOLUTE);
+							}
+							catch (VerificationException e) {
+								LOGGER.log(Level.SEVERE, "sync: verification of block " + bp.block.getHexHash() + " failed: " + e.getMessage());
+								markAsMisbehaving(bp.peer);
+								return;
+							}
+							catch (ApplicationTimeoutException e) {
+								return;
+							}
+						}
+						catch (NodeException e) {
+							throw new RuntimeException(e);
+						}
+
+						blocks.set(bp.h, bp.block);
+						downloaders.put(bp.block, bp.peer);
+					}
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
 		}
 	}
 

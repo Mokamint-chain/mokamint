@@ -82,11 +82,6 @@ public class BlockVerification {
 	private final Deadline deadline;
 
 	/**
-	 * The creation time of the block under verification.
-	 */
-	private final Optional<LocalDateTime> creationTime;
-
-	/**
 	 * The way the verification must be performed.
 	 */
 	private final Mode mode;
@@ -119,7 +114,6 @@ public class BlockVerification {
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;
-		this.creationTime = node.getBlockchain().creationTimeOf(txn, block);
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
@@ -311,12 +305,13 @@ public class BlockVerification {
 	 * Checks if the creation time of {@link #block} is not too much in the future.
 	 * 
 	 * @throws VerificationException if that condition is violated
+	 * @throws NodeException 
 	 */
-	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException {
+	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, NodeException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 			// the following exception should never happen, since the blockchain is non-empty for non-genesis blocks
-			long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime.orElseThrow(() -> new NoSuchElementException("Cannot determine the creation time of the block under verification")));
+			long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NoSuchElementException("Cannot determine the creation time of the block under verification")));
 			long max = config.getBlockMaxTimeInTheFuture();
 			if (howMuchInTheFuture > max)
 				throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
