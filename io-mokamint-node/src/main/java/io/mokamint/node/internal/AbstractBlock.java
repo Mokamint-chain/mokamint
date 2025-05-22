@@ -114,7 +114,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	protected AbstractBlock(D description, UnmarshallingContext context) throws IOException {
+	protected AbstractBlock(D description, UnmarshallingContext context, boolean verify) throws IOException {
 		this.description = description;
 		this.stateId = context.readLengthAndBytes("State id length mismatch");
 
@@ -139,12 +139,12 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		var description = AbstractBlockDescription.from(context, config);
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
+		var description = AbstractBlockDescription.from(context, config, verify);
 		if (description instanceof GenesisBlockDescription gbd)
 			return new GenesisBlockImpl(gbd, context);
 		else
-			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context, verify); // cast verified by sealedness
 	}
 
 	/**
@@ -161,7 +161,7 @@ public abstract sealed class AbstractBlock<D extends BlockDescription, B extends
 		if (description instanceof GenesisBlockDescription gbd)
 			return new GenesisBlockImpl(gbd, context);
 		else
-			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context); // cast verified by sealedness
+			return new NonGenesisBlockImpl((NonGenesisBlockDescription) description, context, true); // cast verified by sealedness
 	}
 
 	/**

@@ -136,18 +136,20 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, boolean verify) throws IOException {
 		this.prolog = Prologs.from(context, chainId, signatureForBlocks, signatureForDeadlines);
 		this.challenge = Challenges.from(context, hashingForDeadlines, hashingForGenerations);
 		this.progressive = context.readLong();
 		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
 		this.signature = readSignature(context);
 
-		try {
-			verify();
-		}
-		catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
-			throw new IOException(e);
+		if (verify) {
+			try {
+				verify();
+			}
+			catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
+				throw new IOException(e);
+			}
 		}
 	}
 

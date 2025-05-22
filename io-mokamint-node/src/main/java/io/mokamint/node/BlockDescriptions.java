@@ -111,7 +111,7 @@ public abstract class BlockDescriptions {
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
 	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		return AbstractBlockDescription.from(context, config);
+		return AbstractBlockDescription.from(context, config, true);
 	}
 
 	/**

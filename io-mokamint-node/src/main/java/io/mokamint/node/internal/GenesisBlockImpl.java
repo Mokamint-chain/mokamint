@@ -77,7 +77,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	protected GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
-		super(description, context);
+		super(description, context, true);
 
 		try {
 			ensureSignatureIsCorrect();

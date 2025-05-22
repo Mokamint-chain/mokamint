@@ -84,7 +84,18 @@ public class BlockVerification {
 	/**
 	 * The creation time of the block under verification.
 	 */
-	private final LocalDateTime creationTime;
+	private final Optional<LocalDateTime> creationTime;
+
+	/**
+	 * The way the verification must be performed.
+	 */
+	private final Mode mode;
+
+	public static enum Mode {
+		COMPLETE, // check everything
+		ABSOLUTE, // only check constraints that do not need to know the previous block
+		RELATIVE // only check constraints that need to know the previous block
+	}
 
 	/**
 	 * Verifies that {@code block} satisfies all consensus rules required
@@ -99,16 +110,16 @@ public class BlockVerification {
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
+	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous, Mode mode) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		this.txn = txn;
 		this.node = node;
+		this.mode = mode;
 		this.config = node.getConfig();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;
-		// the following exception should never happen, since the blockchain is non-empty for non-genesis blocks
-		this.creationTime = node.getBlockchain().creationTimeOf(txn, block).orElseThrow(() -> new NoSuchElementException("Cannot determine the creation time of the block under verification"));
+		this.creationTime = node.getBlockchain().creationTimeOf(txn, block);
 
 		if (block instanceof NonGenesisBlock ngb)
 			verifyAsNonGenesis(ngb);
@@ -161,8 +172,9 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineIsValid() throws VerificationException {
-		if (!deadline.isValid())
-			throw new VerificationException("Invalid deadline");
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
+			if (!deadline.isValid())
+				throw new VerificationException("Invalid deadline");
 	}
 
 	/**
@@ -174,26 +186,28 @@ public class BlockVerification {
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
 	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
-		var prolog = deadline.getProlog();
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
+			var prolog = deadline.getProlog();
 
-		if (!prolog.getChainId().equals(config.getChainId()))
-			throw new VerificationException("Deadline prolog's chainId mismatch");
+			if (!prolog.getChainId().equals(config.getChainId()))
+				throw new VerificationException("Deadline prolog's chainId mismatch");
 
-		if (!prolog.getSignatureForBlocks().equals(config.getSignatureForBlocks()))
-			throw new VerificationException("Deadline prolog's signature algorithm for blocks mismatch");
+			if (!prolog.getSignatureForBlocks().equals(config.getSignatureForBlocks()))
+				throw new VerificationException("Deadline prolog's signature algorithm for blocks mismatch");
 
-		if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
-			throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
+			if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
+				throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
 
-		try {
-			if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
-				throw new VerificationException("Invalid deadline prolog's extra");
-		}
-		catch (TimeoutException e) {
-			throw new ApplicationTimeoutException(e);
-		}
-		catch (ApplicationException e) {
-			throw new NodeException(e);
+			try {
+				if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
+					throw new VerificationException("Invalid deadline prolog's extra");
+			}
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
+			}
+			catch (ApplicationException e) {
+				throw new NodeException(e);
+			}
 		}
 	}
 
@@ -203,8 +217,10 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void deadlineMatchesItsExpectedChallenge() throws VerificationException {
-		var challenge = previous.getDescription().getNextChallenge();
-		deadline.getChallenge().matchesOrThrow(challenge, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
+			var challenge = previous.getDescription().getNextChallenge();
+			deadline.getChallenge().matchesOrThrow(challenge, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+		}
 	}
 
 	private static String toLowerInitial(String message) {
@@ -256,37 +272,39 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition in violated
 	 */
 	private void blockMatchesItsExpectedDescription(NonGenesisBlock block) throws VerificationException {
-		var expectedDescription = previous.getNextBlockDescription(deadline);
-		var description = block.getDescription();
+		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
+			var expectedDescription = previous.getNextBlockDescription(deadline);
+			var description = block.getDescription();
 
-		long height = description.getHeight();
-		long expectedHeight = expectedDescription.getHeight();
-		if (height != expectedHeight)
-			throw new VerificationException("Height mismatch (expected " + expectedHeight + " but found " + height + ")");
+			long height = description.getHeight();
+			long expectedHeight = expectedDescription.getHeight();
+			if (height != expectedHeight)
+				throw new VerificationException("Height mismatch (expected " + expectedHeight + " but found " + height + ")");
 
-		var acceleration = description.getAcceleration();
-		var expectedAcceleration = expectedDescription.getAcceleration();
-		if (!acceleration.equals(expectedAcceleration))
-			throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
+			var acceleration = description.getAcceleration();
+			var expectedAcceleration = expectedDescription.getAcceleration();
+			if (!acceleration.equals(expectedAcceleration))
+				throw new VerificationException("Acceleration mismatch (expected " + expectedAcceleration + " but found " + acceleration + ")");
 
-		var power = description.getPower();
-		var expectedPower = expectedDescription.getPower();
-		if (!power.equals(expectedPower))
-			throw new VerificationException("Power mismatch (expected " + expectedPower + " but found " + power + ")");
+			var power = description.getPower();
+			var expectedPower = expectedDescription.getPower();
+			if (!power.equals(expectedPower))
+				throw new VerificationException("Power mismatch (expected " + expectedPower + " but found " + power + ")");
 
-		long totalWaitingTime = description.getTotalWaitingTime();
-		long expectedTotalWaitingTime = expectedDescription.getTotalWaitingTime();
-		if (totalWaitingTime != expectedTotalWaitingTime)
-			throw new VerificationException("Total waiting time mismatch (expected " + expectedTotalWaitingTime + " but found " + totalWaitingTime + ")");
+			long totalWaitingTime = description.getTotalWaitingTime();
+			long expectedTotalWaitingTime = expectedDescription.getTotalWaitingTime();
+			if (totalWaitingTime != expectedTotalWaitingTime)
+				throw new VerificationException("Total waiting time mismatch (expected " + expectedTotalWaitingTime + " but found " + totalWaitingTime + ")");
 
-		long weightedWaitingTime = description.getWeightedWaitingTime();
-		if (weightedWaitingTime != expectedDescription.getWeightedWaitingTime())
-			throw new VerificationException("Weighted waiting time mismatch (expected " + expectedDescription.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
+			long weightedWaitingTime = description.getWeightedWaitingTime();
+			if (weightedWaitingTime != expectedDescription.getWeightedWaitingTime())
+				throw new VerificationException("Weighted waiting time mismatch (expected " + expectedDescription.getWeightedWaitingTime() + " but found " + weightedWaitingTime + ")");
 
-		byte[] hashOfPreviousBlock = description.getHashOfPreviousBlock();
-		byte[] expectedHashOfPreviousBlock = expectedDescription.getHashOfPreviousBlock();
-		if (!Arrays.equals(hashOfPreviousBlock, expectedHashOfPreviousBlock))
-			throw new VerificationException("Hash of previous block mismatch");
+			byte[] hashOfPreviousBlock = description.getHashOfPreviousBlock();
+			byte[] expectedHashOfPreviousBlock = expectedDescription.getHashOfPreviousBlock();
+			if (!Arrays.equals(hashOfPreviousBlock, expectedHashOfPreviousBlock))
+				throw new VerificationException("Hash of previous block mismatch");
+		}
 	}
 
 	/**
@@ -295,16 +313,20 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition is violated
 	 */
 	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException {
-		LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
-		long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime);
-		long max = config.getBlockMaxTimeInTheFuture();
-		if (howMuchInTheFuture > max)
-			throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
+		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
+			LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
+			// the following exception should never happen, since the blockchain is non-empty for non-genesis blocks
+			long howMuchInTheFuture = ChronoUnit.MILLIS.between(now, creationTime.orElseThrow(() -> new NoSuchElementException("Cannot determine the creation time of the block under verification")));
+			long max = config.getBlockMaxTimeInTheFuture();
+			if (howMuchInTheFuture > max)
+				throw new VerificationException("Too much in the future (" + howMuchInTheFuture + " ms against an allowed maximum of " + max + " ms)");
+		}
 	}
 
 	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
-		if (block.getTransactions().mapToLong(Transaction::size).sum() > config.getMaxBlockSize())
-			throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
+			if (block.getTransactions().mapToLong(Transaction::size).sum() > config.getMaxBlockSize())
+				throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
 	}
 
 	/**
@@ -315,10 +337,12 @@ public class BlockVerification {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException {
-		for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-			var txHash = hasherForTransactions.hash(tx);
-			if (node.getBlockchain().getTransactionAddress(txn, previous, txHash).isPresent())
-				throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
+		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
+			for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+				var txHash = hasherForTransactions.hash(tx);
+				if (node.getBlockchain().getTransactionAddress(txn, previous, txHash).isPresent())
+					throw new VerificationException("Repeated transaction " + Hex.toHexString(txHash));
+			}
 		}
 	}
 
@@ -334,61 +358,63 @@ public class BlockVerification {
 	 * @throws NodeException if the node is misbehaving
 	 */
 	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
-		var app = node.getApplication();
+		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
+			var app = node.getApplication();
 
-		// if the following exception occurs, there is a coding error
-		var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
-			.orElseThrow(() -> new NoSuchElementException("The previous of the block under verification was expected to be in blockchain"));
-
-		try {
-			int id;
+			// if the following exception occurs, there is a coding error
+			var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
+					.orElseThrow(() -> new NoSuchElementException("The previous of the block under verification was expected to be in blockchain"));
 
 			try {
-				id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious, previous.getStateId());
-			}
-			catch (UnknownStateException e) {
-				throw new VerificationException("The initial state is unknown to the application: " + e.getMessage());
-			}
+				int id;
 
-			boolean success = false;
-
-			try {
-				for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
-					try {
-						app.checkTransaction(tx);
-					}
-					catch (TransactionRejectedException e) {
-						throw new VerificationException("Failed check of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
-					}
-
-					try {
-						app.deliverTransaction(id, tx);
-					}
-					catch (TransactionRejectedException e) {
-						throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
-					}
+				try {
+					id = app.beginBlock(block.getDescription().getHeight(), creationTimeOfPrevious, previous.getStateId());
+				}
+				catch (UnknownStateException e) {
+					throw new VerificationException("The initial state is unknown to the application: " + e.getMessage());
 				}
 
-				var found = app.endBlock(id, block.getDescription().getDeadline());
+				boolean success = false;
 
-				if (!Arrays.equals(block.getStateId(), found))
-					throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
+				try {
+					for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+						try {
+							app.checkTransaction(tx);
+						}
+						catch (TransactionRejectedException e) {
+							throw new VerificationException("Failed check of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
+						}
 
-				success = true;
+						try {
+							app.deliverTransaction(id, tx);
+						}
+						catch (TransactionRejectedException e) {
+							throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(hasherForTransactions) + ": " + e.getMessage());
+						}
+					}
+
+					var found = app.endBlock(id, block.getDescription().getDeadline());
+
+					if (!Arrays.equals(block.getStateId(), found))
+						throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
+
+					success = true;
+				}
+				finally {
+					if (success)
+						app.commitBlock(id);
+					else
+						app.abortBlock(id);
+				}
 			}
-			finally {
-				if (success)
-					app.commitBlock(id);
-				else
-					app.abortBlock(id);
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
 			}
-		}
-		catch (TimeoutException e) {
-			throw new ApplicationTimeoutException(e);
-		}
-		catch (ApplicationException | UnknownGroupIdException e) {
-			// the node is misbehaving because the application it is connected to is misbehaving
-			throw new NodeException(e);
+			catch (ApplicationException | UnknownGroupIdException e) {
+				// the node is misbehaving because the application it is connected to is misbehaving
+				throw new NodeException(e);
+			}
 		}
 	}
 

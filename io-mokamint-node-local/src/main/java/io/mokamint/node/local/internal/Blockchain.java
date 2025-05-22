@@ -85,6 +85,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.internal.BlockVerification.Mode;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 
 /**
@@ -650,11 +651,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final Transaction txn;
 
 		/**
-		 * The hash of the head before performing the additions with this adder, if any.
-		 */
-		private final Optional<byte[]> initialHeadHash;
-
-		/**
 		 * The blocks added to the blockchain, as result of the addition of some blocks and,
 		 * potentially, of some previously orphan blocks that have been connected to the blockchain.
 		 */
@@ -685,7 +681,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private BlockAdder(Transaction txn) throws NodeException {
 			this.txn = txn;
-			this.initialHeadHash = getHeadHash(txn);
 		}
 
 		/**
@@ -699,15 +694,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 */
-		private BlockAdder add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private BlockAdder add(Block block, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd))
 				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 
-			addBlockAndConnectOrphans(block, verify);
-			computeBlocksAddedToTheCurrentBestChain();
+			Optional<byte[]> initialHeadHash = getHeadHash(txn);
+			addBlockAndConnectOrphans(block, verify, mode);
+			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
 
 			return this;
 		}
@@ -744,7 +740,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return !blocksAdded.isEmpty();
 		}
 
-		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			// we use a working set, since the addition of a single block might trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
 			ws.add(blockToAdd);
@@ -755,7 +751,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
 					byte[] hashOfCursor = cursor.getHash();
-					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify)) {
+					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify, mode)) {
 						blocksAdded.add(cursor);
 						forEachOrphanWithParent(hashOfCursor, ws::add);
 						if (blockToAdd != cursor)
@@ -768,7 +764,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (!ws.isEmpty());
 		}
 
-		private void computeBlocksAddedToTheCurrentBestChain() throws NodeException {
+		private void computeBlocksAddedToTheCurrentBestChain(Optional<byte[]> initialHeadHash) throws NodeException {
 			if (blocksAdded.isEmpty())
 				return;
 
@@ -804,10 +800,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			if (verify || isOrphan) {
 				try {
-					new BlockVerification(txn, node, blockToAdd, previous);
+					new BlockVerification(txn, node, blockToAdd, previous, mode);
 				}
 				catch (VerificationException e) {
 					if (isOrphan) {
@@ -1342,14 +1338,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @throws InterruptedException if the current thread gets interrupted
 		 * @throws NodeException if the node is misbehaving
+		 * @throws ApplicationTimeoutException 
 		 */
-		private void downloadBlocks() throws InterruptedException, NodeException {
+		private void downloadBlocks() throws InterruptedException, NodeException, ApplicationTimeoutException {
 			stopIfInterrupted();
 			Arrays.setAll(semaphores, _index -> new Semaphore(1));
 	
 			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
 
-			for (var peer: connectedUsablePeers())
+			for (var peer: connectedUsablePeers()) // TODO: this is not parallelism at all...
 				downloadBlocksFrom(peer);
 		}
 
@@ -1361,7 +1358,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				.collect(Collectors.toSet());
 		}
 
-		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException {
+		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException, ApplicationTimeoutException {
 			byte[][] ownGroup = groups.get(peer);
 			if (ownGroup != null) {
 				var alreadyTried = new boolean[chosenGroup.length];
@@ -1407,7 +1404,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the executed was interrupted
 		 * @throws NodeException if the node is misbehaving
 		 */
-		private void tryToDownloadBlockFrom(Peer peer, int h) throws InterruptedException, NodeException {
+		private void tryToDownloadBlockFrom(Peer peer, int h) throws InterruptedException, NodeException, ApplicationTimeoutException {
 			Optional<Block> maybeBlock;
 
 			try {
@@ -1424,6 +1421,22 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					// the peer answered with a block with the wrong hash!
 					markAsMisbehaving(peer);
 				else {
+					// TODO: possibly add the block to a queue where workers will verify the blocks, otherwise we do not
+					// exploit the available parallelism if there are very few peers
+
+					try {
+						// we can only perform an absolute verification, since the previous blocks might not be available yet:
+						// later (when adding the block to the blockchain) we will perform the verification relative to the previous block;
+						// the advantage of performing this partial check here is that we exploit the available
+						// multicores for the heavy absolute checks about the validity of the deadline of the blocks
+						new BlockVerification(txn, node, block, Optional.empty(), Mode.ABSOLUTE);
+					}
+					catch (VerificationException e) {
+						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
+						markAsMisbehaving(peer);
+						return;
+					}
+
 					blocks.set(h, block);
 					downloaders.put(block, peer);
 				}
@@ -1451,8 +1464,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	
 					stopIfInterrupted();
 	
+					// we only perform the relative checks, since the absolute ones have been performed while downloading the blocks
 					try {
-						blockAdder.add(block, true);
+						blockAdder.add(block, true, Mode.RELATIVE);
 					}
 					catch (VerificationException e) {
 						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
@@ -1608,7 +1622,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 		BlockAdder adder;
 
-		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verify);
+		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verify, Mode.COMPLETE);
 
 		try (var scope = mkScope()) {
 			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
@@ -1863,7 +1877,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return Optional.empty();
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context, node.getConfig()));
+				return Optional.of(Blocks.from(context, node.getConfig(), false));
 			}
 		}
 		catch (ExodusException | IOException e) {

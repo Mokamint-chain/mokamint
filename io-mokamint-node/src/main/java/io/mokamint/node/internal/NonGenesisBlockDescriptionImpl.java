@@ -238,7 +238,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @param config the consensus configuration of the node storing the block description
 	 * @throws IOException if unmarshalling failed
 	 */
-	protected NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+	protected NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
 		super(config);
 
 		this.height = height;
@@ -246,7 +246,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		this.totalWaitingTime = context.readLong();
 		this.weightedWaitingTime = context.readCompactLong();
 		this.acceleration = context.readBigInteger();
-		this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines());
+		this.deadline = Deadlines.from(context, config.getChainId(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), verify);
 		this.hashOfPreviousBlock = context.readBytes(getHashingForBlocks().length(), "Previous block hash length mismatch");
 
 		if (height < 1)

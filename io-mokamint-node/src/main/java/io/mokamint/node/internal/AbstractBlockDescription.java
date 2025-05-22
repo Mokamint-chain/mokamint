@@ -161,10 +161,10 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * @return the block description
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
+	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
 		// by reading the height, we can determine if it's a genesis block description or not
 		var height = context.readCompactLong();
-		return height == 0L ? new GenesisBlockDescriptionImpl(context, config) : new NonGenesisBlockDescriptionImpl(height, context, config);
+		return height == 0L ? new GenesisBlockDescriptionImpl(context, config, verify) : new NonGenesisBlockDescriptionImpl(height, context, config, verify);
 	}
 
 	/**

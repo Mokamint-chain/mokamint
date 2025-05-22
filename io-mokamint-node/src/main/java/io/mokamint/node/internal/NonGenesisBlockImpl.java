@@ -131,17 +131,19 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
-		super(description, context);
+	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context, boolean verify) throws IOException {
+		super(description, context, verify);
 
 		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);;
 
-		try {
-			ensureSignatureIsCorrect();
-			ensureTransactionsAreNotRepeated();
-		}
-		catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
-			throw new IOException(e);
+		if (verify) {
+			try {
+				ensureSignatureIsCorrect();
+				ensureTransactionsAreNotRepeated();
+			}
+			catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
+				throw new IOException(e);
+			}
 		}
 	}
 

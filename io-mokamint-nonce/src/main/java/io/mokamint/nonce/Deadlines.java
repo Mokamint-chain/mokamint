@@ -89,8 +89,8 @@ public final class Deadlines {
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public static Deadline from(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
-		return new DeadlineImpl(context, chainId, hashingForDeadlines, hashingForGenerations, signatureForBlocks, signatureForDeadlines);
+			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, boolean verify) throws IOException {
+		return new DeadlineImpl(context, chainId, hashingForDeadlines, hashingForGenerations, signatureForBlocks, signatureForDeadlines, verify);
 	}
 
 	/**

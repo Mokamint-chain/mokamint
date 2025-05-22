@@ -85,8 +85,8 @@ public abstract class Blocks {
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
-		return AbstractBlock.from(context, config);
+	public static Block from(UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
+		return AbstractBlock.from(context, config, verify);
 	}
 
 	/**
