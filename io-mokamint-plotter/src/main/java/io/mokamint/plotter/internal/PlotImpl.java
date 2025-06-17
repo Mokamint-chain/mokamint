@@ -380,6 +380,7 @@ public class PlotImpl implements Plot {
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
 			FunctionWithExceptions3<Long, Deadline, PlotException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
+			// TODO: sign deadline only after selecting the best one, since signature generation is expensive
 			this.deadline = CheckSupplier.check(PlotException.class, InvalidKeyException.class, SignatureException.class, () ->
 				LongStream.range(start, start + length)
 						.parallel()

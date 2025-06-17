@@ -124,7 +124,7 @@ public class MiningTask implements Task {
 
 	private void suspendUntilSomethingChanges() throws InterruptedException {
 		synchronized (waitingLock) {
-			waitingLock.wait(2000L);
+			waitingLock.wait(10_000L);
 		}
 	}
 }

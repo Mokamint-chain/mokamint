@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,6 +31,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.GuardedBy;
+import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
@@ -54,7 +56,7 @@ public class Synchronization {
 	@GuardedBy("itself")
 	private final SortedSet<Block> blocksNonContextuallyVerified = new TreeSet<>(new BlockComparatorByHeight());
 
-	private final ConcurrentMap<BlockHash, Block> hashToBlock = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, Block> hashToBlock = new ConcurrentHashMap<>();
 	private final int synchronizationGroupSize;
 	private final Blockchain blockchain;
 	private final ExecutorService executors;
@@ -126,7 +128,7 @@ public class Synchronization {
 	}
 
 	// synchronization is needed to avoid assigning the same block to download twice
-	private synchronized boolean requestToDownload(BlockHash blockHash, Downloader downloader) {
+	private synchronized boolean requestToDownload(String blockHash, Downloader downloader) {
 		for (Downloader other: downloaders)
 			if (other.blocksRequestedByThis.contains(blockHash)) {
 				downloader.blocksRequestedByThis.add(blockHash);
@@ -149,7 +151,7 @@ public class Synchronization {
 			Block block = entry.getValue();
 
 			if (block.getDescription().getHeight() < minHeight) {
-				BlockHash blockHash = entry.getKey();
+				String blockHash = entry.getKey();
 				hashToBlock.remove(blockHash);
 
 				for (var downloader: downloaders) {
@@ -158,24 +160,6 @@ public class Synchronization {
 				}
 			}
 		}
-
-		printCount();
-	}
-
-	/**
-	 * Removes downloading data that refer to old blocks, that won't be needed anymore:
-	 * this avoid the explosion of their containers.
-	 */
-	private void printCount() {
-		long minHeight = minimalHeightStillToProcess();
-
-		int size = hashToBlock.size();
-		for (var downloader: downloaders) {
-			size += downloader.blocksRequestedByThis.size();
-			size += downloader.blocksAddedToProcessByThis.size();
-		}
-
-		System.out.println(size + "[>=" + minHeight + "]");
 	}
 
 	private boolean allDownloadersHaveTerminated() {
@@ -241,6 +225,12 @@ public class Synchronization {
 		return true;
 	}
 
+	private void banDownloadersOf(String blockHash) throws NodeException {
+		for (var downloader: downloaders)
+			if (!downloader.terminated && downloader.blocksRequestedByThis.contains(blockHash))
+				downloader.ban();
+	}
+
 	private class Downloader {
 		private final Peer peer;
 
@@ -249,7 +239,7 @@ public class Synchronization {
 		@GuardedBy("this")
 		private long height;
 
-		private final Set<BlockHash> blocksRequestedByThis = ConcurrentHashMap.newKeySet();
+		private final Set<String> blocksRequestedByThis = ConcurrentHashMap.newKeySet();
 		private final Set<Block> blocksAddedToProcessByThis = ConcurrentHashMap.newKeySet();
 		private final Semaphore queueHasSpace = new Semaphore(synchronizationGroupSize * 2);
 
@@ -258,12 +248,17 @@ public class Synchronization {
 			this.height = startingHeight;
 		}
 
+		private void ban() throws NodeException {
+			terminated = true;
+			peers.ban(peer);
+		}
+
 		private void run() {
 			try {
 				try {
 					Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
 
-					while (true) {
+					while (!terminated) {
 						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(getHeight(), lastHashOfPreviousGroup);
 						byte[][] hashes;
 
@@ -319,7 +314,7 @@ public class Synchronization {
 			// in order to allow concurrent downloading from many peers
 			for (int pos = 0; pos < hashes.length; pos++) {
 				var hash = hashes[pos];
-				var blockHash = new BlockHash(hash);
+				var blockHash = Hex.toHexString(hash);
 				if (requestToDownload(blockHash, this) && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
 					return false;
 			}
@@ -328,7 +323,7 @@ public class Synchronization {
 			for (int pos = 0; pos < hashes.length; pos++)
 				if (blocks[pos] == null) {
 					var hash = hashes[pos];
-					var blockHash = new BlockHash(hash);
+					String blockHash = Hex.toHexString(hash);
 
 					// we check if somebody else managed to download this block in the meanwhile
 					if ((blocks[pos] = hashToBlock.get(blockHash)) == null && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
@@ -338,7 +333,7 @@ public class Synchronization {
 			return true;
 		}
 
-		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, BlockHash blockHash) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
+		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, String blockHash) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
 			Optional<Block> maybeBlock = peers.getBlock(peer, hash);
 
 			if (maybeBlock.isPresent()) {
@@ -447,13 +442,14 @@ public class Synchronization {
 							blocksNonContextuallyVerified.notifyAll();
 						}
 	
-						if (block.getDescription().getHeight() % 1000 == 0)
+						if (block.getDescription().getHeight() % 4000 == 0)
 							System.out.println("sync: the non-contextual block verifier #" + num + " verified block at height " + block.getDescription().getHeight());
 					}
 					catch (VerificationException e) {
 						markAsProcessed(block);
-						LOGGER.warning("sync: the non-contextual verification of block " + block.getHexHash() + " failed: banning all peers that provided this block");
-						// TODO: all downloaders that requested this block must be stopped
+						String blockHash = block.getHexHash();
+						LOGGER.warning("sync: the non-contextual verification of block " + blockHash + " failed, I'm banning all peers that provided that block: " + e.getMessage());
+						banDownloadersOf(blockHash);
 					}
 				}
 			}
@@ -474,8 +470,8 @@ public class Synchronization {
 					blocksNonContextuallyVerified.notifyAll();
 				}
 	
-				LOGGER.info("sync: stopped the non-contextual block verifier #" + num);
-				System.out.println("sync: the non-contextual block verifier #" + num + " stops");
+				LOGGER.info("sync: stopped non-contextual block verifier #" + num);
+				System.out.println("sync: non-contextual block verifier #" + num + " stops");
 			}
 		}
 	}
@@ -522,8 +518,9 @@ public class Synchronization {
 							// TODO
 						}
 						catch (VerificationException e) {
-							LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
-							// TODO: ban the peers that downloaded the block
+							String blockHash = block.getHexHash();
+							LOGGER.warning("sync: the contextual verification of block " + blockHash + " failed, I'm banning all peers that provided that block: " + e.getMessage());
+							banDownloadersOf(blockHash);
 						}
 
 						markAsProcessed(block);
@@ -540,19 +537,19 @@ public class Synchronization {
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					LOGGER.warning("sync: the block adder #" + num + " has been interrupted");
+					LOGGER.warning("sync: block adder #" + num + " has been interrupted");
 				}
 				catch (ApplicationTimeoutException e) {
-					LOGGER.warning("sync: the block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
+					LOGGER.warning("sync: block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
 				}
 				finally {
-					LOGGER.info("sync: stopped the block adder #" + num);
-					System.out.println("sync: the block adder #" + num + " stops");
+					LOGGER.info("sync: stopped block adder #" + num);
+					System.out.println("sync: block adder #" + num + " stops");
 					blockAddersHaveTerminated.release();
 				}
 			}
-			catch (NodeException | RuntimeException e) {
-				LOGGER.log(Level.SEVERE, "sync: the block adder #" + num + " stops since the node is misbehaving", e);
+			catch (NodeException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -566,29 +563,6 @@ public class Synchronization {
 				return diff;
 			else
 				return Arrays.compare(block1.getHash(), block2.getHash());
-		}
-	}
-
-	private static class BlockHash implements Comparable<BlockHash> {
-		private final byte[] hash;
-
-		private BlockHash(byte[] hash) {
-			this.hash = hash;
-		}
-
-		@Override
-		public boolean equals(Object other) {
-			return other instanceof BlockHash bh && Arrays.equals(hash, bh.hash);
-		}
-
-		@Override
-		public int hashCode() {
-			return Arrays.hashCode(hash);
-		}
-
-		@Override
-		public int compareTo(BlockHash other) {
-			return Arrays.compare(hash, other.hash);
 		}
 	}
 }
