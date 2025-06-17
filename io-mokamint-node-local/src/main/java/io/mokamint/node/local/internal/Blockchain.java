@@ -37,21 +37,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -78,14 +69,10 @@ import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
-import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerException;
-import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -146,11 +133,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final long maximalHistoryChangeTime;
 
 	/**
-	 * The size of the group of blocks whose hashes get downloaded in one shot during synchronization.
-	 */
-	private final int synchronizationGroupSize;
-
-	/**
 	 * A cache for the hash of the genesis block, if it has been set already. Otherwise it holds {@code null}.
 	 */
 	private volatile Optional<byte[]> genesisHashCache;
@@ -169,12 +151,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * The executor of synchronization tasks.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
-
-	/**
-	 * The queue of blocks to absolutely verify. They have just been downloaded during
-	 * synchronization, need verification and can later be added to the blockchain.
-	 */
-	private final BlockingQueue<BlockPeer> blocksForAbsoluteVerification = new LinkedBlockingQueue<>();
 
 	/**
 	 * The key mapped in the {@link #storeOfBlocks} to the hash of the genesis block.
@@ -227,7 +203,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		LocalNodeConfig config = node.getConfig();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
-		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
 		this.orphans = Memories.of(config.getOrphansMemorySize());
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");
@@ -604,7 +579,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
 	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
-		return add(block, true);
+		return add(block, Optional.of(Mode.COMPLETE));
 	}
 
 	/**
@@ -620,7 +595,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public boolean addVerified(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		try {
-			return add(block, false);
+			return add(block, Optional.empty());
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence this exception should not have been generated
@@ -637,21 +612,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public void synchronize() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		try {
-			FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, ApplicationTimeoutException> function = DownloadedGroupOfBlocks::new;
-			DownloadedGroupOfBlocks group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
-			group.updateMempool();
-			group.informNode();
-
-			while (group.thereMightBeMoreGroupsToDownload()) {
-				DownloadedGroupOfBlocks previousGroup = group;
-				FunctionWithExceptions3<Transaction, DownloadedGroupOfBlocks, NodeException, InterruptedException, ApplicationTimeoutException> function2 = txn -> new DownloadedGroupOfBlocks(txn, previousGroup);
-				group = environment.computeInExclusiveTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function2);
-				group.updateMempool();
-				group.informNode();
-			}
+			System.out.println("Starting synchronization");
+			new Synchronization(node, executors);
 		}
 		finally {
 			node.onSynchronizationCompleted();
+			System.out.println("Ended synchronization");
 		}
 	}
 
@@ -707,14 +673,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * Adds the given block to the blockchain.
 		 * 
 		 * @param block the block to add
-		 * @param verify true if and only if verification of {@code block} must be performed
+		 * @param verification the verification mode of the block, if any
 		 * @return this same adder
 		 * @throws NodeException if the node is misbehaving
 		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 		 */
-		private BlockAdder add(Block block, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private BlockAdder add(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
@@ -722,7 +688,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 
 			Optional<byte[]> initialHeadHash = getHeadHash(txn);
-			addBlockAndConnectOrphans(block, verify, mode);
+			addBlockAndConnectOrphans(block, verification);
 			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
 
 			return this;
@@ -760,7 +726,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return !blocksAdded.isEmpty();
 		}
 
-		private void addBlockAndConnectOrphans(Block blockToAdd, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private void addBlockAndConnectOrphans(Block blockToAdd, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 			// we use a working set, since the addition of a single block might trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
 			ws.add(blockToAdd);
@@ -771,7 +737,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 				if (cursor instanceof GenesisBlock || (previous = getBlock(txn, ((NonGenesisBlock) cursor).getHashOfPreviousBlock())).isPresent()) {
 					byte[] hashOfCursor = cursor.getHash();
-					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verify, mode)) {
+					if (add(cursor, hashOfCursor, previous, blockToAdd != cursor, verification)) {
 						blocksAdded.add(cursor);
 						forEachOrphanWithParent(hashOfCursor, ws::add);
 						if (blockToAdd != cursor)
@@ -820,10 +786,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, boolean verify, Mode mode) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
-			if (verify || isOrphan) {
+		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+			if (verification.isPresent() || isOrphan) {
 				try {
-					new BlockVerification(txn, node, blockToAdd, previous, mode);
+					new BlockVerification(txn, node, blockToAdd, previous, isOrphan ? Mode.COMPLETE : verification.get());
 				}
 				catch (VerificationException e) {
 					if (isOrphan) {
@@ -1084,484 +1050,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private record BlockPeer(Block block, Peer peer, int h) {
-	}
-
-	private class DownloadedGroupOfBlocks {
-	
-		/**
-		 * The database transaction where the synchronization occurs.
-		 */
-		private final Transaction txn;
-	
-		/**
-		 * The height of the next block whose hash must be downloaded.
-		 */
-		private final long height;
-	
-		/**
-		 * The object used to add blocks to the blockchain, during synchronization.
-		 */
-		private final BlockAdder blockAdder;
-	
-		/**
-		 * The peers of the node.
-		 */
-		private final PeersSet peers = node.getPeers();
-	
-		/**
-		 * The peers that have been discarded so far during this synchronization, since
-		 * for instance they timed out or provided illegal blocks.
-		 */
-		private final Set<Peer> unusable;
-	
-		/**
-		 * The last groups of hashes downloaded, for each peer.
-		 */
-		private final ConcurrentMap<Peer, byte[][]> groups = new ConcurrentHashMap<>();
-
-		/**
-		 * The last hash in the previous group loaded before this group. This is used
-		 * to compare it against the beginning of the new group loaded by this object,
-		 * in order to check that they actually match. The first download has no previous group.
-		 */
-		private final Optional<byte[]> lastHashOfPreviousGroup;
-
-		/**
-		 * The group in {@link #groups} that has been selected as more
-		 * reliable chain, because most peers agree on its hashes.
-		 */
-		private final byte[][] chosenGroup;
-	
-		/**
-		 * The downloaded blocks, whose hashes are in {@link #chosenGroup}.
-		 */
-		private final AtomicReferenceArray<Block> blocks;
-	
-		/**
-		 * Semaphores used to avoid having two peers downloading the same block.
-		 */
-		private final Semaphore[] semaphores;
-	
-		/**
-		 * A map from each downloaded block to the peer that downloaded that block.
-		 * This is used to blame that peer if the block is not verifiable.
-		 */
-		private final ConcurrentMap<Block, Peer> downloaders = new ConcurrentHashMap<>();
-	
-		private DownloadedGroupOfBlocks(Transaction txn) throws InterruptedException, ApplicationTimeoutException, NodeException {
-			this(txn,
-				Math.max(getStartOfNonFrozenPart(txn).map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), getHeightOfHead(txn).orElse(0L) - 1000L),
-				Optional.empty(),
-				ConcurrentHashMap.newKeySet());
-		}
-
-		private DownloadedGroupOfBlocks(Transaction txn, DownloadedGroupOfBlocks previous) throws InterruptedException, ApplicationTimeoutException, NodeException {
-			// -1 is used in order the link the next group with the previous one: they must coincide for the first (respectively, last) block hash
-			this(txn, previous.height  + synchronizationGroupSize - 1, Optional.of(previous.chosenGroup[previous.chosenGroup.length - 1]), previous.unusable);
-		}
-
-		private DownloadedGroupOfBlocks(Transaction txn, long height, Optional<byte[]> lastHashOfPreviousGroup, Set<Peer> unusable) throws InterruptedException, ApplicationTimeoutException, NodeException {
-			this.txn = txn;
-			this.blockAdder = new BlockAdder(txn);
-			this.lastHashOfPreviousGroup = lastHashOfPreviousGroup;
-			this.unusable = unusable;
-			this.height = height;
-		
-			if (!downloadNextGroupFromEachPeer()) {
-				LOGGER.info("sync: stop here since the peers do not provide more block hashes to download");
-				this.chosenGroup = null;
-				this.semaphores = null;
-				this.blocks = null;
-				return;
-			}
-		
-			this.chosenGroup = chooseMostReliableGroup();
-			this.semaphores = new Semaphore[chosenGroup.length];
-			this.blocks = new AtomicReferenceArray<>(chosenGroup.length);
-			downloadBlocks();
-		
-			if (!addBlocksToBlockchain()) {
-				LOGGER.info("sync: stop here since no more verifiable blocks can be downloaded");
-				return;
-			}
-		
-			keepOnlyPeersAgreeingOnTheChosenGroup();
-		}
-
-		private boolean thereMightBeMoreGroupsToDownload() {
-			return chosenGroup != null && chosenGroup.length == synchronizationGroupSize;
-		}
-	
-		private void updateMempool() throws NodeException, InterruptedException, ApplicationTimeoutException {
-			blockAdder.updateMempool();
-		}
-	
-		private void informNode() {
-			blockAdder.informNode();
-		}
-	
-		/**
-		 * Checks if the current thread has been interrupted and, in that case, throws an exception.
-		 * 
-		 * @throws InterruptedException if and only if the current thread has been interrupted
-		 */
-		private static void stopIfInterrupted() throws InterruptedException {
-			if (Thread.currentThread().isInterrupted())
-				throw new InterruptedException("Interrupted");
-		}
-	
-		/**
-		 * Downloads the next group of hashes with each available peer.
-		 * 
-		 * @return true if and only if at least a group could be downloaded,
-		 *         from at least one peer; if false, synchronization must stop here
-		 * @throws InterruptedException if the execution has been interrupted
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private boolean downloadNextGroupFromEachPeer() throws InterruptedException, NodeException {
-			stopIfInterrupted();
-			LOGGER.info("sync: downloading the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + ")");
-
-			for (var peer: connectedUsablePeers())
-				downloadNextGroupFrom(peer);
-
-			return !groups.isEmpty();
-		}
-	
-		/**
-		 * Download, into the {@link #groups} map, the next group of hashes with the given peer.
-		 * 
-		 * @param peer the peer
-		 * @throws InterruptedException if the execution has been interrupted
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private void downloadNextGroupFrom(Peer peer) throws InterruptedException, NodeException {
-			Optional<ChainPortion> maybeChain;
-
-			try {
-				maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize);
-			}
-			catch (PeerException | PeerTimeoutException e) {
-				unusable.add(peer);
-				return;
-			}
-
-			if (maybeChain.isPresent()) {
-				var hashes = maybeChain.get().getHashes().toArray(byte[][]::new);
-				if (hashes.length > synchronizationGroupSize)
-					markAsMisbehaving(peer); // if a peer sends inconsistent information, we take note
-				else if (groupIsUseless(hashes))
-					unusable.add(peer);
-				else
-					groups.put(peer, hashes);
-			}
-		}
-	
-		/**
-		 * Determines if the given group of hashes can be discarded since it does not match some expected constraints.
-		 * 
-		 * @param hashes the group of hashes
-		 * @return true if and only if it can be discarded
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private boolean groupIsUseless(byte[][] hashes) throws NodeException {
-			Optional<byte[]> genesisHash;
-	
-			// the first hash must coincide with the last hash of the previous group, or otherwise the peer is cheating
-			// or there has been a change in the best chain and we must anyway stop downloading blocks here from this group
-			if (hashes.length > 0 && lastHashOfPreviousGroup.isPresent() && !Arrays.equals(hashes[0], lastHashOfPreviousGroup.get()))
-				return true;
-			// if synchronization occurs from the genesis and the genesis of the blockchain is set,
-			// then the first hash must be that genesis' hash
-			else if (hashes.length > 0 && height == 0L && (genesisHash = getGenesisHash(txn)).isPresent() && !Arrays.equals(hashes[0], genesisHash.get()))
-				return true;
-			// if synchronization starts from above the genesis, the first hash must be in the blockchain of the node or otherwise the hashes are useless
-			else if (hashes.length > 0 && lastHashOfPreviousGroup.isEmpty() && height > 0L && !containsBlock(txn, hashes[0]))
-				return true;
-			else
-				return false;
-		}
-	
-		private void markAsMisbehaving(Peer peer) throws NodeException {
-			unusable.add(peer);
-			peers.ban(peer);
-		}
-	
-		/**
-		 * Selects the group in {@link #groups} that looks as the most reliable, since the most peers agree on its hashes.
-		 * 
-		 * @throws InterruptedException if the current thread gets interrupted
-		 */
-		private byte[][] chooseMostReliableGroup() throws InterruptedException {
-			stopIfInterrupted();
-			var alternatives = new HashSet<byte[][]>(groups.values());
-	
-			for (int h = 1; h < synchronizationGroupSize && alternatives.size() > 1; h++) {
-				Optional<byte[][]> mostFrequent = findMostFrequent(alternatives, h);
-				// there might be no alternatives with at least h hashes
-				if (mostFrequent.isEmpty())
-					break;
-	
-				byte[] mostFrequentHash = mostFrequent.get()[h];
-				for (byte[][] alternative: new HashSet<>(alternatives))
-					if (alternative.length <= h || !Arrays.equals(alternative[h], mostFrequentHash))
-						alternatives.remove(alternative);
-			}
-	
-			// the remaining alternatives actually coincide: just take one
-			return alternatives.stream().findAny().get();
-		}
-	
-		/**
-		 * Yields the alternative whose {@code h}'s hash is the most frequent
-		 * among the given {@code alternatives}.
-		 * 
-		 * @param alternatives the alternatives
-		 * @param h the index of the compared hash of the alternatives
-		 * @return the alternative whose {@code h}'s hash is the most frequent among {@code alternatives};
-		 *         this is missing when all alternatives have fewer than {@code h} hashes
-		 */
-		private Optional<byte[][]> findMostFrequent(Set<byte[][]> alternatives, int h) {
-			byte[][] result = null;
-			long bestFrequency = 0L;
-			for (byte[][] alternative: alternatives)
-				if (alternative.length > h) {
-					long frequency = computeFrequency(alternative, alternatives, h);
-					if (frequency > bestFrequency) {
-						bestFrequency = frequency;
-						result = alternative;
-					}
-				}
-	
-			return Optional.ofNullable(result);
-		}
-	
-		/**
-		 * Counts how many {@code alternatives} have their {@code h}'s hash coinciding
-		 * with that of {@code alternative}.
-		 * 
-		 * @param alternative the reference alternative
-		 * @param alternatives the alternatives
-		 * @param h the height of the counted hash
-		 * @return the count; this is 0 if all alternatives have fewer than {@code h} hashes
-		 */
-		private long computeFrequency(byte[][] alternative, Set<byte[][]> alternatives, int h) {
-			return alternatives.stream()
-				.filter(hashes -> hashes.length > h)
-				.map(hashes -> hashes[h])
-				.filter(hash -> Arrays.equals(hash, alternative[h]))
-				.count();
-		}
-	
-		/**
-		 * Downloads as many blocks as possible whose hashes are in {@link #chosenGroup},
-		 * by using the peers whose group agrees on such hashes, in parallel. Some block
-		 * might no be downloaded if all peers time out or no peer contains that block.
-		 * 
-		 * @throws InterruptedException if the current thread gets interrupted
-		 * @throws NodeException if the node is misbehaving
-		 * @throws ApplicationTimeoutException 
-		 */
-		private void downloadBlocks() throws InterruptedException, NodeException, ApplicationTimeoutException {
-			stopIfInterrupted();
-			Arrays.setAll(semaphores, _index -> new Semaphore(1));
-	
-			LOGGER.info("sync: downloading the blocks at height [" + height + ", " + (height + chosenGroup.length) + ")");
-
-			var verifiers = new AbsoluteVerifier[Runtime.getRuntime().availableProcessors()];
-			var futures = new Future<?>[verifiers.length];
-
-			for (int pos = 0; pos < verifiers.length; pos++)
-				futures[pos] = executors.submit(verifiers[pos] = new AbsoluteVerifier());
-
-			for (var peer: connectedUsablePeers()) // TODO: this is not parallelism at all...
-				downloadBlocksFrom(peer);
-
-			// we send the deadly pills
-			for (int pos = 0; pos < verifiers.length; pos++)
-				blocksForAbsoluteVerification.add(new BlockPeer(null, null, 0));
-				
-			for (var future: futures) {
-				try {
-					future.get();
-				}
-				catch (ExecutionException e) {
-					throw new NodeException(e.getCause());
-				}
-			}
-		}
-
-		private Set<Peer> connectedUsablePeers() {
-			return peers.get()
-				.filter(PeerInfo::isConnected)
-				.map(PeerInfo::getPeer)
-				.filter(peer -> !unusable.contains(peer))
-				.collect(Collectors.toSet());
-		}
-
-		private void downloadBlocksFrom(Peer peer) throws NodeException, InterruptedException, ApplicationTimeoutException {
-			byte[][] ownGroup = groups.get(peer);
-			if (ownGroup != null) {
-				var alreadyTried = new boolean[chosenGroup.length];
-	
-				// we try twice: the second time to help peers that are trying to download something
-				for (int time = 1; time <= 2; time++) {
-					for (int h = chosenGroup.length - 1; h >= 0; h--)
-						if (canDownload(peer, h, ownGroup, alreadyTried))
-							if (time == 2 || semaphores[h].tryAcquire()) {
-								try {
-									alreadyTried[h] = true;
-									tryToDownloadBlockFrom(peer, h);
-								}
-								finally {
-									if (time == 1)
-										semaphores[h].release();
-								}
-							}
-				}
-			}
-		}
-	
-		/**
-		 * Determines if the given peer could be used to download the block with the {@code h}th hash in {@link #chosenGroup}.
-		 * 
-		 * @param peer the peer
-		 * @param h the index of the hash
-		 * @param ownGroup the group of hashes for the peer
-		 * @param alreadyTried information about which hashes have already been tried with this same peer
-		 * @return true if and only if it is sensible to use {@code peer} to download the block
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private boolean canDownload(Peer peer, int h, byte[][] ownGroup, boolean[] alreadyTried) throws NodeException {
-			return !unusable.contains(peer) && !alreadyTried[h] && ownGroup.length > h && Arrays.equals(ownGroup[h], chosenGroup[h])
-					&& !containsBlock(txn, chosenGroup[h]) && blocks.get(h) == null;
-		}
-	
-		/**
-		 * Tries to download the block with the {@code h}th hash in {@link #chosenGroup}, from the given peer.
-		 * 
-		 * @param peer the peer
-		 * @param h the height of the hash
-		 * @throws InterruptedException if the executed was interrupted
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private void tryToDownloadBlockFrom(Peer peer, int h) throws InterruptedException, NodeException, ApplicationTimeoutException {
-			Optional<Block> maybeBlock;
-
-			try {
-				maybeBlock = peers.getBlock(peer, chosenGroup[h]);
-			}
-			catch (PeerException | PeerTimeoutException e) {
-				unusable.add(peer);
-				return;
-			}
-
-			if (maybeBlock.isPresent()) {
-				Block block = maybeBlock.get();
-				if (!Arrays.equals(chosenGroup[h], block.getHash()))
-					// the peer answered with a block with the wrong hash!
-					markAsMisbehaving(peer);
-				else
-					blocksForAbsoluteVerification.add(new BlockPeer(block, peer, h));
-			}
-		}
-	
-		/**
-		 * Adds the {@link #blocks} to the blockchain, stopping at the first missing block
-		 * or at the first block that cannot be verified.
-		 * 
-		 * @return true if and only if no block was missing and all blocks could be
-		 *         successfully verified and added to blockchain; if false, synchronization must stop here
-		 * @throws InterruptedException if the current thread gets interrupted during this method
-		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-		 * @throws NodeException if the node is misbehaving
-		 */
-		private boolean addBlocksToBlockchain() throws InterruptedException, ApplicationTimeoutException, NodeException {
-			for (int h = 0; h < chosenGroup.length; h++) {
-				stopIfInterrupted();
-	
-				if (!containsBlock(txn, chosenGroup[h])) {
-					Block block = blocks.get(h);
-					if (block == null)
-						return false;
-	
-					stopIfInterrupted();
-	
-					// we only perform the relative checks, since the absolute ones have been performed while downloading the blocks
-					try {
-						blockAdder.add(block, true, Mode.RELATIVE);
-					}
-					catch (VerificationException e) {
-						LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
-						markAsMisbehaving(downloaders.get(block));
-						return false;
-					}
-				}
-			}
-	
-			return true;
-		}
-	
-		/**
-		 * Puts in the {@link #unusable} set all peers that downloaded a group
-		 * different from {@link #chosenGroup}: in any case, their subsequent groups are
-		 * a less reliable history and won't be downloaded.
-		 * 
-		 * @throws InterruptedException if the current thread gets interrupted
-		 */
-		private void keepOnlyPeersAgreeingOnTheChosenGroup() throws InterruptedException {
-			stopIfInterrupted();
-			for (var entry: groups.entrySet())
-				if (!Arrays.deepEquals(chosenGroup, entry.getValue()))
-					unusable.add(entry.getKey());
-		}
-
-		private class AbsoluteVerifier implements Runnable {
-
-			private AbsoluteVerifier() {
-			}
-
-			@Override
-			public void run() {
-				try {
-					while (true) {
-						BlockPeer bp = blocksForAbsoluteVerification.take();
-						if (bp.block == null) // deadly pill
-							return;
-
-						try {
-							try {
-								// we can only perform an absolute verification, since the previous blocks might not be available yet:
-								// later (when adding the block to the blockchain) we will perform the verification relative to the previous block;
-								// the advantage of performing this partial check here is that we exploit the available
-								// multicores for the heavy absolute checks about the validity of the deadline of the blocks
-								new BlockVerification(null, node, bp.block, Optional.empty(), Mode.ABSOLUTE);
-							}
-							catch (VerificationException e) {
-								LOGGER.log(Level.SEVERE, "sync: verification of block " + bp.block.getHexHash() + " failed: " + e.getMessage());
-								markAsMisbehaving(bp.peer);
-								return;
-							}
-							catch (ApplicationTimeoutException e) {
-								return;
-							}
-						}
-						catch (NodeException e) {
-							throw new RuntimeException(e);
-						}
-
-						blocks.set(bp.h, bp.block);
-						downloaders.put(bp.block, bp.peer);
-					}
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			}
-		}
-	}
-
 	/**
 	 * The algorithm for rebasing a mempool at a given, new base.
 	 */
@@ -1687,10 +1175,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private boolean add(Block block, boolean verify) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+	// TODO: JavaDoc
+	public boolean add(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 		BlockAdder adder;
 
-		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verify, Mode.COMPLETE);
+		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verification);
 
 		try (var scope = mkScope()) {
 			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
