@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -248,36 +249,31 @@ public class Synchronization {
 			this.height = startingHeight;
 		}
 
-		private void ban() throws NodeException {
-			terminated = true;
-			peers.ban(peer);
-		}
-
 		private void run() {
 			try {
 				try {
 					Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
-
+		
 					while (!terminated) {
 						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(getHeight(), lastHashOfPreviousGroup);
 						byte[][] hashes;
-
+		
 						if (maybeHashes.isEmpty() || (hashes = maybeHashes.get()).length == 0)
 							break;
-
+		
 						if (!downloadNextGroupOfBlocks(hashes))
 							return;
-
+		
 						if (hashes.length < synchronizationGroupSize + 1) // if the group of hashes was not full, we stop
 							break;
-
+		
 						lastHashOfPreviousGroup = Optional.of(hashes[hashes.length - 1]);
-
+		
 						synchronized (this) {
 							height += synchronizationGroupSize;
 						}
 					}
-
+		
 					LOGGER.warning("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 				}
 				catch (PeerTimeoutException | PeerException e) {
@@ -290,16 +286,38 @@ public class Synchronization {
 				}
 				finally {
 					terminated = true;
-
+		
 					synchronized (blocksToVerify) {
 						blocksToVerify.notifyAll();
 					}
-
+		
 					System.out.println("Stopped downloader for " + peer);
 				}
 			}
 			catch (NodeException | RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: block downloading from " + peer + " stops because the node is misbehaving", e);
+			}
+		}
+
+		private void ban() throws NodeException {
+			terminated = true;
+			peers.ban(peer);
+
+			Set<Block> toRemove = new HashSet<>(blocksAddedToProcessByThis);
+			for (var downloader: downloaders)
+				if (downloader != this)
+					toRemove.removeAll(downloader.blocksAddedToProcessByThis);
+
+			synchronized (blocksDownloadedNotYetProcessed) {
+				blocksDownloadedNotYetProcessed.removeAll(toRemove);
+			}
+
+			synchronized (blocksToVerify) {
+				blocksToVerify.removeAll(toRemove);
+			}
+
+			synchronized (blocksNonContextuallyVerified) {
+				blocksNonContextuallyVerified.removeAll(toRemove);
 			}
 		}
 
@@ -311,8 +329,12 @@ public class Synchronization {
 			var blocks = new Block[hashes.length];
 
 			// in a first iteration, we download blocks only if no other downloader is taking care of them,
-			// in order to allow concurrent downloading from many peers
-			for (int pos = 0; pos < hashes.length; pos++) {
+			// in order to allow concurrent downloading from many peers; the first hash is discarded
+			// for the non-initial group, since it is the same that ended the previous block
+			for (int pos = height == startingHeight ? 0 : 1; pos < hashes.length; pos++) {
+				if (terminated)
+					return false;
+
 				var hash = hashes[pos];
 				var blockHash = Hex.toHexString(hash);
 				if (requestToDownload(blockHash, this) && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
@@ -320,8 +342,10 @@ public class Synchronization {
 			}
 
 			// in a second iteration, we download all blocks that still need to be downloaded
-			for (int pos = 0; pos < hashes.length; pos++)
-				if (blocks[pos] == null) {
+			for (int pos = height == startingHeight ? 0 : 1; pos < hashes.length; pos++) {
+				if (terminated)
+					return false;
+				else if (blocks[pos] == null) {
 					var hash = hashes[pos];
 					String blockHash = Hex.toHexString(hash);
 
@@ -329,6 +353,7 @@ public class Synchronization {
 					if ((blocks[pos] = hashToBlock.get(blockHash)) == null && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
 						return false;
 				}
+			}
 
 			return true;
 		}
@@ -357,7 +382,7 @@ public class Synchronization {
 			}
 			else {
 				// we have no evidence to ban the peer: it might just have been removed or it might have garbage-collected the block
-				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer cannot find the block for a hash the it provided");
+				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer cannot find the block for a hash that it provided");
 				return Optional.empty();
 			}
 		}
@@ -509,21 +534,28 @@ public class Synchronization {
 							}
 						}
 
-						// we only perform the relative checks, since the absolute ones have been performed by the non-contextual verifiers
+						String blockHash = block.getHexHash();
+
 						try {
-							// TODO: we need another method: if previous exists, add with only relative verification
-							blockchain.add(block, Optional.of(Mode.RELATIVE));
-							// stop downloading from the peers that provided the block, since it is orphan: maybe it was
-							// along a secondary path of less power than the current best chain, that has been garbage-collected
-							// TODO
+							// we only perform the relative checks, since the absolute ones have been performed by the non-contextual verifiers
+							if (!blockchain.connect(block, Optional.of(Mode.RELATIVE))) {
+								// if the block could not be connected to the blockchain tree, it either means that
+								// the downloader peer is forging blocks, or that it is providing a very weak history, on a branch that has
+								// been garbage-collected;therefore, banning such a peer looks like the right thing to do
+								LOGGER.warning("sync: block " + blockHash + " could not be connected: I'm banning all peers that provided that block");
+								banDownloadersOf(blockHash);
+							}
 						}
 						catch (VerificationException e) {
-							String blockHash = block.getHexHash();
 							LOGGER.warning("sync: the contextual verification of block " + blockHash + " failed, I'm banning all peers that provided that block: " + e.getMessage());
+							// block verification might fail also if the state of the previous block of "block" has been garbage-collected;
+							// but that means that the peer is providing a very weak history, on a branch that has been garbage-collected;
+							// therefore, banning such a peer looks like the right thing to do
 							banDownloadersOf(blockHash);
 						}
-
-						markAsProcessed(block);
+						finally {
+							markAsProcessed(block);
+						}
 
 						if (block.getDescription().getHeight() % 1000 == 0)
 							System.out.println("sync: the block adder #" + num + " added block at height " + block.getDescription().getHeight());

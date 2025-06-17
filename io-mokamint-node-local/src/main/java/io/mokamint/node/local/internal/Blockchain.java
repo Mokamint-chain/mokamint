@@ -593,7 +593,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 */
-	public boolean addVerified(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
+	boolean addVerified(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
 		try {
 			return add(block, Optional.empty());
 		}
@@ -660,6 +660,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final Set<NonGenesisBlock> blocksToRemoveFromOrphans = new HashSet<>();
 
 		/**
+		 * True if and only if the added block ends being connected to the blockchain (this is true also if
+		 * it was already connected before the addition).
+		 */
+		private boolean connected;
+
+		/**
 		 * Creates a context for the addition of blocks, inside the same database transaction.
 		 * 
 		 * @param txn the database transaction
@@ -684,12 +690,45 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
-			if (containsBlock(txn, hashOfBlockToAdd))
+			if (containsBlock(txn, hashOfBlockToAdd)) {// TODO: return this !
+				connected = true;
 				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
+			}
 
 			Optional<byte[]> initialHeadHash = getHeadHash(txn);
 			addBlockAndConnectOrphans(block, verification);
 			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
+
+			connected |= somethingHasBeenAdded();
+
+			return this;
+		}
+
+		/**
+		 * Adds the given block to the blockchain.
+		 * 
+		 * @param block the block to add
+		 * @param verification the verification mode of the block, if any
+		 * @return this same adder
+		 * @throws NodeException if the node is misbehaving
+		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
+		 * @throws InterruptedException if the current thread is interrupted
+		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+		 */
+		private BlockAdder connect(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+			byte[] hashOfBlockToAdd = block.getHash();
+
+			// optimization check, to avoid repeated verification
+			if (containsBlock(txn, hashOfBlockToAdd)) {
+				connected = true; // TODO: return this !
+				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
+			}
+
+			Optional<byte[]> initialHeadHash = getHeadHash(txn);
+			addBlockAndConnectOrphans(block, verification);
+			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
+
+			connected |= somethingHasBeenAdded();
 
 			return this;
 		}
@@ -724,6 +763,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 */
 		private boolean somethingHasBeenAdded() {
 			return !blocksAdded.isEmpty();
+		}
+
+		/**
+		 * Determines if the node required to add or connect has been actually connected to the blockchain tree by the operation.
+		 * 
+		 * @return true if and only if that condition holds
+		 */
+		private boolean addedBlockHasBeenConnected() {
+			return connected;
 		}
 
 		private void addBlockAndConnectOrphans(Block blockToAdd, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
@@ -1175,7 +1223,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	// TODO: JavaDoc
+	/**
+	 * Adds the given block to this blockchain, possibly connecting existing orphan blocks as well.
+	 * If the previous block does not exist, the block is itself added among the orphan blocks.
+	 * 
+	 * @param block the block to add
+	 * @param verification the kind of verification to perform on the node; if missing, no verification is performed
+	 * @return true if and only if the block has been actually connected; this is false if the node has been added among the orphan blocks
+	 * @throws NodeException if the node is misbehaving
+	 * @throws VerificationException if the required verification fails
+	 * @throws InterruptedException if the current thread gets interrupted while performing the action
+	 * @throws ApplicationTimeoutException if the application is non-responsive
+	 */
 	public boolean add(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
 		BlockAdder adder;
 
@@ -1192,6 +1251,37 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		adder.updateMempool();
 	
 		return adder.somethingHasBeenAdded();
+	}
+
+	/**
+	 * Adds the given block to this blockchain, if its previous block already exists in blockchain
+	 * and its state has not been garbage-collected. This method never adds the block to the orphan blocks,
+	 * but it might connect existing orphan blocks to the added block.
+	 * 
+	 * @param block the block to connect
+	 * @param verification the kind of verification to perform on the node; if missing, no verification is performed
+	 * @return true if and only if the block is now part of the blockchain tree; this is false if the previous block is missing in blockchain
+	 * @throws NodeException if the node is misbehaving
+	 * @throws VerificationException if the required verification fails
+	 * @throws InterruptedException if the current thread gets interrupted while performing the action
+	 * @throws ApplicationTimeoutException if the application is non-responsive
+	 */
+	public boolean connect(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		BlockAdder adder;
+
+		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).connect(block, verification);
+
+		try (var scope = mkScope()) {
+			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
+		}
+		catch (ExodusException e) {
+			throw new DatabaseException(e);
+		}
+	
+		adder.informNode();
+		adder.updateMempool();
+	
+		return adder.addedBlockHasBeenConnected();
 	}
 
 	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws NodeException {
