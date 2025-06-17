@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -69,13 +68,13 @@ public class Synchronization {
 	private final static Logger LOGGER = Logger.getLogger(Synchronization.class.getName());
 
 	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, NodeException {
+		LOGGER.info("sync: started synchronization");
 		this.node = node;
 		this.peers = node.getPeers();
 		this.synchronizationGroupSize = node.getConfig().getSynchronizationGroupSize();
 		this.blockchain = node.getBlockchain();
 		this.executors = executors;
 		this.startingHeight = Math.max(blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), blockchain.getHeightOfHead().orElse(0L) - 1000L);
-		Thread.sleep(20000);
 		this.downloaders = mkBlockDownloaders();
 		this.nonContextualVerifiers = mkNonContextualVerifiers();
 		this.blockAdders = mkBlockAdders();
@@ -83,6 +82,7 @@ public class Synchronization {
 		startNonContextualVerifiers();
 		startBlockDownloaders();
 		waitUntilBlockAddersTerminate();
+		LOGGER.info("sync: stopped synchronization");
 	}
 
 	private void waitUntilBlockAddersTerminate() throws InterruptedException {
@@ -276,9 +276,12 @@ public class Synchronization {
 		
 					LOGGER.warning("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 				}
-				catch (PeerTimeoutException | PeerException e) {
+				catch (PeerException e) {
 					peers.ban(peer);
 					LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is misbehaving: " + e.getMessage());
+				}
+				catch (PeerTimeoutException e) {
+					LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is not answering: " + e.getMessage());
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -290,8 +293,6 @@ public class Synchronization {
 					synchronized (blocksToVerify) {
 						blocksToVerify.notifyAll();
 					}
-		
-					System.out.println("Stopped downloader for " + peer);
 				}
 			}
 			catch (NodeException | RuntimeException e) {
@@ -375,9 +376,6 @@ public class Synchronization {
 				blocks[pos] = block;
 				addToProcess(block, this);
 
-				if ((height + pos) % 1000 == 0)
-					System.out.println("Peer " + peer + " Downloaded block at height " + (height + pos));
-
 				return maybeBlock;
 			}
 			else {
@@ -426,13 +424,8 @@ public class Synchronization {
 		}
 	}
 
-	// TODO: remove at the end
-	private final Set<Block> allVerified = ConcurrentHashMap.newKeySet();
-
 	private class BlockNonContextualVerifier {
-	
 		private final int num;
-
 		private volatile boolean terminated;
 	
 		private BlockNonContextualVerifier(int num) {
@@ -456,9 +449,6 @@ public class Synchronization {
 						block = blocksToVerify.removeFirst();
 					}
 
-					if (!allVerified.add(block))
-						System.out.println("Repeated verification of block at height " + block.getDescription().getHeight());
-
 					try {
 						new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
 	
@@ -466,9 +456,6 @@ public class Synchronization {
 							blocksNonContextuallyVerified.add(block);
 							blocksNonContextuallyVerified.notifyAll();
 						}
-	
-						if (block.getDescription().getHeight() % 4000 == 0)
-							System.out.println("sync: the non-contextual block verifier #" + num + " verified block at height " + block.getDescription().getHeight());
 					}
 					catch (VerificationException e) {
 						markAsProcessed(block);
@@ -496,7 +483,6 @@ public class Synchronization {
 				}
 	
 				LOGGER.info("sync: stopped non-contextual block verifier #" + num);
-				System.out.println("sync: non-contextual block verifier #" + num + " stops");
 			}
 		}
 	}
@@ -557,9 +543,6 @@ public class Synchronization {
 							markAsProcessed(block);
 						}
 
-						if (block.getDescription().getHeight() % 1000 == 0)
-							System.out.println("sync: the block adder #" + num + " added block at height " + block.getDescription().getHeight());
-
 						// a new block has been processed: we wake up anybody was waiting
 						// for an increase of the height that can be processed
 						synchronized (blocksNonContextuallyVerified) {
@@ -576,12 +559,11 @@ public class Synchronization {
 				}
 				finally {
 					LOGGER.info("sync: stopped block adder #" + num);
-					System.out.println("sync: block adder #" + num + " stops");
 					blockAddersHaveTerminated.release();
 				}
 			}
-			catch (NodeException e) {
-				throw new RuntimeException(e);
+			catch (NodeException | RuntimeException e) {
+				LOGGER.log(Level.SEVERE, "sync: block adder #" + num + " stops because the node is misbehaving", e);
 			}
 		}
 	}

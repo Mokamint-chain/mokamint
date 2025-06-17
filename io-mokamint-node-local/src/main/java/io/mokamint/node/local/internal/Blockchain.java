@@ -612,12 +612,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 */
 	public void synchronize() throws InterruptedException, ApplicationTimeoutException, NodeException {
 		try {
-			System.out.println("Starting synchronization");
 			new Synchronization(node, executors);
 		}
 		finally {
 			node.onSynchronizationCompleted();
-			System.out.println("Ended synchronization");
 		}
 	}
 

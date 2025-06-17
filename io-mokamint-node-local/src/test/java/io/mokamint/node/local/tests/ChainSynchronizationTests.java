@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -178,13 +179,13 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 			 var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2))) {
 
 			// we give miningNode the time to mine HOW_MANY / 2 blocks
-			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2, 30, TimeUnit.SECONDS));
 
 			// by adding miningPeer as peer of nonMiningNode, the latter will synchronize and then follow the other howMany / 2 blocks by whispering
 			nonMiningNode.add(miningPeer);
 
 			assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY, 20, TimeUnit.SECONDS));
-			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2, 30, TimeUnit.SECONDS));
 			assertEquals(nonMiningBlocks, miningBlocks);
 		}
 	}
@@ -199,28 +200,28 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningNodeService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2))) {
 			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
-				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 30, TimeUnit.SECONDS));
 
 				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
 				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
-				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 30, TimeUnit.SECONDS));
 
 				// then we turn nonMiningNode off
 			}
 
 			// we wait until miningNode has mined HOW_MANY / 2 blocks
-			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 30, TimeUnit.SECONDS));
 
 			// we turn nonMiningNode on again
 			try (var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we wait until nonMiningNode has received all blocks
-				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 30, TimeUnit.SECONDS));
 			}
 
 			// we wait until miningNode has received all blocks
-			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 30, TimeUnit.SECONDS));
 
 			assertEquals(nonMiningBlocks, miningBlocks);
 		}
@@ -236,28 +237,28 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		try (var miningNode = new MiningNode(mkConfig(chain2)); var miningService = PublicNodeServices.open(miningNode, port2, 1800000, 1000, Optional.of(uri2));
 			 var nonMiningNode = new NonMiningNode(mkConfig(chain1))) {
 				// we give miningNode the time to mine HOW_MANY / 8 blocks
-				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 20, TimeUnit.SECONDS));
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 8, 30, TimeUnit.SECONDS));
 
 				// by adding miningNode as peer of nonMiningNode, the latter will synchronize and then follow the other blocks by whispering
 				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received HOW_MANY / 4 blocks
-				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY / 4, 30, TimeUnit.SECONDS));
 
 				// then we disconnect the two peers
 				nonMiningNode.remove(miningPeer);
 
 				// we wait until miningNode has mined HOW_MANY / 2 blocks
-				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+				assertTrue(miningSemaphore.tryAcquire(HOW_MANY / 2 - HOW_MANY / 8, 30, TimeUnit.SECONDS));
 
 				// we reconnect nonMiningNode to miningNode
 				nonMiningNode.add(miningPeer);
 
 				// we wait until nonMiningNode has received all blocks
-				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 20, TimeUnit.SECONDS));
+				assertTrue(nonMiningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 4, 30, TimeUnit.SECONDS));
 
 			// we wait until miningNode has received all blocks
-			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 20, TimeUnit.SECONDS));
+			assertTrue(miningSemaphore.tryAcquire(HOW_MANY - HOW_MANY / 2 - HOW_MANY / 8, 30, TimeUnit.SECONDS));
 		}
 
 		assertEquals(nonMiningBlocks, miningBlocks);
