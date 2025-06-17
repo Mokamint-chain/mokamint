@@ -46,6 +46,9 @@ public class Synchronization {
 	private final Downloader[] downloaders;
 
 	@GuardedBy("itself")
+	private final SortedSet<Block> blocksDownloadedNotYetProcessed = new TreeSet<>(new BlockComparatorByHeight());
+
+	@GuardedBy("itself")
 	private final SortedSet<Block> blocksToVerify = new TreeSet<>(new BlockComparatorByHeight());
 
 	@GuardedBy("itself")
@@ -55,8 +58,6 @@ public class Synchronization {
 	private final int synchronizationGroupSize;
 	private final Blockchain blockchain;
 	private final ExecutorService executors;
-	private final Semaphore downloadersHaveTerminated = new Semaphore(0);
-	private final Semaphore nonContextualVerifiersHaveTerminated = new Semaphore(0);
 	private final Semaphore blockAddersHaveTerminated = new Semaphore(0);
 	private final long startingHeight;
 	private final BlockNonContextualVerifier[] nonContextualVerifiers;
@@ -124,7 +125,8 @@ public class Synchronization {
 		return adders;
 	}
 
-	private boolean requestToDownload(BlockHash blockHash, Downloader downloader) {
+	// synchronization is needed to avoid assigning the same block to download twice
+	private synchronized boolean requestToDownload(BlockHash blockHash, Downloader downloader) {
 		for (Downloader other: downloaders)
 			if (other.blocksRequestedByThis.contains(blockHash)) {
 				downloader.blocksRequestedByThis.add(blockHash);
@@ -141,26 +143,39 @@ public class Synchronization {
 	 * this avoid the explosion of their containers.
 	 */
 	private void cleanUpDownloaders() {
-		long minHeight = Long.MAX_VALUE;
-		for (var downloader: downloaders)
-			if (!downloader.terminated)
-				minHeight = Math.min(minHeight, downloader.height);
+		long minHeight = minimalHeightStillToProcess();
 
-		for (var entry: hashToBlock.entrySet())
-			if (entry.getValue().getDescription().getHeight() < minHeight) {
+		for (var entry: hashToBlock.entrySet()) {
+			Block block = entry.getValue();
+
+			if (block.getDescription().getHeight() < minHeight) {
 				BlockHash blockHash = entry.getKey();
 				hashToBlock.remove(blockHash);
 
-				for (var downloader: downloaders)
-					if (!downloader.terminated)
-						downloader.blocksRequestedByThis.remove(blockHash);
+				for (var downloader: downloaders) {
+					downloader.blocksAddedToProcessByThis.remove(block);
+					downloader.blocksRequestedByThis.remove(blockHash);
+				}
 			}
+		}
 
-		int requested = 0;
-		for (var downloader: downloaders)
-			requested += downloader.blocksRequestedByThis.size();
+		printCount();
+	}
 
-		System.out.println(hashToBlock.size() + ", " + requested);
+	/**
+	 * Removes downloading data that refer to old blocks, that won't be needed anymore:
+	 * this avoid the explosion of their containers.
+	 */
+	private void printCount() {
+		long minHeight = minimalHeightStillToProcess();
+
+		int size = hashToBlock.size();
+		for (var downloader: downloaders) {
+			size += downloader.blocksRequestedByThis.size();
+			size += downloader.blocksAddedToProcessByThis.size();
+		}
+
+		System.out.println(size + "[>=" + minHeight + "]");
 	}
 
 	private boolean allDownloadersHaveTerminated() {
@@ -171,7 +186,53 @@ public class Synchronization {
 		return true;
 	}
 
-	@GuardedBy("this.blocksNonContextuallyVerified")
+	private void addToProcess(Block block, Downloader downloader) throws InterruptedException {
+		downloader.queueHasSpace.acquire();
+		downloader.blocksAddedToProcessByThis.add(block);
+
+		synchronized (blocksDownloadedNotYetProcessed) {
+			blocksDownloadedNotYetProcessed.add(block);
+		}
+
+		synchronized (blocksToVerify) {
+			blocksToVerify.add(block);
+			blocksToVerify.notifyAll();
+		}
+	}
+
+	@GuardedBy("this.blocksDownloadedNotYetProcessed")
+	private int processingCounter;
+
+	private void markAsProcessed(Block block) {
+		boolean cleanUp;
+
+		synchronized (blocksDownloadedNotYetProcessed) {
+			blocksDownloadedNotYetProcessed.remove(block);
+			cleanUp = ++processingCounter % 1000 == 0;
+		}
+
+		for (var downloader: downloaders)
+			if (downloader.blocksAddedToProcessByThis.contains(block))
+				downloader.queueHasSpace.release();
+
+		if (cleanUp)
+			cleanUpDownloaders();
+	}
+
+	private long minimalHeightStillToProcess() {
+		long result = Long.MAX_VALUE;
+		for (var downloader: downloaders)
+			if (!downloader.terminated)
+				result = Math.min(result, downloader.getHeight());
+
+		synchronized (blocksDownloadedNotYetProcessed) {
+			if (!blocksDownloadedNotYetProcessed.isEmpty())
+				result = Math.min(result, blocksDownloadedNotYetProcessed.first().getDescription().getHeight());
+		}
+
+		return result;
+	}
+
 	private boolean allNonContextualVerifiersHaveTerminated() {
 		for (BlockNonContextualVerifier verifier: nonContextualVerifiers)
 			if (!verifier.terminated)
@@ -183,18 +244,18 @@ public class Synchronization {
 	private class Downloader {
 		private final Peer peer;
 
-		@GuardedBy("Synchronization.this.blocksToVerify")
-		private boolean terminated;
+		private volatile boolean terminated;
 
 		@GuardedBy("this")
 		private long height;
 
 		private final Set<BlockHash> blocksRequestedByThis = ConcurrentHashMap.newKeySet();
+		private final Set<Block> blocksAddedToProcessByThis = ConcurrentHashMap.newKeySet();
+		private final Semaphore queueHasSpace = new Semaphore(synchronizationGroupSize * 2);
 
 		private Downloader(Peer peer) {
 			this.peer = peer;
 			this.height = startingHeight;
-			System.out.println("Started downloader for " + peer);
 		}
 
 		private void run() {
@@ -203,16 +264,13 @@ public class Synchronization {
 					Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
 
 					while (true) {
-						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(height, lastHashOfPreviousGroup);
+						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(getHeight(), lastHashOfPreviousGroup);
 						byte[][] hashes;
 
 						if (maybeHashes.isEmpty() || (hashes = maybeHashes.get()).length == 0)
 							break;
 
-						cleanUpDownloaders();
-
-						Optional<Block[]> blocks = downloadNextGroupOfBlocks(hashes);
-						if (blocks.isEmpty())
+						if (!downloadNextGroupOfBlocks(hashes))
 							return;
 
 						if (hashes.length < synchronizationGroupSize + 1) // if the group of hashes was not full, we stop
@@ -226,7 +284,6 @@ public class Synchronization {
 					}
 
 					LOGGER.warning("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
-					System.out.println("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 				}
 				catch (PeerTimeoutException | PeerException e) {
 					peers.ban(peer);
@@ -237,13 +294,13 @@ public class Synchronization {
 					LOGGER.warning("sync: block downloading from " + peer + " has been interrupted");
 				}
 				finally {
+					terminated = true;
+
 					synchronized (blocksToVerify) {
-						terminated = true;
 						blocksToVerify.notifyAll();
 					}
 
 					System.out.println("Stopped downloader for " + peer);
-					downloadersHaveTerminated.release();
 				}
 			}
 			catch (NodeException | RuntimeException e) {
@@ -255,7 +312,7 @@ public class Synchronization {
 			return height;
 		}
 
-		private Optional<Block[]> downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
+		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
 			var blocks = new Block[hashes.length];
 
 			// in a first iteration, we download blocks only if no other downloader is taking care of them,
@@ -264,7 +321,7 @@ public class Synchronization {
 				var hash = hashes[pos];
 				var blockHash = new BlockHash(hash);
 				if (requestToDownload(blockHash, this) && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
-					return Optional.empty();
+					return false;
 			}
 
 			// in a second iteration, we download all blocks that still need to be downloaded
@@ -275,10 +332,10 @@ public class Synchronization {
 
 					// we check if somebody else managed to download this block in the meanwhile
 					if ((blocks[pos] = hashToBlock.get(blockHash)) == null && downloadBlock(blocks, pos, hash, blockHash).isEmpty())
-						return Optional.empty();
+						return false;
 				}
 
-			return Optional.of(blocks);
+			return true;
 		}
 
 		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, BlockHash blockHash) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
@@ -296,11 +353,7 @@ public class Synchronization {
 
 				hashToBlock.put(blockHash, block);
 				blocks[pos] = block;
-
-				synchronized (blocksToVerify) {
-					blocksToVerify.add(block);
-					blocksToVerify.notifyAll();
-				}
+				addToProcess(block, this);
 
 				if ((height + pos) % 1000 == 0)
 					System.out.println("Peer " + peer + " Downloaded block at height " + (height + pos));
@@ -353,14 +406,14 @@ public class Synchronization {
 		}
 	}
 
+	// TODO: remove at the end
+	private final Set<Block> allVerified = ConcurrentHashMap.newKeySet();
+
 	private class BlockNonContextualVerifier {
 	
 		private final int num;
 
-		@GuardedBy("this")
-		private Block block;
-
-		private boolean terminated;
+		private volatile boolean terminated;
 	
 		private BlockNonContextualVerifier(int num) {
 			this.num = num;
@@ -369,6 +422,8 @@ public class Synchronization {
 		private void run() {
 			try {
 				while (true) {
+					Block block;
+
 					synchronized (blocksToVerify) {
 						while (blocksToVerify.isEmpty() && !allDownloadersHaveTerminated())
 							blocksToVerify.wait();
@@ -378,11 +433,12 @@ public class Synchronization {
 							return;
 						}
 	
-						synchronized (this) {
-							block = blocksToVerify.removeFirst();
-						}
+						block = blocksToVerify.removeFirst();
 					}
-	
+
+					if (!allVerified.add(block))
+						System.out.println("Repeated verification of block at height " + block.getDescription().getHeight());
+
 					try {
 						new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
 	
@@ -395,13 +451,9 @@ public class Synchronization {
 							System.out.println("sync: the non-contextual block verifier #" + num + " verified block at height " + block.getDescription().getHeight());
 					}
 					catch (VerificationException e) {
+						markAsProcessed(block);
 						LOGGER.warning("sync: the non-contextual verification of block " + block.getHexHash() + " failed: banning all peers that provided this block");
-						// all downloaders that requested this block must be stopped
-					}
-					finally {
-						synchronized (this) {
-							block = null;
-						}
+						// TODO: all downloaders that requested this block must be stopped
 					}
 				}
 			}
@@ -416,29 +468,20 @@ public class Synchronization {
 				LOGGER.log(Level.SEVERE, "sync: the non-contextual block verifier #" + num + " stops since the node is misbehaving", e);
 			}
 			finally {
+				terminated = true;
+
 				synchronized (blocksNonContextuallyVerified) {
-					terminated = true;
 					blocksNonContextuallyVerified.notifyAll();
 				}
 	
 				LOGGER.info("sync: stopped the non-contextual block verifier #" + num);
 				System.out.println("sync: the non-contextual block verifier #" + num + " stops");
-				nonContextualVerifiersHaveTerminated.release();
 			}
-		}
-
-		private synchronized Block getBlock() {
-			return block;
 		}
 	}
 
 	private class BlockAdder {
 		private final int num;
-
-		@GuardedBy("this")
-		private Block block;
-
-		private volatile boolean terminated;
 
 		private BlockAdder(int num) {
 			this.num = num;
@@ -448,6 +491,8 @@ public class Synchronization {
 			try {
 				try {
 					while (true) {
+						Block block;
+
 						synchronized (blocksNonContextuallyVerified) {
 							while (blocksNonContextuallyVerified.isEmpty() && !allNonContextualVerifiersHaveTerminated())
 								blocksNonContextuallyVerified.wait();
@@ -457,16 +502,11 @@ public class Synchronization {
 								return;
 							}
 
-							long firstHeight = blocksNonContextuallyVerified.first().getDescription().getHeight();
 							// we guarantee that all blocks with a smaller height than the first block in the queue
 							// have already been verified; this ensures that the previous block has been already added in
 							// blockchain, or has been rejected because it does not verify
-
-							if (allBlocksWithSmallerOrSameHeightHaveAlreadyBeenRejectedOrAdded(firstHeight)) {
-								synchronized (this) {
-									block = blocksNonContextuallyVerified.removeFirst();
-								}
-							}
+							if (blocksNonContextuallyVerified.first().getDescription().getHeight() <= minimalHeightStillToProcess())
+								block = blocksNonContextuallyVerified.removeFirst();
 							else {
 								blocksNonContextuallyVerified.wait(1000);
 								continue;
@@ -475,23 +515,21 @@ public class Synchronization {
 
 						// we only perform the relative checks, since the absolute ones have been performed by the non-contextual verifiers
 						try {
-							if (!blockchain.add(block, Optional.of(Mode.RELATIVE))) {
-								System.out.println("I downloaded an orphan block!");
-								// stop downloading from the peers that provided the block, since it is orphan: maybe it was
-								// along a secondary path of less power than the current best chain, that has been garbage-collected
-								// TODO
-							}
+							// TODO: we need another method: if previous exists, add with only relative verification
+							blockchain.add(block, Optional.of(Mode.RELATIVE));
+							// stop downloading from the peers that provided the block, since it is orphan: maybe it was
+							// along a secondary path of less power than the current best chain, that has been garbage-collected
+							// TODO
 						}
 						catch (VerificationException e) {
 							LOGGER.log(Level.SEVERE, "sync: verification of block " + block.getHexHash() + " failed: " + e.getMessage());
 							// TODO: ban the peers that downloaded the block
 						}
 
-						System.out.println("sync: the block adder #" + num + " added block at height " + block.getDescription().getHeight());
+						markAsProcessed(block);
 
-						synchronized (this) {
-							block = null;
-						}
+						if (block.getDescription().getHeight() % 1000 == 0)
+							System.out.println("sync: the block adder #" + num + " added block at height " + block.getDescription().getHeight());
 
 						// a new block has been processed: we wake up anybody was waiting
 						// for an increase of the height that can be processed
@@ -508,7 +546,6 @@ public class Synchronization {
 					LOGGER.warning("sync: the block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
 				}
 				finally {
-					terminated = true;
 					LOGGER.info("sync: stopped the block adder #" + num);
 					System.out.println("sync: the block adder #" + num + " stops");
 					blockAddersHaveTerminated.release();
@@ -517,47 +554,6 @@ public class Synchronization {
 			catch (NodeException | RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: the block adder #" + num + " stops since the node is misbehaving", e);
 			}
-		}
-
-		private synchronized Block getBlock() {
-			return block;
-		}
-
-		private boolean allBlocksWithSmallerOrSameHeightHaveAlreadyBeenRejectedOrAdded(long height) {
-			// all downloaders are working from the threshold upwards
-			for (var downloader: downloaders)
-				if (!downloader.terminated && downloader.getHeight() < height)
-					return false;
-
-			// the queue of downloaded blocks are all blocks from the threshold upwards
-			synchronized (blocksToVerify) {
-				if (!blocksToVerify.isEmpty() && blocksToVerify.first().getDescription().getHeight() < height)
-					return false;
-			}
-
-			// the non contextual verifiers are all working on something from the threshold upwards
-			for (var verifier: nonContextualVerifiers)
-				if (!verifier.terminated) {
-					Block block = verifier.getBlock();
-					if (block != null && block.getDescription().getHeight() < height)
-						return false;
-				}
-
-			// the queue of non-contextually-verified blocks are all blocks from the threshold upwards
-			synchronized (blocksNonContextuallyVerified) {
-				if (!blocksNonContextuallyVerified.isEmpty() && blocksNonContextuallyVerified.first().getDescription().getHeight() < height)
-					return false;
-			}
-
-			// the block adders are all working on something from the threshold upwards
-			for (var adder: blockAdders)
-				if (!adder.terminated) {
-					Block block = adder.getBlock();
-					if (block != null && block.getDescription().getHeight() < height)
-						return false;
-				}
-
-			return true;
 		}
 	}
 
