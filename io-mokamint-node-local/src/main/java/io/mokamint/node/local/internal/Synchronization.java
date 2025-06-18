@@ -584,7 +584,7 @@ public class Synchronization {
 							blocksToVerify.wait();
 	
 						if (blocksToVerify.isEmpty()) {
-							LOGGER.info("sync: the non-contextual block verifier #" + num + " stops since there are no more blocks to verify");
+							LOGGER.info("sync: non-contextual block verifier #" + num + " stops since there are no more blocks to verify");
 							return;
 						}
 	
@@ -592,8 +592,11 @@ public class Synchronization {
 					}
 
 					try {
-						// we only perform non-contextual verification
-						new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
+						if (!blockchain.containsBlock(block.getHash()))
+							// we only perform non-contextual verification and only if the block was not already in blockchain,
+							// since in that case it must have been verified already; the block might already be in blockchain
+							// if the node is resuming its execution and synchronizing from the last blocks
+							new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
 	
 						synchronized (blocksPartiallyVerified) {
 							blocksPartiallyVerified.add(block);
@@ -603,20 +606,20 @@ public class Synchronization {
 					catch (VerificationException e) {
 						markAsProcessed(block);
 						String blockHash = block.getHexHash();
-						LOGGER.warning("sync: the non-contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
+						LOGGER.warning("sync: non-contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
 						banDownloadersOf(blockHash);
 					}
 				}
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				LOGGER.warning("sync: the non-contextual block verifier #" + num + " has been interrupted");
+				LOGGER.warning("sync: non-contextual block verifier #" + num + " has been interrupted");
 			}
 			catch (ApplicationTimeoutException e) {
-				LOGGER.warning("sync: the non-contextual block verifier #" + num + " stops since the application is misbehaving: " + e.getMessage());
+				LOGGER.warning("sync: non-contextual block verifier #" + num + " stops since the application is misbehaving: " + e.getMessage());
 			}
 			catch (NodeException | RuntimeException e) {
-				LOGGER.log(Level.SEVERE, "sync: the non-contextual block verifier #" + num + " stops since the node is misbehaving", e);
+				LOGGER.log(Level.SEVERE, "sync: non-contextual block verifier #" + num + " stops since the node is misbehaving", e);
 			}
 			finally {
 				terminated = true;
@@ -651,7 +654,7 @@ public class Synchronization {
 							blocksPartiallyVerified.wait();
 
 						if (blocksPartiallyVerified.isEmpty()) {
-							LOGGER.info("sync: the block adder #" + num + " stops since there are no more blocks to add");
+							LOGGER.info("sync: block adder #" + num + " stops since there are no more blocks to add");
 							return;
 						}
 
@@ -679,7 +682,7 @@ public class Synchronization {
 						}
 					}
 					catch (VerificationException e) {
-						LOGGER.warning("sync: the contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
+						LOGGER.warning("sync: contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
 						// block verification might fail also if the state of the previous block of "block" has been garbage-collected;
 						// but that means that the peer is providing a very weak history, on a branch that has been garbage-collected in this node;
 						// therefore, banning such a peer looks like the right thing to do

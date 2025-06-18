@@ -688,16 +688,17 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
-			if (containsBlock(txn, hashOfBlockToAdd)) {// TODO: return this !
+			if (containsBlock(txn, hashOfBlockToAdd)) {
 				connected = true;
 				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 			}
+			else {
+				Optional<byte[]> initialHeadHash = getHeadHash(txn);
+				addBlockAndConnectOrphans(block, verification);
+				computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
 
-			Optional<byte[]> initialHeadHash = getHeadHash(txn);
-			addBlockAndConnectOrphans(block, verification);
-			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
-
-			connected |= somethingHasBeenAdded();
+				connected |= somethingHasBeenAdded();
+			}
 
 			return this;
 		}
@@ -718,15 +719,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd)) {
-				connected = true; // TODO: return this !
+				connected = true;
 				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 			}
+			else {
+				Optional<byte[]> initialHeadHash = getHeadHash(txn);
+				addBlockAndConnectOrphans(block, verification);
+				computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
 
-			Optional<byte[]> initialHeadHash = getHeadHash(txn);
-			addBlockAndConnectOrphans(block, verification);
-			computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
-
-			connected |= somethingHasBeenAdded();
+				connected |= somethingHasBeenAdded();
+			}
 
 			return this;
 		}

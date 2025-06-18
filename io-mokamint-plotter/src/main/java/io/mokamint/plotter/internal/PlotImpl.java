@@ -30,6 +30,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -49,7 +50,6 @@ import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
-import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.Deadlines;
@@ -379,20 +379,56 @@ public class PlotImpl implements Plot {
 			this.generationSignature = challenge.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
 			this.privateKey = privateKey;
-			FunctionWithExceptions3<Long, Deadline, PlotException, InvalidKeyException, SignatureException> mkDeadline = this::mkDeadline;
-			// TODO: sign deadline only after selecting the best one, since signature generation is expensive
-			this.deadline = CheckSupplier.check(PlotException.class, InvalidKeyException.class, SignatureException.class, () ->
-				LongStream.range(start, start + length)
-						.parallel()
-						.mapToObj(Long::valueOf)
-						.map(UncheckFunction.uncheck(PlotException.class, InvalidKeyException.class, SignatureException.class, mkDeadline))
-						.min(Deadline::compareByValue)
-						.get() // OK, since plots contain at least one nonce
-			);
+
+			// we first determine the progressive that minimizes the value of the deadline
+			// and then compute the deadline with that progressive: this avoids constructing and signing many deadlines,
+			// which is an expensive operation (thanks to YourKit)
+			ProgressiveAndValue best = CheckSupplier.check(PlotException.class, () -> LongStream.range(start, start + length)
+				.parallel()
+				.boxed()
+				.map(UncheckFunction.uncheck(PlotException.class, ProgressiveAndValue::new))
+				.min(ProgressiveAndValue::compareTo)
+				.get());
+
+			this.deadline = mkDeadline(best);
 		}
 
-		private Deadline mkDeadline(long n) throws PlotException, InvalidKeyException, SignatureException {
-			return Deadlines.of(prolog, n, hasher.hash(extractScoopAndConcatData(n - start)), challenge, privateKey);
+		private class ProgressiveAndValue implements Comparable<ProgressiveAndValue> {
+			private final long progressive;
+			private final byte[] value;
+
+			private ProgressiveAndValue(long progressive) throws PlotException {
+				this.progressive = progressive;
+				this.value = hasher.hash(extractScoopAndConcatData(progressive - start));
+			}
+
+			@Override
+			public int compareTo(ProgressiveAndValue other) {
+				byte[] left = value, right = other.value;
+
+				for (int i = 0; i < left.length; i++) {
+					int a = left[i] & 0xff;
+					int b = right[i] & 0xff;
+					if (a != b)
+						return a - b;
+				}
+
+				return 0; // deadlines with the same hashing algorithm have the same length
+			}
+
+			@Override
+			public boolean equals(Object other) {
+				return other instanceof ProgressiveAndValue pav && Arrays.equals(value, pav.value);
+			}
+
+			@Override
+			public int hashCode() {
+				return Arrays.hashCode(value);
+			}
+		}
+
+		private Deadline mkDeadline(ProgressiveAndValue pav) throws InvalidKeyException, SignatureException {
+			return Deadlines.of(prolog, pav.progressive, pav.value, challenge, privateKey);
 		}
 
 		/**

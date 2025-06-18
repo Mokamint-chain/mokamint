@@ -66,9 +66,11 @@ public class MiningTask implements Task {
 	 * Called when mining should be interrupted and restarted from the current head of the blockchain.
 	 */
 	public void restartFromCurrentHead() {
-		var blockMiner = this.blockMiner;
-		if (blockMiner != null)
-			blockMiner.interrupt();
+		if (!node.isSynchronizing()) {
+			var blockMiner = this.blockMiner;
+			if (blockMiner != null)
+				blockMiner.interrupt();
+		}
 	}
 
 	/**
