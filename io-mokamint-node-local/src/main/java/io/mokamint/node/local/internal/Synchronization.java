@@ -27,8 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
@@ -42,38 +44,110 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 
+/**
+ * The synchronization algorithm of the blockchain. It consists in a pipeline
+ * with three stages: blocks are first downloaded from the peers, then undergo
+ * partial (non-contextual) verification and finally undergo contextual verification
+ * and addition to blockchain, if they pass that verification.
+ */
 public class Synchronization {
+
+	/**
+	 * The node whose blockchain is getting synchronized.
+	 */
 	private final LocalNodeImpl node;
+
+	/**
+	 * The peers of {@link #node}.
+	 */
 	private final PeersSet peers;
+
+	/**
+	 * The tasks of the downloading stage of the pipeline.
+	 */
 	private final Downloader[] downloaders;
 
+	/**
+	 * The tasks of the partial verification stage of the pipeline.
+	 */
+	private final BlockNonContextualVerifier[] nonContextualVerifiers;
+
+	/**
+	 * The tasks of the block addition stage of the pipeline.
+	 */
+	private final BlockAdder[] blockAdders;
+
+	/**
+	 * The queue of blocks that have been downloaded but have not been
+	 * completely processed (added or rejected) yet.
+	 */
 	@GuardedBy("itself")
 	private final SortedSet<Block> blocksDownloadedNotYetProcessed = new TreeSet<>(new BlockComparatorByHeight());
 
+	/**
+	 * The queue of blocks that have been downloaded and not yet verified.
+	 */
 	@GuardedBy("itself")
 	private final SortedSet<Block> blocksToVerify = new TreeSet<>(new BlockComparatorByHeight());
 
+	/**
+	 * The queue of blocks that have been downloaded and partially verified, but still
+	 * need to be completely verified and added to blockchain (or rejected).
+	 */
 	@GuardedBy("itself")
-	private final SortedSet<Block> blocksNonContextuallyVerified = new TreeSet<>(new BlockComparatorByHeight());
+	private final SortedSet<Block> blocksPartiallyVerified = new TreeSet<>(new BlockComparatorByHeight());
 
+	/**
+	 * A map from block hash to block with that hash, for the blocks downloaded during synchronization.
+	 */
 	private final ConcurrentMap<String, Block> hashToBlock = new ConcurrentHashMap<>();
+
+	/**
+	 * The size of the groups of block hashes that get downloaded with a single request.
+	 */
 	private final int synchronizationGroupSize;
-	private final Blockchain blockchain;
-	private final ExecutorService executors;
-	private final Semaphore blockAddersHaveTerminated = new Semaphore(0);
+
+	/**
+	 * The block height from where synchronization starts.
+	 */
 	private final long startingHeight;
-	private final BlockNonContextualVerifier[] nonContextualVerifiers;
-	private final BlockAdder[] blockAdders;
+
+	/**
+	 * The blockchain of the {@link #node}.
+	 */
+	private final Blockchain blockchain;
+
+	/**
+	 * The executors to use to spawn new tasks.
+	 */
+	private final ExecutorService executors;
+
+	/**
+	 * A counter of the block adders that have terminated. When they reach
+	 * the total initial amount of block adders, synchronization terminates.
+	 */
+	private final Semaphore blockAddersHaveTerminated = new Semaphore(0);
 
 	private final static Logger LOGGER = Logger.getLogger(Synchronization.class.getName());
 
+	/**
+	 * Performs the synchronization of the blockchain of the given node.
+	 * 
+	 * @param node the node whose blockchain is synchronized
+	 * @param executors the executors to use to spawn new tasks
+	 * @throws InterruptedException if the operation gets interrupted
+	 * @throws NodeException if the node is misbehaving
+	 */
 	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, NodeException {
-		LOGGER.info("sync: started synchronization");
+		LOGGER.info("sync: synchronization starts");
 		this.node = node;
 		this.peers = node.getPeers();
 		this.synchronizationGroupSize = node.getConfig().getSynchronizationGroupSize();
 		this.blockchain = node.getBlockchain();
 		this.executors = executors;
+
+		// if the node has been disconnected, it will have constructed its own branch; as long as this is less than 1000 blocks long,
+		// the subsequent choice allows synchronization upon reconnection, otherwise the node will not be able to synchronize anymore
 		this.startingHeight = Math.max(blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), blockchain.getHeightOfHead().orElse(0L) - 1000L);
 		this.downloaders = mkBlockDownloaders();
 		this.nonContextualVerifiers = mkNonContextualVerifiers();
@@ -82,7 +156,7 @@ public class Synchronization {
 		startNonContextualVerifiers();
 		startBlockDownloaders();
 		waitUntilBlockAddersTerminate();
-		LOGGER.info("sync: stopped synchronization");
+		LOGGER.info("sync: synchronization stops");
 	}
 
 	private void waitUntilBlockAddersTerminate() throws InterruptedException {
@@ -113,23 +187,32 @@ public class Synchronization {
 	}
 
 	private BlockNonContextualVerifier[] mkNonContextualVerifiers() {
-		var verifiers = new BlockNonContextualVerifier[Runtime.getRuntime().availableProcessors() + 1];
-		for (int pos = 0; pos < verifiers.length; pos++)
-			verifiers[pos] = new BlockNonContextualVerifier(pos);
-
-		return verifiers;
+		return IntStream.rangeClosed(0, Runtime.getRuntime().availableProcessors() + 1)
+			.mapToObj(BlockNonContextualVerifier::new)
+			.toArray(BlockNonContextualVerifier[]::new);
 	}
 
 	private BlockAdder[] mkBlockAdders() {
-		var adders = new BlockAdder[Runtime.getRuntime().availableProcessors() + 1];
-		for (int pos = 0; pos < adders.length; pos++)
-			adders[pos] = new BlockAdder(pos);
-
-		return adders;
+		return IntStream.rangeClosed(0, Runtime.getRuntime().availableProcessors() + 1)
+			.mapToObj(BlockAdder::new)
+			.toArray(BlockAdder[]::new);
 	}
 
-	// synchronization is needed to avoid assigning the same block to download twice
+	/**
+	 * Takes node that the given downloader wants to download a given block.
+	 * It takes node of that request, so that the peer of the downloader can
+	 * later be banned if the block turns out to be illegal.
+	 * 
+	 * @param blockHash the hash of the block requested to download
+	 * @param downloader the downloader that requests to download the block
+	 * @return true if and only if some downloader already requested
+	 *         to download that block; this can be checked to avoid downloading
+	 *         the same block with the same downloader; instead, if the result is true
+	 *         it is better to use the downloader to download some other block
+	 */
 	private synchronized boolean requestToDownload(String blockHash, Downloader downloader) {
+		// synchronization of this method is needed to avoid assigning the same block to download twice
+
 		for (Downloader other: downloaders)
 			if (other.blocksRequestedByThis.contains(blockHash)) {
 				downloader.blocksRequestedByThis.add(blockHash);
@@ -137,7 +220,6 @@ public class Synchronization {
 			}
 
 		downloader.blocksRequestedByThis.add(blockHash);
-
 		return true;
 	}
 
@@ -171,6 +253,13 @@ public class Synchronization {
 		return true;
 	}
 
+	/**
+	 * Takes note that the given block must be added to those to process.
+	 * 
+	 * @param block the block
+	 * @param downloader the downloader of the block
+	 * @throws InterruptedException if the operation gets interrupted
+	 */
 	private void addToProcess(Block block, Downloader downloader) throws InterruptedException {
 		downloader.queueHasSpace.acquire();
 		downloader.blocksAddedToProcessByThis.add(block);
@@ -185,31 +274,41 @@ public class Synchronization {
 		}
 	}
 
-	@GuardedBy("this.blocksDownloadedNotYetProcessed")
-	private int processingCounter;
+	/**
+	 * A counter of the times {@link #markAsProcessed(Block)} gets called.
+	 */
+	private final AtomicInteger processingCounter = new AtomicInteger();
 
 	private void markAsProcessed(Block block) {
-		boolean cleanUp;
-
 		synchronized (blocksDownloadedNotYetProcessed) {
 			blocksDownloadedNotYetProcessed.remove(block);
-			cleanUp = ++processingCounter % 1000 == 0;
 		}
 
 		for (var downloader: downloaders)
 			if (downloader.blocksAddedToProcessByThis.contains(block))
 				downloader.queueHasSpace.release();
 
-		if (cleanUp)
+		// every 1000 removals, we clean-up of the data structures used for downloading,
+		// by removing elements that won't be needed anymore
+		if (processingCounter.incrementAndGet() % 1000 == 0)
 			cleanUpDownloaders();
 	}
 
+	/**
+	 * Yields a lower bound of the height of blocks that have been downloaded but have not been completely
+	 * processed yet (added to blockchain or rejected).
+	 * 
+	 * @return the lower bound
+	 */
 	private long minimalHeightStillToProcess() {
 		long result = Long.MAX_VALUE;
+
+		// first we use the thresholds of the downloaders
 		for (var downloader: downloaders)
 			if (!downloader.terminated)
 				result = Math.min(result, downloader.getHeight());
 
+		// then we consider that some block might still be in the pipeline
 		synchronized (blocksDownloadedNotYetProcessed) {
 			if (!blocksDownloadedNotYetProcessed.isEmpty())
 				result = Math.min(result, blocksDownloadedNotYetProcessed.first().getDescription().getHeight());
@@ -226,13 +325,26 @@ public class Synchronization {
 		return true;
 	}
 
+	/**
+	 * Takes note that a block was illegal and consequently who requested to download that block must be banned.
+	 * 
+	 * @param blockHash the hash of the illegal block
+	 * @throws NodeException if the node is misbehaving
+	 */
 	private void banDownloadersOf(String blockHash) throws NodeException {
 		for (var downloader: downloaders)
 			if (!downloader.terminated && downloader.blocksRequestedByThis.contains(blockHash))
-				downloader.ban();
+				downloader.banOnIllegalBlock();
 	}
 
+	/**
+	 * A block downloader task, implementing the first stage of the pipeline.
+	 */
 	private class Downloader {
+
+		/**
+		 * The peer used by this downloader to download blocks.
+		 */
 		private final Peer peer;
 
 		private volatile boolean terminated;
@@ -242,6 +354,12 @@ public class Synchronization {
 
 		private final Set<String> blocksRequestedByThis = ConcurrentHashMap.newKeySet();
 		private final Set<Block> blocksAddedToProcessByThis = ConcurrentHashMap.newKeySet();
+
+		/**
+		 * This limits the number of blocks that this downloader has loaded but have not been
+		 * fully processed yet (added to blockchain or rejected): the goal is to avoid
+		 * the explosion of the queues.
+		 */
 		private final Semaphore queueHasSpace = new Semaphore(synchronizationGroupSize * 2);
 
 		private Downloader(Peer peer) {
@@ -255,7 +373,7 @@ public class Synchronization {
 					Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
 		
 					while (!terminated) {
-						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(getHeight(), lastHashOfPreviousGroup);
+						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(lastHashOfPreviousGroup);
 						byte[][] hashes;
 		
 						if (maybeHashes.isEmpty() || (hashes = maybeHashes.get()).length == 0)
@@ -274,7 +392,7 @@ public class Synchronization {
 						}
 					}
 		
-					LOGGER.warning("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
+					LOGGER.info("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 				}
 				catch (PeerException e) {
 					peers.ban(peer);
@@ -289,7 +407,9 @@ public class Synchronization {
 				}
 				finally {
 					terminated = true;
-		
+
+					// if some block verifier was waiting for blocks to verify, we signal that we terminated
+					// because it might decide to terminate as well
 					synchronized (blocksToVerify) {
 						blocksToVerify.notifyAll();
 					}
@@ -300,10 +420,18 @@ public class Synchronization {
 			}
 		}
 
-		private void ban() throws NodeException {
+		/**
+		 * Bans the peer used by this downloader, because it downloaded an illegal block.
+		 * It removes all blocks downloaded by this downloader but not yet processed.
+		 * 
+		 * @throws NodeException if the node is misbehaving
+		 */
+		private void banOnIllegalBlock() throws NodeException {
 			terminated = true;
 			peers.ban(peer);
 
+			// the blocks downloaded by this downloader will be illegal, hence
+			// it's more efficient to remove them from those added to process by the other peers
 			Set<Block> toRemove = new HashSet<>(blocksAddedToProcessByThis);
 			for (var downloader: downloaders)
 				if (downloader != this)
@@ -317,8 +445,8 @@ public class Synchronization {
 				blocksToVerify.removeAll(toRemove);
 			}
 
-			synchronized (blocksNonContextuallyVerified) {
-				blocksNonContextuallyVerified.removeAll(toRemove);
+			synchronized (blocksPartiallyVerified) {
+				blocksPartiallyVerified.removeAll(toRemove);
 			}
 		}
 
@@ -326,6 +454,16 @@ public class Synchronization {
 			return height;
 		}
 
+		/**
+		 * Downloads the next group of blocks.
+		 * 
+		 * @param hashes the hashes of the blocks to download
+		 * @return true if and only if all blocks could have been downloaded
+		 * @throws InterruptedException if the current thread gets interrupted
+		 * @throws NodeException if the node is misbehaving
+		 * @throws PeerException if the peer is misbehaving
+		 * @throws PeerTimeoutException if the peer does not answer on time
+		 */
 		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
 			var blocks = new Block[hashes.length];
 
@@ -386,15 +524,16 @@ public class Synchronization {
 		}
 
 		/**
-		 * Download, into the {@link #groups} map, the next group of hashes with the given peer.
+		 * Download the next group of hashes.
 		 * 
-		 * @param peer the peer
 		 * @throws InterruptedException if the execution has been interrupted
 		 * @throws NodeException if the node is misbehaving
+		 * @throws PeerTimeoutException if the peer does not answer on time
+		 * @throws PeerException if the peer is misbehaving
 		 */
-		private Optional<byte[][]> downloadNextGroupOfBlockHashes(long height, Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, PeerException, PeerTimeoutException, NodeException {
+		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, PeerException, PeerTimeoutException, NodeException {
+			long height = getHeight();
 			LOGGER.info("sync: downloading from " + peer + " the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + "]");
-
 			Optional<ChainPortion> maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize + 1);
 
 			if (maybeChain.isPresent()) {
@@ -424,6 +563,9 @@ public class Synchronization {
 		}
 	}
 
+	/**
+	 * A task of the partial verification stage of the pipeline.
+	 */
 	private class BlockNonContextualVerifier {
 		private final int num;
 		private volatile boolean terminated;
@@ -442,7 +584,7 @@ public class Synchronization {
 							blocksToVerify.wait();
 	
 						if (blocksToVerify.isEmpty()) {
-							LOGGER.warning("sync: the non-contextual block verifier #" + num + " stops since there are no more blocks to verify");
+							LOGGER.info("sync: the non-contextual block verifier #" + num + " stops since there are no more blocks to verify");
 							return;
 						}
 	
@@ -450,17 +592,18 @@ public class Synchronization {
 					}
 
 					try {
+						// we only perform non-contextual verification
 						new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
 	
-						synchronized (blocksNonContextuallyVerified) {
-							blocksNonContextuallyVerified.add(block);
-							blocksNonContextuallyVerified.notifyAll();
+						synchronized (blocksPartiallyVerified) {
+							blocksPartiallyVerified.add(block);
+							blocksPartiallyVerified.notifyAll();
 						}
 					}
 					catch (VerificationException e) {
 						markAsProcessed(block);
 						String blockHash = block.getHexHash();
-						LOGGER.warning("sync: the non-contextual verification of block " + blockHash + " failed, I'm banning all peers that provided that block: " + e.getMessage());
+						LOGGER.warning("sync: the non-contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
 						banDownloadersOf(blockHash);
 					}
 				}
@@ -478,8 +621,9 @@ public class Synchronization {
 			finally {
 				terminated = true;
 
-				synchronized (blocksNonContextuallyVerified) {
-					blocksNonContextuallyVerified.notifyAll();
+				// we notify whose was waiting for blocks to add to blockchain, since it might decide to stop as well
+				synchronized (blocksPartiallyVerified) {
+					blocksPartiallyVerified.notifyAll();
 				}
 	
 				LOGGER.info("sync: stopped non-contextual block verifier #" + num);
@@ -487,6 +631,9 @@ public class Synchronization {
 		}
 	}
 
+	/**
+	 * A task of the block adding stage of the pipeline.
+	 */
 	private class BlockAdder {
 		private final int num;
 
@@ -496,74 +643,71 @@ public class Synchronization {
 
 		private void run() {
 			try {
-				try {
-					while (true) {
-						Block block;
+				while (true) {
+					Block block;
 
-						synchronized (blocksNonContextuallyVerified) {
-							while (blocksNonContextuallyVerified.isEmpty() && !allNonContextualVerifiersHaveTerminated())
-								blocksNonContextuallyVerified.wait();
+					synchronized (blocksPartiallyVerified) {
+						while (blocksPartiallyVerified.isEmpty() && !allNonContextualVerifiersHaveTerminated())
+							blocksPartiallyVerified.wait();
 
-							if (blocksNonContextuallyVerified.isEmpty()) {
-								LOGGER.info("sync: the block adder #" + num + " stops since there are no more blocks to add");
-								return;
-							}
-
-							// we guarantee that all blocks with a smaller height than the first block in the queue
-							// have already been verified; this ensures that the previous block has been already added in
-							// blockchain, or has been rejected because it does not verify
-							if (blocksNonContextuallyVerified.first().getDescription().getHeight() <= minimalHeightStillToProcess())
-								block = blocksNonContextuallyVerified.removeFirst();
-							else {
-								blocksNonContextuallyVerified.wait(1000);
-								continue;
-							}
+						if (blocksPartiallyVerified.isEmpty()) {
+							LOGGER.info("sync: the block adder #" + num + " stops since there are no more blocks to add");
+							return;
 						}
 
-						String blockHash = block.getHexHash();
-
-						try {
-							// we only perform the relative checks, since the absolute ones have been performed by the non-contextual verifiers
-							if (!blockchain.connect(block, Optional.of(Mode.RELATIVE))) {
-								// if the block could not be connected to the blockchain tree, it either means that
-								// the downloader peer is forging blocks, or that it is providing a very weak history, on a branch that has
-								// been garbage-collected;therefore, banning such a peer looks like the right thing to do
-								LOGGER.warning("sync: block " + blockHash + " could not be connected: I'm banning all peers that provided that block");
-								banDownloadersOf(blockHash);
-							}
-						}
-						catch (VerificationException e) {
-							LOGGER.warning("sync: the contextual verification of block " + blockHash + " failed, I'm banning all peers that provided that block: " + e.getMessage());
-							// block verification might fail also if the state of the previous block of "block" has been garbage-collected;
-							// but that means that the peer is providing a very weak history, on a branch that has been garbage-collected;
-							// therefore, banning such a peer looks like the right thing to do
-							banDownloadersOf(blockHash);
-						}
-						finally {
-							markAsProcessed(block);
-						}
-
-						// a new block has been processed: we wake up anybody was waiting
-						// for an increase of the height that can be processed
-						synchronized (blocksNonContextuallyVerified) {
-							blocksNonContextuallyVerified.notifyAll();
+						// we guarantee to process blocks only if all blocks with a smaller height
+						// have already been processed (added to blockchain or rejected)
+						if (blocksPartiallyVerified.first().getDescription().getHeight() <= minimalHeightStillToProcess())
+							block = blocksPartiallyVerified.removeFirst();
+						else {
+							// otherwise we wait some time and then check again if we can proceed
+							blocksPartiallyVerified.wait(100);
+							continue;
 						}
 					}
+
+					String blockHash = block.getHexHash();
+
+					try {
+						// we only perform the relative (contextual) checks, since the absolute ones have been performed by the non-contextual verifiers
+						if (!blockchain.connect(block, Optional.of(Mode.RELATIVE))) {
+							// if the block could not be connected to the blockchain tree, it either means that
+							// the downloader peer is forging blocks, or that it is providing a very weak history, on a branch that has
+							// been garbage-collected in this node; therefore, banning such a peer looks like the right thing to do
+							LOGGER.warning("sync: block " + blockHash + " could not be connected: I'm banning all peers that downloaded that block");
+							banDownloadersOf(blockHash);
+						}
+					}
+					catch (VerificationException e) {
+						LOGGER.warning("sync: the contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
+						// block verification might fail also if the state of the previous block of "block" has been garbage-collected;
+						// but that means that the peer is providing a very weak history, on a branch that has been garbage-collected in this node;
+						// therefore, banning such a peer looks like the right thing to do
+						banDownloadersOf(blockHash);
+					}
+					finally {
+						markAsProcessed(block);
+					}
+
+					// a new block has been processed: we wake up anybody was waiting for an increase of the height that can be processed
+					synchronized (blocksPartiallyVerified) {
+						blocksPartiallyVerified.notifyAll();
+					}
 				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					LOGGER.warning("sync: block adder #" + num + " has been interrupted");
-				}
-				catch (ApplicationTimeoutException e) {
-					LOGGER.warning("sync: block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
-				}
-				finally {
-					LOGGER.info("sync: stopped block adder #" + num);
-					blockAddersHaveTerminated.release();
-				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOGGER.warning("sync: block adder #" + num + " has been interrupted");
+			}
+			catch (ApplicationTimeoutException e) {
+				LOGGER.warning("sync: block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
 			}
 			catch (NodeException | RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: block adder #" + num + " stops because the node is misbehaving", e);
+			}
+			finally {
+				LOGGER.info("sync: stopped block adder #" + num);
+				blockAddersHaveTerminated.release();
 			}
 		}
 	}
