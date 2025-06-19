@@ -187,13 +187,13 @@ public class Synchronization {
 	}
 
 	private BlockNonContextualVerifier[] mkNonContextualVerifiers() {
-		return IntStream.rangeClosed(0, Runtime.getRuntime().availableProcessors() + 1)
+		return IntStream.range(0, 1 + Runtime.getRuntime().availableProcessors() / 2)
 			.mapToObj(BlockNonContextualVerifier::new)
 			.toArray(BlockNonContextualVerifier[]::new);
 	}
 
 	private BlockAdder[] mkBlockAdders() {
-		return IntStream.rangeClosed(0, Runtime.getRuntime().availableProcessors() + 1)
+		return IntStream.range(0, 1 + Runtime.getRuntime().availableProcessors() / 2)
 			.mapToObj(BlockAdder::new)
 			.toArray(BlockAdder[]::new);
 	}
@@ -513,6 +513,8 @@ public class Synchronization {
 				hashToBlock.put(blockHash, block);
 				blocks[pos] = block;
 				addToProcess(block, this);
+				if (block.getDescription().getHeight() % 1000 == 0)
+					System.out.println("downloaded " + block.getDescription().getHeight());
 
 				return maybeBlock;
 			}
@@ -609,6 +611,9 @@ public class Synchronization {
 						LOGGER.warning("sync: non-contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
 						banDownloadersOf(blockHash);
 					}
+
+					if (block.getDescription().getHeight() % 1000 == 0)
+						System.out.println("  verified " + block.getDescription().getHeight());
 				}
 			}
 			catch (InterruptedException e) {
@@ -690,6 +695,9 @@ public class Synchronization {
 					}
 					finally {
 						markAsProcessed(block);
+
+						if (block.getDescription().getHeight() % 1000 == 0)
+							System.out.println("     added " + block.getDescription().getHeight());
 					}
 
 					// a new block has been processed: we wake up anybody was waiting for an increase of the height that can be processed

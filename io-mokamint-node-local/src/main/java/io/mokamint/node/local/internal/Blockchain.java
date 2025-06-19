@@ -720,7 +720,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd)) {
 				connected = true;
-				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
+				LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 			}
 			else {
 				Optional<byte[]> initialHeadHash = getHeadHash(txn);
@@ -873,7 +873,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					return false;
 				}
 				else if (containsBlock(txn, hashOfBlock)) {
-					LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already present in blockchain");
+					LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already present in blockchain");
 					return false;
 				}
 				else {
@@ -882,7 +882,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					if (isBetterThanHead(txn, ngb))
 						setHead(block, hashOfBlock);
 						
-					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
+					LOGGER.fine(() -> "blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
 					return true;
 				}
 			}
@@ -891,7 +891,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					putBlockInStore(txn, hashOfBlock, block);
 					setGenesisHash(txn, hashOfBlock);
 					setHead(block, hashOfBlock);
-					LOGGER.info("blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
+					LOGGER.fine(() -> "blockchain: height " + block.getDescription().getHeight() + ": added block " + block.getHexHash());
 					return true;
 				}
 				else {
@@ -916,7 +916,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				storeOfBlocks.put(txn, POWER_OF_HEAD, fromBytes(newHead.getDescription().getPower().toByteArray()));
 				long heightOfHead = newHead.getDescription().getHeight();
 				storeOfBlocks.put(txn, HEIGHT_OF_HEAD, fromBytes(longToBytes(heightOfHead)));
-				LOGGER.info("blockchain: height " + heightOfHead + ": block " + newHead.getHexHash() + " set as head");
+				LOGGER.info(() -> "blockchain: height " + heightOfHead + ": block " + newHead.getHexHash() + " set as head");
 			}
 			catch (ExodusException e) {
 				throw new DatabaseException(e);
@@ -1303,7 +1303,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	private Store openStore(String name) throws NodeException {
 		try {
-			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicates(name, txn));
+			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicatesWithPrefixing(name, txn));
 			LOGGER.info("blockchain: opened the store of " + name + " inside the blocks database");
 			return store;
 		}
@@ -1870,7 +1870,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			storeOfBlocks.put(txn, HASH_OF_START_OF_NON_FROZEN_PART, fromBytes(startOfNonFrozenPartHash));
 			var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database"));
 			storeOfBlocks.put(txn, TOTAL_WAITING_TIME_OF_START_OF_NON_FROZEN_PART, fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getTotalWaitingTime())));
-			LOGGER.info("blockchain: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + descriptionOfStartOfNonFrozenPart.getHeight());
+			LOGGER.fine(() -> "blockchain: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + descriptionOfStartOfNonFrozenPart.getHeight());
 		}
 		catch (ExodusException e) {
 			throw new DatabaseException(e);
@@ -1902,7 +1902,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				throw new DatabaseException(e);
 			}
 			
-			LOGGER.info("blockchain: garbage-collected block " + Hex.toHexString(currentHash));
+			LOGGER.fine(() -> "blockchain: garbage-collected block " + Hex.toHexString(currentHash));
 		}
 		while (!ws.isEmpty());
 	}

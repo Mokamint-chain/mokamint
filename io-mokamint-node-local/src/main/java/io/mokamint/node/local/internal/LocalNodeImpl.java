@@ -888,7 +888,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				Thread.currentThread().interrupt();
 				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down");
 			}
-			catch (Exception e) {
+			catch (RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " failed", e);
 			}
 			finally {
