@@ -513,8 +513,8 @@ public class Synchronization {
 				hashToBlock.put(blockHash, block);
 				blocks[pos] = block;
 				addToProcess(block, this);
-				if (block.getDescription().getHeight() % 1000 == 0)
-					System.out.println("downloaded " + block.getDescription().getHeight());
+				//if (block.getDescription().getHeight() % 1000 == 0)
+					//System.out.println("downloaded " + block.getDescription().getHeight());
 
 				return maybeBlock;
 			}
@@ -612,8 +612,8 @@ public class Synchronization {
 						banDownloadersOf(blockHash);
 					}
 
-					if (block.getDescription().getHeight() % 1000 == 0)
-						System.out.println("  verified " + block.getDescription().getHeight());
+					//if (block.getDescription().getHeight() % 1000 == 0)
+						//System.out.println("  verified " + block.getDescription().getHeight());
 				}
 			}
 			catch (InterruptedException e) {
@@ -696,8 +696,8 @@ public class Synchronization {
 					finally {
 						markAsProcessed(block);
 
-						if (block.getDescription().getHeight() % 1000 == 0)
-							System.out.println("     added " + block.getDescription().getHeight());
+						//if (block.getDescription().getHeight() % 1000 == 0)
+							//System.out.println("     added " + block.getDescription().getHeight());
 					}
 
 					// a new block has been processed: we wake up anybody was waiting for an increase of the height that can be processed
