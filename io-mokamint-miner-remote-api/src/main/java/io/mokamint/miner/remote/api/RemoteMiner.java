@@ -27,8 +27,8 @@ import io.mokamint.miner.api.Miner;
 public interface RemoteMiner extends Miner {
 
 	/**
-	 * The network endpoint path where deadlines can be sent. They will be checked
-	 * and, if valid, sent to their requester, if any.
+	 * The network endpoint path where challenges are sent from a remote miner
+	 * to a miner service, and deadlines back from a miner service to a remote miner.
 	 */
-	String RECEIVE_DEADLINE_ENDPOINT = "/receive_deadline";
+	String MINING_ENDPOINT = "/mining";
 }

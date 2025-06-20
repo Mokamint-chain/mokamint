@@ -27,8 +27,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
@@ -49,7 +50,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where mining services can connect and provide their deadlines.
  */
 @ThreadSafe
-public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMiner {
+public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements RemoteMiner {
 
 	/**
 	 * The unique identifier of the miner.
@@ -66,14 +67,20 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	 */
 	private final DeadlineValidityCheck check;
 
+	/**
+	 * The sessions of mining endpoint.
+	 */
 	private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
 
+	/**
+	 * The current list of mining requests.
+	 */
 	private final ListOfMiningRequests requests = new ListOfMiningRequests(10);
 
 	/**
 	 * The prefix reported in the log messages.
 	 */
-	private final String logPrefix = "remote miner " + uuid + ": ";
+	private final String logPrefix;
 
 	private final static Logger LOGGER = Logger.getLogger(RemoteMinerImpl.class.getName());
 
@@ -87,15 +94,23 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	public RemoteMinerImpl(int port, String chainId, DeadlineValidityCheck check) throws MinerException {
 		this.port = port;
 		this.check = Objects.requireNonNull(check);
+		this.logPrefix = "remote miner listening at port " + port + ": ";
 
 		try {
-			startContainer("", port, ReceiveDeadlineEndpoint.config(this));
+			startContainer("", port, MiningEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);
 		}
 
 		LOGGER.info(logPrefix + "published at ws://localhost:" + port);
+	}
+
+	@Override
+    protected void processRequest(Session session, RpcMessage message) throws IOException {
+    	//var id = message.getId();
+
+    	LOGGER.severe("Unexpected message of type " + message.getClass().getName());
 	}
 
 	@Override
@@ -123,8 +138,13 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 
 	@Override
 	protected void closeResources() {
-		sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
-		LOGGER.info(logPrefix + "unpublished from ws://localhost:" + port);
+		try {
+			sessions.forEach(session -> close(session, new CloseReason(CloseCodes.GOING_AWAY, "The remote miner has been turned off.")));
+			LOGGER.info(logPrefix + "unpublished from ws://localhost:" + port);
+		}
+		finally {
+			super.closeResources();
+		}
 	}
 
 	@Override
@@ -189,7 +209,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	 * Those deadlines gets verified and, if correct, sent to their requester
 	 * by running the associated action.
 	 */
-	public static class ReceiveDeadlineEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+	public static class MiningEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
@@ -204,7 +224,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	    }
 
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
-			return simpleConfig(server, ReceiveDeadlineEndpoint.class, RECEIVE_DEADLINE_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
+			return simpleConfig(server, MiningEndpoint.class, MINING_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 	}
 }

@@ -57,7 +57,7 @@ public class TestServer extends AbstractWebSocketServer {
 	public static class MyEndpoint extends AbstractServerEndpoint<TestServer> {
 
 		private static ServerEndpointConfig config(TestServer server) {
-			return simpleConfig(server, MyEndpoint.class, RemoteMiner.RECEIVE_DEADLINE_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
+			return simpleConfig(server, MyEndpoint.class, RemoteMiner.MINING_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 
 		@Override

@@ -55,7 +55,7 @@ public class TestClient extends AbstractWebSocketClient {
 	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri.resolve(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
+			return deployAt(uri.resolve(RemoteMiner.MINING_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override

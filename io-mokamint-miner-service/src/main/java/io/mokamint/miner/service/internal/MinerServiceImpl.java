@@ -71,13 +71,13 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		this.logPrefix = "miner service working for " + uri + ": ";
 
 		try {
-			addSession(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT, uri, MinerServiceEndpoint::new);
+			addSession(RemoteMiner.MINING_ENDPOINT, uri, MiningEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);
 		}
 
-		this.session = getSession(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT);
+		this.session = getSession(RemoteMiner.MINING_ENDPOINT);
 
 		LOGGER.info(logPrefix + "bound to " + uri);
 	}
@@ -134,7 +134,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		}
 	}
 
-	private class MinerServiceEndpoint extends Endpoint {
+	private class MiningEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
