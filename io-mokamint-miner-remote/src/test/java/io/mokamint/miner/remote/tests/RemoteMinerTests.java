@@ -56,7 +56,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, _deadline -> {});
+		try (var remote = RemoteMiners.of(8025, "chainId", _deadline -> {});
 			 var client1 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived);
 			 var client2 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			remote.requestDeadline(description, deadline -> {});
@@ -89,7 +89,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _challenge -> {})) {
+		try (var remote = RemoteMiners.of(8025, "chainId", _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _challenge -> {})) {
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
@@ -122,7 +122,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.of(8025, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.of(8025, "chainId", _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -139,7 +139,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			generationSignature[pos] = (byte) (42 + pos);
 		var description = Challenges.of(42, generationSignature, shabal256(), hashingForGenerations);
 
-		try (var remote = RemoteMiners.of(8025, _deadline -> {});
+		try (var remote = RemoteMiners.of(8025, "chainId", _deadline -> {});
 			 var client = new TestClient(new URI("ws://localhost:8025"), _description -> semaphore.release())) {
 
 			client.close();

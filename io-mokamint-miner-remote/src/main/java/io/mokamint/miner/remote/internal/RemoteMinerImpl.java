@@ -84,12 +84,12 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	 * @param check the check to determine if a deadline is valid
 	 * @throws MinerException if the miner cannot be deployed
 	 */
-	public RemoteMinerImpl(int port, DeadlineValidityCheck check) throws MinerException {
+	public RemoteMinerImpl(int port, String chainId, DeadlineValidityCheck check) throws MinerException {
 		this.port = port;
 		this.check = Objects.requireNonNull(check);
 
 		try {
-			startContainer("", port, RemoteMinerEndpoint.config(this));
+			startContainer("", port, ReceiveDeadlineEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);
@@ -167,7 +167,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 			return;
 		}
 		catch (TimeoutException e) {
-			LOGGER.warning(logPrefix + "timed-out while checking the validity of " + deadline + ": " + e.getMessage());
+			LOGGER.warning(logPrefix + "timed out while checking the validity of " + deadline + ": " + e.getMessage());
 			return;
 		}
 
@@ -185,9 +185,11 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	}
 
 	/**
-	 * An endpoint that connects to miner services.
+	 * An endpoint that connects to miner services and receives deadlines.
+	 * Those deadlines gets verified and, if correct, sent to their requester
+	 * by running the associated action.
 	 */
-	public static class RemoteMinerEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+	public static class ReceiveDeadlineEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
@@ -202,7 +204,7 @@ public class RemoteMinerImpl extends AbstractWebSocketServer implements RemoteMi
 	    }
 
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
-			return simpleConfig(server, RemoteMinerEndpoint.class, "/", Deadlines.Decoder.class, Challenges.Encoder.class);
+			return simpleConfig(server, ReceiveDeadlineEndpoint.class, RECEIVE_DEADLINE_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 	}
 }

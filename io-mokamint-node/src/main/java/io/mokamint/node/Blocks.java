@@ -82,6 +82,7 @@ public abstract class Blocks {
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
+	 * @param verify true if and only if the block must be verified
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */

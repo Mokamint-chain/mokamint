@@ -27,6 +27,7 @@ import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -88,7 +89,7 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 		this.uri = uri;
 
 		try {
-			this.session = new MinerServiceEndpoint().deployAt(uri);
+			this.session = new MinerServiceEndpoint().deployAt(uri.resolve(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT));
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);

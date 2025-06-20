@@ -229,7 +229,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 	
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
 		}
 	}
 

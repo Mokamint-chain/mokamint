@@ -442,7 +442,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws MinerException, NodeException {
 		try (var scope = mkScope()) {
-			var miner = RemoteMiners.of(port, this::checkForMiners);
+			var miner = RemoteMiners.of(port, config.getChainId(), this::checkForMiners);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
