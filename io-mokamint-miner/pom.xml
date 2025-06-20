@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-miner-service</artifactId>
-  <name>io-mokamint-miner-service</name>
+  <artifactId>io-mokamint-miner</artifactId>
+  <name>io-mokamint-miner</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements a miner service, that is, a network service that provides mining capabilities by network.</description>
+  <description>This module implements the classes shared by all implementations of a Mokamint miner.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -16,43 +16,26 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-service-api</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-miner-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-remote-api</artifactId>
-      <version>${mokamint.version}</version>
+      <groupId>io.hotmoka.crypto</groupId>
+      <artifactId>io-hotmoka-crypto</artifactId>
+      <version>${io.hotmoka.crypto.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-client</artifactId>
+      <artifactId>io-hotmoka-websockets-beans</artifactId>
       <version>${io.hotmoka.websockets.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-server</artifactId>
-      <version>${io.hotmoka.websockets.version}</version>
-      <scope>test</scope>
+   	<dependency>
+      <groupId>io.hotmoka.marshalling</groupId>
+      <artifactId>io-hotmoka-marshalling-api</artifactId>
+      <version>${io.hotmoka.marshalling.version}</version>
     </dependency>
   </dependencies>
 
-  <!-- we need to open the test package in order to create endpoints by reflection -->
   <profiles>
     <profile>
       <id>release</id>

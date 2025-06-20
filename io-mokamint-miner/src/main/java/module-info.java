@@ -15,21 +15,23 @@ limitations under the License.
 */
 
 /**
- * This module implements a miner service, that is, a network service that
- * provides mining capabilities by network.
+ * This module implements the classes shared by all implementations of a Mokamint node.
  */
-module io.mokamint.miner.service {
-	exports io.mokamint.miner.service;
+module io.mokamint.miner {
+	exports io.mokamint.miner;
 
-	requires transitive io.mokamint.miner.service.api;
+	// beans must be accessible, encoded and decoded by reflection through Gson
+	//opens io.mokamint.node.internal.gson to com.google.gson;
+
 	requires transitive io.mokamint.miner.api;
-	requires io.mokamint.miner.remote.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.websockets.client;
+	requires transitive io.hotmoka.marshalling.api;
+	requires io.hotmoka.annotations;
+	requires io.hotmoka.websockets.beans;
+	requires io.hotmoka.crypto;
+	requires com.google.gson;
 	requires java.logging;
 
-	// only used for tests
-	requires static io.hotmoka.crypto;
-	requires static io.mokamint.miner;
-	requires static jakarta.websocket;
+	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
+	// classes without the no-args constructor
+	requires jdk.unsupported;
 }

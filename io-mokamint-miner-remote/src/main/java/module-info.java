@@ -24,6 +24,7 @@ module io.mokamint.miner.remote {
 	opens io.mokamint.miner.remote.internal to org.glassfish.tyrus.core;
 
 	requires transitive io.mokamint.miner.remote.api;
+	requires transitive io.mokamint.miner;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.websockets.server;
 	requires io.hotmoka.websockets.beans.api;

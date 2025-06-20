@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,21 +15,12 @@ limitations under the License.
 */
 
 /**
- * This module implements a miner service, that is, a network service that
- * provides mining capabilities by network.
+ * This module defines the API of the network messages exchanged between a miner service and remote.
  */
-module io.mokamint.miner.service {
-	exports io.mokamint.miner.service;
+module io.mokamint.miner.messages.api {
+	exports io.mokamint.miner.messages.api;
 
-	requires transitive io.mokamint.miner.service.api;
 	requires transitive io.mokamint.miner.api;
-	requires io.mokamint.miner.remote.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.websockets.client;
-	requires java.logging;
-
-	// only used for tests
-	requires static io.hotmoka.crypto;
-	requires static io.mokamint.miner;
-	requires static jakarta.websocket;
+	requires transitive io.hotmoka.websockets.beans.api;
+	requires io.hotmoka.annotations;
 }

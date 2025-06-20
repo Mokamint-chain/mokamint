@@ -33,6 +33,13 @@ import io.mokamint.nonce.api.Deadline;
 public interface Miner extends AutoCloseable {
 
 	/**
+	 * Yields the mining specification of this miner.
+	 * 
+	 * @return the mining specification of this miner
+	 */
+	MiningSpecification getMiningSpecification();
+
+	/**
 	 * Request to the miner the computation of a deadline.
 	 * 
 	 * @param challenge the challenge for which the deadline is requested

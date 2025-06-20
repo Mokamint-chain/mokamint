@@ -33,7 +33,9 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -42,6 +44,11 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 
 public class MinerServiceTests extends AbstractLoggedTests {
+
+	/**
+	 * The chain identifier of the deadlines.
+	 */
+	private final static String chainId = "octopus";
 
 	@Test
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
@@ -64,6 +71,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override
@@ -104,6 +116,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override
@@ -155,6 +172,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override
@@ -217,6 +239,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override

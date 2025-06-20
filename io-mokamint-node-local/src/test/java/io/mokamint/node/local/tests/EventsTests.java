@@ -42,7 +42,9 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -66,6 +68,11 @@ public class EventsTests extends AbstractLoggedTests {
 	 * The application of the node used for testing.
 	 */
 	private static Application app;
+
+	/**
+	 * The chain identifier of the deadlines.
+	 */
+	private final static String chainId = "octopus";
 
 	/**
 	 * The keys of the node.
@@ -97,7 +104,7 @@ public class EventsTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
-		prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
+		prolog = Prologs.of(chainId, ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 500, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
@@ -149,6 +156,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 		};
 
@@ -207,6 +219,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public String toString() {
 				return "test miner";
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override
@@ -318,6 +335,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public UUID getUUID() {
 				return UUID.randomUUID();
+			}
+
+			@Override
+			public MiningSpecification getMiningSpecification() {
+				return MiningSpecifications.of(chainId);
 			}
 
 			@Override

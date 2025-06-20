@@ -30,7 +30,9 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
@@ -152,6 +154,11 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		int sessionsCount = sessions.size();
 		String openSessions = sessionsCount == 1 ? "1 open session" : (sessionsCount + " open sessions");
 		return "a remote miner published at ws://localhost:" + port + ", with " + openSessions;
+	}
+
+	@Override
+	public MiningSpecification getMiningSpecification() {
+		return MiningSpecifications.of("octopus"); // TODO
 	}
 
 	private void addSession(Session session) {

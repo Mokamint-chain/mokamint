@@ -26,6 +26,8 @@ import java.util.stream.Stream;
 
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
+import io.mokamint.miner.MiningSpecifications;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
@@ -132,5 +134,10 @@ public class LocalMinerImpl implements LocalMiner {
 		String howManyNonces = nonces == 1 ? "1 nonce" : (nonces + " nonces");
 		
 		return "a local miner with " + howManyPlots + " and up to " + howManyNonces;
+	}
+
+	@Override
+	public MiningSpecification getMiningSpecification() {
+		return MiningSpecifications.of("octopus");
 	}
 }

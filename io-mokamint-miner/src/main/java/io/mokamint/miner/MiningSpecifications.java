@@ -1,0 +1,37 @@
+/*
+Copyright 2025 Fausto Spoto
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package io.mokamint.miner;
+
+import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.miner.internal.MiningSpecificationImpl;
+
+/**
+ * Providers of the specification of the mining parameters of the deadlines expected by a miner.
+ */
+public abstract class MiningSpecifications {
+
+	private MiningSpecifications() {}
+
+	/**
+	 * Yields a mining specification for the given deadline parameters.
+	 * 
+	 * @param chainId the chain id of the deadlines expected by the miner
+	 * @return the mining specification
+	 */
+	public static MiningSpecification of(String chainId) {
+		return new MiningSpecificationImpl(chainId);
+	}
+}

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements a local miner, that is, a miner that actually executes
- * on the local machine.
- */
-module io.mokamint.miner.local {
-	exports io.mokamint.miner.local;
+package io.mokamint.miner.messages.api;
 
-	requires transitive io.mokamint.miner.local.api;
-	requires transitive io.mokamint.miner;
-	requires transitive io.mokamint.plotter.api;
-	requires io.mokamint.nonce.api;
-	requires io.hotmoka.crypto.api;
-	requires io.hotmoka.exceptions;
-	requires java.logging;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.miner.api.Miner;
+
+/**
+ * The network message corresponding to the {@link Miner#getMiningSpecification()} method.
+ */
+@Immutable
+public interface GetMiningSpecificationMessage extends RpcMessage {
 }

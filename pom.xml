@@ -83,13 +83,18 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-node-remote</module>
       <module>io-mokamint-node-integration</module>
       <module>io-mokamint-miner-api</module>
+      <module>io-mokamint-miner</module>
+      <module>io-mokamint-miner-local-api</module>
       <module>io-mokamint-miner-local</module>
+      <module>io-mokamint-miner-remote-api</module>
       <module>io-mokamint-miner-remote</module>
       <module>io-mokamint-miner-service-api</module>
       <module>io-mokamint-miner-service</module>
+      <module>io-mokamint-miner-messages-api</module>
       <module>io-mokamint-miner-cli</module>
-      <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-api</module>
+      <module>io-mokamint-plotter</module>
+      <module>io-mokamint-plotter-cli</module>
       <module>io-mokamint-nonce-api</module>
       <module>io-mokamint-nonce</module>
       <module>io-mokamint-application-messages-api</module>
@@ -102,10 +107,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-remote</module>
       <module>io-mokamint-application-integration</module>
       <module>io-mokamint-application-cli</module>
-      <module>io-mokamint-plotter-cli</module>
       <module>io-mokamint-application-empty</module>
-      <module>io-mokamint-miner-remote-api</module>
-      <module>io-mokamint-miner-local-api</module>
     </modules>
 
     <distributionManagement>
