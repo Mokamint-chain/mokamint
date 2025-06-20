@@ -18,13 +18,9 @@ package io.mokamint.miner.service.internal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.websockets.client.AbstractClientEndpoint;
-import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.remote.api.RemoteMiner;
@@ -34,7 +30,6 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -43,7 +38,7 @@ import jakarta.websocket.Session;
  * Implementation of a client that connects to a remote miner.
  * It is an adapter of a miner into a web service client.
  */
-public class MinerServiceImpl extends AbstractWebSocketClient implements MinerService {
+public class MinerServiceImpl extends AbstractRemote<MinerException> implements MinerService {
 
 	/**
 	 * The adapted miner.
@@ -51,29 +46,14 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	private final Miner miner;
 
 	/**
-	 * The websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}.
-	 */
-	private final URI uri;
-
-	/**
-	 * The session connected to the remote miner.
+	 * The session used to receive challenges and send back deadlines to the remote miner.
 	 */
 	private final Session session;
 
 	/**
-	 * Used to wait until the service gets disconnected.
+	 * The prefix used in the log messages;
 	 */
-	private final CountDownLatch latch = new CountDownLatch(1);
-
-	/**
-	 * True if and only if {@link #close(CloseReason))} has been closed already.
-	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean(false);
-
-	/**
-	 * A description of the reason why the service has been disconnected.
-	 */
-	private volatile String closeReason;
+	private final String logPrefix;
 
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
@@ -85,46 +65,37 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * @throws MinerException if the service cannot be deployed
 	 */
 	public MinerServiceImpl(Miner miner, URI uri) throws MinerException {
+		super(30_000); // TODO
+
 		this.miner = miner;
-		this.uri = uri;
+		this.logPrefix = "miner service working for " + uri + ": ";
 
 		try {
-			this.session = new MinerServiceEndpoint().deployAt(uri.resolve(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT));
+			addSession(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT, uri, MinerServiceEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);
 		}
 
-		LOGGER.info("miner service bound to " + uri);
+		this.session = getSession(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT);
+
+		LOGGER.info(logPrefix + "bound to " + uri);
 	}
 
 	@Override
-	public String waitUntilDisconnected() throws InterruptedException {
-		latch.await();
-		return closeReason;
+	protected MinerException mkExceptionIfClosed() {
+		return new MinerException("The miner service is closed");
 	}
 
 	@Override
-	public void close() throws MinerException {
-		close(new CloseReason(CloseCodes.NORMAL_CLOSURE, "Closed normally."));
+	protected MinerException mkException(Exception cause) {
+		return cause instanceof MinerException ne ? ne : new MinerException(cause);
 	}
 
-	private void close(CloseReason reason) throws MinerException {
-		if (!isClosed.getAndSet(true)) {
-			closeReason = reason.getReasonPhrase();
-			LOGGER.info("miner service being closed with reason: " + closeReason);
-
-			try {
-				session.close();
-				LOGGER.info("miner service unbound from " + uri);
-			}
-			catch (IOException e) {
-				throw new MinerException(e);
-			}
-			finally {
-				latch.countDown();
-			}
-		}
+	@Override
+	protected void closeResources(CloseReason reason) throws MinerException {
+		super.closeResources(reason);
+		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
 
 	/**
@@ -134,50 +105,45 @@ public class MinerServiceImpl extends AbstractWebSocketClient implements MinerSe
 	 * @param description the description of the requested deadline
 	 */
 	private void requestDeadline(Challenge description) {
-		if (!isClosed.get()) {
-			LOGGER.info("received deadline request: " + description + " from " + uri);
+		try {
+			ensureIsOpen();
+			LOGGER.info(logPrefix + "received deadline request: " + description);
 			miner.requestDeadline(description, this::onDeadlineComputed);
+		}
+		catch (MinerException e) {
+			LOGGER.warning(logPrefix + "ignoring deadline request: " + description + " since this miner service is already closed: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * Called by {@link #miner} when it finds a deadline. It forwards it
-	 * to the remote miner.
+	 * Called by {@link #miner} when it finds a deadline. It forwards it to the remote miner.
 	 * 
 	 * @param deadline the deadline that the miner has just computed
 	 */
 	private void onDeadlineComputed(Deadline deadline) {
-		if (session.isOpen()) {
-			LOGGER.info("sending " + deadline + " to " + uri);
-
-			try {
-				sendObjectAsync(session, deadline);
-			}
-			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "cannot send the deadline to the session", e);
-			}
+		try {
+			ensureIsOpen();
+			LOGGER.info(logPrefix + "sending " + deadline);
+			sendObjectAsync(session, deadline);
+		}
+		catch (IOException e) {
+			LOGGER.warning(logPrefix + "cannot send the deadline to the session: " + e.getMessage());
+		}
+		catch (MinerException e) {
+			LOGGER.warning(logPrefix + "ignoring deadline " + deadline + " since this miner service is already closed: " + e.getMessage());
 		}
 	}
 
-	private class MinerServiceEndpoint extends AbstractClientEndpoint<MinerServiceImpl> {
+	private class MinerServiceEndpoint extends Endpoint {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		@Override
+		protected Session deployAt(URI uri) throws DeploymentException, IOException {
 			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, MinerServiceImpl.this::requestDeadline);
-		}
-
-		@Override
-		public void onClose(Session session, CloseReason reason) {
-			try {
-				close(reason);
-			}
-			catch (MinerException e) {
-				LOGGER.log(Level.WARNING, "cannot close the session", e);
-			}
 		}
 	}
 }

@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -54,7 +55,7 @@ public class TestClient extends AbstractWebSocketClient {
 	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
+			return deployAt(uri.resolve(RemoteMiner.RECEIVE_DEADLINE_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override

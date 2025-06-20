@@ -30,5 +30,5 @@ public interface RemoteMiner extends Miner {
 	 * The network endpoint path where deadlines can be sent. They will be checked
 	 * and, if valid, sent to their requester, if any.
 	 */
-	String RECEIVE_DEADLINE_ENDPOINT = "/"; //receive_deadline";
+	String RECEIVE_DEADLINE_ENDPOINT = "/receive_deadline";
 }

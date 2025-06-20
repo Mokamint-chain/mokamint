@@ -152,7 +152,7 @@ public class Start extends AbstractCommand {
 			try (var service = MinerServices.open(miner, uri)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
-				System.out.println("Service terminated: " + service.waitUntilDisconnected());
+				System.out.println("Service terminated: " + service.waitUntilClosed());
 			}
 			catch (MinerException e) {
 				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);

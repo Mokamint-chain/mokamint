@@ -16,23 +16,14 @@ limitations under the License.
 
 package io.mokamint.miner.service.api;
 
-import io.hotmoka.websockets.client.api.WebSocketClient;
+import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.miner.api.MinerException;
 
 /**
  * A websocket client that connects to a remote miner exported
  * by some Mokamint node. It is an adapter of a miner into a web service client.
  */
-public interface MinerService extends WebSocketClient {
-
-	/**
-	 * Waits until the service gets disconnected (for instance
-	 * because the remote miner has been turned off or is not reachable anymore).
-	 * 
-	 * @return a description of why the service has been disconnected
-	 * @throws InterruptedException if the thread has been interrupted while waiting
-	 */
-	String waitUntilDisconnected() throws InterruptedException;
+public interface MinerService extends Remote<MinerException> {
 
 	/**
 	 * Closes the service.

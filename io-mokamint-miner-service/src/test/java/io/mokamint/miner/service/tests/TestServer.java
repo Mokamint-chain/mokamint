@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Deadline;
@@ -56,7 +57,7 @@ public class TestServer extends AbstractWebSocketServer {
 	public static class MyEndpoint extends AbstractServerEndpoint<TestServer> {
 
 		private static ServerEndpointConfig config(TestServer server) {
-			return simpleConfig(server, MyEndpoint.class, "/", Deadlines.Decoder.class, Challenges.Encoder.class);
+			return simpleConfig(server, MyEndpoint.class, RemoteMiner.RECEIVE_DEADLINE_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 
 		@Override
