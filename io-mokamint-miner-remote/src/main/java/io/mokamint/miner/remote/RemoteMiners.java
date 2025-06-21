@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote;
 
 import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.miner.remote.internal.RemoteMinerImpl;
@@ -32,11 +33,14 @@ public abstract class RemoteMiners {
 	 * Yields and opens a new remote miner.
 	 * 
 	 * @param port the http port where the server is opened on localhost
+	 * @param miningSpecification the specification of the mining parameters; all services
+	 *                            that connect to this remote must provided deadlines
+	 *                            that comply with this specification
 	 * @param check an algorithm to check if a deadline is valid
 	 * @return the new remote miner
 	 * @throws MinerException if the remote miner could not be deployed
 	 */
-	public static RemoteMiner of(int port, String chainId, DeadlineValidityCheck check) throws MinerException {
-		return new RemoteMinerImpl(port, chainId, check);
+	public static RemoteMiner of(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws MinerException {
+		return new RemoteMinerImpl(port, miningSpecification, check);
 	}
 }

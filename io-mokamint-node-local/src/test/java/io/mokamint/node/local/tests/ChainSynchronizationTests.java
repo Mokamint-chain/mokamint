@@ -89,6 +89,11 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	 */
 	private final static int HOW_MANY = 20;
 
+	/**
+	 * The chain id of the plot used for mining.
+	 */
+	private final static String CHAIN_ID = "octopus";
+
 	private volatile Semaphore miningSemaphore;
 	private volatile Set<Block> miningBlocks;
 	private volatile Semaphore nonMiningSemaphore;
@@ -104,7 +109,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
+		var prolog = Prologs.of(CHAIN_ID, ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 		long start = 65536L;
 		long length = 50L;
 
@@ -127,7 +132,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {
 		return LocalNodeConfigBuilders.defaults()
 			.setDir(chainDir)
-			.setChainId("octopus")
+			.setChainId(CHAIN_ID)
 			.setTargetBlockCreationTime(300)
 			.build();
 	}

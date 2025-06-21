@@ -44,6 +44,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.remote.RemoteMiners;
@@ -442,7 +443,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws MinerException, NodeException {
 		try (var scope = mkScope()) {
-			var miner = RemoteMiners.of(port, config.getChainId(), this::checkForMiners);
+			var miner = RemoteMiners.of(port, MiningSpecifications.of(config.getChainId()), this::checkForMiners);
 			// addOnCloseHandler(() -> tryClose(miner)); // TODO: use this instead of minersToCloseAtTheEnd
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())

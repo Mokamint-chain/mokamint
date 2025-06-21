@@ -30,7 +30,6 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
@@ -65,6 +64,12 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	private final int port;
 
 	/**
+	 * The mining specification of this miner; all deadlines provided by the
+	 * connected services must comply with this specification.
+	 */
+	private final MiningSpecification miningSpecification;
+
+	/**
 	 * An algorithm to check if deadlines are valid for the node we are working for.
 	 */
 	private final DeadlineValidityCheck check;
@@ -90,11 +95,15 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	 * Creates a remote miner.
 	 * 
 	 * @param port the port where the remote miner will receive the deadlines
+	 * @param miningSpecification the specification of the mining parameters; all services
+	 *                            that connect to this remote must provided deadlines
+	 *                            that comply with this specification
 	 * @param check the check to determine if a deadline is valid
 	 * @throws MinerException if the miner cannot be deployed
 	 */
-	public RemoteMinerImpl(int port, String chainId, DeadlineValidityCheck check) throws MinerException {
+	public RemoteMinerImpl(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws MinerException {
 		this.port = port;
+		this.miningSpecification = miningSpecification;
 		this.check = Objects.requireNonNull(check);
 		this.logPrefix = "remote miner listening at port " + port + ": ";
 
@@ -158,7 +167,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 
 	@Override
 	public MiningSpecification getMiningSpecification() {
-		return MiningSpecifications.of("octopus"); // TODO
+		return miningSpecification;
 	}
 
 	private void addSession(Session session) {

@@ -31,7 +31,9 @@ public abstract class LocalMiners {
 	 * Yields a new local miner.
 	 * 
 	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
-	 *                         deadlines generated from them; this cannot be empty
+	 *                         deadlines generated from them; this cannot be empty; all plots must be for
+	 *                         the same mining specification (same chain identifier, same signature algorithms,
+	 *                         same public key for the node etc.)
 	 * @return the new local miner
 	 */
 	public static LocalMiner of(PlotAndKeyPair... plotsAndKeyPairs) {

@@ -48,6 +48,11 @@ public class LocalMinerImpl implements LocalMiner {
 	private final UUID uuid = UUID.randomUUID();
 
 	/**
+	 * The mining specification for the deadlines that must be computed by the miner.
+	 */
+	private final MiningSpecification miningSpecification;
+
+	/**
 	 * The plot files used by the miner, with their associated key pair for signing
 	 * the deadlines derived from them.
 	 */
@@ -67,11 +72,35 @@ public class LocalMinerImpl implements LocalMiner {
 	 *                         deadlines generated from them; this cannot be empty
 	 */
 	public LocalMinerImpl(PlotAndKeyPair... plotsAndKeyPairs) {
-		if (plotsAndKeyPairs.length < 1)
-			throw new IllegalArgumentException("A local miner needs at least one plot file");
-
 		this.plotsAndKeyPairs = plotsAndKeyPairs;
+		this.miningSpecification = extractMiningSpecification();
+
 		LOGGER.info("created miner " + uuid);
+	}
+
+	/**
+	 * Scans the provided plots and extracts the mining specification, that must be
+	 * shared among all of them.
+	 * 
+	 * @return the mining specification
+	 */
+	private MiningSpecification extractMiningSpecification() {
+		MiningSpecification[] specifications = Stream.of(plotsAndKeyPairs)
+			.map(PlotAndKeyPair::getPlot)
+			.map(this::extractMiningSpecification)
+			.distinct()
+			.toArray(MiningSpecification[]::new);
+
+		if (specifications.length == 0)
+			throw new IllegalArgumentException("A local miner needs at least one plot file");
+		else if (specifications.length > 1)
+			throw new IllegalArgumentException("The provided plots cannot work for a shared mining specification");
+		else
+			return specifications[0];
+	}
+
+	private MiningSpecification extractMiningSpecification(Plot plot) {
+		return MiningSpecifications.of(plot.getProlog().getChainId());
 	}
 
 	@Override
@@ -138,6 +167,6 @@ public class LocalMinerImpl implements LocalMiner {
 
 	@Override
 	public MiningSpecification getMiningSpecification() {
-		return MiningSpecifications.of("octopus");
+		return miningSpecification;
 	}
 }

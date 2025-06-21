@@ -29,6 +29,11 @@
       <artifactId>io-mokamint-node</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
    	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-miner-remote</artifactId>
