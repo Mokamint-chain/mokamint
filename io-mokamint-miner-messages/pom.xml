@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-miner</artifactId>
-  <name>io-mokamint-miner</name>
+  <artifactId>io-mokamint-miner-messages</artifactId>
+  <name>io-mokamint-miner-messages</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the classes shared by all implementations of a Mokamint miner.</description>
+  <description>This module implements the network messages exchanged between a miner service and remote.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -16,23 +16,13 @@
   <dependencies>
     <dependency>
       <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-miner-api</artifactId>
+      <artifactId>io-mokamint-miner-messages-api</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.hotmoka.crypto</groupId>
-      <artifactId>io-hotmoka-crypto</artifactId>
-      <version>${io.hotmoka.crypto.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.websockets</groupId>
-      <artifactId>io-hotmoka-websockets-beans</artifactId>
-      <version>${io.hotmoka.websockets.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.exceptions</groupId>
-      <artifactId>io-hotmoka-exceptions</artifactId>
-      <version>${io.hotmoka.exceptions.version}</version>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
   </dependencies>
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,19 +15,18 @@ limitations under the License.
 */
 
 /**
- * This module implements the classes shared by all implementations of a Mokamint node.
+ * This module implements the network messages exchanged between a node service and remote.
  */
-module io.mokamint.miner {
-	exports io.mokamint.miner;
-
+module io.mokamint.miner.messages {
+	exports io.mokamint.miner.messages;
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.miner.internal.json to com.google.gson;
+	opens io.mokamint.miner.messages.internal.json to com.google.gson;
 
-	requires transitive io.mokamint.miner.api;
-	requires io.hotmoka.annotations;
+	requires transitive io.mokamint.miner.messages.api;
+	requires io.mokamint.miner;
 	requires io.hotmoka.exceptions;
-	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.websockets.beans;
 	requires com.google.gson;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate

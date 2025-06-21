@@ -17,7 +17,11 @@ limitations under the License.
 package io.mokamint.miner.internal;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.Objects;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.miner.internal.json.MiningSpecificationJson;
 
 /**
  * Implementation of the specification of the mining parameter for the deadlines expected by a miner.
@@ -36,7 +40,28 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 * @param chainId the chain id of the deadlines expected by the miner
 	 */
 	public MiningSpecificationImpl(String chainId) {
-		this.chainId = chainId;
+		this(chainId, IllegalArgumentException::new);
+	}
+
+	/**
+	 * Creates a mining specification object from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 */
+	public MiningSpecificationImpl(MiningSpecificationJson json) throws InconsistentJsonException {
+		this(json.getChainId(), InconsistentJsonException::new);
+	}
+
+	/**
+	 * Builds a mining specification for a miner.
+	 * 
+	 * @param chainId the chain id of the deadlines expected by the miner
+	 * @param onIllegalArgs the generator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> MiningSpecificationImpl(String chainId, ExceptionSupplier<? extends E> onIllegalArgs) throws E {
+		this.chainId = Objects.requireNonNull(chainId, onIllegalArgs);
 	}
 
 	@Override

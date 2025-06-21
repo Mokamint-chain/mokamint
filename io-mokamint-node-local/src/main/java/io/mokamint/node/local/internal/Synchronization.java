@@ -395,7 +395,7 @@ public class Synchronization {
 					LOGGER.info("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 				}
 				catch (PeerException e) {
-					peers.ban(peer);
+					// peers.ban(peer); // TODO: we cannot ban it since we do not distinguish with a closed peer
 					LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is misbehaving: " + e.getMessage());
 				}
 				catch (PeerTimeoutException e) {

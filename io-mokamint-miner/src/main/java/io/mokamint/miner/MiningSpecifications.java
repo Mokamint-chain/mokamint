@@ -15,8 +15,11 @@ limitations under the License.
 */
 package io.mokamint.miner;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.internal.MiningSpecificationImpl;
+import io.mokamint.miner.internal.json.MiningSpecificationJson;
 
 /**
  * Providers of the specification of the mining parameters of the deadlines expected by a miner.
@@ -33,5 +36,46 @@ public abstract class MiningSpecifications {
 	 */
 	public static MiningSpecification of(String chainId) {
 		return new MiningSpecificationImpl(chainId);
+	}
+
+	/**
+	 * JSON representation.
+	 */
+	public static class Json extends MiningSpecificationJson {
+	
+		/**
+		 * Creates the JSON representation for the given mining specification.
+		 * 
+		 * @param output the mining specification
+		 */
+		public Json(MiningSpecification output) {
+			super(output);
+		}
+	}
+
+	/**
+	 * JSON encoder.
+	 */
+	public static class Encoder extends MappedEncoder<MiningSpecification, Json> {
+
+		/**
+		 * Creates a new encoder.
+		 */
+		public Encoder() {
+			super(Json::new);
+		}
+	}
+
+	/**
+	 * JSON decoder.
+	 */
+	public static class Decoder extends MappedDecoder<MiningSpecification, Json> {
+
+		/**
+		 * Creates a new decoder.
+		 */
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 }
