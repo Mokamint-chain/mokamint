@@ -31,4 +31,10 @@ public interface MiningSpecification {
 	 * @return the chain id
 	 */
 	String getChainId();
+
+	@Override
+	boolean equals(Object obj);
+
+	@Override
+	int hashCode();
 }

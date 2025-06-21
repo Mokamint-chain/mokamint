@@ -68,4 +68,14 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	public String getChainId() {
 		return chainId;
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof MiningSpecification ms && chainId.equals(ms.getChainId());
+	}
+
+	@Override
+	public int hashCode() {
+		return chainId.hashCode();
+	}
 }
