@@ -16,19 +16,24 @@ limitations under the License.
 
 package io.mokamint.miner.service.tests;
 
+import static io.mokamint.miner.remote.api.RemoteMiner.GET_MINING_SPECIFICATION_ENDPOINT;
+import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
+
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.miner.remote.api.RemoteMiner;
+import io.mokamint.miner.messages.GetMiningSpecificationMessages;
+import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -44,7 +49,7 @@ public class TestServer extends AbstractWebSocketServer {
 
 	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws DeploymentException, IOException {
 		this.onDeadlineReceived = onDeadlineReceived;
-		startContainer("", port, MyEndpoint.config(this));
+		startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 	}
 
 	public void requestDeadline(Challenge description) throws TimeoutException, InterruptedException, IOException {
@@ -54,10 +59,10 @@ public class TestServer extends AbstractWebSocketServer {
 		sendObjectAsync(session, description);
 	}
 
-	public static class MyEndpoint extends AbstractServerEndpoint<TestServer> {
+	public static class MiningEndpoint extends AbstractServerEndpoint<TestServer> {
 
 		private static ServerEndpointConfig config(TestServer server) {
-			return simpleConfig(server, MyEndpoint.class, RemoteMiner.MINING_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
+			return simpleConfig(server, MiningEndpoint.class, MINING_ENDPOINT, Deadlines.Decoder.class, Challenges.Encoder.class);
 		}
 
 		@Override
@@ -67,5 +72,17 @@ public class TestServer extends AbstractWebSocketServer {
 			addMessageHandler(session, server.onDeadlineReceived);
 			server.latch.countDown();
 	    }
+	}
+
+	// unused, but we must deploy it otherwise the handshake with the miner service fails
+	public static class GetMiningSpecificationEndpoint extends AbstractServerEndpoint<TestServer> {
+		
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {}
+	
+		private static ServerEndpointConfig config(TestServer server) {
+			return simpleConfig(server, GetMiningSpecificationEndpoint.class, GET_MINING_SPECIFICATION_ENDPOINT,
+				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
 	}
 }

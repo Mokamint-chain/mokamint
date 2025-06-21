@@ -27,11 +27,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.miner.messages.GetMiningSpecificationMessages;
+import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
+import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
@@ -108,7 +112,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		this.logPrefix = "remote miner listening at port " + port + ": ";
 
 		try {
-			startContainer("", port, MiningEndpoint.config(this));
+			startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
 			throw new MinerException(e);
@@ -119,10 +123,61 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 
 	@Override
     protected void processRequest(Session session, RpcMessage message) throws IOException {
-    	//var id = message.getId();
+		var id = message.getId();
 
-    	LOGGER.severe("Unexpected message of type " + message.getClass().getName());
+    	if (message instanceof GetMiningSpecificationMessage) {
+    		try {
+				sendObjectAsync(session, GetMiningSpecificationResultMessages.of(miningSpecification, id));
+			}
+    		catch (RuntimeException e) {
+    			minerFailed(session, "getMiningSpecification()", id, e);
+    		}
+    	}
+    	else
+    		LOGGER.severe("Unexpected message of type " + message.getClass().getName());
+    }
+
+    private void minerFailed(Session session, String description, String id, Exception e) throws IOException {
+    	String message = e.getMessage();
+
+    	// we do not trust exception messages coming from the serviced miner, they might be arbitrarily long
+    	if (e instanceof MinerException && message.length() > 200)
+    		message = message.substring(0, 200) + "...";
+
+    	message = description + " threw exception: " + message;
+
+    	LOGGER.log(Level.SEVERE, message, e);
+
+    	if (!(e instanceof MinerException))
+    		e = new MinerException(message, e);
+
+    	sendExceptionAsync(session, e, id);
 	}
+
+    /**
+	 * Sends an exception message to the given session.
+	 * 
+	 * @param session the session
+	 * @param e the exception used to build the message
+	 * @param id the identifier of the message to send
+	 * @throws IOException if there was an I/O problem
+	 */
+	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
+		if (e instanceof InterruptedException) {
+			// if the serviced node gets interrupted, then the external vision of the node
+			// is that of a node that is not working properly
+			sendObjectAsync(session, ExceptionMessages.of(new MinerException("The service has been interrupted"), id));
+			// we take note that we have been interrupted
+			Thread.currentThread().interrupt();
+		}
+		else
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
+	}
+
+	protected void onGetMiningSpecification(GetMiningSpecificationMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_MINING_SPECIFICATION_ENDPOINT + " request");
+		scheduleRequest(session, message);
+	};
 
 	@Override
 	public UUID getUUID() {
@@ -217,6 +272,20 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		}
 		catch (IOException | IllegalStateException e) {
 			LOGGER.warning(logPrefix + "cannot close session " + session.getId() + ": " + e.getMessage());
+		}
+	}
+
+	public static class GetMiningSpecificationEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+	
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			addMessageHandler(session, (GetMiningSpecificationMessage message) -> server.onGetMiningSpecification(message, session));
+	    }
+	
+		private static ServerEndpointConfig config(RemoteMinerImpl server) {
+			return simpleConfig(server, GetMiningSpecificationEndpoint.class, GET_MINING_SPECIFICATION_ENDPOINT,
+				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

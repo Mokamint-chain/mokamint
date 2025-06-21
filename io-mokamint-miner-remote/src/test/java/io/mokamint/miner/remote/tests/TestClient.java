@@ -16,17 +16,22 @@ limitations under the License.
 
 package io.mokamint.miner.remote.tests;
 
+import static io.mokamint.miner.remote.api.RemoteMiner.GET_MINING_SPECIFICATION_ENDPOINT;
+import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.function.Consumer;
 
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
-import io.mokamint.miner.remote.api.RemoteMiner;
+import io.mokamint.miner.messages.GetMiningSpecificationMessages;
+import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
-import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -40,7 +45,10 @@ public class TestClient extends AbstractWebSocketClient {
 
 	public TestClient(URI uri, Consumer<Challenge> onChallengeReceived) throws DeploymentException, IOException {
 		this.onChallengeReceived = onChallengeReceived;
-		this.session = new MyEndpoint().deployAt(uri);
+		this.session = new MiningEndpoint().deployAt(uri);
+
+		// unused, but we must deploy it otherwise the handshake with the miner service fails
+		new GetMiningSpecificationEndpoint().deployAt(uri);
 	}
 
 	@Override
@@ -52,15 +60,25 @@ public class TestClient extends AbstractWebSocketClient {
 		sendObjectAsync(session, deadline);
 	}
 
-	private class MyEndpoint extends AbstractClientEndpoint<TestClient> {
+	private class MiningEndpoint extends AbstractClientEndpoint<TestClient> {
 
 		private Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri.resolve(RemoteMiner.MINING_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
+			return deployAt(uri.resolve(MINING_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, onChallengeReceived);
 		}
+	}
+
+	private class GetMiningSpecificationEndpoint extends AbstractClientEndpoint<TestClient> {
+
+		private Session deployAt(URI uri) throws DeploymentException, IOException {
+			return deployAt(uri.resolve(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);
+		}
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {}
 	}
 }

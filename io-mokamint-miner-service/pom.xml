@@ -30,6 +30,11 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-miner-messages</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.websockets</groupId>
       <artifactId>io-hotmoka-websockets-client</artifactId>
       <version>${io.hotmoka.websockets.version}</version>

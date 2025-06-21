@@ -31,4 +31,9 @@ public interface RemoteMiner extends Miner {
 	 * to a miner service, and deadlines back from a miner service to a remote miner.
 	 */
 	String MINING_ENDPOINT = "/mining";
+
+	/**
+	 * The network endpoint path where {@link Miner#getMiningSpecification()} is published.
+	 */
+	String GET_MINING_SPECIFICATION_ENDPOINT = "/get_mining_specification";
 }

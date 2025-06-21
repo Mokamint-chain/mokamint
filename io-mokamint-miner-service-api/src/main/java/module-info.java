@@ -22,5 +22,5 @@ module io.mokamint.miner.service.api {
 	exports io.mokamint.miner.service.api;
 
 	requires io.hotmoka.websockets.client.api;
-	requires io.mokamint.miner.api;
+	requires transitive io.mokamint.miner.api;
 }
