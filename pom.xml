@@ -92,6 +92,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-miner-service</module>
       <module>io-mokamint-miner-messages-api</module>
       <module>io-mokamint-miner-messages</module>
+      <module>io-mokamint-miner-integration</module>
       <module>io-mokamint-miner-cli</module>
       <module>io-mokamint-nonce-api</module>
       <module>io-mokamint-nonce</module>

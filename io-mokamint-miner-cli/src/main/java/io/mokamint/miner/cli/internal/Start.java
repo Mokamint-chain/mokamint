@@ -149,7 +149,7 @@ public class Start extends AbstractCommand {
 		private void startMiningService(Miner miner) throws CommandException {
 			System.out.print("Connecting to " + uri + "... ");
 		
-			try (var service = MinerServices.open(miner, uri)) {
+			try (var service = MinerServices.of(miner, uri)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
 				System.out.println("Service terminated: " + service.waitUntilClosed());

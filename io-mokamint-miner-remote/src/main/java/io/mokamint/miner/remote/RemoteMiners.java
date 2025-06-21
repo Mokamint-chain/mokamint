@@ -40,7 +40,7 @@ public abstract class RemoteMiners {
 	 * @return the new remote miner
 	 * @throws MinerException if the remote miner could not be deployed
 	 */
-	public static RemoteMiner of(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws MinerException {
+	public static RemoteMiner open(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws MinerException {
 		return new RemoteMinerImpl(port, miningSpecification, check);
 	}
 }

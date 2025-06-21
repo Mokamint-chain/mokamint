@@ -25,6 +25,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.beans.api.ExceptionMessage;
+import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
@@ -100,6 +102,18 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		return waitForResult(id, GetMiningSpecificationResultMessage.class, TimeoutException.class, MinerException.class);
 	}
 
+	@Override
+	protected void notifyResult(RpcMessage message) {
+		if (message instanceof GetMiningSpecificationResultMessage gmsrm)
+			onGetMiningSpecificationResult(gmsrm);
+		else if (message != null && !(message instanceof ExceptionMessage)) {
+			LOGGER.warning("unexpected message of class " + message.getClass().getName());
+			return;
+		}
+
+		super.notifyResult(message);
+	}
+
 	/**
 	 * Sends a {@link GetMiningSpecificationMessage} to the remote miner.
 	 * 
@@ -115,7 +129,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	 * 
 	 * @param message the message
 	 */
-	protected void onMiningSpecificationResult(GetMiningSpecificationResultMessage message) {}
+	protected void onGetMiningSpecificationResult(GetMiningSpecificationResultMessage message) {}
 
 	private class GetMiningSpecificationEndpoint extends Endpoint {
 

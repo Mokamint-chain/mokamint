@@ -140,7 +140,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("checkTransaction() works if it throws RejectedTransactionException")
-	public void getTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
+	public void checkTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 

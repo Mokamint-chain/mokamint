@@ -137,7 +137,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
     		LOGGER.severe("Unexpected message of type " + message.getClass().getName());
     }
 
-    private void minerFailed(Session session, String description, String id, Exception e) throws IOException {
+	private void minerFailed(Session session, String description, String id, Exception e) throws IOException {
     	String message = e.getMessage();
 
     	// we do not trust exception messages coming from the serviced miner, they might be arbitrarily long

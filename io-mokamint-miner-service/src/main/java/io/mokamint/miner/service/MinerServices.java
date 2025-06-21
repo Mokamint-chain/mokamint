@@ -38,7 +38,7 @@ public final class MinerServices {
 	 * @return the miner service
 	 * @throws MinerException if the service cannot be deployed
 	 */
-	public static MinerService open(Miner miner, URI uri) throws MinerException {
+	public static MinerService of(Miner miner, URI uri) throws MinerException {
 		return new MinerServiceImpl(miner, uri);
 	}
 }

@@ -82,7 +82,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			public void close() {}
 		};
 
-		try (var requester = new TestServer(8025, deadline -> {}); var service = MinerServices.open(miner, new URI("ws://localhost:8025"))) {
+		try (var requester = new TestServer(8025, deadline -> {}); var service = MinerServices.of(miner, new URI("ws://localhost:8025"))) {
 			requester.requestDeadline(description);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -132,7 +132,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.open(miner, new URI("ws://localhost:8025"))) {
+		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.of(miner, new URI("ws://localhost:8025"))) {
 			requester.requestDeadline(challenge);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
@@ -196,7 +196,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			}
 		};
 
-		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.open(miner, new URI("ws://localhost:8025"))) {
+		try (var requester = new TestServer(8025, onDeadlineReceived); var service = MinerServices.of(miner, new URI("ws://localhost:8025"))) {
 			requester.requestDeadline(challenge1); // the call-back hangs for some time, then it works
 			requester.requestDeadline(challenge2); // this works after the delay
 			assertTrue(semaphore.tryAcquire(1, 2 * delay, TimeUnit.MILLISECONDS));
@@ -251,7 +251,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		};
 
 		// the deadline is not sent back to the closed requester, so no exception actually occurs
-		try (var requester = new TestServer(8025, _deadline -> { throw new IllegalStateException("unexpected"); }); var service = MinerServices.open(miner, URI.create("ws://localhost:8025"))) {
+		try (var requester = new TestServer(8025, _deadline -> { throw new IllegalStateException("unexpected"); }); var service = MinerServices.of(miner, URI.create("ws://localhost:8025"))) {
 			requester.requestDeadline(challenge);
 			Thread.sleep(delay / 4);
 			requester.close();
