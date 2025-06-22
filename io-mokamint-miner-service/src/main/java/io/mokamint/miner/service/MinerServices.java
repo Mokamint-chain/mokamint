@@ -41,4 +41,15 @@ public final class MinerServices {
 	public static MinerService of(Miner miner, URI uri) throws MinerException {
 		return new MinerServiceImpl(miner, uri);
 	}
+
+	/**
+	 * Opens and yields a miner service without a miner. It won't provide deadlines to the connected
+	 * remote miner, by allows one to call the methods of the remote miner anyway.
+	 * 
+	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @throws MinerException if the service cannot be deployed
+	 */
+	public static MinerService of(URI uri) throws MinerException {
+		return new MinerServiceImpl(uri);
+	}
 }

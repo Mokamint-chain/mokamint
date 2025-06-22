@@ -21,6 +21,7 @@ import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
@@ -52,9 +53,10 @@ import jakarta.websocket.Session;
 public class MinerServiceImpl extends AbstractRemote<MinerException> implements MinerService {
 
 	/**
-	 * The adapted miner.
+	 * The adapted miner. This might be missing, in which case the service is just a proxy for calling the
+	 * methods of the remote miner, but won't provide any deadline to that remote.
 	 */
-	private final Miner miner;
+	private final Optional<Miner> miner;
 
 	/**
 	 * The session used to receive challenges and send back deadlines to the remote miner.
@@ -69,16 +71,18 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	private final static Logger LOGGER = Logger.getLogger(MinerServiceImpl.class.getName());
 
 	/**
-	 * Creates an miner service by adapting the given miner.
+	 * Creates a miner service by adapting the given miner.
 	 * 
-	 * @param miner the adapted miner
+	 * @param miner the adapted miner; if this is missing, the service won't provide deadlines but
+	 *              will anyway connect to the 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @throws MinerException if the service cannot be deployed
 	 */
 	public MinerServiceImpl(Miner miner, URI uri) throws MinerException {
 		super(30_000); // TODO
 
-		this.miner = miner;
+		this.miner = Optional.of(miner);
+		// TODO: check that miner has the same mining specification as the remote
 		this.logPrefix = "miner service working for " + uri + ": ";
 
 		try {
@@ -91,7 +95,33 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 
 		this.session = getSession(MINING_ENDPOINT);
 
-		LOGGER.info(logPrefix + "bound to " + uri);
+		LOGGER.info(logPrefix + "bound");
+	}
+
+	/**
+	 * Creates an miner service without a miner. It won't provide deadlines to the connected
+	 * remote miner, by allows one to call the methods of the remote miner anyway.
+	 * 
+	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @throws MinerException if the service cannot be deployed
+	 */
+	public MinerServiceImpl(URI uri) throws MinerException {
+		super(30_000); // TODO
+
+		this.miner = Optional.empty();
+		this.logPrefix = "miner service connected to " + uri + ": ";
+
+		try {
+			addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
+			addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
+		}
+		catch (IOException | DeploymentException e) {
+			throw new MinerException(e);
+		}
+
+		this.session = getSession(MINING_ENDPOINT);
+
+		LOGGER.info(logPrefix + "bound");
 	}
 
 	@Override
@@ -165,7 +195,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		try {
 			ensureIsOpen();
 			LOGGER.info(logPrefix + "received deadline request: " + description);
-			miner.requestDeadline(description, this::onDeadlineComputed);
+			miner.ifPresent(miner -> miner.requestDeadline(description, this::onDeadlineComputed));
 		}
 		catch (MinerException e) {
 			LOGGER.warning(logPrefix + "ignoring deadline request: " + description + " since this miner service is already closed: " + e.getMessage());
