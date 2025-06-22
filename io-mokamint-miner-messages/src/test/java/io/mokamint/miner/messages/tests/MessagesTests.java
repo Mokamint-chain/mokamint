@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
@@ -40,7 +42,8 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getMiningSpecificationResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetMiningSpecificationResult() throws Exception {
-		var miningSpecification = MiningSpecifications.of("octopus");
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var miningSpecification = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		var getMiningSpecificationResultMessage1 = GetMiningSpecificationResultMessages.of(miningSpecification, "id");
 		String encoded = new GetMiningSpecificationResultMessages.Encoder().encode(getMiningSpecificationResultMessage1);
 		var getMiningSpecificationResultMessage2 = new GetMiningSpecificationResultMessages.Decoder().decode(encoded);

@@ -15,6 +15,11 @@ limitations under the License.
 */
 package io.mokamint.miner;
 
+import java.security.InvalidKeyException;
+import java.security.PublicKey;
+
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.miner.api.MiningSpecification;
@@ -32,10 +37,21 @@ public abstract class MiningSpecifications {
 	 * Yields a mining specification for the given deadline parameters.
 	 * 
 	 * @param chainId the chain id of the deadlines expected by the miner
+	 * @param hashingForDeadlines the hashing algorithm used for computing the deadlines expected by a miner
+	 *                            having this specification
+	 * @param signatureForBlocks the signature algorithm used for the key identifying the node
+	 *                           in the deadlines expected by a miner having this specification
+	 * @param signatureForDeadlines the signature algorithm used for the key identifying the plot
+	 *                              containing the deadlines expected by a miner having this specification
+	 * @param publicKeyForSigningBlocks the public key identifying the node in the deadlines
+	 *                                  expected by a miner having this specification. This is a public key for the
+	 *                                  {@code signatureForBlocks} algorithm
 	 * @return the mining specification
+	 * @throws IllegalArgumentException if {@code publicKeyForSigningBlocks} is invalid
+	 * @throws InvalidKeyException 
 	 */
-	public static MiningSpecification of(String chainId) {
-		return new MiningSpecificationImpl(chainId);
+	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) throws InvalidKeyException, IllegalArgumentException {
+		return new MiningSpecificationImpl(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks);
 	}
 
 	/**

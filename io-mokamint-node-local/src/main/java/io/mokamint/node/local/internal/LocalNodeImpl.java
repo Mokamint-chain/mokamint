@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.util.Deque;
@@ -47,6 +48,7 @@ import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
@@ -201,6 +203,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private final BlockingQueue<WhisperedInfo<WhisperTransactionMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
 
+	/**
+	 * The mining specification of every miner that works with this node.
+	 */
+	private final MiningSpecification miningSpecification;
+
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
 	/**
@@ -219,6 +226,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 		this.config = config;
 		this.keyPair = keyPair;
+
+		try {
+			this.miningSpecification = MiningSpecifications.of(config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
+		}
+		catch (InvalidKeyException e) {
+			throw new NodeException(e);
+		}
+
 		this.app = app;
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
@@ -443,7 +458,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws MinerException, NodeException {
 		try (var scope = mkScope()) {
-			var miner = RemoteMiners.open(port, MiningSpecifications.of(config.getChainId()), this::checkForMiners);
+			var miner = RemoteMiners.open(port, miningSpecification, this::checkForMiners);
 			// addOnCloseHandler(() -> tryClose(miner)); // TODO: use this instead of minersToCloseAtTheEnd
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())

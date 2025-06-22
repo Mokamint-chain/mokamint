@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -29,9 +31,11 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.MiningSpecifications;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -40,6 +44,21 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 
 public class RemoteMinerTests extends AbstractLoggedTests {
+
+	/**
+	 * The mining specification of the test miners.
+	 */
+	private final static MiningSpecification MINING_SPECIFICATION;
+
+	static {
+		try {
+			var ed25519 = SignatureAlgorithms.ed25519();
+			MINING_SPECIFICATION = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		}
+		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Test
 	@DisplayName("if a deadline description is requested to a remote miner, it gets forwarded to the connected service(s)")
@@ -57,7 +76,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.open(8025, MiningSpecifications.of("chainId"), _deadline -> {});
+		try (var remote = RemoteMiners.open(8025, MINING_SPECIFICATION, _deadline -> {});
 			 var client1 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived);
 			 var client2 = new TestClient(URI.create("ws://localhost:8025"), onDeadlineDescriptionReceived)) {
 			remote.requestDeadline(description, deadline -> {});
@@ -90,7 +109,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.open(8025, MiningSpecifications.of("chainId"), _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _challenge -> {})) {
+		try (var remote = RemoteMiners.open(8025, MINING_SPECIFICATION, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _challenge -> {})) {
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
@@ -123,7 +142,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 				semaphore.release();
 		};
 
-		try (var remote = RemoteMiners.open(8025, MiningSpecifications.of("chainId"), _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
+		try (var remote = RemoteMiners.open(8025, MINING_SPECIFICATION, _deadline -> {}); var client = new TestClient(new URI("ws://localhost:8025"), _description -> {})) {
 			remote.requestDeadline(challenge, onDeadlineReceived);
 			client.send(deadline);
 			assertFalse(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
@@ -140,7 +159,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			generationSignature[pos] = (byte) (42 + pos);
 		var description = Challenges.of(42, generationSignature, shabal256(), hashingForGenerations);
 
-		try (var remote = RemoteMiners.open(8025, MiningSpecifications.of("chainId"), _deadline -> {});
+		try (var remote = RemoteMiners.open(8025, MINING_SPECIFICATION, _deadline -> {});
 			 var client = new TestClient(new URI("ws://localhost:8025"), _description -> semaphore.release())) {
 
 			client.close();

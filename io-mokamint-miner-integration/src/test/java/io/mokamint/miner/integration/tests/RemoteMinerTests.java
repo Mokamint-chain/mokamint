@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
@@ -48,7 +50,8 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 	public void remoteGetMiningSpecificationWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var miner = mkMiner();
-		var miningSpecification = MiningSpecifications.of("octopus");
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var miningSpecification = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 
 		class MinerServiceTest extends MinerServiceImpl {
 

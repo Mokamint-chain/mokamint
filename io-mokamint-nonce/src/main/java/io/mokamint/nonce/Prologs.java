@@ -49,7 +49,7 @@ public final class Prologs {
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
-	 * @throws InvalidKeyException if some of the keys is not valid
+	 * @throws InvalidKeyException if some key is not valid
 	 */
 	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
 			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)

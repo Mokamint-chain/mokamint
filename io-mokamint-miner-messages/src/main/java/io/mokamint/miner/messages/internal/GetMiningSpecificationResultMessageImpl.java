@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.messages.internal;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.exceptions.ExceptionSupplier;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
@@ -50,8 +52,9 @@ public class GetMiningSpecificationResultMessageImpl extends AbstractRpcMessage 
 	 * 
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available cryptographic algorithm
 	 */
-	public GetMiningSpecificationResultMessageImpl(GetMiningSpecificationResultMessageJson json) throws InconsistentJsonException {
+	public GetMiningSpecificationResultMessageImpl(GetMiningSpecificationResultMessageJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		this(
 			Objects.requireNonNull(json.getResult(), "result cannot be null", InconsistentJsonException::new).unmap(),
 			json.getId(),

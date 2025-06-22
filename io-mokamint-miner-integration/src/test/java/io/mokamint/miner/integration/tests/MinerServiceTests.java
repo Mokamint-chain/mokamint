@@ -20,11 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import java.net.URI;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.MinerException;
@@ -38,7 +42,17 @@ import jakarta.websocket.Session;
 public class MinerServiceTests extends AbstractLoggedTests {
 	private final static int PORT = 8025;
 	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
-	private final static MiningSpecification MINING_SPECIFICATION = MiningSpecifications.of("octopus");
+	private final static MiningSpecification MINING_SPECIFICATION;
+
+	static {
+		try {
+			var ed25519 = SignatureAlgorithms.ed25519();
+			MINING_SPECIFICATION = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		}
+		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * Test server implementation.

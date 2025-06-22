@@ -54,7 +54,8 @@ public interface Prolog extends Marshallable {
 	 * Yields the public key that must be used to sign the blocks having
 	 * a deadline with this prolog.
 	 * 
-	 * @return the public key
+	 * @return the public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForBlocks()}.
 	 */
 	PublicKey getPublicKeyForSigningBlocks();
 
@@ -62,7 +63,8 @@ public interface Prolog extends Marshallable {
 	 * Yields the public key that must be used to sign the blocks having
 	 * a deadline with this prolog, in Base58 format.
 	 * 
-	 * @return the public key
+	 * @return the public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForBlocks()}
 	 */
 	String getPublicKeyForSigningBlocksBase58();
 
@@ -77,7 +79,8 @@ public interface Prolog extends Marshallable {
 	/**
 	 * Yields the public key that miners must use to sign deadlines having this prolog.
 	 * 
-	 * @return the public key
+	 * @return the public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForDeadlines()}
 	 */
 	PublicKey getPublicKeyForSigningDeadlines();
 
@@ -85,7 +88,8 @@ public interface Prolog extends Marshallable {
 	 * Yields the public key that miners must use to sign deadlines having this prolog,
 	 * in Base58 format.
 	 * 
-	 * @return the public key
+	 * @return the public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForDeadlines()}
 	 */
 	String getPublicKeyForSigningDeadlinesBase58();
 

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
@@ -72,7 +73,12 @@ public class EventsTests extends AbstractLoggedTests {
 	/**
 	 * The chain identifier of the deadlines.
 	 */
-	private final static String chainId = "octopus";
+	private final static String CHAIN_ID = "octopus";
+
+	/**
+	 * The mining specification of the deadlines.
+	 */
+	private final static MiningSpecification MINING_SPECIFICATION;
 
 	/**
 	 * The keys of the node.
@@ -94,6 +100,16 @@ public class EventsTests extends AbstractLoggedTests {
 	 */
 	private static Plot plot;
 
+	static {
+		try {
+			var ed25519 = SignatureAlgorithms.ed25519();
+			MINING_SPECIFICATION = MiningSpecifications.of(CHAIN_ID, HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		}
+		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@BeforeAll
 	public static void beforeAll(@TempDir Path dir) throws Exception {
 		app = mock(Application.class);
@@ -104,7 +120,7 @@ public class EventsTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
-		prolog = Prologs.of(chainId, ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
+		prolog = Prologs.of(CHAIN_ID, ed25519, nodeKeys.getPublic(), ed25519, plotKeys.getPublic(), new byte[0]);
 		plot = Plots.create(dir.resolve("plot.plot"), prolog, 0, 500, mkConfig(dir).getHashingForDeadlines(), __ -> {});
 	}
 
@@ -160,7 +176,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 		};
 
@@ -223,7 +239,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override
@@ -339,7 +355,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override

@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.messages.internal.json;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.miner.MiningSpecifications;
@@ -39,7 +41,7 @@ public abstract class GetMiningSpecificationResultMessageJson extends AbstractRp
 	}
 
 	@Override
-	public GetMiningSpecificationResultMessage unmap() throws InconsistentJsonException {
+	public GetMiningSpecificationResultMessage unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
 		return new GetMiningSpecificationResultMessageImpl(this);
 	}
 

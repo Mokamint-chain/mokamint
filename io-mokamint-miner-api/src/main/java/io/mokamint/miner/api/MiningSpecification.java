@@ -16,7 +16,11 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
+import java.security.PublicKey;
+
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 
 /**
  * The specification of the kind of deadlines that are expected by a miner
@@ -31,6 +35,48 @@ public interface MiningSpecification {
 	 * @return the chain id
 	 */
 	String getChainId();
+
+	/**
+	 * Yields the hashing algorithm used for computing the deadlines expected by a miner
+	 * having this specification.
+	 * 
+	 * @return the hashing algorithm
+	 */
+	HashingAlgorithm getHashingForDeadlines();
+
+	/**
+	 * Yields the signature algorithm used for the key identifying the node
+	 * in the deadlines expected by a miner having this specification.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm getSignatureForBlocks();
+
+	/**
+	 * Yields the signature algorithm used for the key identifying the plot
+	 * containing the deadlines expected by a miner having this specification.
+	 * 
+	 * @return the signature algorithm
+	 */
+	SignatureAlgorithm getSignatureForDeadlines();
+
+	/**
+	 * Yields the public key identifying the node in the deadlines
+	 * expected by a miner having this specification. This is a public key for the
+	 * {@link #getSignatureForBlocks()} algorithm.
+	 * 
+	 * @return the public key
+	 */
+	PublicKey getPublicKeyForSigningBlocks();
+
+	/**
+	 * Yields the Base58-encoded public key identifying the node in the deadlines
+	 * expected by a miner having this specification. This is a public key for the
+	 * {@link #getSignatureForBlocks()} algorithm.
+	 * 
+	 * @return the public key, Base58-encoded
+	 */
+	String getPublicKeyForSigningBlocksBase58();
 
 	@Override
 	boolean equals(Object obj);

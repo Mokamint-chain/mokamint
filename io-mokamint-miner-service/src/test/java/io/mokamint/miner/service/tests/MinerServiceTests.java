@@ -21,6 +21,8 @@ import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -46,9 +48,19 @@ import io.mokamint.nonce.api.Deadline;
 public class MinerServiceTests extends AbstractLoggedTests {
 
 	/**
-	 * The chain identifier of the deadlines.
+	 * The mining specification of the test miners.
 	 */
-	private final static String chainId = "octopus";
+	private final static MiningSpecification MINING_SPECIFICATION;
+
+	static {
+		try {
+			var ed25519 = SignatureAlgorithms.ed25519();
+			MINING_SPECIFICATION = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		}
+		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Test
 	@DisplayName("if a deadline description is requested to a miner service, it gets forwarded to the adapted miner")
@@ -75,7 +87,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override
@@ -120,7 +132,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override
@@ -176,7 +188,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override
@@ -243,7 +255,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 
 			@Override
 			public MiningSpecification getMiningSpecification() {
-				return MiningSpecifications.of(chainId);
+				return MINING_SPECIFICATION;
 			}
 
 			@Override

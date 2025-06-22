@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.miner.internal.json;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.miner.api.MiningSpecification;
@@ -26,17 +28,41 @@ import io.mokamint.miner.internal.MiningSpecificationImpl;
  */
 public abstract class MiningSpecificationJson implements JsonRepresentation<MiningSpecification> {
 	private final String chainId;
+	private final String hashingForDeadlines;
+	private final String signatureForBlocks;
+	private final String signatureForDeadlines;
+	private final String publicKeyForSigningBlocksBase58;
 
 	protected MiningSpecificationJson(MiningSpecification spec) {
 		this.chainId = spec.getChainId();
+		this.hashingForDeadlines = spec.getHashingForDeadlines().getName();
+		this.signatureForBlocks = spec.getSignatureForBlocks().getName();
+		this.signatureForDeadlines = spec.getSignatureForDeadlines().getName();
+		this.publicKeyForSigningBlocksBase58 = spec.getPublicKeyForSigningBlocksBase58();
 	}
 
 	public String getChainId() {
 		return chainId;
 	}
 
+	public String getHashingForDeadlines() {
+		return hashingForDeadlines;
+	}
+
+	public String getSignatureForBlocks() {
+		return signatureForBlocks;
+	}
+
+	public String getSignatureForDeadlines() {
+		return signatureForDeadlines;
+	}
+
+	public String getPublicKeyForSigningBlocksBase58() {
+		return publicKeyForSigningBlocksBase58;
+	}
+
 	@Override
-	public MiningSpecification unmap() throws InconsistentJsonException {
+	public MiningSpecification unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
 		return new MiningSpecificationImpl(this);
 	}
 }
