@@ -123,7 +123,7 @@ public class MiningTask implements Task {
 				Thread.sleep(5000L);
 			}
 			catch (NodeException e) {
-				LOGGER.log(Level.SEVERE, "restarting the mining task after crash: " + e.getMessage());
+				LOGGER.log(Level.SEVERE, "restarting the mining task after crash", e);
 			}
 		}
 	}
