@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.node.api.NodeException;
@@ -120,6 +121,9 @@ public class MiningTask implements Task {
 			catch (ApplicationTimeoutException e) {
 				LOGGER.warning("mining: the application is unresponsive: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
+			}
+			catch (NodeException e) {
+				LOGGER.log(Level.SEVERE, "restarting the mining task after crash: " + e.getMessage());
 			}
 		}
 	}
