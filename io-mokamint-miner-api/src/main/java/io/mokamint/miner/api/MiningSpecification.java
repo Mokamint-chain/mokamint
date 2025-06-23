@@ -83,4 +83,7 @@ public interface MiningSpecification {
 
 	@Override
 	int hashCode();
+
+	@Override
+	String toString();
 }

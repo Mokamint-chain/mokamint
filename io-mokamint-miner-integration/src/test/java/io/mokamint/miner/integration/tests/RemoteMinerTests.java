@@ -56,7 +56,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		class MinerServiceTest extends MinerServiceImpl {
 
 			public MinerServiceTest() throws MinerException {
-				super(miner, URI);
+				super(miner, URI, 30_000);
 			}
 
 			@Override

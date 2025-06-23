@@ -214,4 +214,12 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	public int hashCode() {
 		return chainId.hashCode() ^ hashingForDeadlines.hashCode() ^ signatureForBlocks.hashCode() ^ signatureForDeadlines.hashCode();
 	}
+
+	@Override
+	public String toString() {
+		return "chain identifier: " + chainId + "\nhashing for deadlines: " + hashingForDeadlines
+				+ "\nsignature for blocks: " + signatureForBlocks
+				+ "\nsignature for deadlines: " + signatureForDeadlines
+				+ "\npublic key for signing blocks: " + publicKeyForSigningBlocksBase58 + " (" + signatureForBlocks + ", base58)";
+	}
 }

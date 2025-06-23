@@ -35,11 +35,13 @@ public final class MinerServices {
 	 * 
 	 * @param miner the adapted miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
+	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the miner service
 	 * @throws MinerException if the service cannot be deployed
 	 */
-	public static MinerService of(Miner miner, URI uri) throws MinerException {
-		return new MinerServiceImpl(miner, uri);
+	public static MinerService of(Miner miner, URI uri, int timeout) throws MinerException {
+		return new MinerServiceImpl(miner, uri, timeout);
 	}
 
 	/**
@@ -47,9 +49,11 @@ public final class MinerServices {
 	 * remote miner, by allows one to call the methods of the remote miner anyway.
 	 * 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
+	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws MinerException if the service cannot be deployed
 	 */
-	public static MinerService of(URI uri) throws MinerException {
-		return new MinerServiceImpl(uri);
+	public static MinerService of(URI uri, int timeout) throws MinerException {
+		return new MinerServiceImpl(uri, timeout);
 	}
 }

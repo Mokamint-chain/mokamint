@@ -83,7 +83,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			}
 		};
 
-		try (var remoteMiner = new MyRemoteMiner(); var minerService = MinerServices.of(mock(), URI)) {
+		try (var remoteMiner = new MyRemoteMiner(); var minerService = MinerServices.of(mock(), URI, 30_000)) {
 			assertEquals(MINING_SPECIFICATION, minerService.getMiningSpecification());
 		}
 	}

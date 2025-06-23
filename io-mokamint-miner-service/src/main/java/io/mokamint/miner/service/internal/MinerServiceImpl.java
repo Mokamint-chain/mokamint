@@ -76,10 +76,12 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	 * @param miner the adapted miner; if this is missing, the service won't provide deadlines but
 	 *              will anyway connect to the 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
+	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws MinerException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(Miner miner, URI uri) throws MinerException {
-		super(30_000); // TODO
+	public MinerServiceImpl(Miner miner, URI uri, int timeout) throws MinerException {
+		super(timeout);
 
 		this.miner = Optional.of(miner);
 		// TODO: check that miner has the same mining specification as the remote
@@ -103,10 +105,12 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	 * remote miner, by allows one to call the methods of the remote miner anyway.
 	 * 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
+	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws MinerException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(URI uri) throws MinerException {
-		super(30_000); // TODO
+	public MinerServiceImpl(URI uri, int timeout) throws MinerException {
+		super(timeout);
 
 		this.miner = Optional.empty();
 		this.logPrefix = "miner service connected to " + uri + ": ";

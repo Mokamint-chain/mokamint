@@ -27,6 +27,7 @@ module io.mokamint.miner.cli {
     requires io.hotmoka.cli;
     requires io.hotmoka.crypto;
     requires io.hotmoka.websockets.beans;
+    requires io.hotmoka.websockets.client.api;
 
 	requires java.logging;
 }

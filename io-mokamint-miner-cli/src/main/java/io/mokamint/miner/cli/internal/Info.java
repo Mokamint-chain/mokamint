@@ -19,11 +19,13 @@ package io.mokamint.miner.cli.internal;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
-import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.service.MinerServices;
+import io.mokamint.miner.service.api.MinerService;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -31,35 +33,32 @@ import picocli.CommandLine.Option;
 @Command(name = "info",
 	description = "Print the specification of a mining remote.",
 	showDefaultValues = true)
-public class Info extends AbstractCommand {
+public class Info extends AbstractRpcCommand<MinerService, MinerException> {
 
-	@Option(names = "--uri", description = "the URI of the remote mining endpoint", defaultValue = "ws://localhost:8025")
+	@Option(names = "--uri", description = "the network URI where the API of the remote miner is published", defaultValue = "ws://localhost:8025")
 	private URI uri;
+
+	protected Info() {
+		super(MinerException.class);
+	}
 
 	@Override
 	protected void execute() throws CommandException {
-		new Run();
+		execute(MinerServices::of, this::body, uri);
 	}
 
-	private class Run {
+	private void body(MinerService service) throws TimeoutException, InterruptedException, MinerException, CommandException {
+		MiningSpecification miningSpecification = service.getMiningSpecification();
 
-		private Run() throws CommandException {
-			try (var service = MinerServices.of(uri)) {
-				System.out.println(new MiningSpecifications.Encoder().encode(service.getMiningSpecification()));
-			}
-			catch (MinerException e) {
-				throw new CommandException("The miner is misbehaving: " + e.getMessage());
-			}
-			catch (TimeoutException e) {
-				throw new CommandException("The operation has timed out");
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new CommandException("The operation has been interrupted");
+		if (json()) {
+			try {
+				System.out.println(new MiningSpecifications.Encoder().encode(miningSpecification));
 			}
 			catch (EncodeException e) {
 				throw new CommandException("Could not encode the mining specification in JSON format: " + e.getMessage());
 			}
 		}
+		else
+			System.out.println(miningSpecification);
 	}
 }

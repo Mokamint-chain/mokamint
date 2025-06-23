@@ -197,6 +197,9 @@ public class TransactionsExecutionTask implements Task {
 			throw new ApplicationTimeoutException(e);
 		}
 		catch (ApplicationException | UnknownGroupIdException e) {
+			// TODO: this failed when another node was resumed...
+			// it killed this mining task
+			// the following line threw: io.mokamint.node.api.NodeException: io.hotmoka.node.local.api.StoreException: Missing key in Patricia trie
 			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
 		}
 

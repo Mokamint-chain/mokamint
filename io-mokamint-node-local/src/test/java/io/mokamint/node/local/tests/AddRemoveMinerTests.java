@@ -174,7 +174,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			var uuid = infoOfNewMiner.get().getUUID();
 
 			// we connect the local miner to the mining service of node1
-			try (var service = MinerServices.of(miner, URI.create("ws://localhost:" + miningPort))) {
+			try (var service = MinerServices.of(miner, URI.create("ws://localhost:" + miningPort), 30_000)) {
 				// miner works for node1, which whispers block to node2: eventually node2 will receive 5 blocks
 				assertTrue(node2HasAddedBlock.tryAcquire(5, 1, TimeUnit.MINUTES));
 				node1.removeMiner(uuid);
