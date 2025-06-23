@@ -135,6 +135,8 @@ public class TransactionsExecutionTask implements Task {
 		catch (ApplicationException | UnknownStateException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			// or because the head (ie, previous) of the blockchain has no associated state in the application
+			// TODO: this failed during mining after synchronization from another peer...
+			// io.mokamint.node.api.NodeException: Unknown state identifier
 			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {

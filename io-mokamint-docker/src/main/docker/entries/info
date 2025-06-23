@@ -1,0 +1,29 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+BOLD_GREEN='\033[1;32m'
+BLUE='\033[0;34m'
+BOLD_CYAN='\033[1;36m'
+NC='\033[0m' # No Color
+
+echo -e "${BOLD_GREEN}This container provides the Mokamint tools:${NC}"
+echo -e "* ${RED}mokamint-application:${NC} a manager of Mokamint applications"
+echo -e "* ${RED}mokamint-miner:${NC}       a manager of Mokamint miners"
+echo -e "* ${RED}mokamint-node:${NC}        a manager of Mokamint nodes"
+echo -e "* ${RED}mokamint-plotter:${NC}     a manager of Mokamint plot files"
+echo
+echo -e "${BOLD_GREEN}Moreover, the following commands and options are available inside this container:${NC}"
+echo -e "* ${RED}info:${NC}         print this information message"
+echo
+echo -e "* ${RED}config-miner:${NC} create the configuration directory of a miner service connected to a remote miner"
+echo -e "    ${BLUE}MINER_PUBLIC_SERVICE_URI:${NC} the URI of an already existing remote miner"
+echo -e "    ${BLUE}PLOT_SIZE:${NC} the number of nonces of the plot that the miner will use for mining"
+echo -e "    ${BLUE}EXTRA:${NC} base58-encoded extra data to put in the nonces of the plot"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka-io:8025 -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION config-miner${NC}"
+echo
+echo -e "* ${RED}mine:${NC}         create a mining service for a remote miner, whose configuration has been created with config-miner"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka-io:8025 -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION mine${NC}"

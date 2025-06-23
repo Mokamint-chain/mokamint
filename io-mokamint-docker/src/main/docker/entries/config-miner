@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# This script creates the configuration directory of a Mokamint miner service for a remote miner.
+#
+# miner.pem
+# plot.plot
+#
+# where:
+# 1) miner.pem is the key pair of the miner service
+# 2) plot.plot contains nonces for the public key, chain identifier and cryptographic algorithms of the remote miner
+#    and for the public key of miner.pem
+
+RED='\033[0;31m'
+BOLD_GREEN='\033[1;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+MINER_PUBLIC_SERVICE_URI=${MINER_PUBLIC_SERVICE_URI:-ws://panarea.hotmoka.io:8025}
+PLOT_SIZE=${PLOT_SIZE:-1000}
+EXTRA=${EXTRA:""}
+
+echo -e "${BOLD_GREEN}I will use the following parameters for the creation of the configuration directory of a Mokamint miner}:${NC}"
+echo
+echo -e "               ${BLUE}PLOT_SIZE${NC}=${RED}$PLOT_SIZE${NC}"
+echo -e "${BLUE}MINER_PUBLIC_SERVICE_URI${NC}=${RED}\"$MINER_PUBLIC_SERVICE_URI\"${NC}"
+echo -e "                   ${BLUE}EXTRA${NC}=${RED}$EXTRA${NC}"
+echo
+
+echo -n "Cleaning the directory miner_configuration... "
+rm -rf miner_configuration/*
+echo -e "${RED}done${NC}"
+
+echo -n "Asking the mining specification to $MINER_PUBLIC_SERVICE_URI... "
+MINER_SPECIFICATION=$(mokamint-miner info --json --uri $MINER_PUBLIC_SERVICE_URI)
+CHAIN_ID=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['chainId'])")
+HASHING_FOR_DEADLINES=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['hashingForDeadlines'])")
+SIGNATURE_FOR_BLOCKS=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['signatureForBlocks'])")
+SIGNATURE_FOR_DEADLINES=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['signatureForDeadlines'])")
+PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyForSigningBlocksBase58'])")
+echo -e "${RED}done${NC}"
+
+echo -n "Creating the miner.pem key pair of the miner service... "
+PUBLIC_KEY_MINER_BASE58=$(mokamint-node keys create miner_configuration/miner.pem --signature=$SIGNATURE_FOR_DEADLINES --json | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyBase58'])")
+chmod og-rwx miner_configuration/miner.pem
+echo -e "${RED}done${NC}"
+
+echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for chain id \"${CHAIN_ID}\", public key for signing blocks ${PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58} (${SIGNATURE_FOR_BLOCKS}, base58), signature for deadlines $SIGNATURE_FOR_DEADLINES, hashing algorithm ${HASHING_FOR_DEADLINES}, extra \"${EXTRA}\"..."
+mokamint-plotter create miner_configuration/plot.plot 0 $PLOT_SIZE "$CHAIN_ID" $PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58 $PUBLIC_KEY_MINER_BASE58 --hashing=$HASHING_FOR_DEADLINES --signature-of-node=$SIGNATURE_FOR_BLOCKS --signature-of-plot=$SIGNATURE_FOR_DEADLINES --extra "$EXTRA"
+echo -e "${RED}done${NC}"
