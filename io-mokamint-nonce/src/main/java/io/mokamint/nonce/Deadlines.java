@@ -85,6 +85,7 @@ public final class Deadlines {
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @param signatureForBlocks the signature algorithm for the blocks
 	 * @param signatureForDeadlines the signature algorithm for the deadlines
+	 * @param verify true if and only if the deadline must be verified
 	 * @return the deadline
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */

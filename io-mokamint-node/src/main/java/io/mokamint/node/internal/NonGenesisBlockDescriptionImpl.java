@@ -236,6 +236,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 	 * @param height the height of the block
 	 * @param context the unmarshalling context
 	 * @param config the consensus configuration of the node storing the block description
+	 * @param verify true if and only if the block must be verified
 	 * @throws IOException if unmarshalling failed
 	 */
 	protected NonGenesisBlockDescriptionImpl(long height, UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {

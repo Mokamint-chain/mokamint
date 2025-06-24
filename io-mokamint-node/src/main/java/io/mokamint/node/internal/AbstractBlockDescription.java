@@ -158,6 +158,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
+	 * @param verify true if and only if the block description must be verified
 	 * @return the block description
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */

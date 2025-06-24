@@ -47,10 +47,9 @@ public abstract class MiningSpecifications {
 	 *                                  expected by a miner having this specification. This is a public key for the
 	 *                                  {@code signatureForBlocks} algorithm
 	 * @return the mining specification
-	 * @throws IllegalArgumentException if {@code publicKeyForSigningBlocks} is invalid
-	 * @throws InvalidKeyException 
+	 * @throws InvalidKeyException if {@code publicKeyForSigningBlocks} is invalid
 	 */
-	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) throws InvalidKeyException, IllegalArgumentException {
+	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) throws InvalidKeyException {
 		return new MiningSpecificationImpl(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks);
 	}
 

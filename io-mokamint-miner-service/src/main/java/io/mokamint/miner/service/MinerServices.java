@@ -51,6 +51,7 @@ public final class MinerServices {
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
+	 * @return the miner service
 	 * @throws MinerException if the service cannot be deployed
 	 */
 	public static MinerService of(URI uri, int timeout) throws MinerException {

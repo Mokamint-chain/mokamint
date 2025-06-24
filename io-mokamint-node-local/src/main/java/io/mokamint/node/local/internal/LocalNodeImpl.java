@@ -1091,6 +1091,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				// if verification fails, we do not pass the block to our peers
 				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " failed verification: " + e.getMessage());
 			}
+			catch (NodeException e) {
+				// TODO: this happened because the verification of the whispered block failed with:
+				// io.mokamint.node.api.NodeException: io.hotmoka.node.local.api.StoreException: Missing key in Patricia trie
+				// during transactionsExecutionLeadsToFinalState(BlockVerification.java:411)
+				LOGGER.log(Level.SEVERE, "restarting the block whispering after failure", e);
+			}
 		}
 	}
 	
