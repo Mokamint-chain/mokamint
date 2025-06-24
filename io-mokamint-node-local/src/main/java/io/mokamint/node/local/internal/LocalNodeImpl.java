@@ -50,6 +50,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
+import io.mokamint.miner.remote.api.DeadlineValidityCheck.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
@@ -89,7 +90,6 @@ import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A local node of a Mokamint blockchain.

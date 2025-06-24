@@ -35,6 +35,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.miner.remote.api.DeadlineValidityCheck.IllegalDeadlineException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -42,8 +43,8 @@ import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.ChallengeMatchException;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A block miner above a previous block. It requests a deadline to the miners of the node
@@ -324,7 +325,7 @@ public class BlockMiner {
 			LOGGER.warning(heightMessage + "discarding belated deadline " + deadline);
 		else {
 			try {
-				deadline.getChallenge().matchesOrThrow(challenge, IllegalDeadlineException::new);
+				deadline.getChallenge().requireMatches(challenge);
 				node.check(deadline);
 
 				// we increase the points of the miner, but only for the first deadline that it provides
@@ -332,6 +333,11 @@ public class BlockMiner {
 					miners.pardon(miner, config.getMinerPunishmentForTimeout());
 
 				currentDeadline.updateIfWorseThan(deadline);
+			}
+			catch (ChallengeMatchException e) {
+				LOGGER.warning(heightMessage + "discarding deadline " + deadline + " for the wrong challenge: " + e.getMessage());
+				node.onIllegalDeadlineComputed(deadline, miner);
+				node.punish(miner, config.getMinerPunishmentForIllegalDeadline(), "it provided a deadline for the wrong challenge");
 			}
 			catch (IllegalDeadlineException e) {
 				LOGGER.warning(heightMessage + "discarding illegal deadline " + deadline + ": " + e.getMessage());

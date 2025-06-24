@@ -17,17 +17,17 @@ limitations under the License.
 package io.mokamint.nonce.api;
 
 /**
- * An exception thrown when a deadline validity check fails.
+ * An exception thrown when two challenges do not match.
  */
 @SuppressWarnings("serial")
-public class IllegalDeadlineException extends Exception {
+public class ChallengeMatchException extends Exception {
 
 	/**
 	 * Creates the exception.
 	 * 
 	 * @param message the message in the exception
 	 */
-	public IllegalDeadlineException(String message) {
+	public ChallengeMatchException(String message) {
 		super(message);
 	}
 }

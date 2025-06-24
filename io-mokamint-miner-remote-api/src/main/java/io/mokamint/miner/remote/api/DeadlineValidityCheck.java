@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.nonce.api.Deadline;
-import io.mokamint.nonce.api.IllegalDeadlineException;
 
 /**
  * A check of validity for a deadline.
@@ -37,4 +36,20 @@ public interface DeadlineValidityCheck {
 	 * @throws TimeoutException if the check did not answer in time
 	 */
 	void check(Deadline deadline) throws IllegalDeadlineException, MinerException, InterruptedException, TimeoutException;
+
+	/**
+	 * An exception thrown when a deadline validity check fails.
+	 */
+	@SuppressWarnings("serial")
+	public class IllegalDeadlineException extends Exception {
+
+		/**
+		 * Creates the exception.
+		 * 
+		 * @param message the message in the exception
+		 */
+		public IllegalDeadlineException(String message) {
+			super(message);
+		}
+	}
 }

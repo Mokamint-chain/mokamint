@@ -24,15 +24,15 @@ import io.hotmoka.marshalling.api.Marshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 
 /**
- * A deadline inside a plot file. It is a reference to a nonce
- * and a value computed for that nonce. Deadlines are ordered
+ * A deadline derived from a nonce. It identifies a nonce
+ * and a value computed from that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
 @Immutable
 public interface Deadline extends Marshallable {
 
 	/**
-	 * Yields the prolog that was used to create the plot file from which
+	 * Yields the prolog that was used to create the nonce from which
 	 * this deadline has been generated.
 	 * 
 	 * @return the prolog
@@ -47,8 +47,7 @@ public interface Deadline extends Marshallable {
 	long getProgressive();
 
 	/**
-	 * Yields the value of the deadline computed for the nonce {@link #getProgressive()}
-	 * of the plot file.
+	 * Yields the value of the deadline.
 	 * 
 	 * @return the value
 	 */
@@ -96,8 +95,8 @@ public interface Deadline extends Marshallable {
 	int compareByValue(Deadline other);
 
 	/**
-	 * Determines if this deadline is valid, that is, its corresponding nonce
-	 * is for the same deadline.
+	 * Determines if this deadline is valid, that is, it is the deadline
+	 * derived from the corresponding nonce.
 	 * 
 	 * @return true if and only if this deadline is valid
 	 */

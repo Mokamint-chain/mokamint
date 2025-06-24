@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
@@ -30,6 +29,7 @@ import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.ChallengeMatchException;
 
 /**
  * Implementation of a challenge. It reports the information needed
@@ -132,19 +132,19 @@ public final class ChallengeImpl extends AbstractMarshallable implements Challen
 	}
 
 	@Override
-	public <E extends Exception> void matchesOrThrow(Challenge other, Function<String, E> exceptionSupplier) throws E {
+	public void requireMatches(Challenge other) throws ChallengeMatchException {
 		if (scoopNumber != other.getScoopNumber())
-			throw exceptionSupplier.apply("Scoop number mismatch (expected " + other.getScoopNumber() + " but found " + scoopNumber + ")");
+			throw new ChallengeMatchException("Scoop number mismatch (expected " + other.getScoopNumber() + " but found " + scoopNumber + ")");
 
 		// optimization below
 		if (!Arrays.equals(generationSignature, other instanceof ChallengeImpl ci ? ci.generationSignature : other.getGenerationSignature()))
-			throw exceptionSupplier.apply("Generation signature mismatch");
+			throw new ChallengeMatchException("Generation signature mismatch");
 
 		if (!hashingForDeadlines.equals(other.getHashingForDeadlines()))
-			throw exceptionSupplier.apply("Hashing algorithm for deadlines mismatch");
+			throw new ChallengeMatchException("Hashing algorithm for deadlines mismatch");
 
 		if (!hashingForGenerations.equals(other.getHashingForGenerations()))
-			throw exceptionSupplier.apply("Hashing algorithm for generations mismatch");
+			throw new ChallengeMatchException("Hashing algorithm for generations mismatch");
 	}
 
 	@Override

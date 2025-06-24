@@ -37,6 +37,7 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.nonce.api.ChallengeMatchException;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -213,7 +214,12 @@ public class BlockVerification {
 	private void deadlineMatchesItsExpectedChallenge() throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			var challenge = previous.getDescription().getNextChallenge();
-			deadline.getChallenge().matchesOrThrow(challenge, message -> new VerificationException("Deadline mismatch: " + toLowerInitial(message)));
+			try {
+				deadline.getChallenge().requireMatches(challenge);
+			}
+			catch (ChallengeMatchException e) {
+				throw new VerificationException("Deadline mismatch: " + toLowerInitial(e.getMessage()));
+			}
 		}
 	}
 

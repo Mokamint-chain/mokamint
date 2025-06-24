@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.nonce.api;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -66,14 +65,12 @@ public interface Challenge extends Marshallable {
 
 	/**
 	 * Checks if this challenge matches the given one.
-	 * If it doesn't, an exception is thrown by using the given supplier.
+	 * If it doesn't, an exception is thrown.
 	 * 
-	 * @param <E> the type of the thrown exception
 	 * @param other the other challenge matched against this challenge
-	 * @param exceptionSupplier the supplier of the exception: given the message, it yields the exception with that message
-	 * @throws E if the match fails
+	 * @throws ChallengeMatchException if the match fails
 	 */
-	<E extends Exception> void matchesOrThrow(Challenge other, Function<String, E> exceptionSupplier) throws E;
+	void requireMatches(Challenge other) throws ChallengeMatchException;
 
 	/**
 	 * Marshals this object into a given stream. This method in general
