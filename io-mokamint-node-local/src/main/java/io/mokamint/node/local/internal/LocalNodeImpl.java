@@ -50,7 +50,7 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
-import io.mokamint.miner.remote.api.DeadlineValidityCheck.IllegalDeadlineException;
+import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;

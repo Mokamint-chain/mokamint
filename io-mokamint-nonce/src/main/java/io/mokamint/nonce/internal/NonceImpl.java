@@ -45,12 +45,12 @@ public final class NonceImpl implements Nonce {
 	private final Prolog prolog;
 
 	/**
-	 * The hashing algorithm used for creating this nonce.
+	 * The hasher algorithm used for creating this nonce.
 	 */
 	private final Hasher<byte[]> hasher;
 
 	/**
-	 * The size of the hashing algorithm used to build this nonce.
+	 * The size of the hashes used to build this nonce.
 	 */
 	private final int hashSize;
 
@@ -68,8 +68,8 @@ public final class NonceImpl implements Nonce {
 	 * Creates the nonce for the given data and with the given number.
 	 * 
 	 * @param prolog generic data that identifies, for instance, the creator
-	 *               of the nonce. This can be really anything but cannot be {@code null}
-	 * @param progressive the progressive number of the nonce. This must be non-negative
+	 *               of the nonce; this can be really anything but cannot be {@code null}
+	 * @param progressive the progressive number of the nonce; this must be non-negative
 	 * @param hashingForDeadlines the hashing algorithm to use to create the nonce
 	 */
 	public NonceImpl(Prolog prolog, long progressive, HashingAlgorithm hashingForDeadlines) {
@@ -185,7 +185,7 @@ public final class NonceImpl implements Nonce {
 		 * a prolog at its end. This method will add scoops before that prolog.
 		 */
 		private void fillWithScoops() {
-			byte[] previous = new byte[32];
+			var previous = new byte[32];
 			for (int i = nonceSize; i > 0; i -= hashSize) {
 				int len = Math.min(buffer.length - i, HASH_CAP);
 				// we use a floating hashing window of size HASH_CAP instead of hashing always
@@ -196,12 +196,9 @@ public final class NonceImpl implements Nonce {
 				if (HASH_CAP < buffer.length - i) {
 					long previousLong = previousAsLong(previous);
 					offset = (int) (previousLong  % (buffer.length - i - HASH_CAP));
-					//System.out.println(Hex.toHexString(previous) + ": previousLong " + previousLong + " offset = " + offset + " [" + (i + offset) + "," + (i + offset + len) + "[");
 				}
-				else {
+				else
 					offset = 0;
-					//System.out.println(Hex.toHexString(previous) + ": previousLong ? " + " offset = " + offset + " [" + (i + offset) + "," + (i + offset + len) + "[");
-				}
 
 				// if + offset is removed below, then the algorithm becomes that of Signum
 				System.arraycopy(previous = hasher.hash(buffer, i + offset, len), 0, buffer, i - hashSize, hashSize);

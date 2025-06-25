@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.internal.gson;
+package io.mokamint.nonce.internal.json;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -33,16 +33,11 @@ import io.mokamint.nonce.api.Deadline;
  * The JSON representation of a {@link Deadline}.
  */
 public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
-	private Prologs.Json prolog;
-	private long progressive;
-	private String value;
-	private Challenges.Json challenge;
-	private String signature;
-
-	/**
-	 * Used by Gson.
-	 */
-	protected DeadlineJson() {}
+	private final Prologs.Json prolog;
+	private final long progressive;
+	private final String value;
+	private final Challenges.Json challenge;
+	private final String signature;
 
 	protected DeadlineJson(Deadline deadline) {
 		this.prolog = new Prologs.Json(deadline.getProlog());

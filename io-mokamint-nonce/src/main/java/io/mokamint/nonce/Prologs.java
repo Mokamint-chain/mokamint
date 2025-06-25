@@ -17,17 +17,16 @@ limitations under the License.
 package io.mokamint.nonce;
 
 import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.PrologImpl;
-import io.mokamint.nonce.internal.gson.PrologDecoder;
-import io.mokamint.nonce.internal.gson.PrologEncoder;
-import io.mokamint.nonce.internal.gson.PrologJson;
+import io.mokamint.nonce.internal.json.PrologJson;
 
 /**
  * Providers of plot prologs.
@@ -49,11 +48,9 @@ public final class Prologs {
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
 	 * @return the prolog
-	 * @throws InvalidKeyException if some key is not valid
 	 */
 	public static Prolog of(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
-			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
-					throws InvalidKeyException {
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra) {
 		return new PrologImpl(chainId, signatureForBlocks, publicKeyForSigningBlocks, signatureForDeadlines, publicKeyForSigningDeadlines, extra);
 	}
 
@@ -88,34 +85,33 @@ public final class Prologs {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PrologEncoder {
+	public static class Encoder extends MappedEncoder<Prolog, Prologs.Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PrologDecoder {
+	public static class Decoder extends MappedDecoder<Prolog, Prologs.Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**
      * Json representation.
      */
 	public static class Json extends PrologJson {
-
-    	/**
-    	 * Used by Gson.
-    	 */
-		public Json() {}
 
 		/**
     	 * Creates the Json representation for the given prolog.

@@ -41,8 +41,8 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 
 /**
- * Implementation of a deadline inside a plot file. It is a reference to a nonce
- * and a value computed for that nonce. Deadlines are ordered
+ * Implementation of a deadline inside a plot file. It identifies a nonce
+ * and contains a value computed from that nonce. Deadlines are ordered
  * by the lexicographical ordering of their values.
  */
 @Immutable
@@ -59,7 +59,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @param prolog the prolog of the nonce of the deadline
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
-	 * @param challenge the challenge the deadline responds to
+	 * @param challenge the challenge the deadline answers to
 	 * @param privateKey the private key that will be used to sign the deadline; it must match the
 	 *                   public key contained in the prolog
 	 * @return the deadline
@@ -204,7 +204,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 
 	@Override
 	public int hashCode() {
-		return challenge.hashCode();
+		return challenge.hashCode() ^ prolog.hashCode();
 	}
 
 	@Override

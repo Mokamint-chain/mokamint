@@ -35,7 +35,7 @@ import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.remote.api.DeadlineValidityCheck.IllegalDeadlineException;
+import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;

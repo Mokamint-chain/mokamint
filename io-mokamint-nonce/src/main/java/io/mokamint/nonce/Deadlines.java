@@ -25,13 +25,13 @@ import java.security.SignatureException;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.nonce.internal.DeadlineImpl;
-import io.mokamint.nonce.internal.gson.DeadlineDecoder;
-import io.mokamint.nonce.internal.gson.DeadlineEncoder;
-import io.mokamint.nonce.internal.gson.DeadlineJson;
+import io.mokamint.nonce.internal.json.DeadlineJson;
 
 /**
  * A provider of deadlines.
@@ -111,23 +111,27 @@ public final class Deadlines {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends DeadlineEncoder {
+	public static class Encoder extends MappedEncoder<Deadline, Deadlines.Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends DeadlineDecoder {
+	public static class Decoder extends MappedDecoder<Deadline, Deadlines.Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**
@@ -135,11 +139,6 @@ public final class Deadlines {
      */
 	public static class Json extends DeadlineJson {
 
-    	/**
-    	 * Used by Gson.
-    	 */
-		public Json() {}
- 
 		/**
     	 * Creates the Json representation for the given deadline.
     	 * 

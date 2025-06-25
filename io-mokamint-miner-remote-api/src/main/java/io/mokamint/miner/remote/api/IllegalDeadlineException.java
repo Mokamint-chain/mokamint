@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.internal.gson;
-
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.nonce.Prologs;
-import io.mokamint.nonce.api.Prolog;
+package io.mokamint.miner.remote.api;
 
 /**
- * A decoder for {@link io.mokamint.nonce.api.Prolog}.
+ * An exception stating that a deadline validity check failed.
  */
-public class PrologDecoder extends MappedDecoder<Prolog, Prologs.Json> {
+@SuppressWarnings("serial")
+public class IllegalDeadlineException extends Exception {
 
-	public PrologDecoder() {
-		super(Prologs.Json.class);
+	/**
+	 * Creates the exception.
+	 * 
+	 * @param message the message in the exception
+	 */
+	public IllegalDeadlineException(String message) {
+		super(message);
 	}
 }

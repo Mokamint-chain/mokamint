@@ -14,31 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.internal.gson;
+package io.mokamint.nonce.internal.json;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.internal.ChallengeImpl;
 
 /**
  * The JSON representation of a {@link Challenge}.
  */
 public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
-	private int scoopNumber;
-	private String generationSignature;
-	private String hashingForDeadlines;
-	private String hashingForGenerations;
-
-	/**
-	 * Used by Gson.
-	 */
-	protected ChallengeJson() {}
+	private final int scoopNumber;
+	private final String generationSignature;
+	private final String hashingForDeadlines;
+	private final String hashingForGenerations;
 
 	protected ChallengeJson(Challenge challenge) {
 		this.scoopNumber = challenge.getScoopNumber();
@@ -47,13 +40,24 @@ public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 		this.hashingForGenerations = challenge.getHashingForGenerations().getName();
 	}
 
+	public int getScoopNumber() {
+		return scoopNumber;
+	}
+
+	public String getGenerationSignature() {
+		return generationSignature;
+	}
+
+	public String getHashingForDeadlines() {
+		return hashingForDeadlines;
+	}
+
+	public String getHashingForGenerations() {
+		return hashingForGenerations;
+	}
+
 	@Override
 	public Challenge unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		try {
-			return Challenges.of(scoopNumber, Hex.fromHexString(generationSignature), HashingAlgorithms.of(hashingForDeadlines), HashingAlgorithms.of(hashingForGenerations));
-		}
-		catch (HexConversionException | IllegalArgumentException | NullPointerException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new ChallengeImpl(this);
 	}
 }

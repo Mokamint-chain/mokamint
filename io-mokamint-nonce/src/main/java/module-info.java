@@ -21,13 +21,14 @@ module io.mokamint.nonce {
 	exports io.mokamint.nonce;
 
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.nonce.internal.gson to com.google.gson;
+	opens io.mokamint.nonce.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.nonce.api;
 	requires io.hotmoka.crypto;
 	requires transitive io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.exceptions;
 	requires com.google.gson;
 	requires java.logging;
 

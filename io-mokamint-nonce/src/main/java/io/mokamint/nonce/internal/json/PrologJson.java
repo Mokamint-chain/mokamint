@@ -14,35 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.nonce.internal.gson;
+package io.mokamint.nonce.internal.json;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.nonce.internal.PrologImpl;
 
 /**
  * The JSON representation of a {@link Prolog}.
  */
 public abstract class PrologJson implements JsonRepresentation<Prolog> {
-	private String chainId;
-	private String nodeSignatureName;
-	private String nodePublicKey;
-	private String plotSignatureName;
-	private String plotPublicKey;
-	private String extra;
-
-	/**
-	 * Used by Gson.
-	 */
-	protected PrologJson() {}
+	private final String chainId;
+	private final String nodeSignatureName; // TODO: improve these names at next release
+	private final String nodePublicKey;
+	private final String plotSignatureName;
+	private final String plotPublicKey;
+	private final String extra;
 
 	protected PrologJson(Prolog prolog) {
 		this.chainId = prolog.getChainId();
@@ -53,17 +44,32 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 		this.extra = Hex.toHexString(prolog.getExtra());
 	}
 
+	public String getChainId() {
+		return chainId;
+	}
+
+	public String getSignatureForBlocks() {
+		return nodeSignatureName;
+	}
+
+	public String getPublicKeyForSigningBlocks() {
+		return nodePublicKey;
+	}
+
+	public String getSignatureForDeadlines() {
+		return plotSignatureName;
+	}
+
+	public String getPublicKeyForSigningDeadlines() {
+		return plotPublicKey;
+	}
+
+	public String getExtra() {
+		return extra;
+	}
+
 	@Override
 	public Prolog unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		var nodeSignature = SignatureAlgorithms.of(nodeSignatureName);
-		var plotSignature = SignatureAlgorithms.of(plotSignatureName);
-
-		try {
-			return Prologs.of(chainId, nodeSignature, nodeSignature.publicKeyFromEncoding(Base58.fromBase58String(nodePublicKey, InconsistentJsonException::new)),
-					plotSignature, plotSignature.publicKeyFromEncoding(Base58.fromBase58String(plotPublicKey, InconsistentJsonException::new)), Hex.fromHexString(extra, InconsistentJsonException::new));
-		}
-		catch (InvalidKeyException | InvalidKeySpecException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new PrologImpl(this);
 	}
 }

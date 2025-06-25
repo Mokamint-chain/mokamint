@@ -22,27 +22,29 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.nonce.internal.json.PrologJson;
 
 /**
- * Implementation of the prolog of a plot file.
+ * Implementation of the prolog of a deadline.
  */
 @Immutable
 public final class PrologImpl extends AbstractMarshallable implements Prolog {
 
 	/**
-	 * The chain identifier of the blockchain of the node using the plots
-	 * with this prolog.
+	 * The chain identifier of the blockchain of the node using the deadline.
 	 */
 	private final String chainId;
 
@@ -53,8 +55,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	private final SignatureAlgorithm signatureForBlocks;
 
 	/**
-	 * The public key that the nodes, using this plots with this prolog,
-	 * use to sign new mined blocks.
+	 * The public key that nodes must use to sign blocks having
+	 * a deadline with this prolog, with the key {@link #getPublicKeyForSigningBlocks()}.
 	 */
 	private final PublicKey publicKeyForSigningBlocks;
 
@@ -85,41 +87,22 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	private final byte[] extra;
 
 	/**
-	 * Creates the prolog of a plot file.
+	 * Creates the prolog of a deadline.
 	 * 
-	 * @param chainId the chain identifier of the blockchain of the node using the plots with this prolog
+	 * @param chainId the chain identifier of the blockchain of the node using the deadline with this prolog
 	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
-	 *                            blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
+	 *                           blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
 	 * @param publicKeyForSigningBlocks the public key that the nodes must use to sign the
 	 *                                  blocks having a deadline with the prolog
 	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
 	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
 	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
 	 * @param extra application-specific extra information
-	 * @throws InvalidKeyException if some of the keys is not valid
 	 */
 	public PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
-			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra)
-					throws InvalidKeyException {
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra) {
 
-		Objects.requireNonNull(chainId, "chainId cannot be null");
-		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null");
-		Objects.requireNonNull(publicKeyForSigningBlocks, "publicKeyForSigningBlocks cannot be null");
-		Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null");
-		Objects.requireNonNull(publicKeyForSigningDeadlines, "publicKeyForSigningDeadlines cannot be null");
-		Objects.requireNonNull(extra, "extra cannot be null");
-
-		this.chainId = chainId;
-		this.signatureForBlocks = signatureForBlocks;
-		this.publicKeyForSigningBlocks = publicKeyForSigningBlocks;
-		this.signatureForDeadlines = signatureForDeadlines;
-		this.publicKeyForSigningDeadlines = publicKeyForSigningDeadlines;
-		this.extra = extra.clone();
-
-		verify();
-
-		this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
-		this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+		this(chainId, signatureForBlocks, publicKeyForSigningBlocks, signatureForDeadlines, publicKeyForSigningDeadlines, extra, IllegalArgumentException::new);
 	}
 
 	/**
@@ -128,28 +111,15 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * 
 	 * @param context the unmarshalling context
 	 * @param chainId the chain identifier of the node storing the prolog
-	 * @throws NoSuchAlgorithmException if some signature algorithm is not available
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
 	public PrologImpl(UnmarshallingContext context) throws NoSuchAlgorithmException, IOException {
-		try {
-			this.chainId = context.readStringUnshared();
-			this.signatureForBlocks = SignatureAlgorithms.of(context.readStringShared());
-			byte[] publicKeyForSigningBlocksEncoding = unmarshalPublicKeyForSigningBlocks(context);
-			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
-			this.signatureForDeadlines = SignatureAlgorithms.of(context.readStringShared());
-			byte[] plotPublicKeyEncoding = unmarshalPublicKeyForSigningDeadlines(context);
-			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
-			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
-
-			verify();
-
-			this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocksEncoding);
-			this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(plotPublicKeyEncoding);
-		}
-		catch (RuntimeException | InvalidKeySpecException e) {
-			throw new IOException(e);
-		}
+		this(
+			context,
+			context.readStringUnshared(),
+			SignatureAlgorithms.of(context.readStringShared())
+		);
 	}
 
 	/**
@@ -163,45 +133,146 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * @throws IOException if the prolog could not be unmarshalled
 	 */
 	public PrologImpl(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+		this(
+			chainId,
+			signatureForBlocks,
+			unmarshalPublicKey(context, signatureForBlocks),
+			signatureForDeadlines,
+			unmarshalPublicKey(context, signatureForDeadlines),
+			context.readLengthAndBytes("Mismatch in prolog's extra length"),
+			IOException::new
+		);
+	}
+
+	/**
+	 * Creates a prolog from the given JSON representation.
+	 * 
+	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to some non-available cryptographic algorithm
+	 */
+	public PrologImpl(PrologJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		this(
+			json.getChainId(),
+			SignatureAlgorithms.of(Objects.requireNonNull(json.getSignatureForBlocks(), "signatureForBlocks cannot be null", InconsistentJsonException::new)),
+			Base58.fromBase58String(Objects.requireNonNull(json.getPublicKeyForSigningBlocks(), "publicKeyForSigningBlocks cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			SignatureAlgorithms.of(Objects.requireNonNull(json.getSignatureForDeadlines(), "signatureForDeadlines cannot be null", InconsistentJsonException::new)),
+			Base58.fromBase58String(Objects.requireNonNull(json.getPublicKeyForSigningDeadlines(), "publicKeyForSigningDeadlines cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			Hex.fromHexString(Objects.requireNonNull(json.getExtra(), "extra cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			InconsistentJsonException::new
+		);
+	}
+
+	/**
+	 * Unmarshals a prolog from the given context.  It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#into(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the prolog
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
+	 * @throws IOException if the prolog could not be unmarshalled
+	 */
+	private PrologImpl(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks) throws NoSuchAlgorithmException, IOException {
+		this(
+			context, chainId, signatureForBlocks,
+			unmarshalPublicKey(context, signatureForBlocks),
+			SignatureAlgorithms.of(context.readStringShared())
+		);
+	}
+
+	/**
+	 * Unmarshals a prolog from the given context.  It assumes that the prolog was previously marshalled through
+	 * {@link Prolog#into(MarshallingContext)}.
+	 * 
+	 * @param context the unmarshalling context
+	 * @param chainId the chain identifier of the node storing the prolog
+	 * @throws NoSuchAlgorithmException if some cryptographic algorithm is not available
+	 * @throws IOException if the prolog could not be unmarshalled
+	 */
+	private PrologImpl(UnmarshallingContext context, String chainId, SignatureAlgorithm signatureForBlocks, byte[] encodedPublicKeyForBlocks, SignatureAlgorithm signatureForDeadlines) throws NoSuchAlgorithmException, IOException {
+		this(
+			chainId, signatureForBlocks, encodedPublicKeyForBlocks, signatureForDeadlines,
+			unmarshalPublicKey(context, signatureForDeadlines),
+			context.readLengthAndBytes("Mismatch in prolog's extra length"),
+			IOException::new
+		);
+	}
+
+	/**
+	 * Creates the prolog of a deadline.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param chainId the chain identifier of the blockchain of the node using the deadline with this prolog
+	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                           blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
+	 * @param publicKeyForSigningBlocks the public key that the nodes must use to sign the
+	 *                                  blocks having a deadline with the prolog
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 * @param publicKeyForSigningDeadlines the public key that miners must use to sign the deadlines with the prolog
+	 * @param extra application-specific extra information
+	 * @param onIllegalArgs the supplier of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplier<E> onIllegalArgs) throws E {
+	
+		this(
+				chainId,
+				signatureForBlocks,
+				encodingOf(publicKeyForSigningBlocks, signatureForBlocks, onIllegalArgs),
+				signatureForDeadlines,
+				encodingOf(publicKeyForSigningDeadlines, signatureForDeadlines, onIllegalArgs),
+				extra,
+				onIllegalArgs
+		);
+	}
+
+	/**
+	 * Creates the prolog of a deadline.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param chainId the chain identifier of the blockchain of the node using the deadline with this prolog
+	 * @param signatureForBlocks the signature algorithm that nodes must use to sign the
+	 *                           blocks having the deadline with the prolog, with {@code publicKeyForSigningBlocks}
+	 * @param publicKeyForSigningBlocks the encoding of the public key that the nodes must use to sign the
+	 *                                  blocks having a deadline with the prolog
+	 * @param signatureForDeadlines the signature algorithm that miners must use to sign
+	 *                              the deadlines with this prolog, with {@code publicKeyForSigningDeadlines}
+	 * @param publicKeyForSigningDeadlines the encoding of the public key that miners must use to sign the deadlines with the prolog
+	 * @param extra application-specific extra information
+	 * @param onIllegalArgs the supplier of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, byte[] publicKeyForSigningBlocks,
+			SignatureAlgorithm signatureForDeadlines, byte[] publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplier<E> onIllegalArgs) throws E {
+	
+		Objects.requireNonNull(chainId, "chainId cannot be null", onIllegalArgs);
+		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null", onIllegalArgs);
+		Objects.requireNonNull(publicKeyForSigningBlocks, "publicKeyForSigningBlocks cannot be null", onIllegalArgs);
+		Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null", onIllegalArgs);
+		Objects.requireNonNull(publicKeyForSigningDeadlines, "publicKeyForSigningDeadlines cannot be null", onIllegalArgs);
+		Objects.requireNonNull(extra, "extra cannot be null", onIllegalArgs);
+	
+		this.chainId = chainId;
+		this.signatureForBlocks = signatureForBlocks;
+		this.signatureForDeadlines = signatureForDeadlines;
+	
 		try {
-			this.chainId = chainId;
-			this.signatureForBlocks = signatureForBlocks;
-			byte[] publicKeyForSigningBlocksEncoding = unmarshalPublicKeyForSigningBlocks(context);
-			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocksEncoding);
-			this.signatureForDeadlines = signatureForDeadlines;
-			byte[] plotPublicKeyEncoding = unmarshalPublicKeyForSigningDeadlines(context);
-			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(plotPublicKeyEncoding);
-			this.extra = context.readLengthAndBytes("Mismatch in prolog's extra length");
-
-			verify();
-
-			this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocksEncoding);
-			this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(plotPublicKeyEncoding);
+			this.publicKeyForSigningBlocks = signatureForBlocks.publicKeyFromEncoding(publicKeyForSigningBlocks);
+			this.publicKeyForSigningDeadlines = signatureForDeadlines.publicKeyFromEncoding(publicKeyForSigningDeadlines);
 		}
-		catch (RuntimeException | InvalidKeySpecException e) {
-			throw new IOException(e);
+		catch (InvalidKeySpecException e) {
+			throw onIllegalArgs.apply("Invalid key: " + e.getMessage());
 		}
-	}
-
-	private byte[] unmarshalPublicKeyForSigningBlocks(UnmarshallingContext context) throws IOException, InvalidKeySpecException {
-		var maybeLength = signatureForBlocks.publicKeyLength();
-		if (maybeLength.isEmpty())
-			return context.readLengthAndBytes("Mismatch in the length of the public key for signing blocks");
-		else
-			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the length of the public key for signing blocks");
-	}
-
-	private byte[] unmarshalPublicKeyForSigningDeadlines(UnmarshallingContext context) throws IOException, InvalidKeySpecException {
-		var maybeLength = signatureForDeadlines.publicKeyLength();
-		if (maybeLength.isEmpty())
-			return context.readLengthAndBytes("Mismatch in the plot's public key length");
-		else
-			return context.readBytes(maybeLength.getAsInt(), "Mismatch in the plot's public key length");
-	}
-
-	private void verify() {
-		if (toByteArray().length > MAX_PROLOG_SIZE)
-			throw new IllegalArgumentException("A prolog cannot be longer than " + MAX_PROLOG_SIZE + " bytes");
+	
+		this.extra = extra.clone();
+	
+		if (toByteArray().length > MAX_PROLOG_SIZE) // TODO: do we need it ?
+			throw onIllegalArgs.apply("A prolog cannot be longer than " + MAX_PROLOG_SIZE + " bytes");
+	
+		this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocks);
+		this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(publicKeyForSigningDeadlines);
 	}
 
 	@Override
@@ -284,42 +355,46 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	public void into(MarshallingContext context) throws IOException {
 		context.writeStringUnshared(chainId);
 		context.writeStringShared(signatureForBlocks.getName());
-		marshalPublicKeyForSigningBlocks(context);
+		marshalPublicKey(context, signatureForBlocks, publicKeyForSigningBlocks);
 		context.writeStringShared(signatureForDeadlines.getName());
-		marshalPublicKeyForSigningDeadlines(context);
+		marshalPublicKey(context, signatureForDeadlines, publicKeyForSigningDeadlines);
 		context.writeLengthAndBytes(extra);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
-		marshalPublicKeyForSigningBlocks(context);
-		marshalPublicKeyForSigningDeadlines(context);
+		marshalPublicKey(context, signatureForBlocks, publicKeyForSigningBlocks);
+		marshalPublicKey(context, signatureForDeadlines, publicKeyForSigningDeadlines);
 		context.writeLengthAndBytes(extra);
 	}
 
-	private void marshalPublicKeyForSigningBlocks(MarshallingContext context) throws IOException {
+	private static <E extends Exception> byte[] encodingOf(PublicKey publicKey, SignatureAlgorithm signature, ExceptionSupplier<E> onIllegalArgs) throws E {
 		try {
-			var maybeLength = signatureForBlocks.publicKeyLength();
-			if (maybeLength.isEmpty())
-				context.writeLengthAndBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
-			else
-				context.writeBytes(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
+			return signature.encodingOf(publicKey);
 		}
 		catch (InvalidKeyException e) {
-			throw new IOException("Cannot marshal into bytes the public key for signing blocks", e);
+			throw onIllegalArgs.apply(e.getMessage());
 		}
 	}
 
-	private void marshalPublicKeyForSigningDeadlines(MarshallingContext context) throws IOException {
+	private static byte[] unmarshalPublicKey(UnmarshallingContext context, SignatureAlgorithm signature) throws IOException {
+		var maybeLength = signature.publicKeyLength();
+		if (maybeLength.isEmpty())
+			return context.readLengthAndBytes("Mismatch in public key length");
+		else
+			return context.readBytes(maybeLength.getAsInt(), "Mismatch in public key length");
+	}
+
+	private void marshalPublicKey(MarshallingContext context, SignatureAlgorithm signature, PublicKey publicKey) throws IOException {
 		try {
-			var maybeLength = signatureForDeadlines.publicKeyLength();
+			var maybeLength = signature.publicKeyLength();
 			if (maybeLength.isEmpty())
-				context.writeLengthAndBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+				context.writeLengthAndBytes(signature.encodingOf(publicKey));
 			else
-				context.writeBytes(signatureForDeadlines.encodingOf(publicKeyForSigningDeadlines));
+				context.writeBytes(signature.encodingOf(publicKey));
 		}
 		catch (InvalidKeyException e) {
-			throw new IOException("Cannot marshal into bytes the public key for signing deadlines", e);
+			throw new IOException("Cannot marshal public key into bytes", e);
 		}
 	}
 }

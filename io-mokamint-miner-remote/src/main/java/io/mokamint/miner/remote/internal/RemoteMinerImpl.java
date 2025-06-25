@@ -37,7 +37,7 @@ import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
-import io.mokamint.miner.remote.api.DeadlineValidityCheck.IllegalDeadlineException;
+import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;

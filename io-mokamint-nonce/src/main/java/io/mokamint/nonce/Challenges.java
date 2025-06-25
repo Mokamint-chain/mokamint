@@ -21,11 +21,11 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.internal.ChallengeImpl;
-import io.mokamint.nonce.internal.gson.ChallengeDecoder;
-import io.mokamint.nonce.internal.gson.ChallengeEncoder;
-import io.mokamint.nonce.internal.gson.ChallengeJson;
+import io.mokamint.nonce.internal.json.ChallengeJson;
 
 /**
  * A provider of challenges.
@@ -79,34 +79,33 @@ public final class Challenges {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends ChallengeEncoder {
+	public static class Encoder extends MappedEncoder<Challenge, Challenges.Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends ChallengeDecoder {
+	public static class Decoder extends MappedDecoder<Challenge, Challenges.Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**
      * Json representation.
      */
 	public static class Json extends ChallengeJson {
-
-    	/**
-    	 * Used by Gson.
-    	 */
-		public Json() {}
 
 		/**
     	 * Creates the Json representation for the given challenge.
