@@ -31,7 +31,7 @@ import io.mokamint.nonce.internal.json.PrologJson;
 /**
  * Providers of plot prologs.
  */
-public final class Prologs {
+public abstract class Prologs {
 
 	private Prologs() {}
 

@@ -68,6 +68,7 @@ public class PlotTests extends AbstractLoggedTests {
 		try (var plot = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashingForDeadlines, __ -> {})) {
 			Deadline deadline = plot.getSmallestDeadline(challenge, plotKeyPair.getPrivate());
 			deadline.getChallenge().requireMatches(challenge);
+			assertTrue(deadline.signatureIsValid());
 			assertTrue(deadline.isValid());
 		}
 	}

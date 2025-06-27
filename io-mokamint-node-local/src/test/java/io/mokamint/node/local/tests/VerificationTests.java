@@ -307,10 +307,37 @@ public class VerificationTests extends AbstractLoggedTests {
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 		var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
 		var expected = genesis.getNextBlockDescription(deadline);
-		// we replace the correct key signature with a fake one
+		// we replace the correct block signature with a fake one
 		var newKeys = config.getSignatureForBlocks().getKeyPair();
 		SignatureException e = assertThrows(SignatureException.class, () -> Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate()));
 		assertTrue(e.getMessage().startsWith("The block's signature is invalid"));
+	}
+
+	@Test
+	@DisplayName("if the deadline of a non-genesis block is signed with the wrong key, the additoin of the block fails")
+	public void wrongDeadlineSignatureGetsRejected(@TempDir Path dir) throws Exception {
+		try (var node = new TestNode(dir)) {
+			var blockchain = node.getBlockchain();
+			var config = node.getConfig();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
+			var expected = genesis.getNextBlockDescription(deadline);
+			// we replace the correct deadline signature with a fake one
+			var newKeys = config.getSignatureForDeadlines().getKeyPair();
+			var replacedDeadline = Deadlines.of(deadline.getProlog(), deadline.getProgressive(), deadline.getValue(),
+					deadline.getChallenge(), newKeys.getPrivate());
+			var replaced = BlockDescriptions.of(expected.getHeight(),
+				expected.getPower(), expected.getTotalWaitingTime(), expected.getWeightedWaitingTime(),
+				expected.getAcceleration(), replacedDeadline, expected.getHashOfPreviousBlock(),
+				expected.getTargetBlockCreationTime(), expected.getOblivion(), expected.getHashingForBlocks(), expected.getHashingForTransactions());
+			var block = Blocks.of(replaced, Stream.empty(), stateId, nodePrivateKey);
+
+			assertTrue(blockchain.add(genesis));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			assertTrue(e.getMessage().startsWith("Invalid deadline's signature"));
+			assertBlockchainIsJustGenesis(blockchain, genesis);
+		}
 	}
 
 	@Test

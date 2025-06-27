@@ -36,7 +36,7 @@ import io.mokamint.nonce.internal.json.DeadlineJson;
 /**
  * A provider of deadlines.
  */
-public final class Deadlines {
+public abstract class Deadlines {
 
 	private Deadlines() {}
 
@@ -66,11 +66,8 @@ public final class Deadlines {
 	 * @param challenge the challenge the deadline responds to
 	 * @param signature the signature of the resulting deadline
 	 * @return the deadline
-	 * @throws IllegalArgumentException if some argument is illegal
-	 * @throws SignatureException if the signature of the deadline is invalid
-	 * @throws InvalidKeyException if the public key of the deadline is invalid
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException, InvalidKeyException, SignatureException {
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) {
 		return new DeadlineImpl(prolog, progressive, value, challenge, signature);
 	}
 
@@ -85,13 +82,13 @@ public final class Deadlines {
 	 * @param hashingForGenerations the hashing algorithm for the generation signatures
 	 * @param signatureForBlocks the signature algorithm for the blocks
 	 * @param signatureForDeadlines the signature algorithm for the deadlines
-	 * @param verify true if and only if the deadline must be verified
 	 * @return the deadline
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public static Deadline from(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, boolean verify) throws IOException {
-		return new DeadlineImpl(context, chainId, hashingForDeadlines, hashingForGenerations, signatureForBlocks, signatureForDeadlines, verify);
+			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
+
+		return new DeadlineImpl(context, chainId, hashingForDeadlines, hashingForGenerations, signatureForBlocks, signatureForDeadlines);
 	}
 
 	/**

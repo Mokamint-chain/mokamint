@@ -24,7 +24,7 @@ import io.mokamint.nonce.internal.NonceImpl;
 /**
  * A provider of nonces.
  */
-public final class Nonces {
+public abstract class Nonces {
 
 	private Nonces() {}
 

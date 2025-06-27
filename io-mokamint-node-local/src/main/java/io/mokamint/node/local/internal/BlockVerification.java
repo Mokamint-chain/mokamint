@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -154,6 +156,7 @@ public class BlockVerification {
 		creationTimeIsNotTooMuchInTheFuture();
 		deadlineMatchesItsExpectedChallenge();
 		deadlineHasValidProlog();
+		deadlineHasValidSignature();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
 		transactionsSizeIsNotTooBig(block);
@@ -170,6 +173,26 @@ public class BlockVerification {
 		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
 			if (!deadline.isValid())
 				throw new VerificationException("Invalid deadline");
+	}
+
+	/**
+	 * Checks if the deadline of {@link #block} has a valid signature.
+	 * 
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void deadlineHasValidSignature() throws VerificationException {
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
+			try {
+				if (!deadline.signatureIsValid())
+					throw new VerificationException("Invalid deadline's signature");
+			}
+			catch (InvalidKeyException e) {
+				throw new VerificationException("Invalid key in the prolog of the deadline");
+			}
+			catch (SignatureException e) {
+				throw new VerificationException("The signature of the deadline could nt be verified");
+			}
+		}
 	}
 
 	/**

@@ -16,18 +16,15 @@ limitations under the License.
 
 package io.mokamint.nonce.internal.json;
 
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Challenges;
-import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Deadline;
+import io.mokamint.nonce.internal.DeadlineImpl;
 
 /**
  * The JSON representation of a {@link Deadline}.
@@ -47,13 +44,28 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		this.signature = Hex.toHexString(deadline.getSignature());
 	}
 
+	public Prologs.Json getProlog() {
+		return prolog;
+	}
+
+	public long getProgressive() {
+		return progressive;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public Challenges.Json getChallenge() {
+		return challenge;
+	}
+
+	public String getSignature() {
+		return signature;
+	}
+
 	@Override
 	public Deadline unmap() throws NoSuchAlgorithmException, InconsistentJsonException {
-		try {
-			return Deadlines.of(prolog.unmap(), progressive, Hex.fromHexString(value), challenge.unmap(), Hex.fromHexString(signature));
-		}
-		catch (NullPointerException | IllegalArgumentException | HexConversionException | InvalidKeyException | SignatureException e) {
-			throw new InconsistentJsonException(e);
-		}
+		return new DeadlineImpl(this);
 	}
 }

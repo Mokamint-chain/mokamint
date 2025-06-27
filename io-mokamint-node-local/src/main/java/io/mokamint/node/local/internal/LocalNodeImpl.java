@@ -18,6 +18,7 @@ package io.mokamint.node.local.internal;
 
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Deque;
 import java.util.Optional;
@@ -602,7 +603,19 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	
 		if (!deadline.isValid())
 			throw new IllegalDeadlineException("Invalid deadline");
-		else if (!prolog.getChainId().equals(config.getChainId()))
+
+		try {
+			if (!deadline.signatureIsValid())
+				throw new IllegalDeadlineException("Invalid deadline's signature");
+		}
+		catch (InvalidKeyException e) {
+			throw new IllegalDeadlineException("The key in the prolog of the deadline is invalid");
+		}
+		catch (SignatureException e) {
+			throw new IllegalDeadlineException("The signature of the deadline could not be verified");
+		}
+
+		if (!prolog.getChainId().equals(config.getChainId()))
 			throw new IllegalDeadlineException("Wrong chain identifier in deadline");
 		else if (!prolog.getPublicKeyForSigningBlocks().equals(keyPair.getPublic()))
 			throw new IllegalDeadlineException("Wrong node key in deadline");

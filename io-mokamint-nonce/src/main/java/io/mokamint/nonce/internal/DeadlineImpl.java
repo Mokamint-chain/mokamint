@@ -24,21 +24,24 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.nonce.internal.json.DeadlineJson;
 
 /**
  * Implementation of a deadline inside a plot file. It identifies a nonce
@@ -67,14 +70,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
 	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		this.prolog = prolog;
-		this.progressive = progressive;
-		this.value = value;
-		this.challenge = challenge;
-		this.signature = prolog.getSignatureForDeadlines().getSigner
-			(Objects.requireNonNull(privateKey, "privateKey cannot be null"), DeadlineImpl::toByteArrayWithoutSignature).sign(this);
-
-		verify();
+		this(prolog, progressive, value, challenge, privateKey, IllegalArgumentException::new);
 	}
 
 	/**
@@ -86,18 +82,9 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @param challenge the challenge the deadline responds to
 	 * @param signature the signature of the deadline with the private key corresponding to the public key contained in the prolog
 	 * @return the deadline
-	 * @throws IllegalArgumentException if some argument is illegal
-	 * @throws SignatureException if the signature of the deadline is invalid
-	 * @throws InvalidKeyException if the public key of the deadline is invalid
 	 */
-	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) throws IllegalArgumentException, InvalidKeyException, SignatureException {
-		this.prolog = prolog;
-		this.progressive = progressive;
-		this.value = value.clone();
-		this.challenge = challenge;
-		this.signature = signature.clone();
-
-		verify();
+	public DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) {
+		this(prolog, challenge, progressive, value, signature, IllegalArgumentException::new);
 	}
 
 	/**
@@ -109,18 +96,12 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws NoSuchAlgorithmException if the deadline refers to an unknown cryptographic algorithm
 	 */
 	public DeadlineImpl(UnmarshallingContext context) throws IOException, NoSuchAlgorithmException {
-		this.prolog = Prologs.from(context);
-		this.challenge = Challenges.from(context);
-		this.progressive = context.readLong();
-		this.value = context.readBytes(challenge.getHashingForDeadlines().length(), "Mismatch in deadline's value length");
-		this.signature = readSignature(context);
-
-		try {
-			verify();
-		}
-		catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
-			throw new IOException(e);
-		}
+		this(
+			context,
+			Prologs.from(context),
+			Challenges.from(context),
+			context.readLong()
+		);
 	}
 
 	/**
@@ -136,53 +117,114 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws IOException if the deadline could not be unmarshalled
 	 */
 	public DeadlineImpl(UnmarshallingContext context, String chainId, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations,
-			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, boolean verify) throws IOException {
-		this.prolog = Prologs.from(context, chainId, signatureForBlocks, signatureForDeadlines);
-		this.challenge = Challenges.from(context, hashingForDeadlines, hashingForGenerations);
-		this.progressive = context.readLong();
-		this.value = context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length");
-		this.signature = readSignature(context);
+			SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines) throws IOException {
 
-		if (verify) {
-			try {
-				verify();
-			}
-			catch (NullPointerException | IllegalArgumentException | InvalidKeyException | SignatureException e) {
-				throw new IOException(e);
-			}
-		}
+		this(
+			Prologs.from(context, chainId, signatureForBlocks, signatureForDeadlines),
+			Challenges.from(context, hashingForDeadlines, hashingForGenerations),
+			context.readLong(),
+			context.readBytes(hashingForDeadlines.length(), "Mismatch in deadline's value length"),
+			readSignature(context, signatureForDeadlines),
+			IOException::new
+		);
 	}
 
-	private byte[] readSignature(UnmarshallingContext context) throws IOException {
+	/**
+	 * Creates a deadline from the given JSON description.
+	 * 
+	 * @param json the JSON description
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-existent cryptographic algorithm
+	 */
+	public DeadlineImpl(DeadlineJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
+		this(
+			json.getProlog().unmap(),
+			json.getChallenge().unmap(),
+			json.getProgressive(),
+			Hex.fromHexString(json.getValue(), InconsistentJsonException::new),
+			Hex.fromHexString(json.getSignature(), InconsistentJsonException::new),
+			InconsistentJsonException::new
+		);
+	}
+
+	private DeadlineImpl(UnmarshallingContext context, Prolog prolog, Challenge challenge, long progressive) throws IOException {
+		this(
+			prolog, challenge, progressive,
+			context.readBytes(challenge.getHashingForDeadlines().length(), "Mismatch in deadline's value length"),
+			readSignature(context, prolog.getSignatureForDeadlines()),
+			IOException::new
+		);
+	}
+
+	/**
+	 * Yields a deadline.
+	 * 
+	 * @param <E> the type of exception thrown if some argument is illegal
+	 * @param prolog the prolog of the nonce of the deadline
+	 * @param progressive the progressive number of the nonce of the deadline
+	 * @param value the value of the deadline
+	 * @param challenge the challenge the deadline responds to
+	 * @param signature the signature of the deadline with the private key corresponding to the public key contained in the prolog
+	 * @param onIllegalArgs the supplier of the exception to throw if some argument is illegal
+	 * @return the deadline
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> DeadlineImpl(Prolog prolog, Challenge challenge, long progressive, byte[] value, byte[] signature, ExceptionSupplier<E> onIllegalArgs) throws E {
+		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null", onIllegalArgs);
+		this.progressive = progressive;
+		this.value = Objects.requireNonNull(value, "value cannot be null", onIllegalArgs).clone();
+		this.challenge = Objects.requireNonNull(challenge, "challenge cannot be null", onIllegalArgs);
+		this.signature = Objects.requireNonNull(signature, "signature cannot be null", onIllegalArgs).clone();
+
+		if (progressive < 0L)
+			throw onIllegalArgs.apply("progressive cannot be negative");
+	
+		if (value.length != challenge.getHashingForDeadlines().length())
+			throw onIllegalArgs.apply("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
+
 		var maybeLength = prolog.getSignatureForDeadlines().length();
+		if (maybeLength.isPresent() && signature.length != maybeLength.getAsInt())
+			throw onIllegalArgs.apply("Mismatch in deadline's signature length: expected " + maybeLength.getAsInt() + " but found " + signature.length);
+	}
+
+	/**
+	 * Yields a deadline, signed with a private key.
+	 * 
+	 * @param <E> the exception thrown if some argument is illegal
+	 * @param prolog the prolog of the nonce of the deadline
+	 * @param progressive the progressive number of the nonce of the deadline
+	 * @param value the value of the deadline
+	 * @param challenge the challenge the deadline answers to
+	 * @param privateKey the private key that will be used to sign the deadline; it must match the
+	 *                   public key contained in the prolog
+	 * @param onIllegalArgs the producer of the exception thrown if some argument is illegal
+	 * @return the deadline
+	 * @throws E if some argument is illegal
+	 * @throws SignatureException if the signature of the deadline is invalid
+	 * @throws InvalidKeyException if the private key is invalid
+	 */
+	private <E extends Exception> DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey, ExceptionSupplier<E> onIllegalArgs) throws E, InvalidKeyException, SignatureException {
+		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null", onIllegalArgs);
+		this.progressive = progressive;
+		this.value = Objects.requireNonNull(value, "value cannot be null", onIllegalArgs).clone();
+		this.challenge = Objects.requireNonNull(challenge, "challenge cannot be null", onIllegalArgs);
+
+		if (progressive < 0L)
+			throw onIllegalArgs.apply("progressive cannot be negative");
+	
+		if (value.length != challenge.getHashingForDeadlines().length())
+			throw onIllegalArgs.apply("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
+
+		this.signature = prolog.getSignatureForDeadlines().getSigner
+			(Objects.requireNonNull(privateKey, "privateKey cannot be null", onIllegalArgs), DeadlineImpl::toByteArrayWithoutSignature).sign(this);
+	}
+
+	private static byte[] readSignature(UnmarshallingContext context, SignatureAlgorithm signature) throws IOException {
+		var maybeLength = signature.length();
 		if (maybeLength.isEmpty())
 			return context.readLengthAndBytes("Mismatch in deadline's signature length");
 		else
 			return context.readBytes(maybeLength.getAsInt(), "Mismatch in deadline's signature length");
-	}
-
-	/**
-	 * Checks all constraints expected from a deadline (including the validity of the signature).
-	 * 
-	 * @throws NullPointerException if some value is unexpectedly {@code null}
-	 * @throws IllegalArgumentException if some value is illegal (also if the signature is invalid)
-	 * @throws SignatureException if the signature of the deadline is invalid
-	 * @throws InvalidKeyException if the public key of the deadline is invalid
-	 */
-	private void verify() throws IllegalArgumentException, InvalidKeyException, SignatureException {
-		Objects.requireNonNull(prolog, "prolog cannot be null");
-		Objects.requireNonNull(value, "value cannot be null");
-		Objects.requireNonNull(challenge, "challenge cannot be null");
-		Objects.requireNonNull(signature, "signature cannot be null");
-	
-		if (progressive < 0L)
-			throw new IllegalArgumentException("progressive cannot be negative");
-	
-		if (value.length != challenge.getHashingForDeadlines().length())
-			throw new IllegalArgumentException("value length mismatch: expected " + challenge.getHashingForDeadlines().length() + " but found " + value.length);
-
-		if (!prolog.getSignatureForDeadlines().getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature).verify(this, signature))
-			throw new SignatureException("The deadline's signature is invalid");
 	}
 
 	@Override
@@ -261,6 +303,13 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	@Override
 	public byte[] getSignature() {
 		return signature.clone();
+	}
+
+	@Override
+	public boolean signatureIsValid() throws InvalidKeyException, SignatureException {
+		return prolog.getSignatureForDeadlines()
+				.getVerifier(prolog.getPublicKeyForSigningDeadlines(), DeadlineImpl::toByteArrayWithoutSignature)
+				.verify(this, signature);
 	}
 
 	@Override

@@ -30,7 +30,7 @@ import io.mokamint.nonce.internal.json.ChallengeJson;
 /**
  * A provider of challenges.
  */
-public final class Challenges {
+public abstract class Challenges {
 
 	private Challenges() {}
 

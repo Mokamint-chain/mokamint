@@ -18,6 +18,8 @@ package io.mokamint.nonce.api;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
@@ -101,6 +103,17 @@ public interface Deadline extends Marshallable {
 	 * @return true if and only if this deadline is valid
 	 */
 	boolean isValid();
+
+	/**
+	 * Determines if the signature of this deadline is valid, that is,
+	 * it is a correct signature of this deadline with the key in the prolog.
+	 * derived from the corresponding nonce.
+	 * 
+	 * @return true if and only if the signature of this deadline is valid
+	 * @throws InvalidKeyException if the key in the prolog of this deadline is invalid
+	 * @throws SignatureException if the signature in this deadline cannot be verified
+	 */
+	boolean signatureIsValid() throws InvalidKeyException, SignatureException;
 
 	/**
 	 * Yields the power of this deadline. This is the ratio between the worst possible deadline value
