@@ -18,7 +18,6 @@ package io.mokamint.miner.remote.api;
 
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -31,9 +30,8 @@ public interface DeadlineValidityCheck {
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if the deadline is invalid
-	 * @throws MinerException if the miner checking the deadline is misbehaving
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the check did not answer in time
 	 */
-	void check(Deadline deadline) throws IllegalDeadlineException, MinerException, InterruptedException, TimeoutException;
+	void check(Deadline deadline) throws IllegalDeadlineException, InterruptedException, TimeoutException;
 }

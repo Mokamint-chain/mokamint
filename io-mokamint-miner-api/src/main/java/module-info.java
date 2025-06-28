@@ -19,6 +19,7 @@ limitations under the License.
  */
 module io.mokamint.miner.api {
 	exports io.mokamint.miner.api;
+
 	requires transitive io.mokamint.nonce.api;
 	requires io.hotmoka.annotations;
 }

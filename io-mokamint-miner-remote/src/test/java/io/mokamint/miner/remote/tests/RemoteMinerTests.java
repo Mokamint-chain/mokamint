@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +54,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 			var ed25519 = SignatureAlgorithms.ed25519();
 			MINING_SPECIFICATION = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		}
-		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
 	}

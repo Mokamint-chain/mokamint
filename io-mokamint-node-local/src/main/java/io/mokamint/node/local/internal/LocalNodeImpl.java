@@ -227,14 +227,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 		this.config = config;
 		this.keyPair = keyPair;
-
-		try {
-			this.miningSpecification = MiningSpecifications.of(config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
-		}
-		catch (InvalidKeyException e) {
-			throw new NodeException(e);
-		}
-
+		this.miningSpecification = MiningSpecifications.of(config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
 		this.app = app;
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
@@ -465,8 +458,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
 			else
-				tryToClose(miner);
-
+				miner.close();
+			
 			return maybeInfo;
 		}
 	}
@@ -485,7 +478,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			for (var miner: toRemove) {
 				miners.remove(miner);
 				if (minersToCloseAtTheEnd.contains(miner))
-					tryToClose(miner);
+					miner.close();
 			}
 
 			return toRemove.length > 0;
@@ -554,16 +547,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		LOGGER.warning("punishing miner " + miner.getUUID() + " by removing " + points + " points since " + reason);
 	
 		if (miners.punish(miner, points) && minersToCloseAtTheEnd.contains(miner))
-			tryToClose(miner);
-	}
-
-	private void tryToClose(Miner miner) {
-		try {
 			miner.close();
-		}
-		catch (MinerException e) {
-			LOGGER.warning("cannot close miner " + miner.getUUID() + ": " + e.getMessage());
-		}
 	}
 
 	/**
@@ -634,12 +618,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException, MinerException {
+	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException {
 		try {
 			check(deadline);
 		}
 		catch (ApplicationException e) {
-			throw new MinerException(e);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -1197,9 +1181,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (pos < miners.length) {
 			try {
 				miners[pos].close();
-			}
-			catch (MinerException e) {
-				throw new NodeException(e);
 			}
 			finally {
 				closeMinersPeersAndBlockchain(miners, pos + 1);

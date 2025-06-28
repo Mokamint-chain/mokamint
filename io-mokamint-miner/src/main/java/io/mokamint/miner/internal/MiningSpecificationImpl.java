@@ -89,9 +89,8 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 * @param publicKeyForSigningBlocks the public key identifying the node in the deadlines
 	 *                                  expected by a miner having this specification. This is a public key for the
 	 *                                  {@code signatureForBlocks} algorithm
-	 * @throws InvalidKeyException if {@code publicKeyForSigningBlocks} is invalid
 	 */
-	public MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) throws IllegalArgumentException, InvalidKeyException {
+	public MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
 		this(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks, IllegalArgumentException::new);
 	}
 
@@ -128,15 +127,20 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 *                                  {@code signatureForBlocks} algorithm
 	 * @param onIllegalArgs the generator of the exception thrown if some argument is illegal
 	 * @throws E if some argument is illegal
-	 * @throws InvalidKeyException if {@code publicKeyForSigningBlocks} is invalid
 	 */
-	private <E extends Exception> MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks, ExceptionSupplier<? extends E> onIllegalArgs) throws E, InvalidKeyException {
+	private <E extends Exception> MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks, ExceptionSupplier<? extends E> onIllegalArgs) throws E {
 		this.chainId = Objects.requireNonNull(chainId, "chainId cannot be null", onIllegalArgs);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null", onIllegalArgs);
 		this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null", onIllegalArgs);
 		this.signatureForDeadlines = Objects.requireNonNull(signatureForDeadlines, "signatureForDeadlines cannot be null", onIllegalArgs);
 		this.publicKeyForSigningBlocks = Objects.requireNonNull(publicKeyForSigningBlocks, "publicKeyForSigningBlocks cannot be null", onIllegalArgs);
-		this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
+
+		try {
+			this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(signatureForBlocks.encodingOf(publicKeyForSigningBlocks));
+		}
+		catch (InvalidKeyException e) {
+			throw onIllegalArgs.apply("Invalid key: " + e.getMessage());
+		}
 	}
 
 	/**

@@ -135,9 +135,6 @@ public class Start extends AbstractCommand {
 				try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 					startMiningService(miner);
 				}
-				catch (MinerException e) {
-					throw new CommandException("Failed to close the local miner", e);
-				}
 			}
 		}
 

@@ -19,7 +19,6 @@ limitations under the License.
  */
 module io.mokamint.miner {
 	exports io.mokamint.miner;
-
 	// beans must be accessible, encoded and decoded by reflection through Gson
 	opens io.mokamint.miner.internal.json to com.google.gson;
 
@@ -27,7 +26,7 @@ module io.mokamint.miner {
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
-	requires io.hotmoka.crypto;
+	requires transitive io.hotmoka.crypto;
 	requires com.google.gson;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate

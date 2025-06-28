@@ -42,7 +42,6 @@ import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -271,9 +270,6 @@ public class Start extends AbstractCommand {
 					}
 					else
 						publishPublicAndRestrictedNodeServices(0);
-				}
-				catch (MinerException e) {
-					throw new CommandException("Failed to close the local miner", e);
 				}
 				catch (AlreadyInitializedException e) {
 					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);

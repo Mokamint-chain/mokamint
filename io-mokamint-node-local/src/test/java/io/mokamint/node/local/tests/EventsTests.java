@@ -105,7 +105,7 @@ public class EventsTests extends AbstractLoggedTests {
 			var ed25519 = SignatureAlgorithms.ed25519();
 			MINING_SPECIFICATION = MiningSpecifications.of(CHAIN_ID, HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		}
-		catch (NoSuchAlgorithmException | InvalidKeyException e) {
+		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
 	}

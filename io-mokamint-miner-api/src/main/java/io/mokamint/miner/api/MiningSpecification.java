@@ -23,21 +23,21 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 
 /**
- * The specification of the kind of deadlines that are expected by a miner
+ * The specification of the kind of deadlines that are computed by a miner
  * (signature algorithms, public key of the node, chain id, etc).
  */
 @Immutable
 public interface MiningSpecification {
 
 	/**
-	 * Yields the chain id of the deadlines expected by a miner having this specification.
+	 * Yields the chain id of the deadlines computed by a miner having this specification.
 	 * 
 	 * @return the chain id
 	 */
 	String getChainId();
 
 	/**
-	 * Yields the hashing algorithm used for computing the deadlines expected by a miner
+	 * Yields the hashing algorithm used for computing the deadlines produced by a miner
 	 * having this specification.
 	 * 
 	 * @return the hashing algorithm
@@ -46,7 +46,7 @@ public interface MiningSpecification {
 
 	/**
 	 * Yields the signature algorithm used for the key identifying the node
-	 * in the deadlines expected by a miner having this specification.
+	 * in the deadlines computed by a miner having this specification.
 	 * 
 	 * @return the signature algorithm
 	 */
@@ -54,7 +54,7 @@ public interface MiningSpecification {
 
 	/**
 	 * Yields the signature algorithm used for the key identifying the plot
-	 * containing the deadlines expected by a miner having this specification.
+	 * containing the deadlines computed by a miner having this specification.
 	 * 
 	 * @return the signature algorithm
 	 */
@@ -62,7 +62,7 @@ public interface MiningSpecification {
 
 	/**
 	 * Yields the public key identifying the node in the deadlines
-	 * expected by a miner having this specification. This is a public key for the
+	 * computed by a miner having this specification. This is a public key for the
 	 * {@link #getSignatureForBlocks()} algorithm.
 	 * 
 	 * @return the public key
@@ -71,7 +71,7 @@ public interface MiningSpecification {
 
 	/**
 	 * Yields the Base58-encoded public key identifying the node in the deadlines
-	 * expected by a miner having this specification. This is a public key for the
+	 * computed by a miner having this specification. This is a public key for the
 	 * {@link #getSignatureForBlocks()} algorithm.
 	 * 
 	 * @return the public key, Base58-encoded

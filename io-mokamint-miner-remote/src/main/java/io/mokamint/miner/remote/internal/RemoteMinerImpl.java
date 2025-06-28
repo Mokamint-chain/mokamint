@@ -253,10 +253,6 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 			Thread.currentThread().interrupt();
 			return;
 		}
-		catch (MinerException e) {
-			LOGGER.log(Level.SEVERE, logPrefix + " cannot check the validity of " + deadline + " since the miner is misbehaving", e);
-			return;
-		}
 		catch (TimeoutException e) {
 			LOGGER.warning(logPrefix + "timed out while checking the validity of " + deadline + ": " + e.getMessage());
 			return;

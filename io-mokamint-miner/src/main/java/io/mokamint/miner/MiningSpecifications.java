@@ -15,7 +15,6 @@ limitations under the License.
 */
 package io.mokamint.miner;
 
-import java.security.InvalidKeyException;
 import java.security.PublicKey;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
@@ -47,9 +46,8 @@ public abstract class MiningSpecifications {
 	 *                                  expected by a miner having this specification. This is a public key for the
 	 *                                  {@code signatureForBlocks} algorithm
 	 * @return the mining specification
-	 * @throws InvalidKeyException if {@code publicKeyForSigningBlocks} is invalid
 	 */
-	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) throws InvalidKeyException {
+	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
 		return new MiningSpecificationImpl(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks);
 	}
 

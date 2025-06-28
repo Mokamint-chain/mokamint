@@ -25,9 +25,6 @@ import io.mokamint.nonce.api.Deadline;
 
 /**
  * A miner in an object that computes deadlines on request.
- * Implementations specify what happens when a deadline has been found:
- * typically, the construction method requires a consumer of the deadline
- * to be specified.
  */
 @ThreadSafe
 public interface Miner extends AutoCloseable {
@@ -40,10 +37,12 @@ public interface Miner extends AutoCloseable {
 	MiningSpecification getMiningSpecification();
 
 	/**
-	 * Request to the miner the computation of a deadline.
+	 * Request to the miner the computation of a deadline. This call might terminate
+	 * immediately and later, when the deadline is ready, the consumer of the deadline
+	 * can be called to notify it.
 	 * 
 	 * @param challenge the challenge for which the deadline is requested
-	 * @param onDeadlineComputed the callback executed when a deadline has been found.
+	 * @param onDeadlineComputed the callback to execute when a deadline has been found.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
@@ -51,11 +50,9 @@ public interface Miner extends AutoCloseable {
 
 	/**
 	 * Closes the miner.
-	 * 
-	 * @throws MinerException if the miner is misbehaving
 	 */
 	@Override
-	void close() throws MinerException;
+	void close();
 
 	/**
 	 * Yields the unique identifier of the miner.

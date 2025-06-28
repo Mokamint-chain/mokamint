@@ -133,7 +133,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMiningSpecification(id);
-		return waitForResult(id, GetMiningSpecificationResultMessage.class, TimeoutException.class, MinerException.class);
+		return waitForResult(id, GetMiningSpecificationResultMessage.class, TimeoutException.class);
 	}
 
 	@Override
@@ -152,10 +152,14 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	 * Sends a {@link GetMiningSpecificationMessage} to the remote miner.
 	 * 
 	 * @param id the identifier of the message
-	 * @throws MinerException if the message could not be sent
 	 */
-	protected void sendGetMiningSpecification(String id) throws MinerException {
-		sendObjectAsync(getSession(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationMessages.of(id), MinerException::new);
+	protected void sendGetMiningSpecification(String id) {
+		try {
+			sendObjectAsync(getSession(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_MINING_SPECIFICATION_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	/**
@@ -215,7 +219,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		try {
 			ensureIsOpen();
 			LOGGER.info(logPrefix + "sending " + deadline);
-			sendObjectAsync(session, deadline);
+			sendObjectAsync(session, deadline, IOException::new);
 		}
 		catch (IOException e) {
 			LOGGER.warning(logPrefix + "cannot send the deadline to the session: " + e.getMessage());

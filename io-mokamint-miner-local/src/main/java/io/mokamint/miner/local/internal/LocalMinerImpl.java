@@ -101,14 +101,7 @@ public class LocalMinerImpl implements LocalMiner {
 
 	private MiningSpecification extractMiningSpecification(Plot plot) {
 		var prolog = plot.getProlog();
-
-		try {
-			return MiningSpecifications.of(prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
-		}
-		catch (InvalidKeyException e) {
-			// this should never happen, since the prolog guarantees that the key is valid
-			throw new RuntimeException(e);
-		}
+		return MiningSpecifications.of(prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
 	}
 
 	@Override
