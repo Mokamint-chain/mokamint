@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.plotter.api;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
@@ -62,27 +63,26 @@ public interface Plot extends AutoCloseable {
 	HashingAlgorithm getHashing();
 
 	@Override
-	void close() throws PlotException;
+	void close() throws IOException;
 
 	/**
 	 * Yields the smallest deadline in this plot file, matching the given challenge.
 	 * This method selects the scoop in the challenge
 	 * for all nonces contained in this plot file. For each scoop, it computes
 	 * its deadline value by hashing the scoop data and the provided challenge's generation signature.
-	 * It returns the pair (progressive of the nonce, deadline value) with the smallest value.
+	 * It returns the deadline with the smallest value.
 	 * 
 	 * @param challenge the challenge of the requested deadline
 	 * @param privateKey the private key that will be used to sign the deadline
 	 * @return the smallest deadline
-	 * @throws InterruptedException if the thread is interrupted while waiting for the computation
-	 *                              of the smallest deadline
-	 * @throws PlotException if the plot file is misbehaving
+	 * @throws InterruptedException if the current thread is interrupted before completing the operation
+	 * @throws IOException if there is a problem reading the plot file
 	 * @throws IncompatibleChallengeException if the challenge is for a deadline using a different
 	 *                                        hashing algorithm than the one used to create this plot file
 	 * @throws InvalidKeyException if {@code privateKey} is invalid
 	 * @throws SignatureException if the deadline could not be signed
 	 */
-	Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws InterruptedException, PlotException, InvalidKeyException, SignatureException, IncompatibleChallengeException;
+	Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws InterruptedException, IOException, InvalidKeyException, SignatureException, IncompatibleChallengeException;
 
 	/**
 	 * Determines if this plot is semantically equivalent to the {@code other}.
@@ -91,7 +91,7 @@ public interface Plot extends AutoCloseable {
 	 * same requests for smallest deadlines.
 	 * 
 	 * @param other the other object
-	 * @return if and only if {@code other} is a {@link Plot} with the same structure as this
+	 * @return if and only if {@code other} is a plot with the same structure as this
 	 */
 	@Override
 	boolean equals(Object other);

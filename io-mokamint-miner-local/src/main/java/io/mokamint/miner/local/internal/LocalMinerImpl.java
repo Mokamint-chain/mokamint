@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.local.internal;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.Optional;
@@ -34,7 +35,6 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.PlotException;
 
 /**
  * The implementation of a local miner.
@@ -154,7 +154,7 @@ public class LocalMinerImpl implements LocalMiner {
 		try {
 			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(challenge, plotAndKeyPair.getKeyPair().getPrivate()));
 		}
-		catch (PlotException | InvalidKeyException | SignatureException | IncompatibleChallengeException e) {
+		catch (IOException | InvalidKeyException | SignatureException | IncompatibleChallengeException e) {
 			LOGGER.warning(logPrefix + "cannot use a plot file: " + e.getMessage());
 			return Optional.empty();
 		}

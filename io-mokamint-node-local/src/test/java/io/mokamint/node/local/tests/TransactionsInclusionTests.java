@@ -72,7 +72,6 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
 
 /**
@@ -126,7 +125,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			try {
 				plot.close();
 			}
-			catch (PlotException e) {
+			catch (IOException e) {
 				throw new NodeException("Could not close the plot", e);
 			}
 		}

@@ -31,11 +31,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -48,6 +46,8 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
+import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.UnmarshallingContexts;
@@ -60,8 +60,7 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.PlotException;
-import io.mokamint.plotter.internal.gson.PlotJson;
+import io.mokamint.plotter.internal.json.PlotJson;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
@@ -162,58 +161,60 @@ public class PlotImpl implements Plot {
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
 	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
-		if (start < 0)
-			throw new IllegalArgumentException("start cannot be negative");
-		
-		if (length < 1)
-			throw new IllegalArgumentException("length must be positive");
-
-		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null");
-		this.start = start;
-		this.length = length;
-		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null");
-
-		new Dumper(path, Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null"));
-
-		this.reader = new RandomAccessFile(path.toFile(), "r");
-		this.channel = reader.getChannel();
+		this(path, prolog, start, length, hashing, onNewPercent, IllegalArgumentException::new);
 	}
 
 	/**
-	 * Creates a plot from the given json.
+	 * Creates a plot from the given json description.
 	 * 
-	 * @param json the json
+	 * @param json the json description
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available hashing algorithm
 	 * @throws IOException if the plot file cannot be written into a temporary file
 	 */
 	public PlotImpl(PlotJson json) throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
-		var prolog = json.getProlog();
-		if (prolog == null)
-			throw new InconsistentJsonException("prolog cannot be null");
+		this(
+			Files.createTempFile("tmp", ".plot"),
+			Objects.requireNonNull(json.getProlog(), "prolog cannot be null", InconsistentJsonException::new).unmap(),
+			json.getStart(),
+			json.getLength(),
+			HashingAlgorithms.of(Objects.requireNonNull(json.getHashing(), "hashing cannot be null", InconsistentJsonException::new)),
+			__ -> {},
+			InconsistentJsonException::new
+		);
+	}
 
-		this.prolog = prolog.unmap();
-
-		var start = json.getStart();
+	/**
+	 * Creates, on the file system, a plot file containing sequential nonces for the given prolog,
+	 * by using the given hashing algorithm.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param path the path to the file where the plot must be dumped
+	 * @param prolog generic data that identifies, for instance, the creator
+	 *               of the plot. This can be really anything but cannot be {@code null}
+	 *               nor longer than {@link Deadline#MAX_PROLOG_SIZE} bytes
+	 * @param start the starting progressive number of the nonces to generate in the plot.
+	 *              This must be non-negative
+	 * @param length the number of nonces to generate. This must be positive
+	 * @param hashing the hashing algorithm to use for creating the nonces
+	 * @param onNewPercent a handler called with the percent of work already alreadyDone, for feedback
+	 * @param onIllegalArgs the supplier of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 * @throws IOException if the plot file cannot be written into {@code path}
+	 */
+	private <E extends Exception> PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent, ExceptionSupplier<E> onIllegalArgs) throws E, IOException {
 		if (start < 0)
-			throw new InconsistentJsonException("start cannot be negative");
-
-		this.start = start;
-
-		var length = json.getLength();
+			throw onIllegalArgs.apply("start cannot be negative");
+		
 		if (length < 1)
-			throw new IllegalArgumentException("length must be positive");
+			throw onIllegalArgs.apply("length must be positive");
 
+		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null", onIllegalArgs);
+		this.start = start;
 		this.length = length;
+		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null", onIllegalArgs);
 
-		var hashing = json.getHashing();
-		if (hashing == null)
-			throw new InconsistentJsonException("hashing cannot be null");
-
-		this.hashing = HashingAlgorithms.of(hashing);
-
-		var path = Files.createTempFile("tmp", ".plot");
-		new Dumper(path, __ -> {});
+		new Dumper(path, Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null", onIllegalArgs));
 
 		this.reader = new RandomAccessFile(path.toFile(), "r");
 		this.channel = reader.getChannel();
@@ -324,7 +325,7 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws PlotException, InterruptedException, InvalidKeyException, SignatureException, IncompatibleChallengeException {
+	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException, IncompatibleChallengeException {
 		if (!challenge.getHashingForDeadlines().equals(hashing))
 			throw new IncompatibleChallengeException("The challenge and the plot file use different hashing algorithms");
 
@@ -333,14 +334,11 @@ public class PlotImpl implements Plot {
 		try {
 			return executors.submit(() -> new SmallestDeadlineFinder(challenge, privateKey).deadline).get();
 		}
-		catch (RejectedExecutionException e) {
-			throw new PlotException("Cannot execute the deadline finder task", e);
-		}
 		catch (ExecutionException e) {
 			var cause = e.getCause();
 
-			if (cause instanceof PlotException pe)
-				throw pe;
+			if (cause instanceof IOException io)
+				throw io;
 			else if (cause instanceof InvalidKeyException ike)
 				throw ike;
 			else if (cause instanceof SignatureException se)
@@ -373,7 +371,7 @@ public class PlotImpl implements Plot {
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws PlotException, InvalidKeyException, SignatureException {
+		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
 			this.challenge = challenge;
 			this.scoopNumber = challenge.getScoopNumber();
 			this.generationSignature = challenge.getGenerationSignature();
@@ -383,10 +381,10 @@ public class PlotImpl implements Plot {
 			// we first determine the progressive that minimizes the value of the deadline
 			// and then compute the deadline with that progressive: this avoids constructing and signing many deadlines,
 			// which is an expensive operation (thanks to YourKit)
-			ProgressiveAndValue best = CheckSupplier.check(PlotException.class, () -> LongStream.range(start, start + length)
+			ProgressiveAndValue best = CheckSupplier.check(IOException.class, () -> LongStream.range(start, start + length)
 				.parallel()
 				.boxed()
-				.map(UncheckFunction.uncheck(PlotException.class, ProgressiveAndValue::new))
+				.map(UncheckFunction.uncheck(IOException.class, ProgressiveAndValue::new))
 				.min(ProgressiveAndValue::compareTo)
 				.get());
 
@@ -397,7 +395,7 @@ public class PlotImpl implements Plot {
 			private final long progressive;
 			private final byte[] value;
 
-			private ProgressiveAndValue(long progressive) throws PlotException {
+			private ProgressiveAndValue(long progressive) throws IOException {
 				this.progressive = progressive;
 				this.value = hasher.hash(extractScoopAndConcatData(progressive - start));
 			}
@@ -438,36 +436,28 @@ public class PlotImpl implements Plot {
 		 * @param progressive the progressive number of the nonce whose scoop must be extracted,
 		 *                    between 0 (inclusive) and {@code length} (exclusive)
 		 * @return the scoop data (two hashes)
-		 * @throws PlotException if the operation cannot be performed correctly
+		 * @throws IOException if the operation cannot be performed correctly
 		 */
-		private byte[] extractScoopAndConcatData(long progressive) throws PlotException {
+		private byte[] extractScoopAndConcatData(long progressive) throws IOException {
 			try (var os = new ByteArrayOutputStream(); var destination = Channels.newChannel(os)) {
 				channel.transferTo(metadataSize + scoopNumber * groupSize + progressive * scoopSize, scoopSize, destination);
 				destination.write(ByteBuffer.wrap(generationSignature));
 				return os.toByteArray();
 			}
-			catch (IOException e) {
-				throw new PlotException(e);
-			}
 		}
 	}
 
 	@Override
-	public void close() throws PlotException {
-		executors.shutdownNow();
-
+	public void close() throws IOException {
 		try {
-			reader.close();
-		}
-		catch (IOException e) {
-			throw new PlotException(e);
+			executors.shutdownNow();
 		}
 		finally {
 			try {
-				channel.close();
+				reader.close();
 			}
-			catch (IOException e) {
-				throw new PlotException(e);
+			finally {
+				channel.close();
 			}
 		}
 	}

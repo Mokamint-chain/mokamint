@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.cli.AbstractCommand;
@@ -56,7 +55,6 @@ import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -228,10 +226,6 @@ public class Start extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses a different key pair than " + plotArg.keyPair + "!|@"));
 					LOGGER.warning("the plot file \"" + plotArg + "\" uses a different key pair than " + plotArg.keyPair + ": " + e.getMessage());
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
-				}
-				catch (PlotException e) {
-					System.out.println(Ansi.AUTO.string("@|red cannot close plot file " + plotArg.getPlot() + "!|@"));
-					LOGGER.log(Level.SEVERE, "cannot close file \"" + plotArg.getPlot() + "\"", e);
 				}
 			}
 			else

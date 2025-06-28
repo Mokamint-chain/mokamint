@@ -20,7 +20,7 @@ limitations under the License.
 module io.mokamint.plotter {
 	exports io.mokamint.plotter;
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.plotter.internal.gson to com.google.gson;
+	opens io.mokamint.plotter.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.plotter.api;
 	requires io.mokamint.nonce;

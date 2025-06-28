@@ -36,7 +36,6 @@ import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.AbstractPlotArgs;
 import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -128,10 +127,6 @@ public class Start extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses a different key pair than " + plotArg.keyPair + "!|@"));
 					LOGGER.warning("the plot file \"" + plotArg + "\" uses a different key pair than " + plotArg.keyPair + ": " + e.getMessage());
 					loadPlotsAndStartMiningService(pos + 1);
-				}
-				catch (PlotException e) {
-					System.out.println(Ansi.AUTO.string("@|red cannot close plot file " + plotArg.getPlot() + "!|@"));
-					LOGGER.log(Level.SEVERE, "cannot close file \"" + plotArg.getPlot() + "\"", e);
 				}
 			}
 			else if (plotsAndKeyPairs.isEmpty())

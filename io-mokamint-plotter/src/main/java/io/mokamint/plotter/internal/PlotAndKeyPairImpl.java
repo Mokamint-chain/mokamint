@@ -19,11 +19,11 @@ limitations under the License.
  */
 package io.mokamint.plotter.internal;
 
+import java.io.IOException;
 import java.security.KeyPair;
 
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.PlotException;
 import io.mokamint.plotter.api.WrongKeyException;
 
 /**
@@ -69,7 +69,7 @@ public class PlotAndKeyPairImpl implements PlotAndKeyPair {
 	}
 
 	@Override
-	public void close() throws PlotException {
+	public void close() throws IOException {
 		plot.close();
 	}
 }

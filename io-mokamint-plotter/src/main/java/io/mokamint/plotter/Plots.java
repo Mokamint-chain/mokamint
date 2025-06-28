@@ -22,17 +22,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.IntConsumer;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.internal.PlotImpl;
-import io.mokamint.plotter.internal.gson.PlotDecoder;
-import io.mokamint.plotter.internal.gson.PlotEncoder;
-import io.mokamint.plotter.internal.gson.PlotJson;
+import io.mokamint.plotter.internal.json.PlotJson;
 
 /**
  * Provider of plot files for Mokamint.
  */
-public final class Plots {
+public abstract class Plots {
 
 	private Plots() {}
 
@@ -70,23 +70,27 @@ public final class Plots {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PlotEncoder {
+	public static class Encoder extends MappedEncoder<Plot, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PlotDecoder {
+	public static class Decoder extends MappedDecoder<Plot, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**
