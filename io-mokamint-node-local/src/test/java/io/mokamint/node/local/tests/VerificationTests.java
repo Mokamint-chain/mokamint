@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -302,15 +301,21 @@ public class VerificationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a non-genesis block is signed with the wrong key, its creation fails")
 	public void wrongBlockSignatureGetsRejected(@TempDir Path dir) throws Exception {
-		var config = mkConfig(dir);
-		var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
-		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
-		var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
-		var expected = genesis.getNextBlockDescription(deadline);
-		// we replace the correct block signature with a fake one
-		var newKeys = config.getSignatureForBlocks().getKeyPair();
-		SignatureException e = assertThrows(SignatureException.class, () -> Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate()));
-		assertTrue(e.getMessage().startsWith("The block's signature is invalid"));
+		try (var node = new TestNode(dir)) {
+			var blockchain = node.getBlockchain();
+			var config = node.getConfig();
+			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
+			var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
+			var deadline = plot.getSmallestDeadline(description.getNextChallenge(), plotPrivateKey);
+			var expected = genesis.getNextBlockDescription(deadline);
+			// we replace the correct block signature with a fake one
+			var newKeys = config.getSignatureForBlocks().getKeyPair();
+			var block = Blocks.of(expected, Stream.empty(), stateId, newKeys.getPrivate());
+			assertTrue(blockchain.add(genesis));
+			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(block));
+			assertTrue(e.getMessage().startsWith("Invalid block signature"));
+			assertBlockchainIsJustGenesis(blockchain, genesis);
+		}
 	}
 
 	@Test

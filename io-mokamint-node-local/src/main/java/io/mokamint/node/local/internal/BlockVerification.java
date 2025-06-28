@@ -136,6 +136,7 @@ public class BlockVerification {
 	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
+		hasValidSignature();
 		finalStateIsTheInitialStateOfTheApplication();
 	}
 
@@ -154,6 +155,7 @@ public class BlockVerification {
 	 */
 	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
 		creationTimeIsNotTooMuchInTheFuture();
+		hasValidSignature();
 		deadlineMatchesItsExpectedChallenge();
 		deadlineHasValidProlog();
 		deadlineHasValidSignature();
@@ -190,7 +192,27 @@ public class BlockVerification {
 				throw new VerificationException("Invalid key in the prolog of the deadline");
 			}
 			catch (SignatureException e) {
-				throw new VerificationException("The signature of the deadline could nt be verified");
+				throw new VerificationException("The signature of the deadline could not be verified");
+			}
+		}
+	}
+
+	/**
+	 * Checks if the signature of {@link #block} is valid.
+	 * 
+	 * @throws VerificationException if that condition in violated
+	 */
+	private void hasValidSignature() throws VerificationException {
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
+			try {
+				if (!block.signatureIsValid())
+					throw new VerificationException("Invalid block signature");
+			}
+			catch (InvalidKeyException e) {
+				throw new VerificationException("Invalid key in the description of the block");
+			}
+			catch (SignatureException e) {
+				throw new VerificationException("The signature of the block could not be verified");
 			}
 		}
 	}

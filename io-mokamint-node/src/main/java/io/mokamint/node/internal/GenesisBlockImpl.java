@@ -46,8 +46,6 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	public GenesisBlockImpl(GenesisBlockDescription description, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateId, privateKey, AbstractBlock::toByteArrayWithoutSignature);
-
-		ensureSignatureIsCorrect();
 	}
 
 	/**
@@ -59,13 +57,6 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 */
 	protected GenesisBlockImpl(GenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
 		super(description, json);
-
-		try {
-			ensureSignatureIsCorrect();
-		}
-		catch (InvalidKeyException | SignatureException e) {
-			throw new InconsistentJsonException(e);
-		}
 	}
 
 	/**
@@ -77,14 +68,7 @@ public non-sealed class GenesisBlockImpl extends AbstractBlock<GenesisBlockDescr
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
 	protected GenesisBlockImpl(GenesisBlockDescription description, UnmarshallingContext context) throws IOException {
-		super(description, context, true);
-
-		try {
-			ensureSignatureIsCorrect();
-		}
-		catch (InvalidKeyException | SignatureException e) {
-			throw new IOException(e);
-		}
+		super(description, context);
 	}
 
 	@Override

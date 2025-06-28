@@ -17,6 +17,8 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
@@ -68,6 +70,16 @@ public interface Block extends Marshallable, Whisperable {
 	 * @return the hash of this block, as a hexadecimal string
 	 */
 	String getHexHash();
+
+	/**
+	 * Determines if the signature of this block is valid, that is,
+	 * it is a correct signature of this block with the key in the description of the block.
+	 * 
+	 * @return true if and only if the signature of this block is valid
+	 * @throws InvalidKeyException if the key in the description of this block is invalid
+	 * @throws SignatureException if the signature in this block cannot be verified
+	 */
+	boolean signatureIsValid() throws InvalidKeyException, SignatureException;
 
 	/**
 	 * Yields the description of the next block, assuming that it has the given deadline.

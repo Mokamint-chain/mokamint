@@ -158,14 +158,13 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	 * 
 	 * @param context the context
 	 * @param config the consensus configuration of the node storing the block description
-	 * @param verify true if and only if the block description must be verified
 	 * @return the block description
 	 * @throws IOException if the block description cannot be unmarshalled
 	 */
-	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
+	public static BlockDescription from(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		// by reading the height, we can determine if it's a genesis block description or not
 		var height = context.readCompactLong();
-		return height == 0L ? new GenesisBlockDescriptionImpl(context, config, verify) : new NonGenesisBlockDescriptionImpl(height, context, config, verify);
+		return height == 0L ? new GenesisBlockDescriptionImpl(context, config) : new NonGenesisBlockDescriptionImpl(height, context, config);
 	}
 
 	/**

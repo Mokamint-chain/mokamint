@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -79,8 +78,6 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
 	
 		this.transactions = transactions;
-	
-		ensureSignatureIsCorrect();
 		ensureTransactionsAreNotRepeated();
 	}
 
@@ -106,19 +103,13 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 			if (txBase64 == null)
 				throw new InconsistentJsonException("transactions cannot hold a null element");
 
-			try {
-				transactions[pos] = Transactions.of(Base64.fromBase64String(txBase64));
-			}
-			catch (Base64ConversionException e) {
-				throw new InconsistentJsonException(e);
-			}
+			transactions[pos] = Transactions.of(Base64.fromBase64String(txBase64, InconsistentJsonException::new));
 		}
 		
 		try {
-			ensureSignatureIsCorrect();
 			ensureTransactionsAreNotRepeated();
 		}
-		catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
+		catch (IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);
 		}
 	}
@@ -131,19 +122,16 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @return the block
 	 * @throws IOException if the block cannot be unmarshalled
 	 */
-	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context, boolean verify) throws IOException {
-		super(description, context, verify);
+	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
+		super(description, context);
 
 		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);;
 
-		if (verify) {
-			try {
-				ensureSignatureIsCorrect();
-				ensureTransactionsAreNotRepeated();
-			}
-			catch (IllegalArgumentException | InvalidKeyException | SignatureException e) {
-				throw new IOException(e);
-			}
+		try {
+			ensureTransactionsAreNotRepeated();
+		}
+		catch (IllegalArgumentException e) {
+			throw new IOException(e);
 		}
 	}
 

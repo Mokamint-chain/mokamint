@@ -192,7 +192,7 @@ public non-sealed class GenesisBlockDescriptionImpl extends AbstractBlockDescrip
 	 * @param config the configuration of the node storing the description
 	 * @throws IOException if unmarshalling failed
 	 */
-	protected GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config, boolean verify) throws IOException {
+	protected GenesisBlockDescriptionImpl(UnmarshallingContext context, ConsensusConfig<?,?> config) throws IOException {
 		super(config);
 
 		try {
