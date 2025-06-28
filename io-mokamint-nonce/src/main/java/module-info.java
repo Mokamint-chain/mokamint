@@ -24,13 +24,12 @@ module io.mokamint.nonce {
 	opens io.mokamint.nonce.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.nonce.api;
-	requires io.hotmoka.crypto;
+	requires transitive io.hotmoka.crypto;
 	requires transitive io.hotmoka.marshalling;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires com.google.gson;
-	requires java.logging;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
 	// classes without the no-args constructor
