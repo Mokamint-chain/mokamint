@@ -22,7 +22,6 @@ import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
-import io.hotmoka.crypto.Hex;
 import io.mokamint.plotter.Plots;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
@@ -34,7 +33,7 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Show extends AbstractCommand {
 
-	@Parameters(index = "0", description = "the path of the new plot file")
+	@Parameters(index = "0", description = "the path of the plot file")
 	private Path path;
 
 	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
@@ -43,8 +42,6 @@ public class Show extends AbstractCommand {
 	@Override
 	protected void execute() throws CommandException {
 		try (var plot = Plots.load(path)) {
-			var prolog = plot.getProlog();
-
 			if (json) {
 				try {
 					System.out.println(new Plots.Encoder().encode(plot));
@@ -53,16 +50,8 @@ public class Show extends AbstractCommand {
 					throw new CommandException("Cannot encode the plot in JSON format!", e);
 				}
 			}
-			else {
-				System.out.println("* prolog:");
-				System.out.println("  * chain identifier: " + prolog.getChainId());
-				System.out.println("  * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ", base58)");
-				System.out.println("  * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ", base58)");
-				System.out.println("  * extra: " + Hex.toHexString(prolog.getExtra()));
-				long start = plot.getStart();
-				System.out.println("* nonces: [" + start + "," + (start + plot.getLength()) + ")");
-				System.out.println("* hashing: " + plot.getHashing());
-			}
+			else
+				System.out.println(plot);
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new CommandException("The plot file uses an unknown cryptographic algorithm!", e);

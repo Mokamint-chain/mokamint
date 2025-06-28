@@ -19,7 +19,6 @@ package io.mokamint.plotter.cli.internal;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.spec.InvalidKeySpecException;
 
 import io.hotmoka.cli.AbstractCommand;
@@ -82,16 +81,10 @@ public class Create extends AbstractCommand {
 			throw new CommandException("Failed to overwrite \"" + path + "\"!", e);
 		}
 
-		Prolog prolog;
-		
-		try {
-			prolog = computeProlog();
+		try (var plot = Plots.create(path, computeProlog(), start, length, hashing, this::onNewPercent)) {
 		}
-		catch (InvalidKeySpecException | InvalidKeyException e) {
+		catch (InvalidKeySpecException e) {
 			throw new CommandException("Invalid public key!", e);
-		}
-
-		try (var plot = Plots.create(path, prolog, start, length, hashing, this::onNewPercent)) {
 		}
 		catch (IOException e) {
 			throw new CommandException("Cannot access the plot file!", e);
@@ -107,7 +100,7 @@ public class Create extends AbstractCommand {
 			System.out.print(percent + "% ");
 	}
 
-	private Prolog computeProlog() throws InvalidKeySpecException, InvalidKeyException, CommandException {
+	private Prolog computeProlog() throws InvalidKeySpecException, CommandException {
 		return Prologs.of(
 			chainId,
 			signatureOfNode, signatureOfNode.publicKeyFromEncoding(bytesFromBase58(nodePublicKeyBase58)),

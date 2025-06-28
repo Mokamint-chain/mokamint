@@ -98,4 +98,7 @@ public interface Plot extends AutoCloseable {
 
 	@Override
 	int hashCode();
+
+	@Override
+	String toString();
 }

@@ -42,6 +42,7 @@ import java.util.stream.LongStream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
@@ -471,5 +472,19 @@ public class PlotImpl implements Plot {
 	@Override
 	public int hashCode() {
 		return prolog.hashCode() ^ Long.hashCode(start) ^ Long.hashCode(length) ^ hashing.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		var sb = new StringBuilder();
+		sb.append("* prolog:\n");
+		sb.append("  * chain identifier: " + prolog.getChainId() + "\n");
+		sb.append("  * node's public key for signing blocks: " + prolog.getPublicKeyForSigningBlocksBase58() + " (" + prolog.getSignatureForBlocks() + ", base58)\n");
+		sb.append("  * plot's public key for signing deadlines: " + prolog.getPublicKeyForSigningDeadlinesBase58() + " (" + prolog.getSignatureForDeadlines() + ", base58)\n");
+		sb.append("  * extra: " + Hex.toHexString(prolog.getExtra()) + "\n");
+		sb.append("* nonces: [" + start + "," + (start + getLength()) + ")\n");
+		sb.append("* hashing: " + getHashing());
+
+		return sb.toString();
 	}
 }
