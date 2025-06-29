@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,16 +19,17 @@ package io.mokamint.miner.api;
 import java.util.Objects;
 
 /**
- * An exception stating that the execution of a method of a miner failed to complete correctly.
+ * An exception stating that the execution of a method of a miner failed
+ * because the miner is already closed.
  */
 @SuppressWarnings("serial")
-public class MinerException extends Exception {
+public class ClosedMinerException extends Exception {
 
 	/**
 	 * Creates a new exception.
 	 */
-	public MinerException() {
-		super("The miner is misbehaving");
+	public ClosedMinerException() {
+		super("The miner is closed");
 	}
 
 	/**
@@ -36,7 +37,7 @@ public class MinerException extends Exception {
 	 * 
 	 * @param message the message
 	 */
-	public MinerException(String message) {
+	public ClosedMinerException(String message) {
 		super(Objects.requireNonNull(message, "message cannot be null"));
 	}
 
@@ -45,7 +46,7 @@ public class MinerException extends Exception {
 	 * 
 	 * @param cause the cause
 	 */
-	public MinerException(Throwable cause) {
+	public ClosedMinerException(Throwable cause) {
 		super(Objects.requireNonNull(cause, "cause cannot be null"));
 	}
 
@@ -55,7 +56,7 @@ public class MinerException extends Exception {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public MinerException(String message, Throwable cause) {
+	public ClosedMinerException(String message, Throwable cause) {
 		super(Objects.requireNonNull(message, "message cannot be null"), Objects.requireNonNull(cause, "cause cannot be null"));
 	}
 }

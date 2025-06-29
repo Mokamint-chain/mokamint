@@ -23,10 +23,10 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerException;
@@ -179,7 +179,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				result = node.openMiner(message.getPort());
 			}
-			catch (TimeoutException | InterruptedException | NodeException | MinerException e) {
+			catch (TimeoutException | InterruptedException | NodeException | FailedDeploymentException e) {
 				sendExceptionAsync(session, e, message.getId());
 				return;
 			}

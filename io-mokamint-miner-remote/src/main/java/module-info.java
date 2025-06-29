@@ -27,6 +27,7 @@ module io.mokamint.miner.remote {
 	requires transitive io.mokamint.miner.api;
 	requires io.mokamint.miner.messages;
 	requires io.mokamint.nonce;
+	requires io.hotmoka.websockets.client.api;
 	requires io.hotmoka.websockets.server;
 	requires io.hotmoka.websockets.beans;
 	requires org.glassfish.tyrus.core;

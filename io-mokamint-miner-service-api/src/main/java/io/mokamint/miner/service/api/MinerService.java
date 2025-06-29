@@ -19,31 +19,29 @@ package io.mokamint.miner.service.api;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.websockets.client.api.Remote;
-import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
 
 /**
  * A websocket client that connects to a remote miner exported
  * by some Mokamint node. It is an adapter of a miner into a web service client.
  */
-public interface MinerService extends Remote<MinerException> {
+public interface MinerService extends Remote {
 
 	/**
 	 * Yields the specification about the miner connected to this service.
 	 * It describes the kind of deadlines that are expected by that miner.
 	 * 
 	 * @return the mining specification of the miner connected to this service
-	 * @throws MinerException if the miner is misbehaving
+	 * @throws ClosedMinerException if this service has been closed
 	 * @throws TimeoutException if the operation does not terminate inside the expected time window
 	 * @throws InterruptedException if the operation is interrupted before being completed
 	 */
-	MiningSpecification getMiningSpecification() throws MinerException, TimeoutException, InterruptedException;
+	MiningSpecification getMiningSpecification() throws ClosedMinerException, TimeoutException, InterruptedException;
 
 	/**
 	 * Closes the service.
-	 * 
-	 * @throws MinerException if the miner is misbehaving
 	 */
 	@Override
-	void close() throws MinerException;
+	void close();
 }

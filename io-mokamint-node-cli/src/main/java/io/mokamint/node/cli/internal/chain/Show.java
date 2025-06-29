@@ -104,7 +104,7 @@ public class Show extends AbstractPublicRpcCommand {
         }
 	}
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
 			if (full)
@@ -114,6 +114,9 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode a block from \"" + publicUri() + "\" in JSON format!", e);
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
 		}
 	}
 

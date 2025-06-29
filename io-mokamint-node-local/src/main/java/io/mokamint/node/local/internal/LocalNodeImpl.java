@@ -44,11 +44,11 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
@@ -450,7 +450,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws MinerException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws FailedDeploymentException, NodeException {
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.open(port, miningSpecification, this::checkForMiners);
 			// addOnCloseHandler(() -> tryClose(miner)); // TODO: use this instead of minersToCloseAtTheEnd

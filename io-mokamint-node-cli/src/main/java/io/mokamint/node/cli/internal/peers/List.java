@@ -25,6 +25,7 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckConsumer;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
@@ -47,8 +48,13 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static int MAX_PEER_LENGTH = 50;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		new MyTable(remote).print();
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			new MyTable(remote).print();
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	private class Row extends AbstractRow {
@@ -146,7 +152,7 @@ public class List extends AbstractPublicRpcCommand {
 					UUID = peerInfo.getUUID().toString();
 					version = peerInfo.getVersion().toString();
 				}
-				catch (NodeException | TimeoutException e) {
+				catch (FailedDeploymentException | TimeoutException | NodeException e) {
 					LOGGER.warning("cannot contact " + info.getPeer() + ": " + e.getMessage());
 					UUID = version = "<unknown>";
 				}

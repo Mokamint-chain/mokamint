@@ -169,20 +169,25 @@ public class List extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
 		if (from < -1L)
 			throw new CommandException("from cannot be smaller than -1!");
 
-		var info = remote.getChainInfo();
-		if (from == -1L)
-			from = Math.max(0L, info.getLength() - 1 - count + 1);
+		try {
+			var info = remote.getChainInfo();
+			if (from == -1L)
+				from = Math.max(0L, info.getLength() - 1 - count + 1);
 
-		var maybeGenesisHash = info.getGenesisHash();
-		if (maybeGenesisHash.isPresent())
-			new MyTable(maybeGenesisHash.get(), remote).print();
+			var maybeGenesisHash = info.getGenesisHash();
+			if (maybeGenesisHash.isPresent())
+				new MyTable(maybeGenesisHash.get(), remote).print();
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	@Override

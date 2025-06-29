@@ -43,9 +43,4 @@ abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implemen
 	protected ClosedNodeException mkExceptionIfClosed() {
 		return new ClosedNodeException();
 	}
-
-	@Override
-	protected NodeException mkException(Exception cause) {
-		return cause instanceof NodeException ne ? ne : new NodeException(cause);
-	}
 }

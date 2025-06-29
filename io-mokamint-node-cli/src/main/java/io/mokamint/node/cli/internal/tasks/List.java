@@ -32,8 +32,13 @@ import picocli.CommandLine.Help.Ansi;
 @Command(name = "ls", description = "List the tasks of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		new MyTable(remote).print();
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			new MyTable(remote).print();
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	private static class Row extends AbstractRow {

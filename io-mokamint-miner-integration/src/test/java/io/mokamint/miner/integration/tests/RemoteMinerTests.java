@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.messages.api.GetMiningSpecificationResultMessage;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.miner.service.internal.MinerServiceImpl;
@@ -55,7 +55,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 		class MinerServiceTest extends MinerServiceImpl {
 
-			public MinerServiceTest() throws MinerException {
+			public MinerServiceTest() throws FailedDeploymentException {
 				super(miner, URI, 30_000);
 			}
 
@@ -65,7 +65,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMiningSpecification() throws MinerException {
+			private void sendGetMiningSpecification() {
 				sendGetMiningSpecification(ID);
 			}
 		}

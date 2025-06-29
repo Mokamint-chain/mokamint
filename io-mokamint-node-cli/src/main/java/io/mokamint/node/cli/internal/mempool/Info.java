@@ -29,7 +29,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about the mempool of a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
 		try {
 			var info = remote.getMempoolInfo();
 
@@ -40,6 +40,9 @@ public class Info extends AbstractPublicRpcCommand {
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode the mempool info of the node at \"" + publicUri() + "\" in JSON format!", e);
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
 		}
 	}
 

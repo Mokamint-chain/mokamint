@@ -38,19 +38,24 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to add")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
-		PeerInfo info = addPeer(remote);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			PeerInfo info = addPeer(remote);
 
-		if (json()) {
-			try {
-				System.out.println(new PeerInfos.Encoder().encode(info));
+			if (json()) {
+				try {
+					System.out.println(new PeerInfos.Encoder().encode(info));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode a peer info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
+				}
 			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode a peer info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
-			}
+			else
+				System.out.println("Added " + info);
 		}
-		else
-			System.out.println("Added " + info);
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	protected PeerInfo addPeer(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {

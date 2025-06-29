@@ -42,7 +42,7 @@ public class PeerException extends Exception {
 	 * 
 	 * @param cause the cause of the exception
 	 */
-	public PeerException(NodeException cause) {
+	public PeerException(Exception cause) {
 		super(cause);
 	}
 
@@ -52,7 +52,7 @@ public class PeerException extends Exception {
 	 * @param message the message of the exception
 	 * @param cause the cause of the exception
 	 */
-	public PeerException(String message, NodeException cause) {
+	public PeerException(String message, Exception cause) {
 		super(message, cause);
 	}
 }

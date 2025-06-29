@@ -36,19 +36,24 @@ public class Find extends AbstractPublicRpcCommand {
 	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
 	private String hash;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		var address = getTransactionAddress(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			var address = getTransactionAddress(remote);
 
-		if (json()) {
-			try {
-				System.out.println(new TransactionAddresses.Encoder().encode(address));
+			if (json()) {
+				try {
+					System.out.println(new TransactionAddresses.Encoder().encode(address));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode an address at \"" + publicUri() + "\" in JSON format!", e);
+				}
 			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode an address at \"" + publicUri() + "\" in JSON format!", e);
-			}
+			else
+				System.out.println(address);
 		}
-		else
-			System.out.println(address);
+		catch (NodeException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {

@@ -142,7 +142,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws ApplicationException {
+	protected void closeResources(CloseReason reason) {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
@@ -182,11 +182,6 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	@Override
 	protected ClosedApplicationException mkExceptionIfClosed() {
 		return new ClosedApplicationException();
-	}
-
-	@Override
-	protected ApplicationException mkException(Exception cause) {
-		return cause instanceof ApplicationException ae ? ae : new ApplicationException(cause);
 	}
 
 	@Override

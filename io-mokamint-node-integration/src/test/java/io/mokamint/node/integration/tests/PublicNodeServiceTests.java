@@ -49,12 +49,13 @@ import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -122,7 +123,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws TimeoutException, InterruptedException, FailedDeploymentException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -155,7 +156,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -188,7 +189,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -217,7 +218,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -273,7 +274,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -305,7 +306,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -337,7 +338,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -388,7 +389,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -420,7 +421,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -453,7 +454,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -484,7 +485,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -516,7 +517,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -548,7 +549,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -579,7 +580,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -614,7 +615,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -646,7 +647,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -683,7 +684,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemotePublicNodeImpl {
 
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 
@@ -709,12 +710,12 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		
 		class MyRemotePublicNode extends RemotePublicNodeImpl {
-			private MyRemotePublicNode() throws NodeException, TimeoutException, InterruptedException {
+			private MyRemotePublicNode() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(java.net.URI.create("ws://localhost:8030"), 2000, 240000, 1000);
 			}
 
 			@Override
-			protected void closeResources(CloseReason reason) throws NodeException {
+			protected void closeResources(CloseReason reason) {
 				super.closeResources(reason);
 				semaphore.release();
 			}
@@ -765,7 +766,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -798,7 +799,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -830,7 +831,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -862,7 +863,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -895,7 +896,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -927,7 +928,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -959,7 +960,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -992,7 +993,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	
@@ -1024,7 +1025,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
-			public MyTestClient() throws NodeException, TimeoutException, InterruptedException {
+			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
 				super(URI, 2000, 240000, 1000);
 			}
 	

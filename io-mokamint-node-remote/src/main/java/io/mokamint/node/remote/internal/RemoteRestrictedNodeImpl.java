@@ -29,10 +29,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -76,9 +76,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @param uri the URI of the network service that gets bound to the remote node
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws NodeException if the remote node could not be created
+	 * @throws FailedDeploymentException if the remote node could not be created
 	 */
-	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws NodeException {
+	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws FailedDeploymentException {
 		super(timeout);
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
@@ -90,12 +90,12 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 			addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
-			throw new NodeException(e);
+			throw new FailedDeploymentException(e);
 		}
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws NodeException {
+	protected void closeResources(CloseReason reason) {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
@@ -175,11 +175,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, MinerException, InterruptedException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, FailedDeploymentException, InterruptedException, NodeException {
 		ensureIsOpen();
 		var id = nextId();
 		sendOpenMiner(port, id);
-		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, NodeException.class, MinerException.class);
+		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, NodeException.class, FailedDeploymentException.class);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {

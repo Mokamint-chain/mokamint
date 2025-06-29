@@ -34,6 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -68,7 +69,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws NodeException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, 2000);
 			}
 
@@ -105,7 +106,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws NodeException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, 2000);
 			}
 
@@ -141,7 +142,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws NodeException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, 2000);
 			}
 
@@ -177,7 +178,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws NodeException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, 2000);
 			}
 
@@ -200,12 +201,13 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
-			private MyRemoteRestrictedNode() throws NodeException {
+
+			private MyRemoteRestrictedNode() throws FailedDeploymentException {
 				super(java.net.URI.create("ws://localhost:8031"), 2000);
 			}
 
 			@Override
-			protected void closeResources(CloseReason reason) throws NodeException {
+			protected void closeResources(CloseReason reason) {
 				super.closeResources(reason);
 				semaphore.release();
 			}

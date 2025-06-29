@@ -32,14 +32,19 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the UUID of the miner to remove")
 	private UUID uuid;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
-		if (remote.removeMiner(uuid))
-			if (json())
-				System.out.println(uuid);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			if (remote.removeMiner(uuid))
+				if (json())
+					System.out.println(uuid);
+				else
+					System.out.println("Closed miner " + uuid);
 			else
-				System.out.println("Closed miner " + uuid);
-		else
-			throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
+				throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	@Override

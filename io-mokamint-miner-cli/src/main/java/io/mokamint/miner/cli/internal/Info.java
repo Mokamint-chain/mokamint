@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.miner.MiningSpecifications;
-import io.mokamint.miner.api.MinerException;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
@@ -33,13 +33,12 @@ import picocli.CommandLine.Option;
 @Command(name = "info",
 	description = "Print the specification of a mining remote.",
 	showDefaultValues = true)
-public class Info extends AbstractRpcCommand<MinerService, MinerException> {
+public class Info extends AbstractRpcCommand<MinerService> {
 
 	@Option(names = "--uri", description = "the network URI where the API of the remote miner is published", defaultValue = "ws://localhost:8025")
 	private URI uri;
 
 	protected Info() {
-		super(MinerException.class);
 	}
 
 	@Override
@@ -47,18 +46,23 @@ public class Info extends AbstractRpcCommand<MinerService, MinerException> {
 		execute(MinerServices::of, this::body, uri);
 	}
 
-	private void body(MinerService service) throws TimeoutException, InterruptedException, MinerException, CommandException {
-		MiningSpecification miningSpecification = service.getMiningSpecification();
+	private void body(MinerService service) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			MiningSpecification miningSpecification = service.getMiningSpecification();
 
-		if (json()) {
-			try {
-				System.out.println(new MiningSpecifications.Encoder().encode(miningSpecification));
+			if (json()) {
+				try {
+					System.out.println(new MiningSpecifications.Encoder().encode(miningSpecification));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Could not encode the mining specification in JSON format: " + e.getMessage());
+				}
 			}
-			catch (EncodeException e) {
-				throw new CommandException("Could not encode the mining specification in JSON format: " + e.getMessage());
-			}
+			else
+				System.out.println(miningSpecification);
 		}
-		else
-			System.out.println(miningSpecification);
+		catch (ClosedMinerException e) {
+			throw new CommandException("The mining remote has been closed: " + e.getMessage());
+		}
 	}
 }

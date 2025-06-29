@@ -48,7 +48,12 @@
       <artifactId>io-hotmoka-annotations</artifactId>
       <version>${io.hotmoka.annotations.version}</version>
     </dependency>
-     <dependency>
+    <dependency>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-client-api</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.websockets</groupId>
       <artifactId>io-hotmoka-websockets-beans</artifactId>
       <version>${io.hotmoka.websockets.version}</version>

@@ -33,8 +33,9 @@ public interface Miner extends AutoCloseable {
 	 * Yields the mining specification of this miner.
 	 * 
 	 * @return the mining specification of this miner
+	 * @throws ClosedMinerException if the miner is already closed
 	 */
-	MiningSpecification getMiningSpecification();
+	MiningSpecification getMiningSpecification() throws ClosedMinerException;
 
 	/**
 	 * Request to the miner the computation of a deadline. This call might terminate
@@ -46,11 +47,8 @@ public interface Miner extends AutoCloseable {
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
 	 */
-	void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed);
+	void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed); // TODO: add exception
 
-	/**
-	 * Closes the miner.
-	 */
 	@Override
 	void close();
 

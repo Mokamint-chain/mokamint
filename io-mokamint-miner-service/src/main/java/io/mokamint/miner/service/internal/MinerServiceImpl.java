@@ -25,12 +25,12 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
@@ -50,7 +50,7 @@ import jakarta.websocket.Session;
  * Implementation of a client that connects to a remote miner.
  * It is an adapter of a miner into a web service client.
  */
-public class MinerServiceImpl extends AbstractRemote<MinerException> implements MinerService {
+public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> implements MinerService {
 
 	/**
 	 * The adapted miner. This might be missing, in which case the service is just a proxy for calling the
@@ -78,9 +78,9 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws MinerException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(Miner miner, URI uri, int timeout) throws MinerException {
+	public MinerServiceImpl(Miner miner, URI uri, int timeout) throws FailedDeploymentException {
 		super(timeout);
 
 		this.miner = Optional.of(miner);
@@ -92,7 +92,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 			addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
-			throw new MinerException(e);
+			throw new FailedDeploymentException(e.getMessage());
 		}
 
 		this.session = getSession(MINING_ENDPOINT);
@@ -101,15 +101,15 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	}
 
 	/**
-	 * Creates an miner service without a miner. It won't provide deadlines to the connected
+	 * Creates a miner service without a miner. It won't provide deadlines to the connected
 	 * remote miner, by allows one to call the methods of the remote miner anyway.
 	 * 
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws MinerException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(URI uri, int timeout) throws MinerException {
+	public MinerServiceImpl(URI uri, int timeout) throws FailedDeploymentException {
 		super(timeout);
 
 		this.miner = Optional.empty();
@@ -120,7 +120,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 			addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
-			throw new MinerException(e);
+			throw new FailedDeploymentException(e.getMessage());
 		}
 
 		this.session = getSession(MINING_ENDPOINT);
@@ -129,11 +129,11 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 	}
 
 	@Override
-	public MiningSpecification getMiningSpecification() throws MinerException, TimeoutException, InterruptedException {
+	public MiningSpecification getMiningSpecification() throws ClosedMinerException, TimeoutException, InterruptedException {
 		ensureIsOpen();
 		var id = nextId();
 		sendGetMiningSpecification(id);
-		return waitForResult(id, GetMiningSpecificationResultMessage.class, TimeoutException.class);
+		return waitForResult(id, GetMiningSpecificationResultMessage.class);
 	}
 
 	@Override
@@ -173,22 +173,17 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
+			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
 		}
 	}
 
 	@Override
-	protected MinerException mkExceptionIfClosed() {
-		return new MinerException("The miner service is closed");
+	protected ClosedMinerException mkExceptionIfClosed() {
+		return new ClosedMinerException("The miner service is closed");
 	}
 
 	@Override
-	protected MinerException mkException(Exception cause) {
-		return cause instanceof MinerException ne ? ne : new MinerException(cause);
-	}
-
-	@Override
-	protected void closeResources(CloseReason reason) throws MinerException {
+	protected void closeResources(CloseReason reason) {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
 	}
@@ -205,7 +200,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 			LOGGER.info(logPrefix + "received deadline request: " + description);
 			miner.ifPresent(miner -> miner.requestDeadline(description, this::onDeadlineComputed));
 		}
-		catch (MinerException e) {
+		catch (ClosedMinerException e) { // TODO: throw
 			LOGGER.warning(logPrefix + "ignoring deadline request: " + description + " since this miner service is already closed: " + e.getMessage());
 		}
 	}
@@ -224,7 +219,7 @@ public class MinerServiceImpl extends AbstractRemote<MinerException> implements 
 		catch (IOException e) {
 			LOGGER.warning(logPrefix + "cannot send the deadline to the session: " + e.getMessage());
 		}
-		catch (MinerException e) {
+		catch (ClosedMinerException e) {
 			LOGGER.warning(logPrefix + "ignoring deadline " + deadline + " since this miner service is already closed: " + e.getMessage());
 		}
 	}

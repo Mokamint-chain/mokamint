@@ -23,15 +23,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
@@ -103,9 +101,9 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	 *                            that connect to this remote must provided deadlines
 	 *                            that comply with this specification
 	 * @param check the check to determine if a deadline is valid
-	 * @throws MinerException if the miner cannot be deployed
+	 * @throws FailedDeploymentException if the miner cannot be deployed
 	 */
-	public RemoteMinerImpl(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws MinerException {
+	public RemoteMinerImpl(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws FailedDeploymentException {
 		this.port = port;
 		this.miningSpecification = miningSpecification;
 		this.check = Objects.requireNonNull(check);
@@ -115,7 +113,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 			startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
-			throw new MinerException(e);
+			throw new FailedDeploymentException(e);
 		}
 
 		LOGGER.info(logPrefix + "published at ws://localhost:" + port);
@@ -125,54 +123,11 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
     protected void processRequest(Session session, RpcMessage message) throws IOException {
 		var id = message.getId();
 
-    	if (message instanceof GetMiningSpecificationMessage) {
-    		try {
-				sendObjectAsync(session, GetMiningSpecificationResultMessages.of(miningSpecification, id));
-			}
-    		catch (RuntimeException e) {
-    			minerFailed(session, "getMiningSpecification()", id, e);
-    		}
-    	}
+    	if (message instanceof GetMiningSpecificationMessage)
+    		sendObjectAsync(session, GetMiningSpecificationResultMessages.of(miningSpecification, id));
     	else
     		LOGGER.severe("Unexpected message of type " + message.getClass().getName());
     }
-
-	private void minerFailed(Session session, String description, String id, Exception e) throws IOException {
-    	String message = e.getMessage();
-
-    	// we do not trust exception messages coming from the serviced miner, they might be arbitrarily long
-    	if (e instanceof MinerException && message.length() > 200)
-    		message = message.substring(0, 200) + "...";
-
-    	message = description + " threw exception: " + message;
-
-    	LOGGER.log(Level.SEVERE, message, e);
-
-    	if (!(e instanceof MinerException))
-    		e = new MinerException(message, e);
-
-    	sendExceptionAsync(session, e, id);
-	}
-
-    /**
-	 * Sends an exception message to the given session.
-	 * 
-	 * @param session the session
-	 * @param e the exception used to build the message
-	 * @param id the identifier of the message to send
-	 * @throws IOException if there was an I/O problem
-	 */
-	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) {
-			// if the serviced node gets interrupted, then the external vision of the node
-			// is that of a node that is not working properly
-			sendObjectAsync(session, ExceptionMessages.of(new MinerException("The service has been interrupted"), id));
-			// we take note that we have been interrupted
-			Thread.currentThread().interrupt();
-		}
-		else
-			sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
 
 	protected void onGetMiningSpecification(GetMiningSpecificationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MINING_SPECIFICATION_ENDPOINT + " request");
@@ -281,7 +236,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
 			return simpleConfig(server, GetMiningSpecificationEndpoint.class, GET_MINING_SPECIFICATION_ENDPOINT,
-				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class);
 		}
 	}
 

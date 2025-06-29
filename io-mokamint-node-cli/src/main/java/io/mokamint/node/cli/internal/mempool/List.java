@@ -44,17 +44,22 @@ public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException{
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
 		if (from < -1)
 			throw new CommandException("from cannot be smaller than -1!");
 
-		if (from == -1L)
-			from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
+		try {
+			if (from == -1L)
+				from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
 
-		new MyTable(remote).print();
+			new MyTable(remote).print();
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	private static class Row extends AbstractRow {

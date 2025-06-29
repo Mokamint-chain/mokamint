@@ -24,5 +24,6 @@ module io.mokamint.node.api {
 	requires transitive io.hotmoka.crypto.api;
 	requires io.hotmoka.closeables.api;
 	requires io.hotmoka.annotations;
+	requires transitive io.hotmoka.websockets.api;
 	requires transitive io.hotmoka.marshalling.api;
 }

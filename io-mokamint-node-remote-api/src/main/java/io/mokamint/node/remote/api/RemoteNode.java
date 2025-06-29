@@ -19,11 +19,10 @@ package io.mokamint.node.remote.api;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.node.api.Node;
-import io.mokamint.node.api.NodeException;
 
 /**
  * A remote node of a Mokamint blockchain.
  */
 @ThreadSafe
-public interface RemoteNode extends Node, Remote<NodeException> {
+public interface RemoteNode extends Node, Remote {
 }

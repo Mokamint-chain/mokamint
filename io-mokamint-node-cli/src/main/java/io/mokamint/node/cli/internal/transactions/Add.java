@@ -38,19 +38,24 @@ public class Add extends AbstractPublicRpcCommand {
 	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
 	private String tx;
 
-	private void body(RemotePublicNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
-		MempoolEntry info = addTransaction(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			MempoolEntry info = addTransaction(remote);
 
-		if (json()) {
-			try {
-				System.out.println(new MempoolEntries.Encoder().encode(info));
+			if (json()) {
+				try {
+					System.out.println(new MempoolEntries.Encoder().encode(info));
+				}
+				catch (EncodeException e) {
+					throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
+				}
 			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
-			}
+			else
+				System.out.println(info);
 		}
-		else
-			System.out.println(info);
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {

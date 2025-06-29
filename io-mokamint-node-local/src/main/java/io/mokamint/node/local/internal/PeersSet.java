@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -704,7 +705,7 @@ public class PeersSet implements AutoCloseable {
 		catch (TimeoutException e) {
 			throw new PeerTimeoutException(e);
 		}
-		catch (NodeException e) {
+		catch (FailedDeploymentException e) {
 			// it's the peer that is misbehaving, not our node
 			throw new PeerException(e);
 		}

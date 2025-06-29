@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
@@ -310,8 +310,8 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("openMiner() works in case of MinerException")
-	public void openMinerWorksInCaseOfMinerException() throws Exception {
+	@DisplayName("openMiner() works in case of FailedDeploymentException")
+	public void openMinerWorksInCaseOfFailedDeploymentException() throws Exception {
 		var exceptionMessage = "I/O exception";
 
 		class MyServer extends RestrictedTestServer {
@@ -320,12 +320,12 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new MinerException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new FailedDeploymentException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(MinerException.class, () -> remote.openMiner(8025));
+			var exception = assertThrows(FailedDeploymentException.class, () -> remote.openMiner(8025));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

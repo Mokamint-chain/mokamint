@@ -94,7 +94,7 @@ public class LocalMinerImpl implements LocalMiner {
 		if (specifications.length == 0)
 			throw new IllegalArgumentException("A local miner needs at least one plot file");
 		else if (specifications.length > 1)
-			throw new IllegalArgumentException("The provided plots cannot work for a shared mining specification");
+			throw new IllegalArgumentException("The provided plots do not have the same shared mining specification");
 		else
 			return specifications[0];
 	}
@@ -154,7 +154,7 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public void close() {
+	public void close() { // TODO: if closed, make methods throw exception
 	}
 
 	@Override

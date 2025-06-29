@@ -21,7 +21,6 @@ import java.net.URI;
 import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.RpcCommandBody;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Option;
@@ -30,10 +29,9 @@ import picocli.CommandLine.Option;
  * Shared code among the commands that connect to a remote and perform Rpc calls
  * to the public API of the remote.
  */
-public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<RemotePublicNode, NodeException> {
+public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<RemotePublicNode> {
 
 	protected AbstractPublicRpcCommand() {
-		super(NodeException.class);
 	}
 
 	@Option(names = { "--uri", "--public-uri" }, description = "the network URI where the public API of the service is published", defaultValue = "ws://localhost:8030")
@@ -54,7 +52,7 @@ public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<Remote
 	 * @param what the body
 	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected void execute(RpcCommandBody<RemotePublicNode, NodeException> what) throws CommandException {
+	protected void execute(RpcCommandBody<RemotePublicNode> what) throws CommandException {
 		execute(RemotePublicNodes::of, what, publicUri);
 	}
 }

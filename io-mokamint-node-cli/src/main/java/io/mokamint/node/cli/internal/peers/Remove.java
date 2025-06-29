@@ -33,14 +33,19 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to remove")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws NodeException, TimeoutException, InterruptedException, CommandException {
-		if (remote.remove(Peers.of(uri)))
-			if (json())
-				System.out.println(uri);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			if (remote.remove(Peers.of(uri)))
+				if (json())
+					System.out.println(uri);
+				else
+					System.out.println("Removed peer " + uri);
 			else
-				System.out.println("Removed peer " + uri);
-		else
-			throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
+				throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
+		}
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
+		}
 	}
 
 	@Override

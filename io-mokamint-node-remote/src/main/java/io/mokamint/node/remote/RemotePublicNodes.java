@@ -19,7 +19,7 @@ package io.mokamint.node.remote;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.node.api.NodeException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 
@@ -40,11 +40,11 @@ public abstract class RemotePublicNodes {
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the new remote node
-	 * @throws NodeException if the remote node could not be created
+	 * @throws FailedDeploymentException if the remote node could not be created
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation has timed out
 	 */
-	public static RemotePublicNode of(URI uri, int timeout) throws NodeException, TimeoutException, InterruptedException {
+	public static RemotePublicNode of(URI uri, int timeout) throws FailedDeploymentException, TimeoutException, InterruptedException {
 		return new RemotePublicNodeImpl(uri, timeout, -1, 1000);
 	}
 
@@ -60,11 +60,11 @@ public abstract class RemotePublicNodes {
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of spurious messages
 	 * @return the new remote node
-	 * @throws NodeException if the remote node could not be created
+	 * @throws FailedDeploymentException if the remote node could not be created
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation has timed out
 	 */
-	public static RemotePublicNode of(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws NodeException, TimeoutException, InterruptedException {
+	public static RemotePublicNode of(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws FailedDeploymentException, TimeoutException, InterruptedException {
 		return new RemotePublicNodeImpl(uri, timeout, serviceBroadcastInterval, whisperedMessagesSize);
 	}
 }

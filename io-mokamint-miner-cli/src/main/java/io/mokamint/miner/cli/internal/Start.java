@@ -29,8 +29,8 @@ import java.util.logging.Logger;
 
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
@@ -146,7 +146,7 @@ public class Start extends AbstractCommand {
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
 				System.out.println("Service terminated: " + service.waitUntilClosed());
 			}
-			catch (MinerException e) {
+			catch (FailedDeploymentException e) {
 				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
 			}
 			catch (InterruptedException e) {
@@ -165,13 +165,7 @@ public class Start extends AbstractCommand {
 				LOGGER.log(Level.WARNING, "cannot access the standard input", e);
 			}
 		
-			try {
-				service.close(); // this will unlock the waitUntilDisconnected() above
-			}
-			catch (MinerException e) {
-				System.out.println(Ansi.AUTO.string("@|red Cannot close the service!|@"));
-				LOGGER.log(Level.WARNING, "cannot close the service", e);
-			}
+			service.close(); // this will unlock the waitUntilDisconnected() above
 		}
 	}
 }

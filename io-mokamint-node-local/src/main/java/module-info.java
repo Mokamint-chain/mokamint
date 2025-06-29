@@ -40,4 +40,5 @@ module io.mokamint.node.local {
 	requires jdk.unsupported; // because xodus needs sl4j that needs sun.misc.Unsafe
 
 	requires static io.mokamint.nonce;
+	requires io.hotmoka.websockets.client.api;
 }

@@ -51,14 +51,17 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.Memories;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
@@ -107,7 +110,6 @@ import io.mokamint.node.messages.GetTransactionResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperTransactionMessages;
-import io.mokamint.node.Memories;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
@@ -126,7 +128,6 @@ import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
-import io.mokamint.node.api.Memory;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
@@ -190,11 +191,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	 * @param whisperedMessagesSize the size of the memory used to avoid whispering the same
 	 *                              message again; higher numbers reduce the circulation of
 	 *                              spurious messages
-	 * @throws NodeException if the remote node could not be created
+	 * @throws FailedDeploymentException if the remote node could not be created
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation has timed out
 	 */
-	public RemotePublicNodeImpl(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws NodeException, TimeoutException, InterruptedException {
+	public RemotePublicNodeImpl(URI uri, int timeout, int serviceBroadcastInterval, int whisperedMessagesSize) throws FailedDeploymentException, TimeoutException, InterruptedException {
 		super(timeout);
 
 		this.logPrefix = "public remote(" + uri + "): ";
@@ -222,17 +223,22 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 		}
 		catch (IOException | DeploymentException e) {
-			throw new NodeException(e);
+			throw new FailedDeploymentException(e);
 		}
 
-		this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+		try {
+			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+		}
+		catch (NodeException e) {
+			throw new FailedDeploymentException(e);
+		}
 
 		if (serviceBroadcastInterval >= 0)
 			periodicTasks.scheduleWithFixedDelay(this::whisperAllServices, 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	protected void closeResources(CloseReason reason) throws NodeException {
+	protected void closeResources(CloseReason reason) {
 		try {
 			periodicTasks.shutdownNow();
 		}

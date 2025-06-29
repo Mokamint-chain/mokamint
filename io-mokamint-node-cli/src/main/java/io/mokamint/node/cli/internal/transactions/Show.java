@@ -41,28 +41,33 @@ public class Show extends AbstractPublicRpcCommand {
 	@Option(names = "--representation", description = "report the representation of the transaction instead of its Base64-encoded bytes", defaultValue = "false")
     private boolean representation;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
-		if (representation) {
-			String representation = getTransactionRepresentation(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+		try {
+			if (representation) {
+				String representation = getTransactionRepresentation(remote);
 
-			if (json()) {
-				var answer = new RepresentationAnswer();
-				answer.representation = representation;
-				System.out.println(new Gson().toJsonTree(answer));
+				if (json()) {
+					var answer = new RepresentationAnswer();
+					answer.representation = representation;
+					System.out.println(new Gson().toJsonTree(answer));
+				}
+				else
+					System.out.println(representation);
 			}
-			else
-				System.out.println(representation);
+			else {
+				var transaction = getTransaction(remote);
+
+				if (json()) {
+					var answer = new TransactionAnswer();
+					answer.bytes = transaction.toBase64String();
+					System.out.println(new Gson().toJsonTree(answer));
+				}
+				else
+					System.out.println(transaction);
+			}
 		}
-		else {
-			var transaction = getTransaction(remote);
-
-			if (json()) {
-				var answer = new TransactionAnswer();
-				answer.bytes = transaction.toBase64String();
-				System.out.println(new Gson().toJsonTree(answer));
-			}
-			else
-				System.out.println(transaction);
+		catch (NodeException e) {
+			throw new RuntimeException(e); // TODO
 		}
 	}
 

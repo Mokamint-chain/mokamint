@@ -29,8 +29,8 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.MiningSpecifications;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
@@ -62,9 +62,9 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		/**
 		 * Creates a new test remote miner.
 		 * 
-		 * @throws MinerException if the miner cannot be deployed
+		 * @throws FailedDeploymentException if the miner cannot be deployed
 		 */
-		private RemoteMinerTest() throws MinerException {
+		private RemoteMinerTest() throws FailedDeploymentException {
 			super(PORT, MINING_SPECIFICATION, deadline -> {});
 		}
 	}
@@ -74,7 +74,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 	public void getMiningSpecificationWorks() throws Exception {
 		class MyRemoteMiner extends RemoteMinerTest {
 
-			private MyRemoteMiner() throws MinerException {}
+			private MyRemoteMiner() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetMiningSpecification(GetMiningSpecificationMessage message, Session session) {

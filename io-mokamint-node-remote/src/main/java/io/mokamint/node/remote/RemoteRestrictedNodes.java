@@ -18,7 +18,7 @@ package io.mokamint.node.remote;
 
 import java.net.URI;
 
-import io.mokamint.node.api.NodeException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 
@@ -37,9 +37,9 @@ public abstract class RemoteRestrictedNodes {
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the new remote node
-	 * @throws NodeException if the remote node could not be created
+	 * @throws FailedDeploymentException if the remote node could not be created
 	 */
-	public static RemoteRestrictedNode of(URI uri, int timeout) throws NodeException {
+	public static RemoteRestrictedNode of(URI uri, int timeout) throws FailedDeploymentException {
 		return new RemoteRestrictedNodeImpl(uri, timeout);
 	}
 }

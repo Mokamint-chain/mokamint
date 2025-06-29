@@ -18,8 +18,8 @@ package io.mokamint.miner.service;
 
 import java.net.URI;
 
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.api.MinerException;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.miner.service.internal.MinerServiceImpl;
 
@@ -38,9 +38,9 @@ public final class MinerServices {
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the miner service
-	 * @throws MinerException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public static MinerService of(Miner miner, URI uri, int timeout) throws MinerException {
+	public static MinerService of(Miner miner, URI uri, int timeout) throws FailedDeploymentException {
 		return new MinerServiceImpl(miner, uri, timeout);
 	}
 
@@ -52,9 +52,9 @@ public final class MinerServices {
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the miner service
-	 * @throws MinerException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public static MinerService of(URI uri, int timeout) throws MinerException {
+	public static MinerService of(URI uri, int timeout) throws FailedDeploymentException {
 		return new MinerServiceImpl(uri, timeout);
 	}
 }
