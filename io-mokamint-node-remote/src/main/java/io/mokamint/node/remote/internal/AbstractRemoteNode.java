@@ -18,8 +18,6 @@ package io.mokamint.node.remote.internal;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.websockets.client.AbstractRemote;
-import io.mokamint.node.ClosedNodeException;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.remote.api.RemoteNode;
 
 /**
@@ -27,7 +25,7 @@ import io.mokamint.node.remote.api.RemoteNode;
  * to a service for the public or restricted API of a Mokamint node.
  */
 @ThreadSafe
-abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implements RemoteNode {
+abstract class AbstractRemoteNode extends AbstractRemote implements RemoteNode {
 
 	/**
 	 * Creates and opens a new remote node for the public or restricted API of a node.
@@ -37,10 +35,5 @@ abstract class AbstractRemoteNode extends AbstractRemote<NodeException> implemen
 	 */
 	protected AbstractRemoteNode(int timeout) {
 		super(timeout);
-	}
-
-	@Override
-	protected ClosedNodeException mkExceptionIfClosed() {
-		return new ClosedNodeException();
 	}
 }

@@ -33,6 +33,7 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
@@ -144,7 +145,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddPeer(peer, id);
 		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, NodeException.class, PeerException.class, PeerRejectedException.class);
@@ -160,7 +161,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	public boolean remove(Peer peer) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendRemovePeer(peer, id);
 		return waitForResult(id, RemovePeerResultMessage.class, TimeoutException.class, NodeException.class);
@@ -176,7 +177,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, FailedDeploymentException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendOpenMiner(port, id);
 		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, NodeException.class, FailedDeploymentException.class);
@@ -192,7 +193,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 	@Override
 	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendRemoveMiner(uuid, id);
 		return waitForResult(id, RemoveMinerResultMessage.class, TimeoutException.class, NodeException.class);

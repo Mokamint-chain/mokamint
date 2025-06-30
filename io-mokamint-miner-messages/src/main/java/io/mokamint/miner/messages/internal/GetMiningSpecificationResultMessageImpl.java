@@ -18,7 +18,7 @@ package io.mokamint.miner.messages.internal;
 
 import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
@@ -71,7 +71,7 @@ public class GetMiningSpecificationResultMessageImpl extends AbstractRpcMessage 
 	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> GetMiningSpecificationResultMessageImpl(MiningSpecification result, String id, ExceptionSupplier<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> GetMiningSpecificationResultMessageImpl(MiningSpecification result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(Objects.requireNonNull(id, "id cannot be null", onIllegalArgs));
 	
 		this.result = Objects.requireNonNull(result, "result cannot be null", onIllegalArgs);

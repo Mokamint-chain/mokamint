@@ -30,6 +30,7 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
@@ -140,7 +141,8 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	}
 
 	@Override
-	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
+	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) throws ClosedMinerException {
+		ensureIsOpen(ClosedMinerException::new);
 		requests.add(challenge, onDeadlineComputed);
 		LOGGER.info(logPrefix + "requesting " + challenge + " to " + sessions.size() + " open sessions");
 		sessions.stream()
@@ -148,12 +150,18 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 			.forEach(session -> sendChallenge(session, challenge));
 	}
 
+	@Override
+	public MiningSpecification getMiningSpecification() throws ClosedMinerException {
+		ensureIsOpen(ClosedMinerException::new);
+		return miningSpecification;
+	}
+
 	private void sendChallenge(Session session, Challenge challenge) {
 		try {
 			sendObjectAsync(session, challenge);
 		}
 		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to miner service " + session.getId() + ": " + e.getMessage());
+			LOGGER.warning(logPrefix + "cannot send to session " + session.getId() + ": " + e.getMessage());
 		}
 	}
 
@@ -173,11 +181,6 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		int sessionsCount = sessions.size();
 		String openSessions = sessionsCount == 1 ? "1 open session" : (sessionsCount + " open sessions");
 		return "a remote miner published at ws://localhost:" + port + ", with " + openSessions;
-	}
-
-	@Override
-	public MiningSpecification getMiningSpecification() {
-		return miningSpecification;
 	}
 
 	private void addSession(Session session) {

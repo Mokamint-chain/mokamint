@@ -21,6 +21,7 @@ import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.MiningSpecifications;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
@@ -62,6 +64,11 @@ public class LocalMinerImpl implements LocalMiner {
 	 * The prefix reported in the log messages.
 	 */
 	private final String logPrefix = "local miner " + uuid + ": ";
+
+	/**
+	 * True if and only if this miner has been closed already.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
 
 	private final static Logger LOGGER = Logger.getLogger(LocalMinerImpl.class.getName());
 
@@ -110,7 +117,10 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
+	public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) throws ClosedMinerException {
+		if (isClosed.get())
+			throw new ClosedMinerException();
+
 		LOGGER.info(logPrefix + "received challenge: " + challenge);
 		var hashingForDeadlines = challenge.getHashingForDeadlines();
 		var plots = Stream.of(plotsAndKeyPairs)
@@ -154,7 +164,8 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public void close() { // TODO: if closed, make methods throw exception
+	public void close() {
+		isClosed.set(true);
 	}
 
 	@Override
@@ -167,7 +178,10 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public MiningSpecification getMiningSpecification() {
+	public MiningSpecification getMiningSpecification() throws ClosedMinerException {
+		if (isClosed.get())
+			throw new ClosedMinerException();
+
 		return miningSpecification;
 	}
 }

@@ -55,6 +55,7 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -353,7 +354,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public NodeInfo getInfo() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetInfo(id);
 		return waitForResult(id, GetInfoResultMessage.class, TimeoutException.class, NodeException.class);
@@ -365,7 +366,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMinerInfos(id);
 		return waitForResult(id, GetMinerInfosResultMessage.class, TimeoutException.class, NodeException.class);
@@ -377,7 +378,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTaskInfos(id);
 		return waitForResult(id, GetTaskInfosResultMessage.class, TimeoutException.class, NodeException.class);
@@ -389,7 +390,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetPeerInfos(id);
 		return waitForResult(id, GetPeerInfosResultMessage.class, TimeoutException.class, NodeException.class);
@@ -401,7 +402,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetBlock(hash, id);
 		return waitForResult(id, GetBlockResultMessage.class, TimeoutException.class, NodeException.class);
@@ -413,7 +414,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetBlockDescription(hash, id);
 		return waitForResult(id, GetBlockDescriptionResultMessage.class, TimeoutException.class, NodeException.class);
@@ -425,7 +426,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetConfig(id);
 		return waitForResult(id, GetConfigResultMessage.class, TimeoutException.class, NodeException.class);
@@ -437,7 +438,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public ChainInfo getChainInfo() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetChainInfo(id);
 		return waitForResult(id, GetChainInfoResultMessage.class, TimeoutException.class, NodeException.class);
@@ -449,7 +450,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public ChainPortion getChainPortion(long start, int count) throws InterruptedException, TimeoutException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
 		return waitForResult(id, GetChainPortionResultMessage.class, TimeoutException.class, NodeException.class);
@@ -461,7 +462,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddTransaction(transaction, id);
 		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, NodeException.class);
@@ -473,7 +474,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMempoolInfo(id);
 		return waitForResult(id, GetMempoolInfoResultMessage.class, TimeoutException.class, NodeException.class);
@@ -485,7 +486,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMempoolPortion(start, count, id);
 		return waitForResult(id, GetMempoolPortionResultMessage.class, TimeoutException.class, NodeException.class);
@@ -497,7 +498,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransaction(hash, id);
 		return waitForResult(id, GetTransactionResultMessage.class, TimeoutException.class, NodeException.class);
@@ -509,7 +510,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
 		return waitForResult(id, GetTransactionRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, NodeException.class);
@@ -521,7 +522,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransactionAddress(hash, id);
 		return waitForResult(id, GetTransactionAddressResultMessage.class, TimeoutException.class, NodeException.class);

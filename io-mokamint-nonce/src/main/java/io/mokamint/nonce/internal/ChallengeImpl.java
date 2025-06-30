@@ -24,7 +24,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -109,7 +109,7 @@ public final class ChallengeImpl extends AbstractMarshallable implements Challen
 		);
 	}
 
-	private <E extends Exception> ChallengeImpl(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, ExceptionSupplier<E> onIllegalArgs) throws E {
+	private <E extends Exception> ChallengeImpl(int scoopNumber, byte[] generationSignature, HashingAlgorithm hashingForDeadlines, HashingAlgorithm hashingForGenerations, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E {
 		this.scoopNumber = scoopNumber;
 		this.generationSignature = Objects.requireNonNull(generationSignature, "generation signature cannot be null", onIllegalArgs).clone();
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null", onIllegalArgs);

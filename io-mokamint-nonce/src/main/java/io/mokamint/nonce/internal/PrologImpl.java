@@ -28,7 +28,7 @@ import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -215,7 +215,7 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * @throws E if some argument is illegal
 	 */
 	private <E extends Exception> PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, PublicKey publicKeyForSigningBlocks,
-			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplier<E> onIllegalArgs) throws E {
+			SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E {
 	
 		this(
 				chainId,
@@ -245,7 +245,7 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	 * @throws E if some argument is illegal
 	 */
 	private <E extends Exception> PrologImpl(String chainId, SignatureAlgorithm signatureForBlocks, byte[] publicKeyForSigningBlocks,
-			SignatureAlgorithm signatureForDeadlines, byte[] publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplier<E> onIllegalArgs) throws E {
+			SignatureAlgorithm signatureForDeadlines, byte[] publicKeyForSigningDeadlines, byte[] extra, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E {
 	
 		Objects.requireNonNull(chainId, "chainId cannot be null", onIllegalArgs);
 		Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null", onIllegalArgs);
@@ -368,7 +368,7 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 		context.writeLengthAndBytes(extra);
 	}
 
-	private static <E extends Exception> byte[] encodingOf(PublicKey publicKey, SignatureAlgorithm signature, ExceptionSupplier<E> onIllegalArgs) throws E {
+	private static <E extends Exception> byte[] encodingOf(PublicKey publicKey, SignatureAlgorithm signature, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E {
 		try {
 			return signature.encodingOf(publicKey);
 		}

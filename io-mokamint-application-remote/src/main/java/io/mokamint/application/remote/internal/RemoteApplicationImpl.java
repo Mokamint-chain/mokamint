@@ -100,7 +100,7 @@ import jakarta.websocket.Session;
  * to a service for the public API of a Mokamint node.
  */
 @ThreadSafe
-public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> implements RemoteApplication {
+public class RemoteApplicationImpl extends AbstractRemote implements RemoteApplication {
 
 	/**
 	 * The prefix used in the log messages;
@@ -180,13 +180,8 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 	}
 
 	@Override
-	protected ClosedApplicationException mkExceptionIfClosed() {
-		return new ClosedApplicationException();
-	}
-
-	@Override
 	public boolean checkPrologExtra(byte[] extra) throws ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCheckPrologExtra(extra, id);
 		return waitForResult(id, CheckPrologExtraResultMessage.class, TimeoutException.class,  ApplicationException.class);
@@ -220,7 +215,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public void checkTransaction(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
 		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
@@ -254,7 +249,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public long getPriority(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetPriority(transaction, id);
 		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
@@ -288,7 +283,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public String getRepresentation(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
 		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
@@ -322,7 +317,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public byte[] getInitialStateId() throws ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetInitialStateId(id);
 		return waitForResult(id, GetInitialStateIdResultMessage.class, TimeoutException.class, ApplicationException.class);
@@ -355,7 +350,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendBeginBlock(height, when, stateId, id);
 		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class, TimeoutException.class, ApplicationException.class);
@@ -392,7 +387,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
 		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
@@ -427,7 +422,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public byte[] endBlock(int groupId, Deadline deadline) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendEndBlock(groupId, deadline, id);
 		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
@@ -462,7 +457,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public void commitBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCommitBlock(groupId, id);
 		waitForResult(id, CommitBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
@@ -496,7 +491,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public void abortBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendAbortBlock(groupId, id);
 		waitForResult(id, AbortBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
@@ -530,7 +525,7 @@ public class RemoteApplicationImpl extends AbstractRemote<ApplicationException> 
 
 	@Override
 	public void keepFrom(LocalDateTime start) throws ApplicationException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendKeepFrom(start, id);
 		waitForResult(id, KeepFromResultMessage.class, TimeoutException.class, ApplicationException.class);

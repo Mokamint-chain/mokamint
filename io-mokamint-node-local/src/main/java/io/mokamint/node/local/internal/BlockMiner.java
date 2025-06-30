@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.api.Block;
@@ -227,7 +228,15 @@ public class BlockMiner {
 	}
 
 	private void requestDeadlineToEveryMiner() {
-		miners.get().forEach(this::requestDeadlineTo);
+		for (var miner: miners.get().toArray(Miner[]::new)) {
+			try {
+				requestDeadlineTo(miner);
+			}
+			catch (ClosedMinerException e) {
+				LOGGER.warning("mining: removing miner " + miner.getUUID() + " since it has been closed");
+				miners.remove(miner);
+			}
+		}
 	}
 
 	private boolean waitUntilFirstDeadlineArrives() throws InterruptedException {
@@ -298,7 +307,7 @@ public class BlockMiner {
 		}
 	}
 
-	private void requestDeadlineTo(Miner miner) {
+	private void requestDeadlineTo(Miner miner) throws ClosedMinerException {
 		if (!interrupted) {
 			LOGGER.info(heightMessage + "challenging miner " + miner.getUUID() + " with: " + challenge);
 			minersThatDidNotAnswer.add(miner);

@@ -40,14 +40,15 @@ public interface Miner extends AutoCloseable {
 	/**
 	 * Request to the miner the computation of a deadline. This call might terminate
 	 * immediately and later, when the deadline is ready, the consumer of the deadline
-	 * can be called to notify it.
+	 * might be called to notify it.
 	 * 
 	 * @param challenge the challenge for which the deadline is requested
 	 * @param onDeadlineComputed the callback to execute when a deadline has been found.
 	 *                           Miners can call this once, many times or even never.
 	 *                           It's up to the user of the miner to be ready for all these situations
+	 * @throws ClosedMinerException if the miner is already closed
 	 */
-	void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed); // TODO: add exception
+	void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) throws ClosedMinerException;
 
 	@Override
 	void close();

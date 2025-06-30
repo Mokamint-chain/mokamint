@@ -29,7 +29,7 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
-import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -169,7 +169,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @return the deadline
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> DeadlineImpl(Prolog prolog, Challenge challenge, long progressive, byte[] value, byte[] signature, ExceptionSupplier<E> onIllegalArgs) throws E {
+	private <E extends Exception> DeadlineImpl(Prolog prolog, Challenge challenge, long progressive, byte[] value, byte[] signature, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E {
 		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null", onIllegalArgs);
 		this.progressive = progressive;
 		this.value = Objects.requireNonNull(value, "value cannot be null", onIllegalArgs).clone();
@@ -203,7 +203,7 @@ public final class DeadlineImpl extends AbstractMarshallable implements Deadline
 	 * @throws SignatureException if the signature of the deadline is invalid
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	private <E extends Exception> DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey, ExceptionSupplier<E> onIllegalArgs) throws E, InvalidKeyException, SignatureException {
+	private <E extends Exception> DeadlineImpl(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E, InvalidKeyException, SignatureException {
 		this.prolog = Objects.requireNonNull(prolog, "prolog cannot be null", onIllegalArgs);
 		this.progressive = progressive;
 		this.value = Objects.requireNonNull(value, "value cannot be null", onIllegalArgs).clone();

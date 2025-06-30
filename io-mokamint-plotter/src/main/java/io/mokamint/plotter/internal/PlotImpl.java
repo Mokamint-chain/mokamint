@@ -47,7 +47,7 @@ import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.CheckSupplier;
-import io.hotmoka.exceptions.ExceptionSupplier;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
@@ -203,7 +203,7 @@ public class PlotImpl implements Plot {
 	 * @throws E if some argument is illegal
 	 * @throws IOException if the plot file cannot be written into {@code path}
 	 */
-	private <E extends Exception> PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent, ExceptionSupplier<E> onIllegalArgs) throws E, IOException {
+	private <E extends Exception> PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent, ExceptionSupplierFromMessage<E> onIllegalArgs) throws E, IOException {
 		if (start < 0)
 			throw onIllegalArgs.apply("start cannot be negative");
 		

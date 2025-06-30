@@ -50,7 +50,7 @@ import jakarta.websocket.Session;
  * Implementation of a client that connects to a remote miner.
  * It is an adapter of a miner into a web service client.
  */
-public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> implements MinerService {
+public class MinerServiceImpl extends AbstractRemote implements MinerService {
 
 	/**
 	 * The adapted miner. This might be missing, in which case the service is just a proxy for calling the
@@ -130,7 +130,7 @@ public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> imple
 
 	@Override
 	public MiningSpecification getMiningSpecification() throws ClosedMinerException, TimeoutException, InterruptedException {
-		ensureIsOpen();
+		ensureIsOpen(ClosedMinerException::new);
 		var id = nextId();
 		sendGetMiningSpecification(id);
 		return waitForResult(id, GetMiningSpecificationResultMessage.class);
@@ -178,11 +178,6 @@ public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> imple
 	}
 
 	@Override
-	protected ClosedMinerException mkExceptionIfClosed() {
-		return new ClosedMinerException("The miner service is closed");
-	}
-
-	@Override
 	protected void closeResources(CloseReason reason) {
 		super.closeResources(reason);
 		LOGGER.info(logPrefix + "closed with reason: " + reason);
@@ -196,12 +191,13 @@ public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> imple
 	 */
 	private void requestDeadline(Challenge description) {
 		try {
-			ensureIsOpen();
-			LOGGER.info(logPrefix + "received deadline request: " + description);
-			miner.ifPresent(miner -> miner.requestDeadline(description, this::onDeadlineComputed));
+			ensureIsOpen(ClosedMinerException::new);
+			LOGGER.info(logPrefix + "received challenge: " + description);
+			if (miner.isPresent())
+				miner.get().requestDeadline(description, this::onDeadlineComputed);
 		}
-		catch (ClosedMinerException e) { // TODO: throw
-			LOGGER.warning(logPrefix + "ignoring deadline request: " + description + " since this miner service is already closed: " + e.getMessage());
+		catch (ClosedMinerException e) {
+			LOGGER.warning(logPrefix + "ignoring challenge: " + description + " since this miner service is already closed: " + e.getMessage());
 		}
 	}
 
@@ -212,7 +208,7 @@ public class MinerServiceImpl extends AbstractRemote<ClosedMinerException> imple
 	 */
 	private void onDeadlineComputed(Deadline deadline) {
 		try {
-			ensureIsOpen();
+			ensureIsOpen(ClosedMinerException::new);
 			LOGGER.info(logPrefix + "sending " + deadline);
 			sendObjectAsync(session, deadline, IOException::new);
 		}
