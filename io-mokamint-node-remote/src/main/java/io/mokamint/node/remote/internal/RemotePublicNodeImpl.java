@@ -419,27 +419,37 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
+	public Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetBlock(hash, id);
-		return waitForResult(id, GetBlockResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetBlockResultMessage.class);
 	}
 
-	protected void sendGetBlock(byte[] hash, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id), NodeException::new);
+	protected void sendGetBlock(byte[] hash, String id) {
+		try {
+			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_BLOCK_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetBlockDescription(hash, id);
-		return waitForResult(id, GetBlockDescriptionResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetBlockDescriptionResultMessage.class);
 	}
 
-	protected void sendGetBlockDescription(byte[] hash, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id), NodeException::new);
+	protected void sendGetBlockDescription(byte[] hash, String id) {
+		try {
+			sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_BLOCK_DESCRIPTION_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -494,15 +504,20 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddTransaction(transaction, id);
-		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class);
 	}
 
-	protected void sendAddTransaction(Transaction transaction, String id) throws NodeException {
-		sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id), NodeException::new);
+	protected void sendAddTransaction(Transaction transaction, String id) {
+		try {
+			sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + ADD_TRANSACTION_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -616,7 +631,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockMessages.Encoder.class);
+			return deployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 	}
 
@@ -624,7 +639,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
+			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
 	}
 

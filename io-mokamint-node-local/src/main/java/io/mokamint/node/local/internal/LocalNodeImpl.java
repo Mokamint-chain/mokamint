@@ -306,16 +306,22 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Block> getBlock(byte[] hash) throws NodeException {
+	public Optional<Block> getBlock(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
+		}
+		catch (NodeException e) { // TODO
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws NodeException {
+	public Optional<BlockDescription> getBlockDescription(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
+		}
+		catch (NodeException e) { // TODO
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -381,14 +387,19 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		TransactionEntry result;
 
-		try (var scope = mkScope()) {
-			result = mempool.add(transaction);
-		}
+		try {
+			try (var scope = mkScope()) {
+				result = mempool.add(transaction);
+			}
 
-		miningTask.add(result);
+			miningTask.add(result);
+		}
+		catch (NodeException e) { // TODO
+			throw new RuntimeException(e);
+		}
 
 		whisperWithoutAddition(transaction);
 

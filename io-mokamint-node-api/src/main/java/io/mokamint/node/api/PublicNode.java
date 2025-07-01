@@ -115,9 +115,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the block, if any
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
+	Optional<Block> getBlock(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the description of the block with the given hash, if it has been seen by this node.
@@ -128,9 +128,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the description of the block, if any
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
+	Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Checks the validity of the given transaction and adds it to the mempool of this node.
@@ -141,9 +141,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException;
+	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.

@@ -16,7 +16,7 @@ limitations under the License.
 
 package io.mokamint.node.service;
 
-import io.mokamint.node.api.NodeException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.service.api.RestrictedNodeService;
 import io.mokamint.node.service.internal.RestrictedNodeServiceImpl;
@@ -34,9 +34,9 @@ public final class RestrictedNodeServices {
 	 * @param node the node
 	 * @param port the port
 	 * @return the new service
-	 * @throws NodeException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public static RestrictedNodeService open(RestrictedNode node, int port) throws NodeException {
+	public static RestrictedNodeService open(RestrictedNode node, int port) throws FailedDeploymentException {
 		return new RestrictedNodeServiceImpl(node, port);
 	}
 }

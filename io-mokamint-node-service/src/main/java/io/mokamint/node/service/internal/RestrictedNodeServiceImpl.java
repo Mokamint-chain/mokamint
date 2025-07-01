@@ -81,9 +81,9 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 * 
 	 * @param node the node
 	 * @param port the port
-	 * @throws NodeException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws NodeException {
+	public RestrictedNodeServiceImpl(RestrictedNode node, int port) throws FailedDeploymentException {
 		this.node = node;
 		this.logPrefix = "restricted service(ws://localhost:" + port + "): ";
 
@@ -96,7 +96,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 					OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
-			throw new NodeException(e);
+			throw new FailedDeploymentException(e);
 		}
 
 		LOGGER.info(logPrefix + "published");
@@ -117,7 +117,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 	 * @throws IOException if there was an I/O problem
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) {
+		if (e instanceof InterruptedException) { // TODO: remove at the end
 			// if the serviced node gets interrupted, then the external vision of the node
 			// is that of a node that is not working properly
 			sendObjectAsync(session, ExceptionMessages.of(new NodeException("The service has been interrupted"), id));

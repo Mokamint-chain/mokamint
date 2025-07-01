@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -171,7 +172,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getPeerInfos() is slow, it leads to a time-out")
 	public void getPeerInfosWorksInCaseOfTimeout() throws Exception {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(java.net.URI.create("ws://my.machine:1024")), 345, true),
@@ -198,8 +198,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getPeerInfos);
-			// we wait, in order to avoid shutting down the server before the hanlder completes
-			finished.acquire();
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -262,7 +262,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getMinerInfos() is slow, it leads to a time-out")
 	public void getMinerInfosWorksInCaseOfTimeout() throws Exception {
 		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
@@ -289,8 +288,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getMinerInfos);
-			// we wait, in order to avoid shutting down the server before the hanlder completes
-			finished.acquire();
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -352,7 +351,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getTaskInfos() is slow, it leads to a time-out")
 	public void getTaskInfosWorksInCaseOfTimeout() throws Exception {
 		var taskInfos1 = Set.of(TaskInfos.of("a task"), TaskInfos.of("a special task"));
@@ -378,8 +376,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getTaskInfos);
-			// we wait, in order to avoid shutting down the server before the hanlder completes
-			finished.acquire();
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -487,52 +485,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getBlock() works if it throws TimeoutException")
-	public void getBlockWorksInCaseOfTimeoutException() throws Exception {
-		var hash = new byte[] { 67, 56, 43 };
-		var exceptionMessage = "timeout";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetBlock(GetBlockMessage message, Session session) {
-				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getBlock(hash));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getBlock() works if it throws NodeException")
-	public void getBlockWorksInCaseOfNodeException() throws Exception {
-		var hash = new byte[] { 67, 56, 43 };
-		var exceptionMessage = "the node is misbehaving";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetBlock(GetBlockMessage message, Session session) {
-				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.getBlock(hash));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("getBlockDescription() works if the block exists")
 	public void getBlockDescriptionWorksIfBlockExists() throws Exception {
 		var hashingForDeadlines = shabal256();
@@ -591,52 +543,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var description = remote.getBlockDescription(hash);
 			assertTrue(description.isEmpty());
-		}
-	}
-
-	@Test
-	@DisplayName("getBlockDescription() works if it throws NodeException")
-	public void getBlockDescriptionWorksInCaseOfNodeException() throws Exception {
-		byte[] hash = { 67, 56, 43 };
-		var exceptionMessage = "the node is misbehaving";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
-				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.getBlockDescription(hash));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getBlockDescription() works if it throws TimeoutException")
-	public void getBlockDescriptionWorksInCaseOfTimeoutException() throws Exception {
-		byte[] hash = { 67, 56, 43 };
-		var exceptionMessage = "time-out";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
-				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getBlockDescription(hash));
-			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
@@ -786,50 +692,6 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TransactionRejectedException.class, () -> remote.add(transaction));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("add(Transaction) works in case of TimeoutException")
-	public void addTransactionWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "timeout";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.add(transaction));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("add(Transaction) works in case of NodeException")
-	public void addTransactionWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.add(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

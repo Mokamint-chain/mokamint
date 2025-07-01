@@ -314,7 +314,7 @@ public class Start extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishRestrictedNodeServices(pos + 1);
 				}
-				catch (NodeException e) {
+				catch (FailedDeploymentException e) {
 					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
 					LOGGER.warning("cannot deploy a node service at port " + restrictedPorts[pos] + ": " + e.getMessage());
 					publishRestrictedNodeServices(pos + 1);

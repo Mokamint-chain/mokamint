@@ -38,7 +38,6 @@ import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
@@ -116,11 +115,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * The node whose API is published.
 	 */
 	private final PublicNode node;
-
-	/**
-	 * The configuration of {@link #node}.
-	 */
-	private final ConsensusConfig<?,?> config;
 
 	/**
 	 * The hasher for the transactions.
@@ -206,13 +200,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
-			this.config = node.getConfig();
+			this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
 		}
 
-		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 
@@ -600,8 +593,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getBlock() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getBlock() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -618,8 +615,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT,
-					GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetBlockEndpoint.class, GET_BLOCK_ENDPOINT, GetBlockMessages.Decoder.class, GetBlockResultMessages.Encoder.class);
 		}
 	}
 
@@ -630,8 +626,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getBlockDescription() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getBlockDescription() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -648,8 +648,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetBlockDescriptionEndpoint.class, GET_BLOCK_DESCRIPTION_ENDPOINT,
-					GetBlockDescriptionMessages.Decoder.class, GetBlockDescriptionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetBlockDescriptionEndpoint.class, GET_BLOCK_DESCRIPTION_ENDPOINT, GetBlockDescriptionMessages.Decoder.class, GetBlockDescriptionResultMessages.Encoder.class);
 		}
 	}
 
@@ -759,8 +758,15 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
+			catch (TransactionRejectedException e) {
 				sendExceptionAsync(session, e, message.getId());
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "addTransaction() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "addTransaction() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
