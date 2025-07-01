@@ -35,9 +35,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	NodeInfo getInfo() throws TimeoutException, InterruptedException, NodeException;
+	NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the consensus configuration parameters of this node.
@@ -45,9 +45,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the consensus parameters
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, NodeException;
+	ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the peers this node is connected to. There is a dynamic
@@ -57,9 +57,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the peers information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, NodeException;
+	Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the miners this node uses. A node uses a dynamic,
@@ -68,9 +68,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the miners information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, NodeException;
+	Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the tasks currently running inside this node.
@@ -78,9 +78,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the tasks information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException;
+	Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the current chain of this node.
@@ -88,9 +88,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	ChainInfo getChainInfo() throws TimeoutException, InterruptedException, NodeException;
+	ChainInfo getChainInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a portion of the current best chain, containing the hashes of the blocks starting at height {@code start}
@@ -102,9 +102,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the portion with the hashes, in order
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, NodeException;
+	ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.

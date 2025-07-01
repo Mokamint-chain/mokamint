@@ -47,7 +47,7 @@ public class MinersSet {
 	 */
 	public MinersSet(LocalNodeImpl node) {
 		this.node = node;
-		this.miners = new PunishableSet<>(Stream.empty(), node.getConfig().getMinerInitialPoints());
+		this.miners = new PunishableSet<>(Stream.empty(), node.getConfigInternal().getMinerInitialPoints());
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class MinersSet {
 	public Optional<MinerInfo> add(Miner miner) {
 		if (miners.add(miner)) {
 			try {
-				return Optional.of(MinerInfos.of(miner.getUUID(), node.getConfig().getMinerInitialPoints(), miner.toString()));
+				return Optional.of(MinerInfos.of(miner.getUUID(), node.getConfigInternal().getMinerInitialPoints(), miner.toString()));
 			}
 			finally {
 				node.onAdded(miner);

@@ -55,12 +55,12 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.MempoolEntry;
@@ -301,7 +301,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 				sendObjectAsync(getSession(endpoint), message);
 			}
 			catch (IOException e) {
-				LOGGER.log(Level.SEVERE, logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
+				LOGGER.warning(logPrefix + "cannot whisper " + description + " to the connected service: the connection might be closed: " + e.getMessage());
 			}
 		}
 	}
@@ -323,8 +323,6 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
-		boolean unexpected = false;
-
 		switch (message) {
 		case GetInfoResultMessage girm -> onGetInfoResult(girm.get());
 		case GetPeerInfosResultMessage gprm -> onGetPeerInfosResult(gprm.get());
@@ -342,62 +340,82 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		case GetTransactionRepresentationResultMessage gtrrm -> onGetTransactionRepresentationResult(gtrrm.get());
 		case GetTransactionAddressResultMessage gtarm -> onGetTransactionAddressResult(gtarm.get());
 		default -> { // TODO: modify the websockets library in order to avoid this complication
-			unexpected = message != null && !(message instanceof ExceptionMessage);
+			if (message != null && !(message instanceof ExceptionMessage)) {
+				LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
+				return;
+			}
 		}
 		}
 
-		if (unexpected)
-			LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
-		else
-			super.notifyResult(message);
+		super.notifyResult(message);
 	}
 
 	@Override
-	public NodeInfo getInfo() throws TimeoutException, InterruptedException, NodeException {
+	public NodeInfo getInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetInfo(id);
-		return waitForResult(id, GetInfoResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetInfoResultMessage.class);
 	}
 
-	protected void sendGetInfo(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id), NodeException::new);
+	protected void sendGetInfo(String id) {
+		try {
+			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_INFO_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, NodeException {
+	public Stream<MinerInfo> getMinerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMinerInfos(id);
-		return waitForResult(id, GetMinerInfosResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetMinerInfosResultMessage.class);
 	}
 
-	protected void sendGetMinerInfos(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id), NodeException::new);
+	protected void sendGetMinerInfos(String id) {
+		try {
+			sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_MINER_INFOS_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException {
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTaskInfos(id);
-		return waitForResult(id, GetTaskInfosResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetTaskInfosResultMessage.class);
 	}
 
-	protected void sendGetTaskInfos(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id), NodeException::new);
+	protected void sendGetTaskInfos(String id) {
+		try {
+			sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_TASK_INFOS_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, NodeException {
+	public Stream<PeerInfo> getPeerInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetPeerInfos(id);
-		return waitForResult(id, GetPeerInfosResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetPeerInfosResultMessage.class);
 	}
 
-	protected void sendGetPeerInfos(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id), NodeException::new);
+	protected void sendGetPeerInfos(String id) {
+		try {
+			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_PEER_INFOS_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -425,39 +443,54 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, NodeException {
+	public ConsensusConfig<?,?> getConfig() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetConfig(id);
-		return waitForResult(id, GetConfigResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetConfigResultMessage.class);
 	}
 
-	protected void sendGetConfig(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id), NodeException::new);
+	protected void sendGetConfig(String id) {
+		try {
+			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_CONFIG_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public ChainInfo getChainInfo() throws TimeoutException, InterruptedException, NodeException {
+	public ChainInfo getChainInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetChainInfo(id);
-		return waitForResult(id, GetChainInfoResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetChainInfoResultMessage.class);
 	}
 
-	protected void sendGetChainInfo(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id), NodeException::new);
+	protected void sendGetChainInfo(String id) {
+		try {
+			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_CHAIN_INFO_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws InterruptedException, TimeoutException, NodeException {
+	public ChainPortion getChainPortion(long start, int count) throws InterruptedException, TimeoutException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
-		return waitForResult(id, GetChainPortionResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetChainPortionResultMessage.class);
 	}
 
-	protected void sendGetChainPortion(long start, int count, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id), NodeException::new);
+	protected void sendGetChainPortion(long start, int count, String id) {
+		try {
+			sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_CHAIN_INFO_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -559,7 +592,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
+			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
 	}
 
@@ -567,7 +600,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
+			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
 	}
 
@@ -575,7 +608,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
+			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
 	}
 
@@ -599,7 +632,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetConfigResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetConfigMessages.Encoder.class);
+			return deployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
 
@@ -607,7 +640,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 	}
 
@@ -615,7 +648,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
+			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
 	}
 
@@ -623,7 +656,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInfoMessages.Encoder.class);
+			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 	}
 

@@ -97,7 +97,7 @@ public class Mempool {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.app = node.getApplication();
-		this.hasher = node.getConfig().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
+		this.hasher = node.getConfigInternal().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.base = Optional.empty();
 		this.mempool = new TreeSet<>(Comparator.reverseOrder()); // decreasing priority
 	}

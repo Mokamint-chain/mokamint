@@ -20,9 +20,9 @@ import java.util.Optional;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.miner.api.Miner;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.FullNode;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 
 /**
  * A local node of a Mokamint blockchain.
@@ -34,16 +34,17 @@ public interface LocalNode extends FullNode {
 	 * Yields the configuration of this node.
 	 * 
 	 * @return the configuration of this node
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
 	@Override
-	LocalNodeConfig getConfig();
+	LocalNodeConfig getConfig() throws ClosedNodeException;
 
 	/**
 	 * Adds the given miner to the miners of this node.
 	 * 
 	 * @param miner the miner
 	 * @return the information about the added miner; this is empty if the miner has not been added
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<MinerInfo> add(Miner miner) throws NodeException;
+	Optional<MinerInfo> add(Miner miner) throws ClosedNodeException;
 }

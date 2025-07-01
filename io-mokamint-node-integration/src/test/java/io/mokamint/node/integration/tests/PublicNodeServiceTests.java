@@ -71,6 +71,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
@@ -134,7 +135,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetPeerInfos() throws NodeException {
+			private void sendGetPeerInfos() {
 				sendGetPeerInfos("id");
 			}
 		}
@@ -464,7 +465,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetConfig() throws NodeException {
+			private void sendGetConfig() {
 				sendGetConfig("id");
 			}
 		}
@@ -657,7 +658,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetInfo() throws NodeException {
+			private void sendGetInfo() {
 				sendGetInfo("id");
 			}
 		}
@@ -742,7 +743,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		when(node).addOnCloseHandler(any());
 
 		class MyPublicNodeService extends PublicNodeServiceImpl {
-			private MyPublicNodeService() throws InterruptedException, TimeoutException, NodeException {
+			private MyPublicNodeService() throws InterruptedException, TimeoutException, ClosedNodeException, FailedDeploymentException {
 				super(node, PORT, 180000, 1000, Optional.of(URI));
 			}
 

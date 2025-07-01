@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node;
-
-import io.mokamint.node.api.NodeException;
+package io.mokamint.node.api;
 
 /**
  * An exception stating that a node is closed and cannot perform the request.

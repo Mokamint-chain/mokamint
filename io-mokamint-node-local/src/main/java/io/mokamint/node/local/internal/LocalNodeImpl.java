@@ -53,13 +53,13 @@ import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.ClosedNodeException;
 import io.mokamint.node.Memories;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
@@ -320,21 +320,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Stream<PeerInfo> getPeerInfos() throws NodeException {
+	public Stream<PeerInfo> getPeerInfos() throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return peers.get();
 		}
 	}
 
 	@Override
-	public Stream<MinerInfo> getMinerInfos() throws NodeException {
+	public Stream<MinerInfo> getMinerInfos() throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return miners.getInfos();
 		}
 	}
 
 	@Override
-	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, NodeException {
+	public Stream<TaskInfo> getTaskInfos() throws TimeoutException, InterruptedException, ClosedNodeException {
 		try (var scope = mkScope()) {
 			return currentlyExecutingTasks.stream()
 				.map(Object::toString)
@@ -343,28 +343,40 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public NodeInfo getInfo() throws NodeException {
+	public NodeInfo getInfo() throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return peers.getNodeInfo();
 		}
 	}
 
 	@Override
-	public LocalNodeConfig getConfig() {
-		return config;
-	}
-
-	@Override
-	public ChainInfo getChainInfo() throws NodeException {
+	public LocalNodeConfig getConfig() throws ClosedNodeException {
 		try (var scope = mkScope()) {
-			return blockchain.getChainInfo();
+			return config;
 		}
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws NodeException {
+	public ChainInfo getChainInfo() throws ClosedNodeException {
 		try (var scope = mkScope()) {
-			return ChainPortions.of(blockchain.getChain(start, count));
+			try {
+				return blockchain.getChainInfo();
+			}
+			catch (NodeException e) {
+				throw new RuntimeException(e); // TODO
+			}
+		}
+	}
+
+	@Override
+	public ChainPortion getChainPortion(long start, int count) throws ClosedNodeException {
+		try (var scope = mkScope()) {
+			try {
+				return ChainPortions.of(blockchain.getChain(start, count));
+			}
+			catch (NodeException e) {
+				throw new RuntimeException(e); // TODO
+			}
 		}
 	}
 
@@ -465,7 +477,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<MinerInfo> add(Miner miner) throws NodeException {
+	public Optional<MinerInfo> add(Miner miner) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return miners.add(miner);
 		}
@@ -528,6 +540,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	public KeyPair getKeys() {
 		return keyPair;
+	}
+
+	protected LocalNodeConfig getConfigInternal() {
+		return config;
 	}
 
 	protected void remove(TransactionEntry transactionEntry) {

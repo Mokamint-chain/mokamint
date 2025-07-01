@@ -37,12 +37,14 @@ import java.util.logging.Logger;
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Entropies;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
@@ -295,7 +297,7 @@ public class Start extends AbstractCommand {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}
-				catch (NodeException | TimeoutException e) {
+				catch (ClosedNodeException | TimeoutException | FailedDeploymentException e) {
 					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
 					LOGGER.warning("cannot deploy a node service at port " + publicPorts[pos] + ": " + e.getMessage());
 					publishPublicAndRestrictedNodeServices(pos + 1);

@@ -53,6 +53,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
@@ -60,6 +61,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
@@ -149,8 +151,9 @@ public class PeersTests extends AbstractLoggedTests {
 		 * @param port the port where the server is published
 		 * @throws DeploymentException if the service cannot be deployed
 		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
+		 * @throws FailedDeploymentException if the server could not be deployed
 		 */
-		private PublicTestServer(NodeInfo info, int port) throws NodeException, NoSuchAlgorithmException, InterruptedException, TimeoutException {
+		private PublicTestServer(NodeInfo info, int port) throws ClosedNodeException, NoSuchAlgorithmException, InterruptedException, TimeoutException, FailedDeploymentException {
 			super(mkNode(info), port, 180000, 1000, Optional.of(URI.create("ws://localhost:" + port)));
 		}
 	}

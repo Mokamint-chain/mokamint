@@ -47,8 +47,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
-import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
@@ -227,7 +228,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, NodeException {
+			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, NodeException, FailedDeploymentException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -256,12 +257,12 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					node.getSeenAll().acquire();
 			}
 
-			private TestNode[] openNodes(Path dir) throws InterruptedException, NodeException, TimeoutException {
-				FunctionWithExceptions3<Integer, TestNode, InterruptedException, NodeException, TimeoutException> function = num -> mkNode(dir, num);
+			private TestNode[] openNodes(Path dir) throws InterruptedException, NodeException, TimeoutException, FailedDeploymentException {
+				FunctionWithExceptions4<Integer, TestNode, InterruptedException, NodeException, TimeoutException, FailedDeploymentException> function = num -> mkNode(dir, num);
 
-				return CheckSupplier.check(InterruptedException.class, NodeException.class, TimeoutException.class, () -> 
+				return CheckSupplier.check(InterruptedException.class, NodeException.class, TimeoutException.class, FailedDeploymentException.class, () -> 
 					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
-						.map(UncheckFunction.uncheck(InterruptedException.class, NodeException.class, TimeoutException.class, function)).toArray(TestNode[]::new));
+						.map(UncheckFunction.uncheck(InterruptedException.class, NodeException.class, TimeoutException.class, FailedDeploymentException.class, function)).toArray(TestNode[]::new));
 			}
 
 			private void closeNodes() throws InterruptedException, NodeException {
@@ -287,7 +288,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private TestNode mkNode(Path dir, int num) throws NodeException, TimeoutException, InterruptedException {
+			private TestNode mkNode(Path dir, int num) throws NodeException, TimeoutException, InterruptedException, FailedDeploymentException {
 				TestNode result;
 
 				try {

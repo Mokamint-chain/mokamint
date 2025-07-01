@@ -50,12 +50,13 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -67,6 +68,7 @@ import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
@@ -125,11 +127,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@ThreadSafe
 	private static class PublicTestServer extends PublicNodeServiceImpl {
 
-		private PublicTestServer() throws NodeException, InterruptedException, TimeoutException {
+		private PublicTestServer() throws NoSuchAlgorithmException, InterruptedException, TimeoutException, ClosedNodeException, FailedDeploymentException {
 			super(mockedNode(), PORT, 180000, 1000, Optional.of(URI));
 		}
 
-		private static PublicNode mockedNode() throws NodeException, InterruptedException, TimeoutException {
+		private static PublicNode mockedNode() throws InterruptedException, TimeoutException, NoSuchAlgorithmException {
 			PublicNode result = mock();
 			
 			try {
@@ -140,8 +142,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				//when(result.getConfig()).thenReturn(config);
 				return result;
 			}
-			catch (NoSuchAlgorithmException e) {
-				throw new NodeException(e);
+			catch (ClosedNodeException e) {
+				throw new RuntimeException(e); // the stubbed node does not get closed
 			}
 		}
 	}
@@ -154,7 +156,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -169,56 +171,16 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getPeerInfos() works if it throws TimeoutException")
-	public void getPeerInfosWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "time-out";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, remote::getPeerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getPeerInfos() works if it throws NodeException")
-	public void getPeerInfosWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, remote::getPeerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
+	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getPeerInfos() is slow, it leads to a time-out")
 	public void getPeerInfosWorksInCaseOfTimeout() throws Exception {
 		var peerInfos1 = Set.of(PeerInfos.of(Peers.of(java.net.URI.create("ws://my.machine:1024")), 345, true),
 				PeerInfos.of(Peers.of(java.net.URI.create("ws://your.machine:1025")), 11, false));
+		var finished = new Semaphore(0);
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -230,11 +192,14 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				}
 
 				sendObjectAsync(session, GetPeerInfosResultMessages.of(peerInfos1.stream(), message.getId()), RuntimeException::new);
+				finished.release();
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getPeerInfos);
+			// we wait, in order to avoid shutting down the server before the hanlder completes
+			finished.acquire();
 		}
 	}
 
@@ -243,7 +208,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getPeerInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -261,7 +226,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getPeerInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
@@ -282,7 +247,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -297,56 +262,16 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getMinerInfos() works if it throws TimeoutException")
-	public void getMinerInfosWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "time-out";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, remote::getMinerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getMinerInfos() works if it throws NodeException")
-	public void getMinerInfosWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, remote::getMinerInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
+	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getMinerInfos() is slow, it leads to a time-out")
 	public void getMinerInfosWorksInCaseOfTimeout() throws Exception {
 		var minerInfos1 = Set.of(MinerInfos.of(UUID.randomUUID(), 345L, "a miner"),
 				MinerInfos.of(UUID.randomUUID(), 11L, "a special miner"));
+		var finished = new Semaphore(0);
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -358,11 +283,14 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				}
 	
 				sendObjectAsync(session, GetMinerInfosResultMessages.of(minerInfos1.stream(), message.getId()), RuntimeException::new);
+				finished.release();
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getMinerInfos);
+			// we wait, in order to avoid shutting down the server before the hanlder completes
+			finished.acquire();
 		}
 	}
 
@@ -371,7 +299,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getMinerInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -389,7 +317,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getMinerInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
@@ -409,7 +337,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -424,55 +352,15 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTaskInfos() works if it throws TimeoutException")
-	public void getTaskInfosWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "time-out";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, remote::getTaskInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("getTaskInfos() works if it throws NodeException")
-	public void getTaskInfosWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, remote::getTaskInfos);
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
+	@Timeout(TIME_OUT * 10)
 	@DisplayName("if getTaskInfos() is slow, it leads to a time-out")
 	public void getTaskInfosWorksInCaseOfTimeout() throws Exception {
 		var taskInfos1 = Set.of(TaskInfos.of("a task"), TaskInfos.of("a special task"));
+		var finished = new Semaphore(0);
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -484,11 +372,14 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 				}
 	
 				sendObjectAsync(session, GetTaskInfosResultMessages.of(taskInfos1.stream(), message.getId()), RuntimeException::new);
+				finished.release();
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, remote::getTaskInfos);
+			// we wait, in order to avoid shutting down the server before the hanlder completes
+			finished.acquire();
 		}
 	}
 
@@ -497,7 +388,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getTaskInfosWorksInCaseOfUnexpectedException() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -515,7 +406,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	public void getTaskInfosWorksInCaseOfUnexpectedMessage() throws Exception {
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
@@ -558,7 +449,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -580,7 +471,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -603,7 +494,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -626,7 +517,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlock(GetBlockMessage message, Session session) {
@@ -666,7 +557,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -688,7 +579,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -711,7 +602,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -734,7 +625,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
@@ -756,7 +647,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetConfig(GetConfigMessage message, Session session) {
@@ -777,7 +668,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
@@ -792,34 +683,13 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getChainInfo() works in case of NodeException")
-	public void getChainInfoWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-	
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-	
-			@Override
-			protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-	
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.getChainInfo());
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("getChainPortion() works")
 	public void getChainPortionWorks() throws Exception {
 		var chain1 = ChainPortions.of(Stream.of(new byte[] { 1, 2, 3, 4 }, new byte[] { 17, 13, 19 }));
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
@@ -834,34 +704,13 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getChainPortion() works in case of TimeoutException")
-	public void getChainPortionWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "timeout";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
-
-			@Override
-			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.getChainPortion(10, 20));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws Exception {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetInfo(GetInfoMessage message, Session session) {
@@ -882,7 +731,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
@@ -904,7 +753,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -927,7 +776,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -949,7 +798,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -971,7 +820,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
@@ -995,7 +844,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 
 			@Override
 			protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
@@ -1088,7 +937,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 	
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1110,7 +959,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1133,7 +982,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1156,7 +1005,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
@@ -1179,7 +1028,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1201,7 +1050,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1224,7 +1073,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1247,7 +1096,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
@@ -1270,7 +1119,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
@@ -1292,7 +1141,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
@@ -1315,7 +1164,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws NodeException, InterruptedException, TimeoutException {}
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, ClosedNodeException, InterruptedException, TimeoutException {}
 	
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {

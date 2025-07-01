@@ -25,10 +25,12 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.testing.AbstractLoggedTests;
@@ -190,9 +192,11 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@Timeout(TIME_OUT * 10)
 	@DisplayName("if add(Peer) is slow, it leads to a time-out")
 	public void addPeerWorksInCaseOfTimeout() throws Exception {
 		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
+		var finished = new Semaphore(0);
 
 		class MyServer extends RestrictedTestServer {
 
@@ -208,11 +212,14 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 				}
 
 				sendObjectAsync(session, AddPeerMessages.of(peer, message.getId()), RuntimeException::new);
+				finished.release();
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.add(peer));
+			// we wait, in order to avoid shutting down the server before the hanlder completes
+			finished.acquire();
 		}
 	}
 	

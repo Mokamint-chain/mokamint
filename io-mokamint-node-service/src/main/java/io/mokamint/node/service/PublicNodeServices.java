@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import io.mokamint.node.api.NodeException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -45,11 +45,11 @@ public final class PublicNodeServices {
 	 * @param node the node
 	 * @param port the port
 	 * @return the new service
-	 * @throws NodeException if the service cannot be deployed
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation of the service timed out
+	 * @throws FailedDeploymentException if the service could not be deployed
 	 */
-	public static PublicNodeService open(PublicNode node, int port) throws NodeException, InterruptedException, TimeoutException {
+	public static PublicNodeService open(PublicNode node, int port) throws InterruptedException, TimeoutException, FailedDeploymentException {
 		return new PublicNodeServiceImpl(node, port, 1800000, 1000, Optional.empty());
 	}
 
@@ -70,11 +70,11 @@ public final class PublicNodeServices {
 	 * @param uri the URI that will be suggested as URI of the machine where the service is running; this might be
 	 *            empty, which means that the service will try to guess its public IP and use it as its public URI
 	 * @return the new service
-	 * @throws NodeException if the service cannot be deployed
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation of the service timed out
+	 * @throws FailedDeploymentException if the service could not be deployed
 	 */
-	public static PublicNodeService open(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws NodeException, InterruptedException, TimeoutException {
+	public static PublicNodeService open(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws InterruptedException, TimeoutException, FailedDeploymentException {
 		return new PublicNodeServiceImpl(node, port, peerBroadcastInterval, whisperedMessagesSize, uri);
 	}
 }

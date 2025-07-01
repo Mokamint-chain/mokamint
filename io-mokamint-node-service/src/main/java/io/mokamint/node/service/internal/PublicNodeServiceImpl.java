@@ -32,10 +32,12 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NodeException;
@@ -195,18 +197,31 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 *            the latter is the port of the service in the local machine where it runs;
 	 *            these two might differ if the service runs inside a docker container
 	 *            that maps ports
-	 * @throws NodeException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws TimeoutException if the creation of the service timed out
 	 */
-	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws NodeException, InterruptedException, TimeoutException {
+	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws InterruptedException, TimeoutException, FailedDeploymentException {
 		this.node = node;
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
-		this.config = node.getConfig();
+
+		try {
+			this.config = node.getConfig();
+		}
+		catch (ClosedNodeException e) {
+			throw new FailedDeploymentException(e);
+		}
+
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
-		this.uri = processURI(port, uri);
+
+		try {
+			this.uri = processURI(port, uri);
+		}
+		catch (URISyntaxException e) {
+			throw new FailedDeploymentException(e);
+		}
 
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
@@ -222,7 +237,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 				WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
 		}
 		catch (IOException | DeploymentException e) {
-			throw new NodeException(e);
+			throw new FailedDeploymentException(e);
 		}
 
 		// if the node receives a whispering, it will be forwarded to this service as well
@@ -293,18 +308,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		}
 	}
 
-	private Optional<URI> processURI(int port, Optional<URI> uri) throws NodeException {
+	private Optional<URI> processURI(int port, Optional<URI> uri) throws URISyntaxException {
 		if (uri.isEmpty()) {
 			uri = determinePublicURI();
 	
-			if (uri.isPresent()) {
-				try {
-					uri = Optional.of(new URI(uri.get() + ":" + port));
-				}
-				catch (URISyntaxException e) {
-					throw new NodeException("The public URI of the machine seems incorrect", e);
-				}
-			}
+			if (uri.isPresent())
+				uri = Optional.of(new URI(uri.get() + ":" + port));
 		}
 	
 		return uri;
@@ -351,7 +360,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	 * @throws IOException if there was an I/O error
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) {
+		if (e instanceof InterruptedException) { // TODO: remove at the end
 			// if the serviced node gets interrupted, then the external vision of the node
 			// is that of a node that is not working properly
 			sendObjectAsync(session, ExceptionMessages.of(new NodeException("The service has been interrupted"), id));
@@ -369,8 +378,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getInfo() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getInfo() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -387,8 +400,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT,
-					GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT, GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class);
 		}
 	}
 
@@ -399,8 +411,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getPeerInfos() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getPeerInfos() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -417,20 +433,23 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetPeerInfosEndpoint.class, GET_PEER_INFOS_ENDPOINT,
-					GetPeerInfosMessages.Decoder.class, GetPeerInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetPeerInfosEndpoint.class, GET_PEER_INFOS_ENDPOINT, GetPeerInfosMessages.Decoder.class, GetPeerInfosResultMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MINER_INFOS_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getMinerInfos() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getMinerInfos() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -447,20 +466,23 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetMinerInfosEndpoint.class, GET_MINER_INFOS_ENDPOINT,
-					GetMinerInfosMessages.Decoder.class, GetMinerInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetMinerInfosEndpoint.class, GET_MINER_INFOS_ENDPOINT, GetMinerInfosMessages.Decoder.class, GetMinerInfosResultMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TASK_INFOS_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getTaskInfos() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getTaskInfos() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -477,8 +499,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTaskInfosEndpoint.class, GET_TASK_INFOS_ENDPOINT,
-				GetTaskInfosMessages.Decoder.class, GetTaskInfosResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetTaskInfosEndpoint.class, GET_TASK_INFOS_ENDPOINT, GetTaskInfosMessages.Decoder.class, GetTaskInfosResultMessages.Encoder.class);
 		}
 	}
 
@@ -639,8 +660,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getConfig() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getConfig() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -657,8 +682,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT,
-					GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetConfigEndpoint.class, GET_CONFIG_ENDPOINT, GetConfigMessages.Decoder.class, GetConfigResultMessages.Encoder.class);
 		}
 	}
 
@@ -669,8 +693,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getChainInfo() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getChainInfo() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -687,8 +715,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT,
-					GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetChainInfoEndpoint.class, GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.Decoder.class, GetChainInfoResultMessages.Encoder.class);
 		}
 	}
 
@@ -699,8 +726,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(message.getStart(), message.getCount()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getChainPortion() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getChainPortion() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -717,8 +748,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainPortionEndpoint.class, GET_CHAIN_PORTION_ENDPOINT,
-					GetChainPortionMessages.Decoder.class, GetChainPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetChainPortionEndpoint.class, GET_CHAIN_PORTION_ENDPOINT, GetChainPortionMessages.Decoder.class, GetChainPortionResultMessages.Encoder.class);
 		}
 	}
 
