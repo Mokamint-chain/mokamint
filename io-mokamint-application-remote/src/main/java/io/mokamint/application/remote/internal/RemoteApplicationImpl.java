@@ -28,13 +28,13 @@ import static io.mokamint.application.service.api.ApplicationService.GET_PRIORIT
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.KEEP_FROM_ENDPOINT;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
@@ -92,7 +92,6 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 /**
@@ -136,7 +135,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 			addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
 			addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
 		}
-		catch (IOException | DeploymentException e) {
+		catch (FailedDeploymentException e) { // TODO
 			throw new ApplicationException(e);
 		}
 	}
@@ -208,7 +207,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CheckPrologExtraEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, CheckPrologExtraResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckPrologExtraMessages.Encoder.class);
 		}
 	}
@@ -242,7 +241,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CheckTransactionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, CheckTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckTransactionMessages.Encoder.class);
 		}
 	}
@@ -276,7 +275,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetPriorityEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetPriorityResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPriorityMessages.Encoder.class);
 		}
 	}
@@ -310,7 +309,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetRepresentationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRepresentationMessages.Encoder.class);
 		}
 	}
@@ -343,7 +342,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetInitialStateIdEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetInitialStateIdResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetInitialStateIdMessages.Encoder.class);
 		}
 	}
@@ -380,7 +379,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class BeginBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, BeginBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, BeginBlockMessages.Encoder.class);
 		}
 	}
@@ -415,7 +414,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class DeliverTransactionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, DeliverTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, DeliverTransactionMessages.Encoder.class);
 		}
 	}
@@ -450,7 +449,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class EndBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, EndBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, EndBlockMessages.Encoder.class);
 		}
 	}
@@ -484,7 +483,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CommitBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, CommitBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CommitBlockMessages.Encoder.class);
 		}
 	}
@@ -518,7 +517,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class AbortBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
 		}
 	}
@@ -552,7 +551,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class KeepFromEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, KeepFromResultMessages.Decoder.class, ExceptionMessages.Decoder.class, KeepFromMessages.Encoder.class);
 		}
 	}

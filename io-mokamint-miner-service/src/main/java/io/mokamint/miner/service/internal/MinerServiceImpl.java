@@ -42,7 +42,6 @@ import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
@@ -87,13 +86,8 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		// TODO: check that miner has the same mining specification as the remote
 		this.logPrefix = "miner service working for " + uri + ": ";
 
-		try {
-			addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
-			addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e.getMessage());
-		}
+		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
+		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 
 		this.session = getSession(MINING_ENDPOINT);
 
@@ -115,13 +109,8 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		this.miner = Optional.empty();
 		this.logPrefix = "miner service connected to " + uri + ": ";
 
-		try {
-			addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
-			addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e.getMessage());
-		}
+		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
+		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 
 		this.session = getSession(MINING_ENDPOINT);
 
@@ -172,7 +161,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class GetMiningSpecificationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
 		}
 	}
@@ -223,7 +212,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class MiningEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 

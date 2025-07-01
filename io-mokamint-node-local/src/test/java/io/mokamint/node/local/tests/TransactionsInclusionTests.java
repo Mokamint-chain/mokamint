@@ -120,14 +120,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		}
 
 		@Override
-		public void close() throws NodeException {
+		public void close() {
 			super.close();
 
 			try {
 				plot.close();
 			}
 			catch (IOException e) {
-				throw new NodeException("Could not close the plot", e);
+				throw new RuntimeException("Could not close the plot", e);
 			}
 		}
 	}

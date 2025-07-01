@@ -39,7 +39,6 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerRejectedException;
@@ -104,28 +103,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Peer) works in case of TimeoutException")
-	public void addPeerWorksInCaseOfTimeoutException() throws Exception {
-		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
-		var exceptionMessage = "timeout";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onAddPeer(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.add(peer));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("add(Peer) works in case of PeerException")
 	public void addPeerWorksInCaseOfPeerException() throws Exception {
 		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
@@ -165,28 +142,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
 			var exception = assertThrows(PeerRejectedException.class, () -> remote.add(peer));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("add(Peer) works in case of NodeException")
-	public void addPeerWorksInCaseOfNodeException() throws Exception {
-		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
-		var exceptionMessage = "the node is misbehaving";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onAddPeer(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -269,28 +224,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("remove(Peer) works in case of TimeoutException")
-	public void removePeerWorksInCaseOfTimeoutException() throws Exception {
-		var peer = Peers.of(java.net.URI.create("ws://my.machine:1024"));
-		var exceptionMessage = "timeout";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onRemovePeer(RemovePeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.remove(peer));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("openMiner() works")
 	public void openMinerWorks() throws Exception {
 		var ports1 = Set.of(8025,  8026, 8027);
@@ -337,27 +270,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("openMiner() works in case of TimeoutException")
-	public void openMinerWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "timeout exception";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onOpenMiner(OpenMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.openMiner(8025));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("removeMiner() works")
 	public void removeMinerWorks() throws Exception {
 		var uuids1 = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
@@ -379,48 +291,6 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 				remote.removeMiner(uuid);
 	
 			assertEquals(uuids1, uuids2);
-		}
-	}
-
-	@Test
-	@DisplayName("removeMiner() works in case of NodeException")
-	public void removeMinerWorksInCaseOfNodeException() throws Exception {
-		var exceptionMessage = "the node is misbehaving";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new NodeException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(NodeException.class, () -> remote.removeMiner(UUID.randomUUID()));
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
-	@DisplayName("removeMiner() works in case of TimeoutException")
-	public void removeMinerWorksInCaseOfTimeoutException() throws Exception {
-		var exceptionMessage = "timeout exception";
-
-		class MyServer extends RestrictedTestServer {
-
-			private MyServer() throws FailedDeploymentException {}
-
-			@Override
-			protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TimeoutException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TimeoutException.class, () -> remote.removeMiner(UUID.randomUUID()));
-			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 }

@@ -258,7 +258,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public void close() throws NodeException {
+	public void close() {
 		try {
 			if (stopNewCalls())
 				closeExecutorsHandlersMinersPeersAndBlockchain();
@@ -407,53 +407,73 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolInfo getMempoolInfo() throws NodeException {
+	public MempoolInfo getMempoolInfo() throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return mempool.getInfo();
 		}
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws NodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			return mempool.getPortion(start, count);
 		}
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws NodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
-			return blockchain.getTransaction(hash);
+			try {
+				return blockchain.getTransaction(hash);
+			}
+			catch (NodeException e) { // TODO
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, NodeException, TimeoutException, InterruptedException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
+			try {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
 				return Optional.empty();
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
+			}
+			catch (NodeException e) {
+				throw new RuntimeException(e); // TODO
+			}
 		}
-		catch (ApplicationException e) {
-			throw new NodeException(e);
+		catch (ApplicationException e) { // TODO
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws NodeException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
-			return blockchain.getTransactionAddress(hash);
+			try {
+				return blockchain.getTransactionAddress(hash);
+			}
+			catch (NodeException e) { // TODO
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, NodeException, PeerException, PeerRejectedException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, PeerException, PeerRejectedException {
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
-			result = peers.add(peer);
+			try {
+				result = peers.add(peer);
+			}
+			catch (NodeException e) { // TODO
+				throw new RuntimeException(e);
+			}
 		}
 	
 		if (result.isPresent()) {
@@ -466,14 +486,19 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws NodeException {
+	public boolean remove(Peer peer) throws ClosedNodeException {
 		try (var scope = mkScope()) {
-			return peers.remove(peer);
+			try {
+				return peers.remove(peer);
+			}
+			catch (NodeException e) { // TODO
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws FailedDeploymentException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws FailedDeploymentException, ClosedNodeException {
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.open(port, miningSpecification, this::checkForMiners);
 			// addOnCloseHandler(() -> tryClose(miner)); // TODO: use this instead of minersToCloseAtTheEnd
@@ -495,7 +520,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws NodeException {
+	public boolean removeMiner(UUID uuid) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			var toRemove = miners.get().filter(miner -> miner.getUUID().equals(uuid)).toArray(Miner[]::new);
 			for (var miner: toRemove) {
@@ -1181,7 +1206,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws NodeException, InterruptedException {
+	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws InterruptedException {
 		try {
 			executors.shutdownNow();
 		}
@@ -1195,7 +1220,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeHandlersMinersPeersAndBlockchain() throws InterruptedException, NodeException {
+	private void closeHandlersMinersPeersAndBlockchain() throws InterruptedException {
 		try {
 			callCloseHandlers();
 		}
@@ -1204,7 +1229,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) throws NodeException, InterruptedException {
+	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) throws InterruptedException {
 		if (pos < miners.length) {
 			try {
 				miners[pos].close();
@@ -1217,9 +1242,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			closePeersAndBlockchain();
 	}
 
-	private void closePeersAndBlockchain() throws InterruptedException, NodeException {
+	private void closePeersAndBlockchain() throws InterruptedException {
 		try {
 			peers.close();
+		}
+		catch (NodeException e) {
+			LOGGER.warning("failed closing the set of peers: " + e.getMessage());
 		}
 		finally {
 			closeBlockchain();

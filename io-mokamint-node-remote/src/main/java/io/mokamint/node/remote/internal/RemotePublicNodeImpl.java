@@ -67,7 +67,6 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -132,7 +131,6 @@ import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
@@ -203,34 +201,29 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 
-		try {
-			addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
-			addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
-			addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
-			addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
-			addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
-			addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
-			addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
-			addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
-			addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-			addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
-			addSession(GET_TRANSACTION_ADDRESS_ENDPOINT, uri, GetTransactionAddressEndpoint::new);
-			addSession(GET_TRANSACTION_ENDPOINT, uri, GetTransactionEndpoint::new);
-			addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
-			addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
-			addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
-			addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
-			addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
-			addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e);
-		}
+		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
+		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
+		addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
+		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
+		addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
+		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
+		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
+		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
+		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
+		addSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT, uri, GetTransactionRepresentationEndpoint::new);
+		addSession(GET_TRANSACTION_ADDRESS_ENDPOINT, uri, GetTransactionAddressEndpoint::new);
+		addSession(GET_TRANSACTION_ENDPOINT, uri, GetTransactionEndpoint::new);
+		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
+		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
+		addSession(ADD_TRANSACTION_ENDPOINT, uri, AddTransactionEndpoint::new);
+		addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
+		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
+		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
 		try {
 			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
 		}
-		catch (NodeException e) {
+		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
 		}
 
@@ -521,63 +514,88 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, NodeException {
+	public MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMempoolInfo(id);
-		return waitForResult(id, GetMempoolInfoResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetMempoolInfoResultMessage.class);
 	}
 
-	protected void sendGetMempoolInfo(String id) throws NodeException {
-		sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id), NodeException::new);
+	protected void sendGetMempoolInfo(String id) {
+		try {
+			sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_MEMPOOL_INFO_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, NodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMempoolPortion(start, count, id);
-		return waitForResult(id, GetMempoolPortionResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetMempoolPortionResultMessage.class);
 	}
 
-	protected void sendGetMempoolPortion(int start, int count, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id), NodeException::new);
+	protected void sendGetMempoolPortion(int start, int count, String id) {
+		try {
+			sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_MEMPOOL_INFO_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
+	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransaction(hash, id);
-		return waitForResult(id, GetTransactionResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetTransactionResultMessage.class);
 	}
 
-	protected void sendGetTransaction(byte[] hash, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id), NodeException::new);
+	protected void sendGetTransaction(byte[] hash, String id) {
+		try {
+			sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_TRANSACTION_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
-		return waitForResult(id, GetTransactionRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetTransactionRepresentationResultMessage.class, TransactionRejectedException.class);
 	}
 
-	protected void sendGetTransactionRepresentation(byte[] hash, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id), NodeException::new);
+	protected void sendGetTransactionRepresentation(byte[] hash, String id) {
+		try {
+			sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_TRANSACTION_REPRESENTATION_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException {
+	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransactionAddress(hash, id);
-		return waitForResult(id, GetTransactionAddressResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, GetTransactionAddressResultMessage.class);
 	}
 
-	protected void sendGetTransactionAddress(byte[] hash, String id) throws NodeException {
-		sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id), NodeException::new);
+	protected void sendGetTransactionAddress(byte[] hash, String id) {
+		try {
+			sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + GET_TRANSACTION_ADDRESS_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	/**
@@ -606,7 +624,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetPeerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
 	}
@@ -614,7 +632,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMinerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
 	}
@@ -622,7 +640,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTaskInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
 	}
@@ -630,7 +648,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 	}
@@ -638,7 +656,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockDescriptionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
 	}
@@ -646,7 +664,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetConfigEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
@@ -654,7 +672,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 	}
@@ -662,7 +680,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
 	}
@@ -670,7 +688,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 	}
@@ -678,15 +696,15 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTransactionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetTransactionResultMessages.Decoder.class, GetTransactionMessages.Encoder.class);
 		}
 	}
 
 	private class GetTransactionRepresentationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetTransactionRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionRepresentationMessages.Encoder.class);
 		}
 	}
@@ -694,31 +712,31 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTransactionAddressEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetTransactionAddressResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionAddressMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetTransactionAddressResultMessages.Decoder.class, GetTransactionAddressMessages.Encoder.class);
 		}
 	}
 
 	private class GetMempoolInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
 		}
 	}
 
 	private class GetMempoolPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
 		}
 	}
 
 	private class AddTransactionEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, AddTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddTransactionMessages.Encoder.class);
 		}
 	}
@@ -731,7 +749,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
 		}
 	}
@@ -744,7 +762,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
 		}
 	}
@@ -757,7 +775,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, WhisperTransactionMessages.Decoder.class, WhisperTransactionMessages.Encoder.class);
 		}
 	}

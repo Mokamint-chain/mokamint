@@ -26,12 +26,9 @@ import io.hotmoka.closeables.api.OnCloseHandlersContainer;
 public interface Node extends OnCloseHandlersContainer, AutoCloseable {
 
 	/**
-	 * Closes this node. After this closure, the methods of this node might throw
-	 * a {@link NodeException} if the closure makes their work impossible.
-	 * A node cannot be reopened after being closed.
-	 * 
-	 * @throws NodeException if the closure failed for some reason
+	 * Closes this node. After this closure, the methods of this node will throw
+	 * a {@link ClosedNodeException}. A node cannot be reopened after being closed.
 	 */
 	@Override
-	void close() throws NodeException;
+	void close();
 }

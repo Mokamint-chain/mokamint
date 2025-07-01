@@ -35,7 +35,6 @@ import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
@@ -54,7 +53,6 @@ import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 import io.mokamint.node.messages.api.RemovePeerResultMessage;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Session;
 
 /**
@@ -84,15 +82,10 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
 
-		try {
-			addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
-			addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
-			addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
-			addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e);
-		}
+		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
+		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
+		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
+		addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
 	}
 
 	@Override
@@ -119,20 +112,40 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		super.notifyResult(message);
 	}
 
-	protected void sendAddPeer(Peer peer, String id) throws NodeException {
-		sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id), NodeException::new);
+	protected void sendAddPeer(Peer peer, String id) {
+		try {
+			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + ADD_PEER_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
-	protected void sendRemovePeer(Peer peer, String id) throws NodeException {
-		sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id), NodeException::new);
+	protected void sendRemovePeer(Peer peer, String id) {
+		try {
+			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + REMOVE_PEER_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
-	protected void sendOpenMiner(int port, String id) throws NodeException {
-		sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id), NodeException::new);
+	protected void sendOpenMiner(int port, String id) {
+		try {
+			sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + OPEN_MINER_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
-	protected void sendRemoveMiner(UUID uuid, String id) throws NodeException {
-		sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id), NodeException::new);
+	protected void sendRemoveMiner(UUID uuid, String id) {
+		try {
+			sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id));
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + REMOVE_MINER_ENDPOINT + ": " + e.getMessage());
+		}
 	}
 
 	/**
@@ -144,66 +157,66 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	protected void onCloseMinerResult() {}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, NodeException {
+	public Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddPeer(peer, id);
-		return waitForResult(id, AddPeerResultMessage.class, TimeoutException.class, NodeException.class, PeerException.class, PeerRejectedException.class);
+		return waitForResult(id, AddPeerResultMessage.class, PeerException.class, PeerRejectedException.class);
 	}
 
 	private class AddPeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 	}
 
 	@Override
-	public boolean remove(Peer peer) throws TimeoutException, InterruptedException, NodeException {
+	public boolean remove(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendRemovePeer(peer, id);
-		return waitForResult(id, RemovePeerResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, RemovePeerResultMessage.class);
 	}
 
 	private class RemovePeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, RemovePeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemovePeerMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, RemovePeerResultMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 	}
 
 	@Override
-	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, FailedDeploymentException, InterruptedException, NodeException {
+	public Optional<MinerInfo> openMiner(int port) throws TimeoutException, FailedDeploymentException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendOpenMiner(port, id);
-		return waitForResult(id, OpenMinerResultMessage.class, TimeoutException.class, NodeException.class, FailedDeploymentException.class);
+		return waitForResult(id, OpenMinerResultMessage.class, FailedDeploymentException.class);
 	}
 
 	private class OpenMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
 		}
 	}
 
 	@Override
-	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, NodeException {
+	public boolean removeMiner(UUID uuid) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendRemoveMiner(uuid, id);
-		return waitForResult(id, RemoveMinerResultMessage.class, TimeoutException.class, NodeException.class);
+		return waitForResult(id, RemoveMinerResultMessage.class);
 	}
 
 	private class RemoveMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws DeploymentException, IOException {
-			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
 		}
 	}
 }

@@ -39,7 +39,6 @@ import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -344,26 +343,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		return Optional.empty();
 	}
 
-	/**
-	 * Sends an exception message to the given session.
-	 * 
-	 * @param session the session
-	 * @param e the exception used to build the message
-	 * @param id the identifier of the message to send
-	 * @throws IOException if there was an I/O error
-	 */
-	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) { // TODO: remove at the end
-			// if the serviced node gets interrupted, then the external vision of the node
-			// is that of a node that is not working properly
-			sendObjectAsync(session, ExceptionMessages.of(new NodeException("The service has been interrupted"), id));
-			// we take note that we have been interrupted
-			Thread.currentThread().interrupt();
-		}
-		else
-			sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
-
 	protected void onGetInfo(GetInfoMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_INFO_ENDPOINT + " request");
 
@@ -498,13 +477,17 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTransaction(GetTransactionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getTransaction() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getTransaction() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -521,20 +504,26 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionEndpoint.class, GET_TRANSACTION_ENDPOINT,
-				GetTransactionMessages.Decoder.class, GetTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetTransactionEndpoint.class, GET_TRANSACTION_ENDPOINT, GetTransactionMessages.Decoder.class, GetTransactionResultMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_REPRESENTATION_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException | TransactionRejectedException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (TransactionRejectedException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getTransactionRepresentation() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getTransactionRepresentation() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -558,13 +547,17 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ADDRESS_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(message.getHash()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getTransactionAddress() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getTransactionAddress() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -581,8 +574,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_TRANSACTION_ADDRESS_ENDPOINT,
-				GetTransactionAddressMessages.Decoder.class, GetTransactionAddressResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_TRANSACTION_ADDRESS_ENDPOINT, GetTransactionAddressMessages.Decoder.class, GetTransactionAddressResultMessages.Encoder.class);
 		}
 	}
 
@@ -759,7 +751,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
 			catch (TransactionRejectedException e) {
-				sendExceptionAsync(session, e, message.getId());
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 			}
 			catch (InterruptedException e) {
 				LOGGER.warning(logPrefix + "addTransaction() has been interrupted: " + e.getMessage());
@@ -795,8 +787,12 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getMempoolInfo() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getMempoolInfo() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -813,20 +809,23 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetMempoolInfoEndpoint.class, GET_MEMPOOL_INFO_ENDPOINT,
-				GetMempoolInfoMessages.Decoder.class, GetMempoolInfoResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetMempoolInfoEndpoint.class, GET_MEMPOOL_INFO_ENDPOINT, GetMempoolInfoMessages.Decoder.class, GetMempoolInfoResultMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MEMPOOL_PORTION_ENDPOINT + " request");
-	
+
 		try {
 			try {
 				sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(message.getStart(), message.getCount()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | NodeException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getMempoolPortion() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning(logPrefix + "getMempoolPortion() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -843,8 +842,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetMempoolPortionEndpoint.class, GET_MEMPOOL_PORTION_ENDPOINT,
-				GetMempoolPortionMessages.Decoder.class, GetMempoolPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetMempoolPortionEndpoint.class, GET_MEMPOOL_PORTION_ENDPOINT, GetMempoolPortionMessages.Decoder.class, GetMempoolPortionResultMessages.Encoder.class);
 		}
 	}
 

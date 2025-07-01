@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,10 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
+import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.remote.internal.RemoteRestrictedNodeImpl;
 import io.mokamint.node.service.RestrictedNodeServices;
 import jakarta.websocket.CloseReason;
@@ -73,7 +75,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000);
 			}
 
-			private void sendAddPeer(Peer peer) throws NodeException {
+			private void sendAddPeer(Peer peer) {
 				sendAddPeer(peer, "id");
 			}
 		}
@@ -110,7 +112,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000);
 			}
 
-			private void sendRemovePeer(Peer peer) throws NodeException {
+			private void sendRemovePeer(Peer peer) {
 				sendRemovePeer(peer, "id");
 			}
 		}
@@ -119,6 +121,42 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 			client.sendRemovePeer(peer1);
 			client.sendRemovePeer(peer2);
 			assertTrue(semaphore.tryAcquire(2, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a removePeer() request reaches the service and it goes in timeout, the caller goes in timeout as well")
+	public void serviceRemovePeerTimeoutExceptionWorks() throws Exception {
+		var peer = Peers.of(new URI("ws://my.machine:8032"));
+		var node = mock(RestrictedNode.class);
+		when(node.remove(peer)).thenThrow(TimeoutException.class);
+	
+		try (var service = RestrictedNodeServices.open(node, PORT); var client = RemoteRestrictedNodes.of(URI, 2000)) {
+			assertThrows(TimeoutException.class, () -> client.remove(peer));
+		}
+	}
+
+	@Test
+	@DisplayName("if a removePeer() request reaches the service and the node is closed, the caller goes in timeout")
+	public void serviceRemovePeerClosedNodeExceptionWorks() throws Exception {
+		var peer = Peers.of(new URI("ws://my.machine:8032"));
+		var node = mock(RestrictedNode.class);
+		when(node.remove(peer)).thenThrow(ClosedNodeException.class);
+	
+		try (var service = RestrictedNodeServices.open(node, PORT); var client = RemoteRestrictedNodes.of(URI, 2000)) {
+			assertThrows(TimeoutException.class, () -> client.remove(peer));
+		}
+	}
+
+	@Test
+	@DisplayName("if a removePeer() request reaches the service and the node gets interrupted, the caller goes in timeout")
+	public void serviceRemovePeerInterruptedExceptionWorks() throws Exception {
+		var peer = Peers.of(new URI("ws://my.machine:8032"));
+		var node = mock(RestrictedNode.class);
+		when(node.remove(peer)).thenThrow(InterruptedException.class);
+	
+		try (var service = RestrictedNodeServices.open(node, PORT); var client = RemoteRestrictedNodes.of(URI, 2000)) {
+			assertThrows(TimeoutException.class, () -> client.remove(peer));
 		}
 	}
 
@@ -146,7 +184,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000);
 			}
 
-			private void sendOpenMiner(int port) throws NodeException {
+			private void sendOpenMiner(int port) {
 				sendOpenMiner(port, "id");
 			}
 		}
@@ -182,7 +220,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 				super(URI, 2000);
 			}
 
-			private void sendCloseMiner(UUID uuid) throws NodeException {
+			private void sendCloseMiner(UUID uuid) {
 				sendRemoveMiner(uuid, "id");
 			}
 		}
@@ -216,7 +254,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		try (var service = RestrictedNodeServices.open(node, 8031); var remote = new MyRemoteRestrictedNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-			assertThrows(NodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
+			assertThrows(ClosedNodeException.class, () -> remote.add(Peers.of(new URI("ws://www.mokamint.io:8031"))));
 		}
 	}
 }

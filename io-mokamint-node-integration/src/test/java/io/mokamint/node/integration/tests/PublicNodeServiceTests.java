@@ -77,7 +77,6 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -87,6 +86,7 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.messages.WhisperPeerMessages;
+import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
@@ -96,12 +96,8 @@ import io.mokamint.nonce.Prologs;
 import jakarta.websocket.CloseReason;
 
 public class PublicNodeServiceTests extends AbstractLoggedTests {
-	private final static URI URI;
 	private final static int PORT = 8030;
-
-	static {
-		URI = java.net.URI.create("ws://localhost:" + PORT);
-	}
+	private final static URI URI = java.net.URI.create("ws://localhost:" + PORT);
 
 	private PublicNode mkNode() throws NoSuchAlgorithmException, TimeoutException, InterruptedException, ClosedNodeException {
 		var node = mock(PublicNode.class);
@@ -303,19 +299,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getBlock() request reaches the service and it goes in timeout, the client goes in timeout as well")
 	public void serviceGetBlockTimeoutWorks() throws Exception {
-	
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-		}
-	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getBlock(hash)).thenThrow(TimeoutException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
 			assertThrows(TimeoutException.class, () -> client.getBlock(hash));
 		}
 	}
@@ -406,18 +394,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and it goes in timeout, the caller goes in timeout as well")
 	public void serviceGetBlockDescriptionTimeoutExceptionWorks() throws Exception {
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-		}
-	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenThrow(TimeoutException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
 			assertThrows(TimeoutException.class, () -> client.getBlockDescription(hash));
 		}
 	}
@@ -425,18 +406,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and the node is closed, the caller goes in timeout")
 	public void serviceGetBlockDescriptionClosedNodeExceptionWorks() throws Exception {
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-		}
-	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenThrow(ClosedNodeException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
 			assertThrows(TimeoutException.class, () -> client.getBlockDescription(hash));
 		}
 	}
@@ -444,18 +418,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getBlockDescription() request reaches the service and the node gets interrupted, the caller goes in timeout")
 	public void serviceGetBlockDescriptionInterruptedExceptionWorks() throws Exception {
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-		}
-	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
 		when(node.getBlockDescription(hash)).thenThrow(InterruptedException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
 			assertThrows(TimeoutException.class, () -> client.getBlockDescription(hash));
 		}
 	}
@@ -604,7 +571,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMempoolInfo() throws NodeException {
+			private void sendGetMempoolInfo() {
 				sendGetMempoolInfo("id");
 			}
 		}
@@ -639,7 +606,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetMempoolPortion() throws NodeException {
+			private void sendGetMempoolPortion() {
 				sendGetMempoolPortion(5, 10, "id");
 			}
 		}
@@ -738,7 +705,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var remote = new MyRemotePublicNode()) {
 			service.close(); // by closing the service, the remote is not usable anymore
 			semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-			assertThrows(NodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
+			assertThrows(ClosedNodeException.class, () -> remote.getBlock(new byte[] { 1, 2, 3, 4 }));
 		}
 	}
 
@@ -790,7 +757,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) throws NodeException {
+			private void sendGetTransaction(byte[] hash) {
 				sendGetTransaction(hash, "id");
 			}
 		}
@@ -823,7 +790,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) throws NodeException {
+			private void sendGetTransaction(byte[] hash) {
 				sendGetTransaction(hash, "id");
 			}
 		}
@@ -839,34 +806,14 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the node misbehaves, it sends back an exception")
-	public void serviceGetTransactionNodeExceptionWorks() throws Exception {
-		var semaphore = new Semaphore(0);
-	
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-	
-			@Override
-			protected void onException(ExceptionMessage message) {
-				if (NodeException.class.isAssignableFrom(message.getExceptionClass()))
-					semaphore.release();
-			}
-
-			private void sendGetTransaction(byte[] hash) throws NodeException {
-				sendGetTransaction(hash, "id");
-			}
-		}
-	
+	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the node is closed, it yields to timeout")
+	public void serviceGetTransactionClosedNodeExceptionWorks() throws Exception {
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransaction(hash)).thenThrow(NodeException.class);
+		when(node.getTransaction(hash)).thenThrow(ClosedNodeException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransaction(hash);
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
+			assertThrows(TimeoutException.class, () -> client.getTransaction(hash));
 		}
 	}
 
@@ -887,7 +834,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -920,7 +867,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -952,7 +899,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) throws NodeException {
+			private void sendGetTransactionRepresentation(byte[] hash) {
 				sendGetTransactionRepresentation(hash, "id");
 			}
 		}
@@ -984,7 +931,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
+			private void sendGetTransactionAddress(byte[] hash) {
 				sendGetTransactionAddress(hash, "id");
 			}
 		}
@@ -1017,7 +964,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
+			private void sendGetTransactionAddress(byte[] hash) {
 				sendGetTransactionAddress(hash, "id");
 			}
 		}
@@ -1035,32 +982,12 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if a getTransactionAddress() request reaches the service and the node misbehaves, it throws back an exception")
 	public void serviceGetTransactionAddressNodeExceptionWorks() throws Exception {
-		var semaphore = new Semaphore(0);
-	
-		class MyTestClient extends RemotePublicNodeImpl {
-	
-			public MyTestClient() throws FailedDeploymentException, TimeoutException, InterruptedException {
-				super(URI, 2000, 240000, 1000);
-			}
-	
-			@Override
-			protected void onException(ExceptionMessage message) {
-				if (NodeException.class.isAssignableFrom(message.getExceptionClass()))
-					semaphore.release();
-			}
-	
-			private void sendGetTransactionAddress(byte[] hash) throws NodeException {
-				sendGetTransactionAddress(hash, "id");
-			}
-		}
-	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionAddress(hash)).thenThrow(NodeException.class);
+		when(node.getTransactionAddress(hash)).thenThrow(ClosedNodeException.class);
 	
-		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionAddress(hash);
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
+			assertThrows(TimeoutException.class, () -> client.getTransactionAddress(hash));
 		}
 	}
 }

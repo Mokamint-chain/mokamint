@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.function.Consumer;
 
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
@@ -32,7 +33,6 @@ import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 
@@ -43,7 +43,7 @@ public class TestClient extends AbstractWebSocketClient {
 	private final Consumer<Challenge> onChallengeReceived;
 	private final Session session;
 
-	public TestClient(URI uri, Consumer<Challenge> onChallengeReceived) throws DeploymentException, IOException {
+	public TestClient(URI uri, Consumer<Challenge> onChallengeReceived) throws FailedDeploymentException {
 		this.onChallengeReceived = onChallengeReceived;
 		this.session = new MiningEndpoint().deployAt(uri);
 
@@ -62,7 +62,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 	private class MiningEndpoint extends AbstractClientEndpoint<TestClient> {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		private Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri.resolve(MINING_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
@@ -74,7 +74,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 	private class GetMiningSpecificationEndpoint extends AbstractClientEndpoint<TestClient> {
 
-		private Session deployAt(URI uri) throws DeploymentException, IOException {
+		private Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri.resolve(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);
 		}
 

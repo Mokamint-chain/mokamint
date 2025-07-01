@@ -152,9 +152,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the transaction, if the latter exists in blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
+	Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a string representation of a transaction already in blockchain, that can be used to print
@@ -167,9 +167,9 @@ public interface PublicNode extends Node, Whisperer {
 	 *                                      the {@code checkTransaction} test should have a valid representation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException;
+	Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the address of a transaction already in blockchain.
@@ -178,9 +178,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the transaction address, if the latter exists in the blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, NodeException;
+	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the mempool of this node.
@@ -188,9 +188,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the information
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, NodeException;
+	MempoolInfo getMempoolInfo() throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the portion of the node's mempool containing the entries starting at number {@code start}
@@ -202,9 +202,9 @@ public interface PublicNode extends Node, Whisperer {
 	 * @return the portion with the entries, in order of increasing priority
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
-	 * @throws NodeException if the node could not complete the operation
+	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, NodeException;
+	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node
