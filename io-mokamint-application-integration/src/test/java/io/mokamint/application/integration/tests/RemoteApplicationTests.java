@@ -27,6 +27,9 @@ import static org.mockito.Mockito.mock;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,8 +38,8 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockResultMessages;
@@ -84,9 +87,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		/**
 		 * Creates a new test server.
 		 * 
-		 * @throws ApplicationException if the service cannot be deployed
+		 * @throws FailedDeploymentException if the service cannot be deployed
 		 */
-		private PublicTestServer() throws ApplicationException {
+		private PublicTestServer() throws FailedDeploymentException {
 			super(mock(), PORT);
 		}
 	}
@@ -99,7 +102,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
@@ -121,7 +124,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
@@ -146,7 +149,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
@@ -169,7 +172,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
@@ -191,7 +194,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetPriority(GetPriorityMessage message, Session session) {
@@ -214,7 +217,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
@@ -236,7 +239,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
@@ -258,7 +261,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
@@ -272,27 +275,6 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getInitialStateId() works if it throws ApplicationException")
-	public void getInitialStateIdWorksInCaseOfApplicationException() throws Exception  {
-		var exceptionMessage = "failed";
-
-		class MyServer extends PublicTestServer {
-
-			private MyServer() throws ApplicationException {}
-
-			@Override
-			protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()), RuntimeException::new);
-			}
-		};
-
-		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(ApplicationException.class, () -> remote.getInitialStateId());
-			assertEquals(exceptionMessage, exception.getMessage());
-		}
-	}
-
-	@Test
 	@DisplayName("beginBlock() works")
 	public void beginBlockWorks() throws Exception {
 		var groupId = 42;
@@ -302,7 +284,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
@@ -326,7 +308,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onBeginBlock(BeginBlockMessage message, Session session) {
@@ -349,7 +331,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -375,7 +357,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -399,7 +381,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
@@ -434,7 +416,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
@@ -468,7 +450,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onEndBlock(EndBlockMessage message, Session session) {
@@ -490,7 +472,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
@@ -514,7 +496,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onCommitBlock(CommitBlockMessage message, Session session) {
@@ -535,7 +517,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
@@ -559,7 +541,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onAbortBlock(AbortBlockMessage message, Session session) {
@@ -580,7 +562,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {
@@ -594,25 +576,71 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("keepFrom() works if it throws ApplicationException")
-	public void keepFromWorksInCaseOfApplicationException() throws Exception  {
+	@DisplayName("if keepFrom() is slow, it leads to a time-out")
+	public void keepFromWorksInCaseOfTimeout() throws Exception {
 		var start = LocalDateTime.now();
-
-		var exceptionMessage = "misbehaving application";
+		var finished = new Semaphore(0);
 
 		class MyServer extends PublicTestServer {
 
-			private MyServer() throws ApplicationException {}
+			private MyServer() throws FailedDeploymentException {}
 
 			@Override
 			protected void onKeepFrom(KeepFromMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new ApplicationException(exceptionMessage), message.getId()), RuntimeException::new);
+				try {
+					Thread.sleep(TIME_OUT * 4); // <----
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+
+				sendObjectAsync(session, KeepFromResultMessages.of(message.getId()), RuntimeException::new);
+				finished.release();
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var exception = assertThrows(ApplicationException.class, () -> remote.keepFrom(start));
-			assertEquals(exceptionMessage, exception.getMessage());
+			assertThrows(TimeoutException.class, () -> remote.keepFrom(start));
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	@Test
+	@DisplayName("keepFrom() ignores unexpected exceptions")
+	public void keepFromWorksInCaseOfUnexpectedException() throws Exception {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onKeepFrom(KeepFromMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
+			}
+		};
+
+		var start = LocalDateTime.now();
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.keepFrom(start));
+		}
+	}
+
+	@Test
+	@DisplayName("keepFrom() ignores unexpected messages")
+	public void keepFromWorksInCaseOfUnexpectedMessage() throws Exception {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onKeepFrom(KeepFromMessage message, Session session) {
+				sendObjectAsync(session, GetRepresentationResultMessages.of("hello", message.getId()), RuntimeException::new);
+			}
+		};
+
+		var start = LocalDateTime.now();
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.keepFrom(start));
 		}
 	}
 }

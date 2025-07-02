@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application;
-
-import io.mokamint.application.api.ApplicationException;
+package io.mokamint.application.api;
 
 /**
  * An exception stating that an application is closed and cannot perform the request.

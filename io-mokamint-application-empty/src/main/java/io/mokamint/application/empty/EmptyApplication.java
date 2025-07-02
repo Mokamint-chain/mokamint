@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.mokamint.application.AbstractApplication;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
 import io.mokamint.node.api.Transaction;
@@ -46,8 +47,10 @@ public class EmptyApplication extends AbstractApplication {
 	public EmptyApplication() {}
 
 	@Override
-	public boolean checkPrologExtra(byte[] extra) {
-		return true;
+	public boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return true;
+		}
 	}
 
 	@Override
@@ -60,8 +63,10 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public byte[] getInitialStateId() {
-		return STATE_ID;
+	public byte[] getInitialStateId() throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return STATE_ID;
+		}
 	}
 
 	@Override
@@ -79,11 +84,13 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public void commitBlock(int groupId) {
+	public void commitBlock(int groupId) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public void abortBlock(int groupId) {
+	public void abortBlock(int groupId) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
 	}
 
 	@Override
@@ -92,7 +99,8 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public void keepFrom(LocalDateTime start) {
+	public void keepFrom(LocalDateTime start) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
 	}
 
 	@Override

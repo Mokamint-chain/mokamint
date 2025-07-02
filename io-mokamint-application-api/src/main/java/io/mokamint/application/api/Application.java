@@ -94,11 +94,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param extra the extra, application-specific bytes of the prolog
 	 * @return true if and only if {@code extra} is valid according to this application
-	 * @throws ApplicationException if the application is not able to perform the operation
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	boolean checkPrologExtra(byte[] extra) throws ApplicationException, TimeoutException, InterruptedException;
+	boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Checks if the given transaction is valid according to this application.
@@ -153,11 +153,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * has been executed. This is typically the hash of the empty state of the application.
 	 * 
 	 * @return the identifier of the state of this application when it starts
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] getInitialStateId() throws ApplicationException, TimeoutException, InterruptedException;
+	byte[] getInitialStateId() throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method at the start of the execution of the transactions
@@ -223,11 +223,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being committed
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void commitBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
+	void commitBlock(int groupId) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to abort the execution of the group of transactions
@@ -238,11 +238,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being aborted
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void abortBlock(int groupId) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
+	void abortBlock(int groupId) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
 
 	/**
 	 * Informs the application that states of blocks created with a {@link #beginBlock(long, LocalDateTime, byte[])} whose
@@ -250,19 +250,16 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * of garbage-collection.
 	 * 
 	 * @param start the limit time, before which states can be garbage-collected
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void keepFrom(LocalDateTime start) throws ApplicationException, TimeoutException, InterruptedException;
+	void keepFrom(LocalDateTime start) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
-	 * Closes this application. After this closure, the methods of this application might throw
-	 * an {@link ApplicationException} if the closure makes their work impossible.
-	 * An application cannot be reopened after being closed.
-	 * 
-	 * @throws ApplicationException if the application is misbehaving
+	 * Closes this application. After this closure, the methods of this application will throw
+	 * a {@link ClosedApplicationException}. An application cannot be reopened after being closed.
 	 */
 	@Override
-	void close() throws ApplicationException;
+	void close();
 }

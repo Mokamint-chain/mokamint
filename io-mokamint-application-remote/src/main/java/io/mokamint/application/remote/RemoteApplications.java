@@ -18,7 +18,7 @@ package io.mokamint.application.remote;
 
 import java.net.URI;
 
-import io.mokamint.application.api.ApplicationException;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 
@@ -36,9 +36,9 @@ public abstract class RemoteApplications {
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the remote application
-	 * @throws ApplicationException if the remote application could not be deployed
+	 * @throws FailedDeploymentException if the remote application could not be deployed
 	 */
-	public static RemoteApplication of(URI uri, int timeout) throws ApplicationException {
+	public static RemoteApplication of(URI uri, int timeout) throws FailedDeploymentException {
 		return new RemoteApplicationImpl(uri, timeout);
 	}
 }

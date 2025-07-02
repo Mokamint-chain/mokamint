@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.integration.tests;
 
 import static io.hotmoka.crypto.HashingAlgorithms.sha256;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +38,11 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
@@ -52,6 +56,7 @@ import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
+import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.Transactions;
@@ -81,7 +86,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -91,7 +96,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendCheckPrologExtra() throws ApplicationException {
+			private void sendCheckPrologExtra() {
 				sendCheckPrologExtra(extra, ID);
 			}
 		}
@@ -112,7 +117,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -144,7 +149,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -175,7 +180,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -207,7 +212,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -239,7 +244,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -271,7 +276,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -302,7 +307,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -312,7 +317,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetInitialStateId() throws ApplicationException {
+			private void sendGetInitialStateId() {
 				sendGetInitialStateId(ID);
 			}
 		}
@@ -324,33 +329,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getInitialStateId() request reaches the service and the application fails, it sends back an exception")
+	@DisplayName("if a getInitialStateId() request reaches the service and the application is closed, it sends back an exception")
 	public void serviceGetInitialStateApplicationExceptionWorks() throws Exception {
-		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		String exceptionMessage = "failed";
-		when(app.getInitialStateId()).thenThrow(new ApplicationException(exceptionMessage));
+		when(app.getInitialStateId()).thenThrow(new ClosedApplicationException());
 	
-		class MyTestClient extends RemoteApplicationImpl {
-	
-			public MyTestClient() throws ApplicationException {
-				super(URI, TIME_OUT);
-			}
-	
-			@Override
-			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && ApplicationException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
-					semaphore.release();
-			}
-	
-			private void sendGetInitialStateId() throws ApplicationException {
-				sendGetInitialStateId(ID);
-			}
-		}
-	
-		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendGetInitialStateId();
-			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		try (var service = ApplicationServices.open(app, PORT); var client = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, client::getInitialStateId);
 		}
 	}
 
@@ -367,7 +352,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -401,7 +386,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -433,7 +418,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -466,7 +451,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -499,7 +484,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -543,7 +528,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -587,7 +572,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -618,7 +603,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -628,7 +613,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendCommitBlock() throws ApplicationException {
+			private void sendCommitBlock() {
 				sendCommitBlock(groupId, ID);
 			}
 		}
@@ -650,7 +635,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -660,7 +645,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendCommitBlock() throws ApplicationException {
+			private void sendCommitBlock() {
 				sendCommitBlock(groupId, ID);
 			}
 		}
@@ -681,7 +666,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 
@@ -691,7 +676,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendAbortBlock() throws ApplicationException {
+			private void sendAbortBlock() {
 				sendAbortBlock(groupId, ID);
 			}
 		}
@@ -713,7 +698,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -723,7 +708,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendAbortBlock() throws ApplicationException {
+			private void sendAbortBlock() {
 				sendAbortBlock(groupId, ID);
 			}
 		}
@@ -744,7 +729,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws ApplicationException {
+			public MyTestClient() throws FailedDeploymentException {
 				super(URI, TIME_OUT);
 			}
 

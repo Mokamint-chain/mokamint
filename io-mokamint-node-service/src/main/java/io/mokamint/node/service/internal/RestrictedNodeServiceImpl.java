@@ -43,7 +43,6 @@ import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.api.RemovePeerMessage;
 import io.mokamint.node.service.api.RestrictedNodeService;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -87,14 +86,9 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
 
-		try {
-			startContainer("", port,
-					AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
-					OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e);
-		}
+		startContainer("", port,
+				AddPeersEndpoint.config(this), RemovePeerEndpoint.config(this),
+				OpenMinerEndpoint.config(this), RemoveMinerEndpoint.config(this));
 
 		LOGGER.info(logPrefix + "published");
 	}

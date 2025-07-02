@@ -22,11 +22,13 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockMessages;
@@ -64,7 +66,6 @@ import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.node.api.TransactionRejectedException;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -99,25 +100,20 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * 
 	 * @param application the application
 	 * @param port the port
-	 * @throws ApplicationException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public ApplicationServiceImpl(Application application, int port) throws ApplicationException {
+	public ApplicationServiceImpl(Application application, int port) throws FailedDeploymentException {
 		this.application = application;
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
-		try {
-			startContainer("", port,
+		startContainer("", port,
 				CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
 				GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
 				DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
 				CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
 				KeepFromEndpoint.config(this)
-			);
-		}
-		catch (IOException | DeploymentException e) {
-			throw new ApplicationException(e);
-		}
+		);
 
 		// if the application gets closed, then this service will be closed as well
 		application.addOnCloseHandler(this_close);
@@ -141,7 +137,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	 * @throws IOException if there was an I/O problem
 	 */
 	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) {
+		if (e instanceof InterruptedException) { // TODO
 			// if the serviced node gets interrupted, then the external vision of the application
 			// is that of an application that is not working properly
 			sendObjectAsync(session, ExceptionMessages.of(new ApplicationException("The service has been interrupted"), id));
@@ -159,8 +155,12 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, CheckPrologExtraResultMessages.of(application.checkPrologExtra(message.getExtra()), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "checkPrologExtra() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "checkPrologExtra() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -177,8 +177,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, CheckPrologExtraEndpoint.class, CHECK_PROLOG_EXTRA_ENDPOINT,
-				CheckPrologExtraMessages.Decoder.class, CheckPrologExtraResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, CheckPrologExtraEndpoint.class, CHECK_PROLOG_EXTRA_ENDPOINT, CheckPrologExtraMessages.Decoder.class, CheckPrologExtraResultMessages.Encoder.class);
 		}
 	}
 
@@ -298,8 +297,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, GetInitialStateIdEndpoint.class, GET_INITIAL_STATE_ID_ENDPOINT,
-				GetInitialStateIdMessages.Decoder.class, GetInitialStateIdResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetInitialStateIdEndpoint.class, GET_INITIAL_STATE_ID_ENDPOINT, GetInitialStateIdMessages.Decoder.class, GetInitialStateIdResultMessages.Encoder.class);
 		}
 	}
 
@@ -402,8 +400,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.commitBlock(message.getGroupId());
 				sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()));
 			}
-			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (UnknownGroupIdException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "commitBlock() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "commitBlock() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -433,8 +438,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.abortBlock(message.getGroupId());
 				sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()));
 			}
-			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (UnknownGroupIdException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "abortBlock() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "abortBlock() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -464,8 +476,12 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.keepFrom(message.getStart());
 				sendObjectAsync(session, KeepFromResultMessages.of(message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "keepFrom() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "keepFrom() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -482,8 +498,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, KeepFromEndpoint.class, KEEP_FROM_ENDPOINT,
-				KeepFromMessages.Decoder.class, KeepFromResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, KeepFromEndpoint.class, KEEP_FROM_ENDPOINT, KeepFromMessages.Decoder.class, KeepFromResultMessages.Encoder.class);
 		}
 	}
 }

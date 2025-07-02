@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.service;
 
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 
@@ -34,9 +34,9 @@ public abstract class ApplicationServices {
 	 * @param application the application
 	 * @param port the port
 	 * @return the new service
-	 * @throws ApplicationException if the service cannot be deployed
+	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public static ApplicationService open(Application application, int port) throws ApplicationException {
+	public static ApplicationService open(Application application, int port) throws FailedDeploymentException {
 		return new ApplicationServiceImpl(application, port);
 	}
 }

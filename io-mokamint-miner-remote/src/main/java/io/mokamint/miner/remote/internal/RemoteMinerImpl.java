@@ -44,7 +44,6 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.CloseReason.CloseCodes;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -110,12 +109,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		this.check = Objects.requireNonNull(check);
 		this.logPrefix = "remote miner listening at port " + port + ": ";
 
-		try {
-			startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e);
-		}
+		startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 
 		LOGGER.info(logPrefix + "published at ws://localhost:" + port);
 	}

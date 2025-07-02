@@ -98,7 +98,6 @@ import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -218,8 +217,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 		// if the node gets closed, then this service will be closed as well
 		node.addOnCloseHandler(this_close);
 
-		try {
-			startContainer("", port,
+		startContainer("", port,
 				GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 				GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 				GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
@@ -227,10 +225,6 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 				GetTransactionRepresentationEndpoint.config(this), GetTransactionAddressEndpoint.config(this),
 				AddTransactionEndpoint.config(this),
 				WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
-		}
-		catch (IOException | DeploymentException e) {
-			throw new FailedDeploymentException(e);
-		}
 
 		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);

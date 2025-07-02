@@ -18,9 +18,8 @@ package io.mokamint.application.internal;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
-import io.mokamint.application.ClosedApplicationException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 
 /**
  * Partial implementation of a Mokamint application.
@@ -36,11 +35,15 @@ public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOn
 	}
 
 	@Override
-	public final void close() throws ApplicationException {
+	public final void close() {
 		try {
 			if (stopNewCalls()) {
-				callCloseHandlers();
-				closeResources();
+				try {
+					callCloseHandlers();
+				}
+				finally {
+					closeResources();
+				}
 			}
 		}
 		catch (InterruptedException e) {
@@ -51,10 +54,7 @@ public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOn
 	/**
 	 * Closes any resources used by this application. This is called only the first time
 	 * that {@link #close()} gets called.
-	 * 
-	 * @throws ApplicationException if the application is misbehaving
-	 * @throws InterruptedException if the closure was interrupted before completion
 	 */
-	protected void closeResources() throws ApplicationException, InterruptedException {
+	protected void closeResources() {
 	}
 }

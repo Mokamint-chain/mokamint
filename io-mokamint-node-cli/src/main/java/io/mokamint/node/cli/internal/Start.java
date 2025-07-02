@@ -41,7 +41,6 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ClosedNodeException;
@@ -280,7 +279,7 @@ public class Start extends AbstractCommand {
 					throw new CommandException("The node is misbehaving", e);
 				}
 			}
-			catch (ApplicationException | ApplicationTimeoutException e) {
+			catch (ApplicationTimeoutException e) {
 				throw new CommandException("The application is misbehaving", e);
 			}
 			catch (InterruptedException e) {
@@ -362,7 +361,7 @@ public class Start extends AbstractCommand {
 					app = RemoteApplications.of(applicationUri, 5000);
 					app.addOnCloseHandler(this::onRemoteApplicationClosed);
 				}
-				catch (ApplicationException e) {
+				catch (FailedDeploymentException e) {
 					throw new CommandException("Cannot connect to the remote application at " + applicationUri, e);
 				}
 			}

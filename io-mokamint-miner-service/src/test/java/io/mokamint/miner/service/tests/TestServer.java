@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
@@ -34,7 +35,6 @@ import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -47,7 +47,7 @@ public class TestServer extends AbstractWebSocketServer {
 	private final Consumer<Deadline> onDeadlineReceived;
 	private volatile Session session;
 
-	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws DeploymentException, IOException {
+	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws FailedDeploymentException {
 		this.onDeadlineReceived = onDeadlineReceived;
 		startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 	}
