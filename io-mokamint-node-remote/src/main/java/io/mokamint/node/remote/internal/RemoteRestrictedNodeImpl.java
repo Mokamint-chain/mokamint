@@ -112,40 +112,36 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		super.notifyResult(message);
 	}
 
-	protected void sendAddPeer(Peer peer, String id) {
+	/**
+	 * Sends the given message to the given endpoint. If it fails, it just logs
+	 * the exception and continues.
+	 * 
+	 * @param endpoint the endpoint
+	 * @param message the message
+	 */
+	private void sendObjectAsync(String endpoint, RpcMessage message) {
 		try {
-			sendObjectAsync(getSession(ADD_PEER_ENDPOINT), AddPeerMessages.of(peer, id));
+			sendObjectAsync(getSession(endpoint), message);
 		}
 		catch (IOException e) {
-			LOGGER.warning("cannot send to " + ADD_PEER_ENDPOINT + ": " + e.getMessage());
+			LOGGER.warning("cannot send to " + endpoint + ": " + e.getMessage());
 		}
+	}
+
+	protected void sendAddPeer(Peer peer, String id) {
+		sendObjectAsync(ADD_PEER_ENDPOINT, AddPeerMessages.of(peer, id));
 	}
 
 	protected void sendRemovePeer(Peer peer, String id) {
-		try {
-			sendObjectAsync(getSession(REMOVE_PEER_ENDPOINT), RemovePeerMessages.of(peer, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + REMOVE_PEER_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(REMOVE_PEER_ENDPOINT, RemovePeerMessages.of(peer, id));
 	}
 
 	protected void sendOpenMiner(int port, String id) {
-		try {
-			sendObjectAsync(getSession(OPEN_MINER_ENDPOINT), OpenMinerMessages.of(port, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + OPEN_MINER_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(OPEN_MINER_ENDPOINT, OpenMinerMessages.of(port, id));
 	}
 
 	protected void sendRemoveMiner(UUID uuid, String id) {
-		try {
-			sendObjectAsync(getSession(REMOVE_MINER_ENDPOINT), RemoveMinerMessages.of(uuid, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + REMOVE_MINER_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(REMOVE_MINER_ENDPOINT, RemoveMinerMessages.of(uuid, id));
 	}
 
 	/**

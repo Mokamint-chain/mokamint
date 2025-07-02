@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
@@ -245,7 +245,7 @@ public class BlockVerification {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (ApplicationException e) {
+			catch (ClosedApplicationException e) {
 				throw new NodeException(e);
 			}
 		}
@@ -457,7 +457,7 @@ public class BlockVerification {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (ApplicationException | UnknownGroupIdException e) {
+			catch (ClosedApplicationException | UnknownGroupIdException e) {
 				// the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);
 			}
@@ -470,7 +470,7 @@ public class BlockVerification {
 		try {
 			expected = node.getApplication().getInitialStateId();
 		}
-		catch (ApplicationException e) {
+		catch (ClosedApplicationException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			throw new NodeException(e);
 		}

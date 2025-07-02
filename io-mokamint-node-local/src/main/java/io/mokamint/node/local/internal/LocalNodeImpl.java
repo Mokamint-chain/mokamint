@@ -46,7 +46,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
@@ -446,7 +446,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				throw new RuntimeException(e); // TODO
 			}
 		}
-		catch (ApplicationException e) { // TODO
+		catch (ClosedApplicationException e) { // TODO
 			throw new RuntimeException(e);
 		}
 	}
@@ -630,11 +630,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param deadline the deadline to check
 	 * @throws IllegalDeadlineException if and only if {@code deadline} is illegal
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application does not answer in time
 	 */
-	protected void check(Deadline deadline) throws IllegalDeadlineException, ApplicationTimeoutException, InterruptedException, ApplicationException {
+	protected void check(Deadline deadline) throws IllegalDeadlineException, ApplicationTimeoutException, InterruptedException, ClosedApplicationException {
 		var prolog = deadline.getProlog();
 	
 		if (!deadline.isValid())
@@ -674,7 +674,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			check(deadline);
 		}
-		catch (ApplicationException e) {
+		catch (ClosedApplicationException e) { // TODO
 			throw new RuntimeException(e);
 		}
 	}
@@ -1201,7 +1201,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		catch (TimeoutException e) {
 			LOGGER.log(Level.WARNING, "cannot identify the non-frozen part of the blockchain because the application is unresponsive: " + e.getMessage());
 		}
-		catch (ApplicationException e) {
+		catch (ClosedApplicationException e) { // TODO
 			throw new NodeException(e);
 		}
 	}

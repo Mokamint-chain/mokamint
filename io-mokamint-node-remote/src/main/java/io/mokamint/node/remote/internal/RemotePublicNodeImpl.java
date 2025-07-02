@@ -314,6 +314,22 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 			});
 	}
 
+	/**
+	 * Sends the given message to the given endpoint. If it fails, it just logs
+	 * the exception and continues.
+	 * 
+	 * @param endpoint the endpoint
+	 * @param message the message
+	 */
+	private void sendObjectAsync(String endpoint, RpcMessage message) {
+		try {
+			sendObjectAsync(getSession(endpoint), message);
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + endpoint + ": " + e.getMessage());
+		}
+	}
+
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		switch (message) {
@@ -352,12 +368,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetInfo(String id) {
-		try {
-			sendObjectAsync(getSession(GET_INFO_ENDPOINT), GetInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_INFO_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_INFO_ENDPOINT, GetInfoMessages.of(id));
 	}
 
 	@Override
@@ -369,12 +380,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetMinerInfos(String id) {
-		try {
-			sendObjectAsync(getSession(GET_MINER_INFOS_ENDPOINT), GetMinerInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_MINER_INFOS_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_MINER_INFOS_ENDPOINT, GetMinerInfosMessages.of(id));
 	}
 
 	@Override
@@ -386,12 +392,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetTaskInfos(String id) {
-		try {
-			sendObjectAsync(getSession(GET_TASK_INFOS_ENDPOINT), GetTaskInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_TASK_INFOS_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_TASK_INFOS_ENDPOINT, GetTaskInfosMessages.of(id));
 	}
 
 	@Override
@@ -403,12 +404,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetPeerInfos(String id) {
-		try {
-			sendObjectAsync(getSession(GET_PEER_INFOS_ENDPOINT), GetPeerInfosMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_PEER_INFOS_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_PEER_INFOS_ENDPOINT, GetPeerInfosMessages.of(id));
 	}
 
 	@Override
@@ -420,12 +416,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetBlock(byte[] hash, String id) {
-		try {
-			sendObjectAsync(getSession(GET_BLOCK_ENDPOINT), GetBlockMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_BLOCK_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_BLOCK_ENDPOINT, GetBlockMessages.of(hash, id));
 	}
 
 	@Override
@@ -437,12 +428,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetBlockDescription(byte[] hash, String id) {
-		try {
-			sendObjectAsync(getSession(GET_BLOCK_DESCRIPTION_ENDPOINT), GetBlockDescriptionMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_BLOCK_DESCRIPTION_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_BLOCK_DESCRIPTION_ENDPOINT, GetBlockDescriptionMessages.of(hash, id));
 	}
 
 	@Override
@@ -454,12 +440,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetConfig(String id) {
-		try {
-			sendObjectAsync(getSession(GET_CONFIG_ENDPOINT), GetConfigMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_CONFIG_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_CONFIG_ENDPOINT, GetConfigMessages.of(id));
 	}
 
 	@Override
@@ -471,12 +452,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetChainInfo(String id) {
-		try {
-			sendObjectAsync(getSession(GET_CHAIN_INFO_ENDPOINT), GetChainInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_CHAIN_INFO_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_CHAIN_INFO_ENDPOINT, GetChainInfoMessages.of(id));
 	}
 
 	@Override
@@ -488,12 +464,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetChainPortion(long start, int count, String id) {
-		try {
-			sendObjectAsync(getSession(GET_CHAIN_PORTION_ENDPOINT), GetChainPortionMessages.of(start, count, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_CHAIN_INFO_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_CHAIN_PORTION_ENDPOINT, GetChainPortionMessages.of(start, count, id));
 	}
 
 	@Override
@@ -505,12 +476,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendAddTransaction(Transaction transaction, String id) {
-		try {
-			sendObjectAsync(getSession(ADD_TRANSACTION_ENDPOINT), AddTransactionMessages.of(transaction, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + ADD_TRANSACTION_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(ADD_TRANSACTION_ENDPOINT, AddTransactionMessages.of(transaction, id));
 	}
 
 	@Override
@@ -522,12 +488,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetMempoolInfo(String id) {
-		try {
-			sendObjectAsync(getSession(GET_MEMPOOL_INFO_ENDPOINT), GetMempoolInfoMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_MEMPOOL_INFO_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_MEMPOOL_INFO_ENDPOINT, GetMempoolInfoMessages.of(id));
 	}
 
 	@Override
@@ -539,12 +500,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetMempoolPortion(int start, int count, String id) {
-		try {
-			sendObjectAsync(getSession(GET_MEMPOOL_PORTION_ENDPOINT), GetMempoolPortionMessages.of(start, count, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_MEMPOOL_INFO_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_MEMPOOL_PORTION_ENDPOINT, GetMempoolPortionMessages.of(start, count, id));
 	}
 
 	@Override
@@ -556,12 +512,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetTransaction(byte[] hash, String id) {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_ENDPOINT), GetTransactionMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_TRANSACTION_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_TRANSACTION_ENDPOINT, GetTransactionMessages.of(hash, id));
 	}
 
 	@Override
@@ -573,12 +524,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetTransactionRepresentation(byte[] hash, String id) {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_REPRESENTATION_ENDPOINT), GetTransactionRepresentationMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_TRANSACTION_REPRESENTATION_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_TRANSACTION_REPRESENTATION_ENDPOINT, GetTransactionRepresentationMessages.of(hash, id));
 	}
 
 	@Override
@@ -590,12 +536,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	protected void sendGetTransactionAddress(byte[] hash, String id) {
-		try {
-			sendObjectAsync(getSession(GET_TRANSACTION_ADDRESS_ENDPOINT), GetTransactionAddressMessages.of(hash, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_TRANSACTION_ADDRESS_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_TRANSACTION_ADDRESS_ENDPOINT, GetTransactionAddressMessages.of(hash, id));
 	}
 
 	/**

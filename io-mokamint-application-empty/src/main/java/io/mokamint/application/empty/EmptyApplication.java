@@ -54,12 +54,15 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction) {
+	public void checkTransaction(Transaction transaction) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public long getPriority(Transaction transaction) {
-		return 0L;
+	public long getPriority(Transaction transaction) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return 0L;
+		}
 	}
 
 	@Override
@@ -70,17 +73,22 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) {
-		return nextId.getAndIncrement();
+	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return nextId.getAndIncrement();
+		}
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) {
+	public void deliverTransaction(int groupId, Transaction transaction) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public byte[] endBlock(int groupId, Deadline deadline) {
-		return STATE_ID;
+	public byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return STATE_ID;
+		}
 	}
 
 	@Override
@@ -94,8 +102,10 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public String getRepresentation(Transaction transaction) {
-		return "[]";
+	public String getRepresentation(Transaction transaction) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return "[]";
+		}
 	}
 
 	@Override

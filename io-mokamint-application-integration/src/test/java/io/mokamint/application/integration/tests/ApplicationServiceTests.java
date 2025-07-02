@@ -41,7 +41,6 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -127,7 +126,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendCheckTransaction() throws ApplicationException {
+			private void sendCheckTransaction() {
 				sendCheckTransaction(transaction, ID);
 			}
 		}
@@ -159,7 +158,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendCheckTransaction(Transaction transaction) throws ApplicationException {
+			private void sendCheckTransaction(Transaction transaction) {
 				sendCheckTransaction(transaction, ID);
 			}
 		}
@@ -190,7 +189,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetPriority() throws ApplicationException {
+			private void sendGetPriority() {
 				sendGetPriority(transaction, ID);
 			}
 		}
@@ -222,7 +221,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetPriority(Transaction transaction) throws ApplicationException {
+			private void sendGetPriority(Transaction transaction) {
 				sendGetPriority(transaction, ID);
 			}
 		}
@@ -254,7 +253,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendGetRepresentation() throws ApplicationException {
+			private void sendGetRepresentation() {
 				sendGetRepresentation(transaction, ID);
 			}
 		}
@@ -286,7 +285,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetRepresentation(Transaction transaction) throws ApplicationException {
+			private void sendGetRepresentation(Transaction transaction) {
 				sendGetRepresentation(transaction, ID);
 			}
 		}
@@ -362,7 +361,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendBeginBlock() throws ApplicationException {
+			private void sendBeginBlock() {
 				sendBeginBlock(height, when, stateId, ID);
 			}
 		}
@@ -396,7 +395,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendBeginBlock() throws ApplicationException {
+			private void sendBeginBlock() {
 				sendBeginBlock(height, when, stateId, ID);
 			}
 		}
@@ -428,7 +427,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendDeliverTransaction() throws ApplicationException {
+			private void sendDeliverTransaction() {
 				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
@@ -461,7 +460,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendDeliverTransaction() throws ApplicationException {
+			private void sendDeliverTransaction() {
 				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
@@ -494,7 +493,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendDeliverTransaction() throws ApplicationException {
+			private void sendDeliverTransaction() {
 				sendDeliverTransaction(groupId, transaction, ID);
 			}
 		}
@@ -506,7 +505,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an endBlock() request reaches the service, it yields the state identifier ayt the end of the block")
+	@DisplayName("if an endBlock() request reaches the service, it yields the state identifier at the end of the block")
 	public void serviceEndBlockWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
@@ -538,7 +537,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendEndBlock() throws ApplicationException {
+			private void sendEndBlock() {
 				sendEndBlock(groupId, deadline, ID);
 			}
 		}
@@ -582,7 +581,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendEndBlock() throws ApplicationException {
+			private void sendEndBlock() {
 				sendEndBlock(groupId, deadline, ID);
 			}
 		}
@@ -739,7 +738,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 
-			private void sendKeepFrom() throws ApplicationException {
+			private void sendKeepFrom() {
 				sendKeepFrom(start, ID);
 			}
 		}

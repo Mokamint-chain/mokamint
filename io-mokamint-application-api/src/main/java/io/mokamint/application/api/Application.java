@@ -113,11 +113,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * 
 	 * @param transaction the transaction to check
 	 * @throws TransactionRejectedException if the check failed and the transaction should not be added to the mempool
-	 * @throws ApplicationException if the application is not able to perform the operation
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void checkTransaction(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
+	void checkTransaction(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Computes the priority of the given transaction. Nodes may (but are not required to)
@@ -126,11 +126,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @param transaction the transaction
 	 * @return the priority of {@code transaction}
 	 * @throws TransactionRejectedException if the priority of the transaction cannot be computed
-	 * @throws ApplicationException if the application is not able to perform the operation
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	long getPriority(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
+	long getPriority(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields a string representation of the transaction, that can be used to print
@@ -142,11 +142,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @param transaction the transaction
 	 * @return the representation of {@code transaction}
 	 * @throws TransactionRejectedException if the representation of the transaction cannot be computed
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	String getRepresentation(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException;
+	String getRepresentation(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the identifier of the state of this application when it starts, before any transaction
@@ -172,11 +172,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @return the identifier of the group execution that is being started; this must be
 	 *         different from the identifier of other executions that are currently being performed
 	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException;
+	int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Delivers another transaction inside the group execution identified by {@code id}.
@@ -190,11 +190,11 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @param transaction the transaction to deliver
 	 * @throws TransactionRejectedException if the check or execution of the transaction failed
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException;
+	void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method when a group execution of transactions ends.
@@ -207,12 +207,12 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @param deadline the deadline that has been computed for the block containing the transactions
 	 * @return the identifier of the state resulting at the end of the group execution
 	 *         of the transactions, including eventual coinbase transactions added at its end
-	 * @throws ApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	byte[] endBlock(int groupId, Deadline deadline) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
+	byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException;
 
 	/**
 	 * The node calls this method to commit the state resulting at the end of the execution

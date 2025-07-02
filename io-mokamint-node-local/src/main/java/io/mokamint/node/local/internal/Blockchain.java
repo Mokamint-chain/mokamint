@@ -60,7 +60,7 @@ import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
@@ -549,7 +549,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
 		}
-		catch (ApplicationException | InvalidKeyException | SignatureException e) {
+		catch (ClosedApplicationException | InvalidKeyException | SignatureException e) {
 			// this node is misbehaving because the application it is connected to is misbehaving or its key is wrong
 			throw new NodeException(e);
 		}
@@ -1211,7 +1211,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			try {
 				return mempool.mkTransactionEntry(transaction);
 			}
-			catch (TransactionRejectedException | ApplicationException e) {
+			catch (TransactionRejectedException | ClosedApplicationException e) {
 				// either the database contains a block with a rejected transaction: it should not be there!
 				// or the node is misbehaving because the application it is connected to is misbehaving
 				throw new NodeException(e);

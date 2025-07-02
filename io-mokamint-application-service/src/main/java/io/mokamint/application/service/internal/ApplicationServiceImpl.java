@@ -27,7 +27,6 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -128,26 +127,6 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		LOGGER.info(logPrefix + "closed");
 	}
 
-	/**
-	 * Sends an exception message to the given session.
-	 * 
-	 * @param session the session
-	 * @param e the exception used to build the message
-	 * @param id the identifier of the message to send
-	 * @throws IOException if there was an I/O problem
-	 */
-	private void sendExceptionAsync(Session session, Exception e, String id) throws IOException {
-		if (e instanceof InterruptedException) { // TODO
-			// if the serviced node gets interrupted, then the external vision of the application
-			// is that of an application that is not working properly
-			sendObjectAsync(session, ExceptionMessages.of(new ApplicationException("The service has been interrupted"), id));
-			// we take note that we have been interrupted
-			Thread.currentThread().interrupt();
-		}
-		else
-			sendObjectAsync(session, ExceptionMessages.of(e, id));
-	}
-
 	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + CHECK_PROLOG_EXTRA_ENDPOINT + " request");
 
@@ -189,8 +168,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.checkTransaction(message.getTransaction());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
 			}
-			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (TransactionRejectedException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "checkTrasaction() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "checkTransaction() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -219,8 +205,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(message.getTransaction()), message.getId()));
 			}
-			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (TransactionRejectedException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getPriority() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "getPriority() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -249,8 +242,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(message.getTransaction()), message.getId()));
 			}
-			catch (TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (TransactionRejectedException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getRepresentation() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "getRepresentation() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -279,8 +279,12 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), message.getId()));
 			}
-			catch (TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "getInitialStateId() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "getInitialStateId() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -308,8 +312,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(message.getHeight(), message.getWhen(), message.getStateId()), message.getId()));
 			}
-			catch (UnknownStateException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (UnknownStateException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "beginBlock() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "beginBlock() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -339,8 +350,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 				application.deliverTransaction(message.getGroupId(), message.getTransaction());
 				sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
 			}
-			catch (UnknownGroupIdException | TransactionRejectedException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (UnknownGroupIdException | TransactionRejectedException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "deliverTransaction() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "deliverTransaction() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {
@@ -369,8 +387,15 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 			try {
 				sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(message.getGroupId(), message.getDeadline()), message.getId()));
 			}
-			catch (UnknownGroupIdException | TimeoutException | InterruptedException | ApplicationException e) {
-				sendExceptionAsync(session, e, message.getId());
+			catch (UnknownGroupIdException e) {
+				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
+			}
+			catch (InterruptedException e) {
+				LOGGER.warning(logPrefix + "endBlock() has been interrupted: " + e.getMessage());
+				Thread.currentThread().interrupt();
+			}
+			catch (TimeoutException | ClosedApplicationException e) {
+				LOGGER.warning(logPrefix + "endBlock() request failed: " + e.getMessage());
 			}
 		}
 		catch (IOException e) {

@@ -31,7 +31,7 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -173,7 +173,7 @@ public class Mempool {
 
 			return entry;
 		}
-		catch (ApplicationException e) {
+		catch (ClosedApplicationException e) { // TODO
 			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {
@@ -181,7 +181,7 @@ public class Mempool {
 		}
 	}
 
-	public TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ApplicationException, ApplicationTimeoutException, InterruptedException {
+	public TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
 		long priority;
 
 		try {

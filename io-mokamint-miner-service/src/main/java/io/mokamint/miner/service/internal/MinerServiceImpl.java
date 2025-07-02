@@ -138,17 +138,28 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	}
 
 	/**
+	 * Sends the given message to the given endpoint. If it fails, it just logs
+	 * the exception and continues.
+	 * 
+	 * @param endpoint the endpoint
+	 * @param message the message
+	 */
+	private void sendObjectAsync(String endpoint, RpcMessage message) {
+		try {
+			sendObjectAsync(getSession(endpoint), message);
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + endpoint + ": " + e.getMessage());
+		}
+	}
+
+	/**
 	 * Sends a {@link GetMiningSpecificationMessage} to the remote miner.
 	 * 
 	 * @param id the identifier of the message
 	 */
 	protected void sendGetMiningSpecification(String id) {
-		try {
-			sendObjectAsync(getSession(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_MINING_SPECIFICATION_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_MINING_SPECIFICATION_ENDPOINT, GetMiningSpecificationMessages.of(id));
 	}
 
 	/**

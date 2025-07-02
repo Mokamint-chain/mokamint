@@ -20,7 +20,7 @@ package io.mokamint.application.api;
  * An exception stating that an application is closed and cannot perform the request.
  */
 @SuppressWarnings("serial")
-public class ClosedApplicationException extends ApplicationException {
+public class ClosedApplicationException extends Exception {
 
 	/**
 	 * Creates a new exception.

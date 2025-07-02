@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.mokamint.application.api.Application;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.Blocks;
@@ -132,7 +132,7 @@ public class TransactionsExecutionTask implements Task {
 		try {
 			this.id = app.beginBlock(previous.getDescription().getHeight() + 1, creationTimeOfPrevious, previous.getStateId());
 		}
-		catch (ApplicationException | UnknownStateException e) {
+		catch (ClosedApplicationException | UnknownStateException e) {
 			// the node is misbehaving because the application it is connected to is misbehaving
 			// or because the head (ie, previous) of the blockchain has no associated state in the application
 			// TODO: this failed during mining after synchronization from another peer...
@@ -198,7 +198,7 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (ApplicationException | UnknownGroupIdException e) {
+		catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
 			// TODO: this failed when another node was resumed...
 			// it killed this mining task
 			// the following line threw: io.mokamint.node.api.NodeException: io.hotmoka.node.local.api.StoreException: Missing key in Patricia trie
@@ -230,7 +230,7 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (ApplicationException | UnknownGroupIdException e) {
+		catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
 			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
 		}
 	}
@@ -254,7 +254,7 @@ public class TransactionsExecutionTask implements Task {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (ApplicationException | UnknownGroupIdException e) {
+			catch (ClosedApplicationException | UnknownGroupIdException e) {// TODO
 				throw new NodeException(e); // the node is misbehaving since the application is misbehaving
 			}
 		}
@@ -286,7 +286,7 @@ public class TransactionsExecutionTask implements Task {
 						rejectedTransactions.add(tx);
 						return sizeUpToNow;
 					}
-					catch (ApplicationException | UnknownGroupIdException e) {
+					catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
 						throw new NodeException(e);
 					}
 					catch (TimeoutException e) {

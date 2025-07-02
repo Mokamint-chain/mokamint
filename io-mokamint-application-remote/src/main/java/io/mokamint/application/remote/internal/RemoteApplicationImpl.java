@@ -40,7 +40,6 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
-import io.mokamint.application.api.ApplicationException;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -174,6 +173,22 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		super.notifyResult(message);
 	}
 
+	/**
+	 * Sends the given message to the given endpoint. If it fails, it just logs
+	 * the exception and continues.
+	 * 
+	 * @param endpoint the endpoint
+	 * @param message the message
+	 */
+	private void sendObjectAsync(String endpoint, RpcMessage message) {
+		try {
+			sendObjectAsync(getSession(endpoint), message);
+		}
+		catch (IOException e) {
+			LOGGER.warning("cannot send to " + endpoint + ": " + e.getMessage());
+		}
+	}
+
 	@Override
 	public boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
@@ -189,12 +204,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param id the identifier of the message
 	 */
 	protected void sendCheckPrologExtra(byte[] extra, String id) {
-		try {
-			sendObjectAsync(getSession(CHECK_PROLOG_EXTRA_ENDPOINT), CheckPrologExtraMessages.of(extra, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + CHECK_PROLOG_EXTRA_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(CHECK_PROLOG_EXTRA_ENDPOINT, CheckPrologExtraMessages.of(extra, id));
 	}
 
 	/**
@@ -213,11 +223,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
+	public void checkTransaction(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
-		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
+		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class);
 	}
 
 	/**
@@ -225,10 +235,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * 
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendCheckTransaction(Transaction transaction, String id) throws ApplicationException {
-		sendObjectAsync(getSession(CHECK_TRANSACTION_ENDPOINT), CheckTransactionMessages.of(transaction, id), ApplicationException::new);
+	protected void sendCheckTransaction(Transaction transaction, String id) {
+		sendObjectAsync(CHECK_TRANSACTION_ENDPOINT, CheckTransactionMessages.of(transaction, id));
 	}
 
 	/**
@@ -247,11 +256,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public long getPriority(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
+	public long getPriority(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetPriority(transaction, id);
-		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
+		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class);
 	}
 
 	/**
@@ -259,10 +268,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * 
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendGetPriority(Transaction transaction, String id) throws ApplicationException {
-		sendObjectAsync(getSession(GET_PRIORITY_ENDPOINT), GetPriorityMessages.of(transaction, id), ApplicationException::new);
+	protected void sendGetPriority(Transaction transaction, String id) {
+		sendObjectAsync(GET_PRIORITY_ENDPOINT, GetPriorityMessages.of(transaction, id));
 	}
 
 	/**
@@ -281,11 +289,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public String getRepresentation(Transaction transaction) throws TransactionRejectedException, ApplicationException, TimeoutException, InterruptedException {
+	public String getRepresentation(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
-		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class, TimeoutException.class, ApplicationException.class);
+		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class);
 	}
 
 	/**
@@ -293,10 +301,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * 
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendGetRepresentation(Transaction transaction, String id) throws ApplicationException {
-		sendObjectAsync(getSession(GET_REPRESENTATION_ENDPOINT), GetRepresentationMessages.of(transaction, id), ApplicationException::new);
+	protected void sendGetRepresentation(Transaction transaction, String id) {
+		sendObjectAsync(GET_REPRESENTATION_ENDPOINT, GetRepresentationMessages.of(transaction, id));
 	}
 
 	/**
@@ -328,12 +335,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param id the identifier of the message
 	 */
 	protected void sendGetInitialStateId(String id) {
-		try {
-			sendObjectAsync(getSession(GET_INITIAL_STATE_ID_ENDPOINT), GetInitialStateIdMessages.of(id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + GET_INITIAL_STATE_ID_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(GET_INITIAL_STATE_ID_ENDPOINT, GetInitialStateIdMessages.of(id));
 	}
 
 	/**
@@ -352,11 +354,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ApplicationException, TimeoutException, InterruptedException {
+	public int beginBlock(long height, LocalDateTime when, byte[] stateId) throws UnknownStateException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendBeginBlock(height, when, stateId, id);
-		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class, TimeoutException.class, ApplicationException.class);
+		return waitForResult(id, BeginBlockResultMessage.class, UnknownStateException.class);
 	}
 
 	/**
@@ -367,10 +369,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param stateId the identifier of the state of the application at the beginning of the execution of
 	 *                the transactions in the block
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendBeginBlock(long height, LocalDateTime when, byte[] stateId, String id) throws ApplicationException {
-		sendObjectAsync(getSession(BEGIN_BLOCK_ENDPOINT), BeginBlockMessages.of(height, when, stateId, id), ApplicationException::new);
+	protected void sendBeginBlock(long height, LocalDateTime when, byte[] stateId, String id) {
+		sendObjectAsync(BEGIN_BLOCK_ENDPOINT, BeginBlockMessages.of(height, when, stateId, id));
 	}
 
 	/**
@@ -389,11 +390,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ApplicationException, TimeoutException, InterruptedException {
+	public void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
-		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
+		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class);
 	}
 
 	/**
@@ -402,10 +403,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param groupId the group identifier in the message
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendDeliverTransaction(int groupId, Transaction transaction, String id) throws ApplicationException {
-		sendObjectAsync(getSession(DELIVER_TRANSACTION_ENDPOINT), DeliverTransactionMessages.of(groupId, transaction, id), ApplicationException::new);
+	protected void sendDeliverTransaction(int groupId, Transaction transaction, String id) {
+		sendObjectAsync(DELIVER_TRANSACTION_ENDPOINT, DeliverTransactionMessages.of(groupId, transaction, id));
 	}
 
 	/**
@@ -424,11 +424,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public byte[] endBlock(int groupId, Deadline deadline) throws ApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+	public byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendEndBlock(groupId, deadline, id);
-		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class, TimeoutException.class, ApplicationException.class);
+		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class);
 	}
 
 	/**
@@ -437,10 +437,9 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param groupId the identifier of the group of transactions in the message
 	 * @param deadline the deadline in the message
 	 * @param id the identifier of the message
-	 * @throws ApplicationException if the application could not send the message
 	 */
-	protected void sendEndBlock(int groupId, Deadline deadline, String id) throws ApplicationException {
-		sendObjectAsync(getSession(END_BLOCK_ENDPOINT), EndBlockMessages.of(groupId, deadline, id), ApplicationException::new);
+	protected void sendEndBlock(int groupId, Deadline deadline, String id) {
+		sendObjectAsync(END_BLOCK_ENDPOINT, EndBlockMessages.of(groupId, deadline, id));
 	}
 
 	/**
@@ -473,12 +472,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param id the identifier of the message
 	 */
 	protected void sendCommitBlock(int groupId, String id) {
-		try {
-			sendObjectAsync(getSession(COMMIT_BLOCK_ENDPOINT), CommitBlockMessages.of(groupId, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + COMMIT_BLOCK_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(COMMIT_BLOCK_ENDPOINT, CommitBlockMessages.of(groupId, id));
 	}
 
 	/**
@@ -511,12 +505,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param id the identifier of the message
 	 */
 	protected void sendAbortBlock(int groupId, String id) {
-		try {
-			sendObjectAsync(getSession(ABORT_BLOCK_ENDPOINT), AbortBlockMessages.of(groupId, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + ABORT_BLOCK_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(ABORT_BLOCK_ENDPOINT, AbortBlockMessages.of(groupId, id));
 	}
 
 	/**
@@ -549,12 +538,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param id the identifier of the message
 	 */
 	protected void sendKeepFrom(LocalDateTime start, String id) {
-		try {
-			sendObjectAsync(getSession(KEEP_FROM_ENDPOINT), KeepFromMessages.of(start, id));
-		}
-		catch (IOException e) {
-			LOGGER.warning("cannot send to " + KEEP_FROM_ENDPOINT + ": " + e.getMessage());
-		}
+		sendObjectAsync(KEEP_FROM_ENDPOINT, KeepFromMessages.of(start, id));
 	}
 
 	/**

@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
-import io.mokamint.application.api.ApplicationException;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
@@ -356,7 +356,7 @@ public class BlockMiner {
 			catch (ApplicationTimeoutException e) {
 				LOGGER.warning(heightMessage + "couldn't check a deadline since the application is unresponsive: " + e.getMessage());
 			}
-			catch (ApplicationException e) {
+			catch (ClosedApplicationException e) {
 				LOGGER.log(Level.SEVERE, heightMessage + "couldn't check a deadline since the application is misbehaving", e);
 			}
 			catch (InterruptedException e) {
