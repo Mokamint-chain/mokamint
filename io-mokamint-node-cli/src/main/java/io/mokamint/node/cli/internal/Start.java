@@ -265,8 +265,8 @@ public class Start extends AbstractCommand {
 							else
 								throw new CommandException("The miner has not been added!");
 						}
-						catch (NodeException e) {
-							throw new CommandException("The node did not accept the miner!", e);
+						catch (ClosedNodeException e) {
+							throw new CommandException("The node is already closed!", e);
 						}
 					}
 					else

@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import picocli.CommandLine.Command;
@@ -33,19 +33,14 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to remove")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			if (remote.remove(Peers.of(uri)))
-				if (json())
-					System.out.println(uri);
-				else
-					System.out.println("Removed peer " + uri);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		if (remote.remove(Peers.of(uri)))
+			if (json())
+				System.out.println(uri);
 			else
-				throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+				System.out.println("Removed peer " + uri);
+		else
+			throw new CommandException("Peer " + uri + " has not been removed from the set of peers: are you sure that it exists?");
 	}
 
 	@Override

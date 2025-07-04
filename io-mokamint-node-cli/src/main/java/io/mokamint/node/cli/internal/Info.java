@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.NodeInfos;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
@@ -28,7 +28,7 @@ import picocli.CommandLine.Command;
 @Command(name = "info", description = "Show information about a node.")
 public class Info extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
 		try {
 			var info = remote.getInfo();
 
@@ -39,9 +39,6 @@ public class Info extends AbstractPublicRpcCommand {
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode the info in JSON format!", e);
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
 		}
 	}
 

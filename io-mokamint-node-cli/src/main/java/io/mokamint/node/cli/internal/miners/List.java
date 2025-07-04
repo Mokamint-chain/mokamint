@@ -22,8 +22,8 @@ import io.hotmoka.cli.AbstractRow;
 import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
@@ -32,13 +32,8 @@ import picocli.CommandLine.Help.Ansi;
 @Command(name = "ls", description = "List the miners of a node.")
 public class List extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException {
-		try {
-			new MyTable(remote).print();
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+		new MyTable(remote).print();
 	}
 
 	private static class Row extends AbstractRow {
@@ -84,7 +79,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private class MyTable extends AbstractTable {
 
-		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			super(new Row("UUID", "points", "description"), json());
 			remote.getMinerInfos().sorted().forEach(this::add);
 		}

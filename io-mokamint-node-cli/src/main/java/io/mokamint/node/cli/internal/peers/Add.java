@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
@@ -38,27 +38,22 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the URI of the peer to add")
 	private URI uri;
 
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			PeerInfo info = addPeer(remote);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		PeerInfo info = addPeer(remote);
 
-			if (json()) {
-				try {
-					System.out.println(new PeerInfos.Encoder().encode(info));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode a peer info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
-				}
+		if (json()) {
+			try {
+				System.out.println(new PeerInfos.Encoder().encode(info));
 			}
-			else
-				System.out.println("Added " + info);
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode a peer info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
+			}
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		else
+			System.out.println("Added " + info);
 	}
 
-	protected PeerInfo addPeer(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	protected PeerInfo addPeer(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.add(Peers.of(uri)).orElseThrow(() -> new CommandException("Peer " + uri + " has not been added to the set of peers: was it already present?"));
 		}

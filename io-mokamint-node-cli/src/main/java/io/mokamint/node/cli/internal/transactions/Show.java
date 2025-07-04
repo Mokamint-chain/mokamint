@@ -22,8 +22,7 @@ import com.google.gson.Gson;
 
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
@@ -41,37 +40,32 @@ public class Show extends AbstractPublicRpcCommand {
 	@Option(names = "--representation", description = "report the representation of the transaction instead of its Base64-encoded bytes", defaultValue = "false")
     private boolean representation;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			if (representation) {
-				String representation = getTransactionRepresentation(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		if (representation) {
+			String representation = getTransactionRepresentation(remote);
 
-				if (json()) {
-					var answer = new RepresentationAnswer();
-					answer.representation = representation;
-					System.out.println(new Gson().toJsonTree(answer));
-				}
-				else
-					System.out.println(representation);
+			if (json()) {
+				var answer = new RepresentationAnswer();
+				answer.representation = representation;
+				System.out.println(new Gson().toJsonTree(answer));
 			}
-			else {
-				var transaction = getTransaction(remote);
-
-				if (json()) {
-					var answer = new TransactionAnswer();
-					answer.bytes = transaction.toBase64String();
-					System.out.println(new Gson().toJsonTree(answer));
-				}
-				else
-					System.out.println(transaction);
-			}
+			else
+				System.out.println(representation);
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
+		else {
+			var transaction = getTransaction(remote);
+
+			if (json()) {
+				var answer = new TransactionAnswer();
+				answer.bytes = transaction.toBase64String();
+				System.out.println(new Gson().toJsonTree(answer));
+			}
+			else
+				System.out.println(transaction);
 		}
 	}
 
-	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException {
+	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		try {
 			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
@@ -80,7 +74,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, NodeException {
+	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		return remote.getTransaction(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 
@@ -93,12 +87,7 @@ public class Show extends AbstractPublicRpcCommand {
 		if (hash.startsWith("0x") || hash.startsWith("0X"))
 			hash = hash.substring(2);
 
-		try {
-			return Hex.fromHexString(hash);
-		}
-		catch (HexConversionException e) {
-			throw new CommandException("The hexadecimal hash is invalid!", e);
-		}
+		return Hex.fromHexString(hash, message -> new CommandException("The hexadecimal hash is invalid: " + message));
 	}
 
 	private static class RepresentationAnswer {

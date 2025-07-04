@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import picocli.CommandLine.Command;
@@ -32,19 +32,14 @@ public class Remove extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the UUID of the miner to remove")
 	private UUID uuid;
 
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			if (remote.removeMiner(uuid))
-				if (json())
-					System.out.println(uuid);
-				else
-					System.out.println("Closed miner " + uuid);
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		if (remote.removeMiner(uuid))
+			if (json())
+				System.out.println(uuid);
 			else
-				throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+				System.out.println("Closed miner " + uuid);
+		else
+			throw new CommandException("Miner " + uuid + " has not been removed from the set of miners: are you sure that it exists?");
 	}
 
 	@Override

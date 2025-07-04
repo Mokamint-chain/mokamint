@@ -25,10 +25,11 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlockDescription;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -63,10 +64,10 @@ public class Show extends AbstractPublicRpcCommand {
          * @return the hash of the requested block
          * @throws TimeoutException if some connection timed-out
          * @throws InterruptedException if some connection was interrupted while waiting
-         * @throws NodeException if the remote node could not complete the operation
+         * @throws ClosedNodeException if the remote node is already closed
          * @throws CommandException if the block cannot be identified, or if something erroneous must be logged and the user must be informed
          */
-        private byte[] getHashOfBlock(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+        private byte[] getHashOfBlock(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
         	if (hash != null) {
 				if (hash.startsWith("0x") || hash.startsWith("0X"))
 					hash = hash.substring(2);
@@ -104,7 +105,7 @@ public class Show extends AbstractPublicRpcCommand {
         }
 	}
 
-    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+    private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException, CommandException {
 		try {
 			byte[] hash = blockIdentifier.getHashOfBlock(remote);
 			if (full)
@@ -115,12 +116,9 @@ public class Show extends AbstractPublicRpcCommand {
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode a block from \"" + publicUri() + "\" in JSON format!", e);
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
 	}
 
-    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, TimeoutException, InterruptedException, NodeException {
+    private void print(RemotePublicNode remote, BlockDescription description, byte[] hash) throws EncodeException, TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
     	if (json())
     		System.out.println(new BlockDescriptions.Encoder().encode(description));
 		else {
@@ -130,7 +128,7 @@ public class Show extends AbstractPublicRpcCommand {
 		}	
     }
 
-    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, TimeoutException, InterruptedException, NodeException {
+    private void print(RemotePublicNode remote, Block block, byte[] hash) throws EncodeException, TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
     	if (json())
     		System.out.println(new Blocks.Encoder().encode(block));
 		else {
@@ -139,24 +137,24 @@ public class Show extends AbstractPublicRpcCommand {
 		}	
     }
 
-    private LocalDateTime computeStartDateTimeUTC(BlockDescription description, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+    private LocalDateTime computeStartDateTimeUTC(BlockDescription description, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
 		if (description instanceof GenesisBlockDescription gbd)
 			return gbd.getStartDateTimeUTC();
 		else {
 			var info = remote.getChainInfo();
 			var genesisHash = info.getGenesisHash();
 			if (genesisHash.isEmpty())
-				throw new NodeException("The database contains a non-genesis block but no genesis block");
+				throw new MisbehavingNodeException("The database contains a non-genesis block but no genesis block");
 	
 			var genesis = remote.getBlockDescription(genesisHash.get());
 			if (genesis.isEmpty())
-				throw new NodeException("The genesis block is set but it cannot be found in the database");
+				throw new MisbehavingNodeException("The genesis block is set but it cannot be found in the database");
 	
 			var content = genesis.get();
 			if (content instanceof GenesisBlockDescription gbd)
 				return gbd.getStartDateTimeUTC().plus(((NonGenesisBlockDescription) description).getTotalWaitingTime(), ChronoUnit.MILLIS);
 			else
-				throw new NodeException("The initial block of the chain is not a genesis block");
+				throw new MisbehavingNodeException("The initial block of the chain is not a genesis block");
 		}
 	}
 

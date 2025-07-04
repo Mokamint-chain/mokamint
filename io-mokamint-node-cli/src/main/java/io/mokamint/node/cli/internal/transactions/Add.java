@@ -23,8 +23,8 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -38,27 +38,22 @@ public class Add extends AbstractPublicRpcCommand {
 	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
 	private String tx;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			MempoolEntry info = addTransaction(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		MempoolEntry info = addTransaction(remote);
 
-			if (json()) {
-				try {
-					System.out.println(new MempoolEntries.Encoder().encode(info));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
-				}
+		if (json()) {
+			try {
+				System.out.println(new MempoolEntries.Encoder().encode(info));
 			}
-			else
-				System.out.println(info);
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
+			}
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		else
+			System.out.println(info);
 	}
 
-	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
 		}

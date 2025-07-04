@@ -24,8 +24,8 @@ import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
@@ -44,22 +44,17 @@ public class List extends AbstractPublicRpcCommand {
 
 	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
-	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
 		if (from < -1)
 			throw new CommandException("from cannot be smaller than -1!");
 
-		try {
-			if (from == -1L)
-				from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
+		if (from == -1L)
+			from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
 
-			new MyTable(remote).print();
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		new MyTable(remote).print();
 	}
 
 	private static class Row extends AbstractRow {
@@ -102,7 +97,7 @@ public class List extends AbstractPublicRpcCommand {
 	private class MyTable extends AbstractTable {
 		private final MempoolEntry[] entries;
 
-		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			super(mkHeader(remote), json());
 
 			LOGGER.info("requesting mempool entries with index in the interval [" + from + ", " + (from + count) + ")");
@@ -112,7 +107,7 @@ public class List extends AbstractPublicRpcCommand {
 				add(pos);
 		}
 
-		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			var config = remote.getConfig();
 			return new Row("", "tx hash (" + config.getHashingForTransactions() + ")", "priority");
 		}

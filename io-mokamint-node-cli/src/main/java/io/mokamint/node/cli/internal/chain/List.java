@@ -27,8 +27,9 @@ import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
+import io.mokamint.node.MisbehavingNodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlockDescription;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -103,7 +104,7 @@ public class List extends AbstractPublicRpcCommand {
 		private final byte[][] hashes;
 		private final LocalDateTime startDateTimeUTC;
 
-		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
 			super(mkHeader(remote), json());
 
 			this.remote = remote;
@@ -116,24 +117,24 @@ public class List extends AbstractPublicRpcCommand {
 				add(pos);
 		}
 
-		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			var config = remote.getConfig();
 			return new Row("", "block hash (" + config.getHashingForBlocks() + ")",
 					"created (UTC)", "node's public key (" + config.getSignatureForBlocks() + ", base58)",
 					"miner's public key (" + config.getSignatureForDeadlines() + ", base58)");
 		}
 
-		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws TimeoutException, InterruptedException, NodeException {
+		private LocalDateTime getStartDateTimeUTC(byte[] genesisHash) throws TimeoutException, InterruptedException, MisbehavingNodeException, ClosedNodeException {
 			var maybeGenesis = remote.getBlockDescription(genesisHash);
 			if (maybeGenesis.isEmpty())
-				throw new NodeException("The node has a genesis hash but it is bound to no block!");
+				throw new MisbehavingNodeException("The node has a genesis hash but it is bound to no block!");
 			else if (maybeGenesis.get() instanceof GenesisBlockDescription gbd)
 				return gbd.getStartDateTimeUTC();
 			else
-				throw new NodeException("The type of the genesis block is inconsistent!");
+				throw new MisbehavingNodeException("The type of the genesis block is inconsistent!");
 		}
 
-		private void add(int pos) throws TimeoutException, InterruptedException, NodeException {
+		private void add(int pos) throws TimeoutException, InterruptedException, ClosedNodeException {
 			long height = from + pos;
 			String rowHeight = height + ":";
 			String rowHash = Hex.toHexString(hashes[pos]);
@@ -169,25 +170,20 @@ public class List extends AbstractPublicRpcCommand {
 		}
 	}
 
-	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
 		if (count < 0)
 			throw new CommandException("count cannot be negative!");
 
 		if (from < -1L)
 			throw new CommandException("from cannot be smaller than -1!");
 
-		try {
-			var info = remote.getChainInfo();
-			if (from == -1L)
-				from = Math.max(0L, info.getLength() - 1 - count + 1);
+		var info = remote.getChainInfo();
+		if (from == -1L)
+			from = Math.max(0L, info.getLength() - 1 - count + 1);
 
-			var maybeGenesisHash = info.getGenesisHash();
-			if (maybeGenesisHash.isPresent())
-				new MyTable(maybeGenesisHash.get(), remote).print();
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		var maybeGenesisHash = info.getGenesisHash();
+		if (maybeGenesisHash.isPresent())
+			new MyTable(maybeGenesisHash.get(), remote).print();
 	}
 
 	@Override

@@ -17,10 +17,12 @@ limitations under the License.
 package io.mokamint.node.cli.internal;
 
 import java.net.URI;
+import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
-import io.hotmoka.cli.RpcCommandBody;
+import io.mokamint.node.MisbehavingNodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Option;
@@ -52,7 +54,42 @@ public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<Remote
 	 * @param what the body
 	 * @throws CommandException if something erroneous must be logged and the user must be informed
 	 */
-	protected void execute(RpcCommandBody<RemotePublicNode> what) throws CommandException {
-		execute(RemotePublicNodes::of, what, publicUri);
+	protected void execute(RpcCommandBody what) throws CommandException {
+		var body = new io.hotmoka.cli.RpcCommandBody<RemotePublicNode>() {
+
+			@Override
+			public void run(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+				try {
+					what.run(remote);
+				}
+				catch (ClosedNodeException e) {
+					throw new CommandException("The node is already closed", e);
+				}
+				catch (MisbehavingNodeException e) {
+					throw new CommandException("The node is misbehaving", e);
+				}
+			}
+		};
+
+		execute(RemotePublicNodes::of, body, publicUri);
+	}
+
+	/**
+	 * The body of the command.
+	 */
+	protected interface RpcCommandBody {
+
+		/**
+		 * Runs the body of the command.
+		 * 
+		 * @param remote the remote object
+		 * @throws TimeoutException if the command timeouts
+		 * @throws InterruptedException if the command was interrupted while waiting
+		 * @throws ClosedNodeException if the remote node is already closed
+		 * @throws MisbehavingNodeException if the remote node is misbehaving
+		 * @throws CommandException if something erroneous must be logged and the user must be informed;
+		 *                          throw this is the user provided a wrong argument to the command
+		 */
+		void run(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException, CommandException;
 	}
 }

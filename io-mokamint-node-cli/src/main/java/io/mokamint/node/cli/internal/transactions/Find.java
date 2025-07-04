@@ -20,9 +20,8 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
 import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
@@ -36,27 +35,22 @@ public class Find extends AbstractPublicRpcCommand {
 	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
 	private String hash;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			var address = getTransactionAddress(remote);
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		var address = getTransactionAddress(remote);
 
-			if (json()) {
-				try {
-					System.out.println(new TransactionAddresses.Encoder().encode(address));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode an address at \"" + publicUri() + "\" in JSON format!", e);
-				}
+		if (json()) {
+			try {
+				System.out.println(new TransactionAddresses.Encoder().encode(address));
 			}
-			else
-				System.out.println(address);
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode an address at \"" + publicUri() + "\" in JSON format!", e);
+			}
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e);
-		}
+		else
+			System.out.println(address);
 	}
 
-	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		return remote.getTransactionAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 
@@ -69,11 +63,6 @@ public class Find extends AbstractPublicRpcCommand {
 		if (hash.startsWith("0x") || hash.startsWith("0X"))
 			hash = hash.substring(2);
 
-		try {
-			return Hex.fromHexString(hash);
-		}
-		catch (HexConversionException e) {
-			throw new CommandException("The hexadecimal hash is invalid!", e);
-		}
+		return Hex.fromHexString(hash, message -> new CommandException("The hexadecimal hash is invalid: " + message));
 	}
 }

@@ -26,7 +26,7 @@ import io.hotmoka.cli.Table;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.websockets.api.FailedDeploymentException;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -48,13 +48,8 @@ public class List extends AbstractPublicRpcCommand {
 	 */
 	private final static int MAX_PEER_LENGTH = 50;
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
-		try {
-			new MyTable(remote).print();
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+		new MyTable(remote).print();
 	}
 
 	private class Row extends AbstractRow {
@@ -130,7 +125,7 @@ public class List extends AbstractPublicRpcCommand {
 
 	private class MyTable extends AbstractTable  {
 
-		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, NodeException {
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			super(verbose ? new RowVerbose("URI", "points", "status", "UUID", "version") : new Row("URI", "points", "status"), json());
 			var peers = remote.getPeerInfos().sorted().parallel();
 			CheckRunnable.check(InterruptedException.class, () -> peers.forEachOrdered(UncheckConsumer.uncheck(InterruptedException.class, this::add)));
@@ -152,7 +147,7 @@ public class List extends AbstractPublicRpcCommand {
 					UUID = peerInfo.getUUID().toString();
 					version = peerInfo.getVersion().toString();
 				}
-				catch (FailedDeploymentException | TimeoutException | NodeException e) {
+				catch (FailedDeploymentException | TimeoutException | ClosedNodeException e) {
 					LOGGER.warning("cannot contact " + info.getPeer() + ": " + e.getMessage());
 					UUID = version = "<unknown>";
 				}

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.BasicConsensusConfigBuilders;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -29,7 +29,7 @@ import picocli.CommandLine.Command;
 @Command(name = "show", description = "Show the configuration of a node.")
 public class Show extends AbstractPublicRpcCommand {
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
+	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
 		try {
 			var config = remote.getConfig();
 
@@ -40,9 +40,6 @@ public class Show extends AbstractPublicRpcCommand {
 		}
 		catch (EncodeException e) {
 			throw new CommandException("Cannot encode the configuration of the node at \"" + publicUri() + "\" in JSON format.", e);
-		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
 		}
 	}
 

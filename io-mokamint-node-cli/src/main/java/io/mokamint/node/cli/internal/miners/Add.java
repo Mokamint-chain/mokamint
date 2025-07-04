@@ -21,8 +21,8 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.MinerInfos;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.EncodeException;
@@ -35,30 +35,25 @@ public class Add extends AbstractRestrictedRpcCommand {
 	@Parameters(description = "the port where the miner must be published")
 	private int port;
 
-	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException {
+	private void body(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
 		if (port < 0 || port > 65535)
 			throw new CommandException("The port number must be between 0 and 65535 inclusive");
 
-		try {
-			MinerInfo info = openMiner(remote);
+		MinerInfo info = openMiner(remote);
 
-			if (json()) {
-				try {
-					System.out.println(new MinerInfos.Encoder().encode(info));
-				}
-				catch (EncodeException e) {
-					throw new CommandException("Cannot encode a miner info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
-				}
+		if (json()) {
+			try {
+				System.out.println(new MinerInfos.Encoder().encode(info));
 			}
-			else
-				System.out.println("Opened " + info);
+			catch (EncodeException e) {
+				throw new CommandException("Cannot encode a miner info of the node at \"" + restrictedUri() + "\" in JSON format!", e);
+			}
 		}
-		catch (NodeException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		else
+			System.out.println("Opened " + info);
 	}
 
-	protected MinerInfo openMiner(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, NodeException, CommandException {
+	protected MinerInfo openMiner(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.openMiner(port).orElseThrow(() -> new CommandException("No remote miner has been opened"));
 		}
