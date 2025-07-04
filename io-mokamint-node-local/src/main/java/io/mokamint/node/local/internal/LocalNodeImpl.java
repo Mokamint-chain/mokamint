@@ -54,6 +54,7 @@ import io.mokamint.miner.remote.RemoteMiners;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.Memories;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -79,6 +80,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
+import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -219,10 +221,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws TimeoutException if some operation timed out
-	 * @throws NodeException if the node is not behaving correctly
+	 * @throws NodeCreationException if the creation of the node failed
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeCreationException {
 		super(ClosedNodeException::new);
 
 		this.config = config;
@@ -233,27 +234,40 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.miningTask = new MiningTask(this);
 		this.miners = new MinersSet(this);
-		this.blockchain = new Blockchain(this);
-		this.mempool = new Mempool(this);
-		this.peers = new PeersSet(this);
-		this.uuid = getInfo().getUUID();
 
 		try {
-			if (init)
-				blockchain.initialize();
+			this.blockchain = new Blockchain(this);
+			this.mempool = new Mempool(this);
+			this.peers = new PeersSet(this);
+			this.uuid = getInfo().getUUID();
 
-			schedulePeriodicSynchronization();
-			schedule(this::processWhisperedPeers, "peers whispering process");
-			schedule(this::processWhisperedBlocks, "blocks whispering process");
-			schedule(this::processWhisperedTransactions, "transactions whispering process");
-			schedulePeriodicPingToAllPeersAndReconnection();
-			schedulePeriodicWhisperingOfAllServices();
-			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-			schedule(miningTask, "blocks mining process");
+			try {
+				if (init)
+					blockchain.initialize();
+
+				schedulePeriodicSynchronization();
+				schedule(this::processWhisperedPeers, "peers whispering process");
+				schedule(this::processWhisperedBlocks, "blocks whispering process");
+				schedule(this::processWhisperedTransactions, "transactions whispering process");
+				schedulePeriodicPingToAllPeersAndReconnection();
+				schedulePeriodicWhisperingOfAllServices();
+				schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
+				schedule(miningTask, "blocks mining process");
+			}
+			catch (AlreadyInitializedException e) {
+				throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
+			}
+			catch (ApplicationTimeoutException e) {
+				throw new NodeCreationException("The application timed out", e);
+			}
+			catch (TaskRejectedExecutionException e) {
+				LOGGER.log(Level.SEVERE, "could not spawn the node's tasks", e);
+				close();
+				throw new NodeCreationException("Could not spawn the node's tasks", e);
+			}
 		}
-		catch (TaskRejectedExecutionException e) {
-			// these tasks are essential: we cannot skip their creation
-			throw new NodeException("Could not spawn a node's task", e);
+		catch (NodeException e) { // TODO
+			throw new NodeCreationException(e);
 		}
 	}
 

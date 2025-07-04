@@ -47,11 +47,11 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Deadlines;
@@ -182,7 +182,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeCreationException, NoSuchAlgorithmException, ClosedNodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -248,7 +248,7 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends AbstractLocalNode {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException, ClosedNodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -273,7 +273,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException, NodeCreationException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -297,7 +297,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException, NodeCreationException {
 				super(config, nodeKeys, app, true);
 
 				var miner = mock(Miner.class);
@@ -369,7 +369,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException, NodeCreationException {
 				super(config, nodeKeys, app, true);
 				add(myMiner);
 			}

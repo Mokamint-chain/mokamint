@@ -40,12 +40,11 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -93,7 +92,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -154,7 +153,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode1(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -182,7 +181,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, ApplicationTimeoutException, NodeException {
+			private MyLocalNode2(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 

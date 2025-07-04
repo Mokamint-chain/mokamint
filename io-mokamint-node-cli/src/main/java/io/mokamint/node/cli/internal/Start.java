@@ -43,10 +43,8 @@ import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.NodeException;
-import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNode;
@@ -272,15 +270,9 @@ public class Start extends AbstractCommand {
 					else
 						publishPublicAndRestrictedNodeServices(0);
 				}
-				catch (AlreadyInitializedException e) {
-					throw new CommandException("The node is already initialized: delete \"" + config.getDir() + "\" and start again with --init", e);
+				catch (NodeCreationException e) {
+					throw new CommandException("The creation of the node failed", e);
 				}
-				catch (NodeException e) {
-					throw new CommandException("The node is misbehaving", e);
-				}
-			}
-			catch (ApplicationTimeoutException e) {
-				throw new CommandException("The application is misbehaving", e);
 			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?

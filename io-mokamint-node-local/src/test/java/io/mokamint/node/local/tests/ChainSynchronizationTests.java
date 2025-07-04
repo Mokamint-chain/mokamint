@@ -45,11 +45,11 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
@@ -139,7 +139,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException, WrongKeyException {
+		private MiningNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException, ClosedNodeException, WrongKeyException {
 			super(config, nodeKeys, app, true);
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
@@ -157,7 +157,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends AbstractLocalNode {
 
-		private NonMiningNode(LocalNodeConfig config) throws InterruptedException, NodeException, ApplicationTimeoutException {
+		private NonMiningNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 

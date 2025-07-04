@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -52,10 +51,11 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
@@ -64,7 +64,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
@@ -107,7 +106,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException, WrongKeyException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException, NodeCreationException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -150,7 +149,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, ApplicationTimeoutException, NodeException, WrongKeyException {
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, NodeCreationException {
 				super(config, init);
 			}
 
@@ -203,7 +202,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, InvalidKeyException, NodeException, ApplicationTimeoutException, WrongKeyException {
+				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, NodeCreationException  {
 					super(config, init);
 				}
 
@@ -228,7 +227,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, NodeException, FailedDeploymentException {
+			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, ClosedNodeException, FailedDeploymentException, NodeCreationException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -257,15 +256,15 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					node.getSeenAll().acquire();
 			}
 
-			private TestNode[] openNodes(Path dir) throws InterruptedException, NodeException, TimeoutException, FailedDeploymentException {
-				FunctionWithExceptions4<Integer, TestNode, InterruptedException, NodeException, TimeoutException, FailedDeploymentException> function = num -> mkNode(dir, num);
+			private TestNode[] openNodes(Path dir) throws InterruptedException, TimeoutException, FailedDeploymentException, NodeCreationException {
+				FunctionWithExceptions4<Integer, TestNode, NodeCreationException, TimeoutException, InterruptedException, FailedDeploymentException> function = num -> mkNode(dir, num);
 
-				return CheckSupplier.check(InterruptedException.class, NodeException.class, TimeoutException.class, FailedDeploymentException.class, () -> 
+				return CheckSupplier.check(NodeCreationException.class, TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, () -> 
 					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
-						.map(UncheckFunction.uncheck(InterruptedException.class, NodeException.class, TimeoutException.class, FailedDeploymentException.class, function)).toArray(TestNode[]::new));
+						.map(UncheckFunction.uncheck(NodeCreationException.class, TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, function)).toArray(TestNode[]::new));
 			}
 
-			private void closeNodes() throws InterruptedException, NodeException {
+			private void closeNodes() {
 				for (var node: nodes)
 					node.close();
 			}
@@ -276,29 +275,26 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						service.close();
 			}
 
-			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, NodeException {
+			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
 				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
 					Thread.sleep(50);
 				}
 			}
 
-			private void addPeers() throws InterruptedException, TimeoutException, PeerException, PeerRejectedException, NodeException {
+			private void addPeers() throws InterruptedException, TimeoutException, PeerException, PeerRejectedException, ClosedNodeException {
 				for (int pos = 0; pos < nodes.length; pos++)
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private TestNode mkNode(Path dir, int num) throws NodeException, TimeoutException, InterruptedException, FailedDeploymentException {
+			private TestNode mkNode(Path dir, int num) throws NodeCreationException, TimeoutException, InterruptedException, FailedDeploymentException {
 				TestNode result;
 
 				try {
 					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 				}
-				catch (InvalidKeyException | NoSuchAlgorithmException | IOException | WrongKeyException e) {
-					throw new NodeException(e);
-				}
-				catch (ApplicationTimeoutException e) {
-					throw new TimeoutException(e.getMessage());
+				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException e) {
+					throw new NodeCreationException(e);
 				}
 
 				var uri = getPeer(num).getURI();

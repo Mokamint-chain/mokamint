@@ -535,7 +535,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws NodeException if the node is misbehaving
 	 */
-	public void initialize() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public void initialize() throws InterruptedException, ApplicationTimeoutException, NodeException, AlreadyInitializedException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 

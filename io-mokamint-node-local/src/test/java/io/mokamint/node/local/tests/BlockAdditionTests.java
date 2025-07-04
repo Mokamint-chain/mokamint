@@ -51,12 +51,11 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Challenges;
@@ -139,11 +138,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, ApplicationTimeoutException, NodeException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 	}

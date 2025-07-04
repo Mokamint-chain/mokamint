@@ -16,20 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.local;
 
-import io.mokamint.node.api.NodeException;
-
 /**
- * An exception thrown if a local node is requested to initialize itself
+ * An exception thrown if a blockchain is requested to initialize itself
  * but its database already contains a chain.
  */
 @SuppressWarnings("serial")
-public class AlreadyInitializedException extends NodeException {
-
-	/**
-	 * Creates the exception.
-	 */
-	public AlreadyInitializedException() {
-	}
+public class AlreadyInitializedException extends Exception {
 
 	/**
 	 * Creates the exception.

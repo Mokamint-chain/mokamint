@@ -57,6 +57,7 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
+import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
@@ -71,7 +72,6 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AbstractLocalNode;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -187,7 +187,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws IOException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws IOException, InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -217,7 +217,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -260,7 +260,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -296,7 +296,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -317,7 +317,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -338,7 +338,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -361,7 +361,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, ApplicationTimeoutException, NodeException {
+			private MyLocalNode() throws InterruptedException, NodeCreationException {
 				super(config, nodeKey, app, false);
 			}
 		}
@@ -381,7 +381,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeException, ApplicationTimeoutException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 
