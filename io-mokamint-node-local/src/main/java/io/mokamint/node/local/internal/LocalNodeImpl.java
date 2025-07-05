@@ -1084,7 +1084,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				"ping of all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
-	private void pingAllPeersAndReconnect() throws NodeException, InterruptedException {
+	private void pingAllPeersAndReconnect() throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
 		if (peers.pingAllAndReconnect())
 			scheduleSynchronizationIfPossible();
 	}
@@ -1220,7 +1220,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeExecutorsHandlersMinersPeersAndBlockchain() throws InterruptedException {
+	private void closeExecutorsHandlersMinersPeersAndBlockchain() {
 		try {
 			executors.shutdownNow();
 		}
@@ -1234,7 +1234,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeHandlersMinersPeersAndBlockchain() throws InterruptedException {
+	private void closeHandlersMinersPeersAndBlockchain() {
 		try {
 			callCloseHandlers();
 		}
@@ -1243,7 +1243,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) throws InterruptedException {
+	private void closeMinersPeersAndBlockchain(Miner[] miners, int pos) {
 		if (pos < miners.length) {
 			try {
 				miners[pos].close();
@@ -1256,12 +1256,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			closePeersAndBlockchain();
 	}
 
-	private void closePeersAndBlockchain() throws InterruptedException {
+	private void closePeersAndBlockchain() {
 		try {
 			peers.close();
-		}
-		catch (NodeException e) {
-			LOGGER.warning("failed closing the set of peers: " + e.getMessage());
 		}
 		finally {
 			closeBlockchain();

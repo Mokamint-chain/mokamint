@@ -93,6 +93,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final LocalNodeImpl node;
 
 	/**
+	 * The configuration of {@code node}.
+	 */
+	private final LocalNodeConfig config;
+
+	/**
 	 * The Xodus environment that holds the database of blocks.
 	 */
 	private final Environment environment;
@@ -200,7 +205,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		super(ClosedDatabaseException::new);
 
 		this.node = node;
-		LocalNodeConfig config = node.getConfig();
+		this.config = node.getConfig();
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
 		this.orphans = Memories.of(config.getOrphansMemorySize());
@@ -280,18 +285,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Yields the genesis block of this blockchain, if any.
 	 * 
 	 * @return the genesis block, if any
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<GenesisBlock> getGenesis() throws NodeException {
-		// we use a cache to avoid repeated access for reading the genesis block, since it is not allowed to change after being set
-		if (genesisCache.isPresent())
-			return genesisCache;
-
+	public Optional<GenesisBlock> getGenesis() throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return genesisCache = environment.computeInReadonlyTransaction(NodeException.class, this::getGenesis);
+			// we use a cache to avoid repeated access for reading the genesis block, since it is not allowed to change after being set
+			if (genesisCache.isPresent())
+				return genesisCache;
+
+			return genesisCache = environment.computeInReadonlyTransaction(this::getGenesis);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -539,7 +544,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 
-		var config = node.getConfig();
 		var keys = node.getKeys();
 
 		try {
@@ -1291,7 +1295,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 	private Environment createBlockchainEnvironment() throws NodeException {
 		try {
-			var path = node.getConfig().getDir().resolve("blocks");
+			var path = config.getDir().resolve("blocks");
 			var env = new Environment(path.toString());
 			LOGGER.info("blockchain: opened the blocks database at " + path);
 			return env;
@@ -1352,14 +1356,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the starting block, if any
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) throws NodeException {
+	private Optional<byte[]> getStartOfNonFrozenPartHash(Transaction txn) {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_START_OF_NON_FROZEN_PART)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -1393,14 +1396,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the hash of the genesis block, if any
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<byte[]> getGenesisHash(Transaction txn) throws NodeException {
+	private Optional<byte[]> getGenesisHash(Transaction txn) {
 		try {
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_GENESIS)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -1491,7 +1493,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		if (forwards == null)
 			return Stream.empty();
 		else {
-			int size = node.getConfig().getHashingForBlocks().length();
+			int size = config.getHashingForBlocks().length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
 				throw new DatabaseException("The forward map has been corrupted");
@@ -1515,20 +1517,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param txn the transaction
 	 * @param hash the hash
 	 * @return the block, if any
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<Block> getBlock(Transaction txn, byte[] hash) throws NodeException {
+	private Optional<Block> getBlock(Transaction txn, byte[] hash) {
 		try {
 			ByteIterable blockBI = storeOfBlocks.get(txn, fromBytes(hash));
 			if (blockBI == null)
 				return Optional.empty();
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return Optional.of(Blocks.from(context, node.getConfig()));
+				return Optional.of(Blocks.from(context, config));
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -1549,7 +1550,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			
 			try (var bais = new ByteArrayInputStream(blockBI.getBytes()); var context = UnmarshallingContexts.of(bais)) {
 				// the marshalling of a block starts with that of its description
-				return Optional.of(BlockDescriptions.from(context, node.getConfig()));
+				return Optional.of(BlockDescriptions.from(context, config));
 			}
 		}
 		catch (ExodusException | IOException e) {
@@ -1774,10 +1775,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (maybeStartOfNonFrozenPart.isPresent())
 				return maybeStartOfNonFrozenPart;
 			else
-				throw new DatabaseException("The hash of the start of non-frozen part of the blockchain is set but it is not in the database");
+				throw new UncheckedDatabaseException("The hash of the start of non-frozen part of the blockchain is set but it is not in the database");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -1786,23 +1787,22 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @param txn the transaction
 	 * @return the genesis block, if any
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private Optional<GenesisBlock> getGenesis(Transaction txn) throws NodeException {
+	private Optional<GenesisBlock> getGenesis(Transaction txn) {
 		try {
 			Optional<byte[]> maybeGenesisHash = getGenesisHash(txn);
 			if (maybeGenesisHash.isEmpty())
 				return Optional.empty();
 
-			Block genesis = getBlock(txn, maybeGenesisHash.get()).orElseThrow(() -> new DatabaseException("The genesis hash is set but it is not in the database"));
+			Block genesis = getBlock(txn, maybeGenesisHash.get()).orElseThrow(() -> new UncheckedDatabaseException("The genesis hash is set but it is not in the database"));
 
 			if (genesis instanceof GenesisBlock gb)
 				return Optional.of(gb);
 			else
-				throw new DatabaseException("The genesis hash is set but it refers to a non-genesis block in the database");
+				throw new UncheckedDatabaseException("The genesis hash is set but it refers to a non-genesis block in the database");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 

@@ -36,7 +36,7 @@ import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
@@ -77,9 +77,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Creates the database of a node.
 	 * 
 	 * @param node the node
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedNodeException if the node is already closed
 	 */
-	public PeersDatabase(LocalNodeImpl node) throws NodeException {
+	public PeersDatabase(LocalNodeImpl node) throws ClosedNodeException {
 		super(ClosedDatabaseException::new);
 
 		LocalNodeConfig config = node.getConfig();
@@ -90,7 +90,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	}
 
 	@Override
-	public void close() throws NodeException {
+	public void close() {
 		try {
 			if (stopNewCalls()) {
 				try {
@@ -99,7 +99,6 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 				}
 				catch (ExodusException e) {
 					LOGGER.log(Level.SEVERE, "db: failed to close the peers database", e);
-					throw new DatabaseException("Cannot close the peers database", e);
 				}
 			}
 		}
@@ -112,18 +111,18 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Yields the UUID of the node having this database.
 	 * 
 	 * @return the UUID
-	 * @throws NodeException if the database is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public UUID getUUID() throws NodeException {
+	public UUID getUUID() throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
-				throw new DatabaseException("The UUID of the node is not in the peers database");
+				throw new UncheckedDatabaseException("The UUID of the node is not in the peers database");
 
 			return MarshallableUUID.from(bi).uuid;
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -131,15 +130,15 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * Yields the set of peers saved in this database, if any.
 	 * 
 	 * @return the peers
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Stream<Peer> getPeers() throws NodeException {
+	public Stream<Peer> getPeers() throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, PEERS));
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
 		catch (IOException | ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -153,14 +152,14 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * @return true if the peer has been added; false otherwise, which means
 	 *         that the peer was already present or that it was not forced
 	 *         and there are already {@link maxPeers} peers
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Peer peer, boolean force) throws NodeException {
+	public boolean add(Peer peer, boolean force) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return environment.computeInTransaction(NodeException.class, txn -> add(txn, peer, force));
+			return environment.computeInTransaction(txn -> add(txn, peer, force));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -170,14 +169,14 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 	 * @param peer the peer to remove
 	 * @return true if the peer has been actually removed; false otherwise, which means
 	 *         that the peer was not in the database
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean remove(Peer peer) throws NodeException {
+	public boolean remove(Peer peer) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return environment.computeInTransaction(NodeException.class, txn -> remove(txn, peer));
+			return environment.computeInTransaction(txn -> remove(txn, peer));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -211,9 +210,9 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private void ensureNodeUUID() throws NodeException {
-		try {
-			environment.executeInTransaction(IOException.class, txn -> {
+	private void ensureNodeUUID() {
+		environment.executeInTransaction(txn -> {
+			try {
 				var bi = storeOfPeers.get(txn, UUID);
 				if (bi == null) {
 					var nodeUUID = java.util.UUID.randomUUID();
@@ -222,11 +221,11 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 				}
 				else
 					LOGGER.info("db: the UUID of the node is " + MarshallableUUID.from(bi).uuid);
-			});
-		}
-		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
-		}
+			}
+			catch (IOException | ExodusException e) {
+				throw new UncheckedDatabaseException(e);
+			}
+		});
 	}
 
 	/**
@@ -284,7 +283,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		}
 	}
 
-	private boolean add(Transaction txn, Peer peer, boolean force) throws NodeException {
+	private boolean add(Transaction txn, Peer peer, boolean force) {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null) {
@@ -307,11 +306,11 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
-	private boolean remove(Transaction txn, Peer peer) throws NodeException {
+	private boolean remove(Transaction txn, Peer peer) {
 		try {
 			var bi = storeOfPeers.get(txn, PEERS);
 			if (bi == null)
@@ -328,7 +327,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -339,14 +338,14 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		return env;
 	}
 
-	private Store openStore(String name) throws NodeException {
+	private Store openStore(String name) {
 		try {
 			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicates(name, txn));
 			LOGGER.info("db: opened the store of " + name);
 			return store;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 }

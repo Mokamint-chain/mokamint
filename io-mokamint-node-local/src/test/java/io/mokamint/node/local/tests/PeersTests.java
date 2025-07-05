@@ -64,7 +64,6 @@ import io.mokamint.node.Versions;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -76,7 +75,6 @@ import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
-import jakarta.websocket.DeploymentException;
 
 public class PeersTests extends AbstractLoggedTests {
 
@@ -122,7 +120,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 	}
 
-	private static PublicNode mkNode(NodeInfo info) throws NoSuchAlgorithmException {
+	private static PublicNode mkNode(NodeInfo info) throws NodeCreationException, InterruptedException {
 		try {
 			PublicNode node = mock();
 			when(node.getInfo()).thenReturn(info);
@@ -132,9 +130,9 @@ public class PeersTests extends AbstractLoggedTests {
 			w.thenReturn(LocalNodeConfigBuilders.defaults().build());
 			return node;
 		}
-		catch (TimeoutException | InterruptedException | NodeException e) {
+		catch (TimeoutException | ClosedNodeException | NoSuchAlgorithmException e) {
 			// fake, it's just out of stubbing
-			throw new RuntimeException("Unexpected exception", e);
+			throw new NodeCreationException("Unexpected exception", e);
 		}
 	}
 
@@ -149,11 +147,8 @@ public class PeersTests extends AbstractLoggedTests {
 		 * 
 		 * @param info the information about the node
 		 * @param port the port where the server is published
-		 * @throws DeploymentException if the service cannot be deployed
-		 * @throws NoSuchAlgorithmException if some hashing algorithm is missing
-		 * @throws FailedDeploymentException if the server could not be deployed
 		 */
-		private PublicTestServer(NodeInfo info, int port) throws ClosedNodeException, NoSuchAlgorithmException, InterruptedException, TimeoutException, FailedDeploymentException {
+		private PublicTestServer(NodeInfo info, int port) throws InterruptedException, TimeoutException, FailedDeploymentException, NodeCreationException {
 			super(mkNode(info), port, 180000, 1000, Optional.of(URI.create("ws://localhost:" + port)));
 		}
 	}
