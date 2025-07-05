@@ -36,13 +36,14 @@ import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
 import io.mokamint.node.api.Block;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.ApplicationTimeoutException;
+import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
  * The mempool of a Mokamint node. It contains transactions that are available
@@ -56,6 +57,8 @@ public class Mempool {
 	 * The node having this mempool.
 	 */
 	private final LocalNodeImpl node;
+
+	private final LocalNodeConfig config;
 
 	/**
 	 * The blockchain of the node having this mempool.
@@ -92,9 +95,11 @@ public class Mempool {
 	 * Creates a mempool for the given node, initially empty and without a base.
 	 * 
 	 * @param node the node
+	 * @throws ClosedNodeException if the node is already closed
 	 */
-	public Mempool(LocalNodeImpl node) {
+	public Mempool(LocalNodeImpl node) throws ClosedNodeException {
 		this.node = node;
+		this.config = node.getConfig();
 		this.blockchain = node.getBlockchain();
 		this.app = node.getApplication();
 		this.hasher = node.getConfigInternal().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
@@ -109,6 +114,7 @@ public class Mempool {
 	 */
 	public Mempool(Mempool parent) {
 		this.node = parent.node;
+		this.config = parent.config;
 		this.blockchain = parent.blockchain;
 		this.app = parent.app;
 		this.hasher = parent.hasher;
@@ -146,40 +152,39 @@ public class Mempool {
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 *                                      or if the transaction is already contained in the blockchain or mempool
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application connected to the Mokamint node is unresponsive
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, NodeException, InterruptedException, ApplicationTimeoutException {
+	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
 		try {
 			app.checkTransaction(transaction);
-			var entry = mkTransactionEntry(transaction);
-			int maxSize = node.getConfig().getMempoolSize();
-
-			synchronized (mempool) {
-				if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
-					// the transaction was already in blockchain
-					throw new TransactionRejectedException("Repeated transaction " + entry);
-				else if (mempool.contains(entry))
-					// the transaction was already in the mempool
-					throw new TransactionRejectedException("Repeated transaction " + entry);
-				else if (mempool.size() >= maxSize)
-					throw new TransactionRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
-				else
-					mempool.add(entry);
-			}
-
-			LOGGER.info("mempool: added transaction " + entry);
-			node.onAdded(transaction);
-
-			return entry;
-		}
-		catch (ClosedApplicationException e) { // TODO
-			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
+
+		var entry = mkTransactionEntry(transaction);
+		int maxSize = config.getMempoolSize();
+
+		synchronized (mempool) {
+			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
+				// the transaction was already in blockchain
+				throw new TransactionRejectedException("Repeated transaction " + entry);
+			else if (mempool.contains(entry))
+				// the transaction was already in the mempool
+				throw new TransactionRejectedException("Repeated transaction " + entry);
+			else if (mempool.size() >= maxSize)
+				throw new TransactionRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
+			else
+				mempool.add(entry);
+		}
+
+		LOGGER.info("mempool: added transaction " + entry);
+		node.onAdded(transaction);
+
+		return entry;
 	}
 
 	public TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {

@@ -38,7 +38,7 @@ import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
@@ -143,14 +143,15 @@ public class Synchronization {
 	 * @param node the node whose blockchain is synchronized
 	 * @param executors the executors to use to spawn new tasks
 	 * @throws InterruptedException if the operation gets interrupted
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedNodeException if the node is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, NodeException {
+	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
 		LOGGER.info("sync: synchronization starts");
 		this.node = node;
 		this.config = node.getConfig();
 		this.peers = node.getPeers();
-		this.synchronizationGroupSize = node.getConfig().getSynchronizationGroupSize();
+		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
 		this.blockchain = node.getBlockchain();
 		this.executors = executors;
 
@@ -337,9 +338,8 @@ public class Synchronization {
 	 * Takes note that a block was illegal and consequently who requested to download that block must be banned.
 	 * 
 	 * @param blockHash the hash of the illegal block
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void banDownloadersOf(String blockHash) throws NodeException {
+	private void banDownloadersOf(String blockHash) throws ClosedDatabaseException {
 		for (var downloader: downloaders)
 			if (!downloader.terminated && downloader.blocksRequestedByThis.contains(blockHash))
 				downloader.banOnIllegalBlock();
@@ -377,64 +377,63 @@ public class Synchronization {
 
 		private void run() {
 			try {
-				try {
-					Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
-		
-					while (!terminated) {
-						Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(lastHashOfPreviousGroup);
-						byte[][] hashes;
-		
-						if (maybeHashes.isEmpty() || (hashes = maybeHashes.get()).length == 0)
-							break;
-		
-						if (!downloadNextGroupOfBlocks(hashes))
-							return;
-		
-						if (hashes.length < synchronizationGroupSize + 1) // if the group of hashes was not full, we stop
-							break;
-		
-						lastHashOfPreviousGroup = Optional.of(hashes[hashes.length - 1]);
-		
-						synchronized (this) {
-							height += synchronizationGroupSize;
-						}
-					}
-		
-					LOGGER.info("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
-				}
-				catch (PeerException e) {
-					// peers.ban(peer); // TODO: we cannot ban it since we do not distinguish with a closed peer
-					LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is misbehaving: " + e.getMessage());
-				}
-				catch (PeerTimeoutException e) {
-					LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is not answering: " + e.getMessage());
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					LOGGER.warning("sync: block downloading from " + peer + " has been interrupted");
-				}
-				finally {
-					terminated = true;
+				Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
 
-					// if some block verifier was waiting for blocks to verify, we signal that we terminated
-					// because it might decide to terminate as well
-					synchronized (blocksToVerify) {
-						blocksToVerify.notifyAll();
+				while (!terminated) {
+					Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(lastHashOfPreviousGroup);
+					byte[][] hashes;
+
+					if (maybeHashes.isEmpty() || (hashes = maybeHashes.get()).length == 0)
+						break;
+
+					if (!downloadNextGroupOfBlocks(hashes))
+						return;
+
+					if (hashes.length < synchronizationGroupSize + 1) // if the group of hashes was not full, we stop
+						break;
+
+					lastHashOfPreviousGroup = Optional.of(hashes[hashes.length - 1]);
+
+					synchronized (this) {
+						height += synchronizationGroupSize;
 					}
 				}
+
+				LOGGER.info("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 			}
-			catch (NodeException | RuntimeException e) {
+			catch (PeerException e) {
+				// peers.ban(peer); // TODO: we cannot ban it since we do not distinguish with a closed peer
+				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is misbehaving: " + e.getMessage());
+			}
+			catch (PeerTimeoutException e) {
+				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is not answering: " + e.getMessage());
+			}
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("sync: block downloading from " + peer + " stops because the database has been closed: " + e.getMessage());
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOGGER.warning("sync: block downloading from " + peer + " has been interrupted");
+			}
+			catch (RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: block downloading from " + peer + " stops because the node is misbehaving", e);
+			}
+			finally {
+				terminated = true;
+
+				// if some block verifier was waiting for blocks to verify, we signal that we terminated
+				// because it might decide to terminate as well
+				synchronized (blocksToVerify) {
+					blocksToVerify.notifyAll();
+				}
 			}
 		}
 
 		/**
 		 * Bans the peer used by this downloader, because it downloaded an illegal block.
 		 * It removes all blocks downloaded by this downloader but not yet processed.
-		 * 
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private void banOnIllegalBlock() throws NodeException {
+		private void banOnIllegalBlock() throws ClosedDatabaseException {
 			terminated = true;
 			peers.ban(peer);
 
@@ -468,11 +467,11 @@ public class Synchronization {
 		 * @param hashes the hashes of the blocks to download
 		 * @return true if and only if all blocks could have been downloaded
 		 * @throws InterruptedException if the current thread gets interrupted
-		 * @throws NodeException if the node is misbehaving
 		 * @throws PeerException if the peer is misbehaving
 		 * @throws PeerTimeoutException if the peer does not answer on time
+		 * @throws ClosedDatabaseException if the database is already closed
 		 */
-		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
+		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
 			var blocks = new Block[hashes.length];
 
 			// in a first iteration, we download blocks only if no other downloader is taking care of them,
@@ -505,7 +504,7 @@ public class Synchronization {
 			return true;
 		}
 
-		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, String blockHash) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
+		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, String blockHash) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
 			Optional<Block> maybeBlock = peers.getBlock(peer, hash);
 
 			if (maybeBlock.isPresent()) {
@@ -535,13 +534,8 @@ public class Synchronization {
 
 		/**
 		 * Download the next group of hashes.
-		 * 
-		 * @throws InterruptedException if the execution has been interrupted
-		 * @throws NodeException if the node is misbehaving
-		 * @throws PeerTimeoutException if the peer does not answer on time
-		 * @throws PeerException if the peer is misbehaving
 		 */
-		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, PeerException, PeerTimeoutException, NodeException {
+		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
 			long height = getHeight();
 			LOGGER.info("sync: downloading from " + peer + " the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + "]");
 			Optional<ChainPortion> maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize + 1);
@@ -631,7 +625,10 @@ public class Synchronization {
 			catch (ApplicationTimeoutException | ClosedApplicationException | MisbehavingApplicationException e) {
 				LOGGER.warning("sync: non-contextual block verifier #" + num + " stops since the application is misbehaving: " + e.getMessage());
 			}
-			catch (NodeException | RuntimeException e) {
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("sync: non-contextual block verifier #" + num + " stops because the database has been closed: " + e.getMessage());
+			}
+			catch (RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: non-contextual block verifier #" + num + " stops since the node is misbehaving", e);
 			}
 			finally {
@@ -721,7 +718,10 @@ public class Synchronization {
 			catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
 				LOGGER.warning("sync: block adder #" + num + " stops because of an application problem: " + e.getMessage());
 			}
-			catch (NodeException | RuntimeException e) {
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("sync: block adder #" + num + " stops because the database has been closed: " + e.getMessage());
+			}
+			catch (RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: block adder #" + num + " stops because the node is misbehaving", e);
 			}
 			finally {

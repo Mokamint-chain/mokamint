@@ -48,7 +48,6 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
@@ -246,9 +245,9 @@ public class PeersSet implements AutoCloseable {
 	 * 
 	 * @param peer the peer to ban
 	 * @return true if and only if the peer has been removed
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean ban(Peer peer) throws NodeException {
+	public boolean ban(Peer peer) throws ClosedDatabaseException {
 		synchronized (lock) {
 			bannedURIs.add(peer.getURI());
 		}
@@ -319,10 +318,10 @@ public class PeersSet implements AutoCloseable {
 	 *         if the peer does not know such block
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws PeerException if the peer is misbehaving
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws PeerTimeoutException if the peer does not answer in time
 	 */
-	public Optional<Block> getBlock(Peer peer, byte[] hash) throws InterruptedException, NodeException, PeerException, PeerTimeoutException {
+	public Optional<Block> getBlock(Peer peer, byte[] hash) throws InterruptedException, ClosedDatabaseException, PeerException, PeerTimeoutException {
 		var remote = getRemote(peer);
 		if (remote.isEmpty())
 			return Optional.empty();
@@ -330,8 +329,8 @@ public class PeersSet implements AutoCloseable {
 		try {
 			return remote.get().getBlock(hash);
 		}
-		catch (NodeException e) {
-			// it's the peer that is misbehaving, not our node
+		catch (ClosedNodeException e) {
+			// the peer is closed
 			punishBecauseUnreachable(peer);
 			throw new PeerException(e);
 		}
@@ -353,9 +352,9 @@ public class PeersSet implements AutoCloseable {
 	 * @throws PeerTimeoutException if the peer does not answer in time
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws PeerException if the peer is misbehaving
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, NodeException, PeerException {
+	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, ClosedDatabaseException, PeerException {
 		var remote = getRemote(peer);
 		if (remote.isEmpty())
 			return Optional.empty();
@@ -363,8 +362,7 @@ public class PeersSet implements AutoCloseable {
 		try {
 			return Optional.of(remote.get().getChainPortion(start, count));
 		}
-		catch (NodeException e) {
-			// it's the peer that is misbehaving, not our node
+		catch (ClosedNodeException e) {
 			punishBecauseUnreachable(peer);
 			throw new PeerException(e);
 		}
@@ -379,7 +377,6 @@ public class PeersSet implements AutoCloseable {
 	 * and to their peers, in case they might be useful for the node.
 	 * 
 	 * @return true if some peer has been added or reconnected
-	 * @throws NodeException if the node misbehaves
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ClosedNodeException if {@link #node} is already closed
 	 * @throws ClosedDatabaseException if {@link #db} is already closed
@@ -446,7 +443,6 @@ public class PeersSet implements AutoCloseable {
 	 * @param peer the peer to contact
 	 * @param container the container where the peers get added
 	 * @return true if and only if the peer has been reconnected
-	 * @throws NodeException if {@link #node} could not complete the operation
 	 * @throws InterruptedException if the current thread has been interrupted
 	 * @throws ClosedNodeException if {@link #node} is already closed
 	 * @throws ClosedDatabaseException if {@link #db} is already closed
@@ -650,7 +646,7 @@ public class PeersSet implements AutoCloseable {
 		try {
 			peerInfo = remote.getInfo();
 		}
-		catch (NodeException e) {
+		catch (ClosedNodeException e) {
 			// it's the remote peer that misbehaves, not our node
 			throw new PeerException(e);
 		}
@@ -677,7 +673,7 @@ public class PeersSet implements AutoCloseable {
 		try {
 			peerChainInfo = remote.getChainInfo();
 		}
-		catch (NodeException e) {
+		catch (ClosedNodeException e) {
 			// it's the remote peer that misbehaves, not our node
 			throw new PeerException(e);
 		}

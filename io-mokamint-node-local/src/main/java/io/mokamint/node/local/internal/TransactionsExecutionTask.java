@@ -34,7 +34,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -122,7 +122,20 @@ public class TransactionsExecutionTask implements Task {
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
 
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	/**
+	 * Creates a transaction execution task.
+	 * 
+	 * @param node the node the task is working for
+	 * @param source the source of the transactions to execute
+	 * @param previous the block over which the execution is performed
+	 * @param creationTimeOfPrevious the creation time of {@code previous}
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws ApplicationTimeoutException if the application timed out
+	 * @throws ClosedNodeException if the node is already closed
+	 * @throws ClosedApplicationException  if the application is already closed
+	 * @throws UnknownStateException if the state at the end of {@code previous} is not available
+	 */
+	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, ClosedNodeException, UnknownStateException, ClosedApplicationException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
@@ -131,13 +144,6 @@ public class TransactionsExecutionTask implements Task {
 
 		try {
 			this.id = app.beginBlock(previous.getDescription().getHeight() + 1, creationTimeOfPrevious, previous.getStateId());
-		}
-		catch (ClosedApplicationException | UnknownStateException e) {
-			// the node is misbehaving because the application it is connected to is misbehaving
-			// or because the head (ie, previous) of the blockchain has no associated state in the application
-			// TODO: this failed during mining after synchronization from another peer...
-			// io.mokamint.node.api.NodeException: Unknown state identifier
-			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
@@ -155,7 +161,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	@Override
-	public void body() throws NodeException {
+	public void body() {
 		long sizeUpToNow = 0L;
 
 		try {
@@ -167,8 +173,8 @@ public class TransactionsExecutionTask implements Task {
 			Thread.currentThread().interrupt();
 			// no warning log: interruption is the standard way of terminating this task
 		}
-		catch (ApplicationTimeoutException e) {
-			LOGGER.warning("mining: transactions execution stops here because the application is unresponsive: " + e.getMessage());
+		catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
+			LOGGER.warning("mining: transactions execution stops here because of an application problem: " + e.getMessage());
 		}
 		finally {
 			// this allows to commit or abort the execution in the database of the application
@@ -185,9 +191,12 @@ public class TransactionsExecutionTask implements Task {
 	 * @return the block
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws SignatureException if the block could not be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node is invalid
 	 */
-	public NonGenesisBlock getBlock(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public NonGenesisBlock getBlock(Deadline deadline) throws InterruptedException, ApplicationTimeoutException, MisbehavingApplicationException, ClosedApplicationException, InvalidKeyException, SignatureException {
 		done.await();
 
 		byte[] finalStateId;
@@ -198,19 +207,11 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
-			// TODO: this failed when another node was resumed...
-			// it killed this mining task
-			// the following line threw: io.mokamint.node.api.NodeException: io.hotmoka.node.local.api.StoreException: Missing key in Patricia trie
-			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+		catch (UnknownGroupIdException e) {
+			throw new MisbehavingApplicationException(e);
 		}
 
-		try {
-			return Blocks.of(previous.getNextBlockDescription(deadline), successfullyDeliveredTransactions.stream(), finalStateId, node.getKeys().getPrivate());
-		}
-		catch (InvalidKeyException | SignatureException e) {
-			throw new NodeException(e);
-		}
+		return Blocks.of(previous.getNextBlockDescription(deadline), successfullyDeliveredTransactions.stream(), finalStateId, node.getKeys().getPrivate());
 	}
 
 	/**
@@ -219,9 +220,10 @@ public class TransactionsExecutionTask implements Task {
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws MisbehavingApplicationException if the node is misbehaving if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	public void commitBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	void commitBlock() throws InterruptedException, ApplicationTimeoutException, MisbehavingApplicationException, ClosedApplicationException {
 		done.await();
 
 		try {
@@ -230,8 +232,8 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
-			throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+		catch (UnknownGroupIdException e) {
+			throw new MisbehavingApplicationException(e);
 		}
 	}
 
@@ -241,9 +243,10 @@ public class TransactionsExecutionTask implements Task {
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application did not provide an answer in time
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 */
-	public void abortBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	void abortBlock() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		try {
 			done.await();
 		}
@@ -254,13 +257,13 @@ public class TransactionsExecutionTask implements Task {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (ClosedApplicationException | UnknownGroupIdException e) {// TODO
-				throw new NodeException(e); // the node is misbehaving since the application is misbehaving
+			catch (UnknownGroupIdException e) {
+				throw new MisbehavingApplicationException(e);
 			}
 		}
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		var tx = next.getTransaction();
 
 		// the following might actually occur if a transaction arrives during the execution of this task
@@ -286,8 +289,8 @@ public class TransactionsExecutionTask implements Task {
 						rejectedTransactions.add(tx);
 						return sizeUpToNow;
 					}
-					catch (ClosedApplicationException | UnknownGroupIdException e) { // TODO
-						throw new NodeException(e);
+					catch (UnknownGroupIdException e) {
+						throw new MisbehavingApplicationException(e);
 					}
 					catch (TimeoutException e) {
 						throw new ApplicationTimeoutException(e);

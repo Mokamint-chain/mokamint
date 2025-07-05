@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
  * An exception thrown if the application connected to a local node is unresponsive.
  */
 @SuppressWarnings("serial")
-public class ApplicationTimeoutException extends TimeoutException {
+public class ApplicationTimeoutException extends TimeoutException { // TODO: use Exception as superclass
 
 	/**
 	 * Creates the exception.

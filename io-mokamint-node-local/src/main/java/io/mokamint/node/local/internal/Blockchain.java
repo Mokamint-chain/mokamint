@@ -69,9 +69,9 @@ import io.mokamint.node.TransactionAddresses;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Memory;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -199,9 +199,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	/**
 	 * Creates a blockchain.
 	 * 
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedNodeException if the node is already closed
 	 */
-	public Blockchain(LocalNodeImpl node) throws NodeException {
+	public Blockchain(LocalNodeImpl node) throws ClosedNodeException {
 		super(ClosedDatabaseException::new);
 
 		this.node = node;
@@ -538,9 +538,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * 
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws SignatureException if the genesis block cannot be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node is invalid
 	 */
-	public void initialize() throws InterruptedException, ApplicationTimeoutException, NodeException, AlreadyInitializedException {
+	void initialize() throws InterruptedException, ApplicationTimeoutException, AlreadyInitializedException, ClosedDatabaseException, InvalidKeyException, SignatureException, ClosedApplicationException, MisbehavingApplicationException {
 		if (!isEmpty())
 			throw new AlreadyInitializedException("Initialization cannot be required for an already initialized blockchain");
 
@@ -553,15 +557,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
 		}
-		catch (ClosedApplicationException | InvalidKeyException | SignatureException e) {
-			// this node is misbehaving because the application it is connected to is misbehaving or its key is wrong
-			throw new NodeException(e); // TODO
-		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
-		}
-		catch (MisbehavingApplicationException e) {
-			throw new NodeException(e); // TODO
 		}
 	}
 
@@ -580,7 +577,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 *         if {@code block} was already in the tree, or if {@code block} is
 	 *         a genesis block but a genesis block is already present in the tree, or
 	 *         if {@code block} has no previous block already in the tree (it is orphaned)
-	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
@@ -599,7 +595,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block to add
 	 * @return true if the block has been actually added to the tree of blocks
 	 *         rooted at the genesis block, false otherwise
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws MisbehavingApplicationException if the application is misbehaving
@@ -612,7 +607,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 		catch (VerificationException e) {
 			// impossible: we did not require block verification hence this exception should not have been generated
-			throw new RuntimeException("Unexpected exception", e);
+			throw new RuntimeException("Unexpected exception: verification was not required", e);
 		}
 	}
 
@@ -620,10 +615,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * Synchronizes this blockchain with the peers of the node.
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws ClosedNodeException if the node is already closed
 	 */
-	public void synchronize() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public void synchronize() throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
 		try {
 			new Synchronization(node, executors);
 		}
@@ -1270,7 +1265,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block to connect
 	 * @param verification the kind of verification to perform on the node; if missing, no verification is performed
 	 * @return true if and only if the block is now part of the blockchain tree; this is false if the previous block is missing in blockchain
-	 * @throws NodeException if the node is misbehaving
 	 * @throws VerificationException if the required verification fails
 	 * @throws InterruptedException if the current thread gets interrupted while performing the action
 	 * @throws ApplicationTimeoutException if the application is non-responsive

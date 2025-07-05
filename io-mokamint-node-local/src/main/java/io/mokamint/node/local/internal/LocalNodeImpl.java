@@ -66,7 +66,6 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
@@ -244,7 +243,33 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				if (init)
 					blockchain.initialize();
+			}
+			catch (AlreadyInitializedException e) {
+				close();
+				throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
+			}
+			catch (ApplicationTimeoutException e) {
+				close();
+				throw new NodeCreationException("The application timed out", e);
+			}
+			catch (InvalidKeyException | SignatureException e) {
+				close();
+				throw new NodeCreationException("The genesis block could not be signed", e);
+			}
+			catch (ClosedDatabaseException e) {
+				close();
+				throw new NodeCreationException("The database is already closed", e);
+			}
+			catch (ClosedApplicationException e) {
+				close();
+				throw new NodeCreationException("The application is already closed", e);
+			}
+			catch (MisbehavingApplicationException e) {
+				close();
+				throw new NodeCreationException("The application is misbehaving", e);
+			}
 
+			try {
 				schedulePeriodicSynchronization();
 				schedule(this::processWhisperedPeers, "peers whispering process");
 				schedule(this::processWhisperedBlocks, "blocks whispering process");
@@ -254,20 +279,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
 				schedule(miningTask, "blocks mining process");
 			}
-			catch (AlreadyInitializedException e) {
-				throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
-			}
-			catch (ApplicationTimeoutException e) {
-				throw new NodeCreationException("The application timed out", e);
-			}
 			catch (TaskRejectedExecutionException e) {
-				LOGGER.log(Level.SEVERE, "could not spawn the node's tasks", e);
 				close();
 				throw new NodeCreationException("Could not spawn the node's tasks", e);
 			}
 		}
-		catch (NodeException e) { // TODO
-			throw new NodeCreationException(e);
+		catch (ClosedNodeException e) { // the node cannot be already closed
+			throw new RuntimeException("The node has been unexpectedly closed", e);
 		}
 	}
 
@@ -324,8 +342,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (NodeException e) { // TODO
-			throw new RuntimeException(e);
+		catch (ClosedDatabaseException e) { // TODO
+			throw new ClosedNodeException(e);
 		}
 	}
 
@@ -334,8 +352,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
-		catch (NodeException e) { // TODO
-			throw new RuntimeException(e);
+		catch (ClosedDatabaseException e) { // TODO
+			throw new ClosedNodeException(e);
 		}
 	}
 
@@ -382,8 +400,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return blockchain.getChainInfo();
 			}
-			catch (NodeException e) {
-				throw new RuntimeException(e); // TODO
+			catch (ClosedDatabaseException e) {
+				throw new ClosedNodeException(e); // TODO
 			}
 		}
 	}
@@ -394,8 +412,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return ChainPortions.of(blockchain.getChain(start, count));
 			}
-			catch (NodeException e) {
-				throw new RuntimeException(e); // TODO
+			catch (ClosedDatabaseException e) {
+				throw new ClosedNodeException(e); // TODO
 			}
 		}
 	}
@@ -411,8 +429,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 			miningTask.add(result);
 		}
-		catch (NodeException e) { // TODO
-			throw new RuntimeException(e);
+		catch (ClosedDatabaseException | ClosedApplicationException e) { // TODO
+			throw new ClosedNodeException(e);
 		}
 
 		whisperWithoutAddition(transaction);
@@ -440,8 +458,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return blockchain.getTransaction(hash);
 			}
-			catch (NodeException e) { // TODO
-				throw new RuntimeException(e);
+			catch (ClosedDatabaseException e) { // TODO
+				throw new ClosedNodeException(e);
 			}
 		}
 	}
@@ -449,19 +467,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
-			try {
 			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
 				return Optional.empty();
 			else
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
-			}
-			catch (NodeException e) {
-				throw new RuntimeException(e); // TODO
-			}
 		}
-		catch (ClosedApplicationException e) { // TODO
-			throw new RuntimeException(e);
+		catch (ClosedDatabaseException | ClosedApplicationException e) {
+			throw new ClosedNodeException(e); // TODO
 		}
 	}
 
@@ -471,8 +484,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return blockchain.getTransactionAddress(hash);
 			}
-			catch (NodeException e) { // TODO
-				throw new RuntimeException(e);
+			catch (ClosedDatabaseException e) { // TODO
+				throw new ClosedNodeException(e);
 			}
 		}
 	}
@@ -482,12 +495,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
-			try {
-				result = peers.add(peer);
-			}
-			catch (NodeException e) { // TODO
-				throw new RuntimeException(e);
-			}
+			result = peers.add(peer);
+		}
+		catch (ClosedDatabaseException e) { // TODO
+			throw new ClosedNodeException(e);
 		}
 	
 		if (result.isPresent()) {
@@ -505,8 +516,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return peers.remove(peer);
 			}
-			catch (NodeException e) { // TODO
-				throw new RuntimeException(e);
+			catch (ClosedDatabaseException e) { // TODO
+				throw new ClosedNodeException(e);
 			}
 		}
 	}
@@ -625,10 +636,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		/**
 		 * Main body of the task execution.
 		 * 
-		 * @throws NodeException if the node is misbehaving
-		 * @throws InterruptedException if the task has been interrupted, because the node is shutting down
+		 * @throws InterruptedException if the task has been interrupted
+		 * @throws ClosedDatabaseException if the database has been closed
+		 * @throws ClosedNodeException if the node has been closed
+		 * @throws ClosedApplicationException if the application has been closed
 		 */
-		void body() throws NodeException, InterruptedException;
+		void body() throws InterruptedException, ClosedDatabaseException, ClosedNodeException, ClosedApplicationException;
 	}
 
 	/**
@@ -717,7 +730,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param block the block
 	 * @param action the action
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws MisbehavingApplicationException if the application is misbehaving
@@ -964,8 +976,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			catch (ClosedDatabaseException e) {
 				LOGGER.warning("node " + uuid + ": " + this + " exits since the database has been closed: " + e.getMessage());
 			}
-			catch (NodeException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " exits since the node is misbehaving", e);
+			catch (ClosedNodeException e) {
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the node has been closed: " + e.getMessage());
+			}
+			catch (ClosedApplicationException e) {
+				LOGGER.warning("node " + uuid + ": " + this + " exits since the application has been closed: " + e.getMessage());
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -1067,14 +1082,18 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				"synchronization from the peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
-	private void synchronize() throws InterruptedException, NodeException {
-		if (isSynchronizing.getAndSet(true) == false) // we avoid to synchronize if synchronization is already in process
+	private void synchronize() throws InterruptedException {
+		if (isSynchronizing.getAndSet(true) == false) { // we avoid to synchronize if synchronization is already in process
 			try {
 				blockchain.synchronize();
 			}
-			catch (ApplicationTimeoutException e) {
-				LOGGER.warning("sync: stop synchronizing since the application is unresponsive: " + e.getMessage());
+			catch (ClosedNodeException e) {
+				LOGGER.warning("sync: stop synchronizing since the node has been closed: " + e.getMessage());
 			}
+			catch (ClosedDatabaseException e) {
+				LOGGER.warning("sync: stop synchronizing since the database has been closed: " + e.getMessage());
+			}
+		}
 	}
 
 	/**
@@ -1087,18 +1106,23 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				"ping of all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
-	private void pingAllPeersAndReconnect() throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
-		if (peers.pingAllAndReconnect())
-			scheduleSynchronizationIfPossible();
+	private void pingAllPeersAndReconnect() throws InterruptedException {
+		try {
+			if (peers.pingAllAndReconnect())
+				scheduleSynchronizationIfPossible();
+		}
+		catch (ClosedNodeException e) {
+			LOGGER.warning("ping all peers exits since the node has been closed");
+		}
+		catch (ClosedDatabaseException e) {
+			LOGGER.warning("ping all peers exits since the database has been closed");
+		}
 	}
 
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
-	 * 
-	 * @throws NodeException if the node is misbehaving
-	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	private void processWhisperedPeers() throws NodeException, InterruptedException {
+	private void processWhisperedPeers() throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
 		while (!Thread.currentThread().isInterrupted()) {
 			var whisperedInfo = whisperedPeersQueue.take();
 			var whisperedPeerMessage = whisperedInfo.message;
@@ -1126,11 +1150,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
-	 * 
-	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void processWhisperedBlocks() throws InterruptedException, NodeException {
+	private void processWhisperedBlocks() throws InterruptedException, ClosedDatabaseException {
 		while (!Thread.currentThread().isInterrupted()) {
 			var whisperedInfo = whisperedBlocksQueue.take();
 
@@ -1157,22 +1178,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				// if verification fails, we do not pass the block to our peers
 				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " failed verification: " + e.getMessage());
 			}
-			catch (NodeException e) {
-				// TODO: this happened because the verification of the whispered block failed with:
-				// io.mokamint.node.api.NodeException: io.hotmoka.node.local.api.StoreException: Missing key in Patricia trie
-				// during transactionsExecutionLeadsToFinalState(BlockVerification.java:411)
-				LOGGER.log(Level.SEVERE, "restarting the block whispering after failure", e);
-			}
 		}
 	}
 	
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
-	 * 
-	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void processWhisperedTransactions() throws InterruptedException, NodeException {
+	private void processWhisperedTransactions() throws InterruptedException, ClosedDatabaseException, ClosedApplicationException {
 		while (!Thread.currentThread().isInterrupted()) {
 			var whisperedInfo = whisperedTransactionsQueue.take();
 			var whisperedTransactionMessage = whisperedInfo.message;
@@ -1209,7 +1221,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			.forEach(this::whisperWithoutAddition);
 	}
 
-	private void identifyNonFrozenPartOfBlockchain() throws InterruptedException, NodeException {
+	private void identifyNonFrozenPartOfBlockchain() throws InterruptedException, ClosedApplicationException, ClosedDatabaseException {
 		try {
 			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
 			if (maybeStartTimeOfNonFrozenPart.isPresent())
@@ -1217,9 +1229,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 		catch (TimeoutException e) {
 			LOGGER.log(Level.WARNING, "cannot identify the non-frozen part of the blockchain because the application is unresponsive: " + e.getMessage());
-		}
-		catch (ClosedApplicationException e) { // TODO
-			throw new NodeException(e);
 		}
 	}
 

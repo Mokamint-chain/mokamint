@@ -18,6 +18,8 @@ package io.mokamint.node.local.internal;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,18 +29,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -151,9 +153,12 @@ public class BlockMiner {
 	 * @param node the node performing the mining
 	 * @throws InterruptedException if the thread running this code gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedNodeException if the node is already closed
+	 * @throws ClosedDatabaseException if the database is already closed 
+	 * @throws ClosedApplicationException  if the application is already closed
+	 * @throws UnknownStateException if the state at the end of the head of the blockchain is not available
 	 */
-	public BlockMiner(LocalNodeImpl node) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	public BlockMiner(LocalNodeImpl node) throws InterruptedException, ApplicationTimeoutException, ClosedNodeException, ClosedDatabaseException, UnknownStateException, ClosedApplicationException {
 		this.node = node;
 		this.blockchain = node.getBlockchain();
 		this.previous = blockchain.getHead().get(); // the blockchain is assumed to be non-empty
@@ -171,11 +176,13 @@ public class BlockMiner {
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws TaskRejectedExecutionException if the node is shutting down 
-	 * @throws NodeException if the node is misbehaving
 	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws SignatureException if the mined block could not be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node is invalid
 	 */
-	public void mine() throws NodeException, InterruptedException, TaskRejectedExecutionException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+	public void mine() throws InterruptedException, TaskRejectedExecutionException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		LOGGER.info("mining: starting mining on top of block " + previous.getHexHash());
 		transactionExecutionTask.start();
 
@@ -253,11 +260,10 @@ public class BlockMiner {
 	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutionTask}.
 	 * 
 	 * @return the block
-	 * @throws TimeoutException if the application did not answer in time
-	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws NodeException if the node is misbehaving
+	 * @throws SignatureException if the block could not be signed with the key of the node
+	 * @throws InvalidKeyException if the key of the node is invalid
 	 */
-	private NonGenesisBlock createNewBlock() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private NonGenesisBlock createNewBlock() throws InterruptedException, ApplicationTimeoutException, InvalidKeyException, SignatureException, MisbehavingApplicationException, ClosedApplicationException {
 		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
 		transactionExecutionTask.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
@@ -270,7 +276,7 @@ public class BlockMiner {
 	 * @param block the block
 	 * @throws InterruptedException if the current thread gets interrupted
 	 */
-	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, NodeException, ClosedApplicationException, MisbehavingApplicationException {
+	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, ClosedApplicationException, MisbehavingApplicationException {
 		// it is theoretically possible that head and block have exactly the same power:
 		// this might lead to temporary forks, when a node follows one chain and another node
 		// follows another chain, both with the same power. However, such forks would be
@@ -289,10 +295,8 @@ public class BlockMiner {
 	 * Cleans up everything at the end of mining.
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void cleanUp() throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private void cleanUp() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		done = true;
 		transactionExecutionTask.stop();
 

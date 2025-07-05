@@ -16,11 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.security.InvalidKeyException;
+import java.security.SignatureException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.mokamint.application.api.ClosedApplicationException;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -54,13 +57,25 @@ public class MiningTask implements Task {
 	}
 
 	@Override
-	public void body() throws NodeException, InterruptedException {
+	public void body() throws InterruptedException {
 		try {
 			while (true)
 				mineOverHead();
 		}
 		catch (TaskRejectedExecutionException e) {
-			LOGGER.warning("mining: exiting since the node is shutting down");
+			LOGGER.warning("mining: exiting since the mining task has been rejected: maibe the node is shutting down");
+		}
+		catch (InvalidKeyException e) {
+			LOGGER.warning("mining: exiting since the key of the node is invalid: " + e.getMessage());
+		}
+		catch (ClosedDatabaseException e) {
+			LOGGER.warning("mining: exiting since the database has been closed: " + e.getMessage());
+		}
+		catch (SignatureException e) {
+			LOGGER.warning("mining: exiting since the signature of the mined block failed: " + e.getMessage());
+		}
+		catch (ClosedNodeException e) {
+			LOGGER.warning("mining: exiting since the node has been closed: " + e.getMessage());			
 		}
 	}
 
@@ -90,15 +105,15 @@ public class MiningTask implements Task {
 	 * to process transactions that arrive during the mining of a next block.
 	 * 
 	 * @param entry the transaction entry
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void add(TransactionEntry entry) throws NodeException {
+	public void add(TransactionEntry entry) throws ClosedDatabaseException {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);
 	}
 
-	private void mineOverHead() throws ClosedDatabaseException, InterruptedException, TaskRejectedExecutionException {
+	private void mineOverHead() throws ClosedDatabaseException, InterruptedException, TaskRejectedExecutionException, InvalidKeyException, SignatureException, ClosedNodeException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
 			suspendUntilSomethingChanges();
@@ -123,8 +138,9 @@ public class MiningTask implements Task {
 				LOGGER.warning("mining: there is an application problem: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
 			}
-			catch (NodeException e) {
-				LOGGER.log(Level.SEVERE, "restarting the mining task after crash", e);
+			catch (UnknownStateException e) {
+				// TODO: this happened when mining started after a long synchronization
+				LOGGER.log(Level.SEVERE, "the state information at the head of the blockchain is not available", e);
 			}
 		}
 	}
