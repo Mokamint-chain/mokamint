@@ -16,15 +16,13 @@ limitations under the License.
 
 package io.mokamint.node;
 
-import io.mokamint.node.api.NodeException;
-
 /**
  * An exception stating that a node is misbehaving, that is, performing in a buggy way.
  * If the node is a local node, then this is an actual bug in its code. If, instead,
  * the node is a remote node, then it might just be a byzantine node.
  */
 @SuppressWarnings("serial")
-public class MisbehavingNodeException extends NodeException {
+public class MisbehavingNodeException extends Exception {
 
 	/**
 	 * Creates a new exception.

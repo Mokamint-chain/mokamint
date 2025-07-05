@@ -20,7 +20,7 @@ package io.mokamint.node.api;
  * An exception stating that a node is closed and cannot perform the request.
  */
 @SuppressWarnings("serial")
-public class ClosedNodeException extends NodeException {
+public class ClosedNodeException extends Exception {
 
 	/**
 	 * Creates a new exception.

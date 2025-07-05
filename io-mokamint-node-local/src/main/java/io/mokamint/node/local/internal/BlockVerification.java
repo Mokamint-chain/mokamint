@@ -407,7 +407,7 @@ public class BlockVerification {
 
 			// if the following exception occurs, there is a coding error
 			var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
-					.orElseThrow(() -> new UncheckedDatabaseException("The previous of the block under verification was expected to be in blockchain"));
+					.orElseThrow(() -> new DatabaseException("The previous of the block under verification was expected to be in blockchain"));
 
 			try {
 				int id;

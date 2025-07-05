@@ -16,13 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
-import io.mokamint.node.api.NodeException;
-
 /**
  * An exception thrown when requesting a transaction to a closed database.
  */
 @SuppressWarnings("serial")
-public class ClosedDatabaseException extends NodeException {
+public class ClosedDatabaseException extends Exception {
 
 	/**
 	 * Creates a new exception.
