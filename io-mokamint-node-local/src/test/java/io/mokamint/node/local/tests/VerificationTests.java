@@ -53,13 +53,13 @@ import io.mokamint.node.Blocks;
 import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Blockchain;
+import io.mokamint.node.local.internal.ClosedDatabaseException;
 import io.mokamint.node.local.internal.VerificationException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -744,7 +744,7 @@ public class VerificationTests extends AbstractLoggedTests {
 				.build();
 	}
 
-	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis) throws NodeException {
+	private static void assertBlockchainIsJustGenesis(Blockchain blockchain, GenesisBlock genesis) throws ClosedDatabaseException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(genesis, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);
@@ -752,7 +752,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		assertArrayEquals(chain[0], genesis.getHash());
 	}
 
-	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block) throws NodeException {
+	private static void assertBlockchainIsJustTwoBlocks(Blockchain blockchain, GenesisBlock genesis, NonGenesisBlock block) throws ClosedDatabaseException {
 		assertEquals(genesis, blockchain.getGenesis().get());
 		assertEquals(block, blockchain.getHead().get());
 		byte[][] chain = blockchain.getChain(0, 100).toArray(byte[][]::new);

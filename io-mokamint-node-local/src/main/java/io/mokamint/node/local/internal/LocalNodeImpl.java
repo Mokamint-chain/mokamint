@@ -552,7 +552,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the application
 	 */
-	public Application getApplication() {
+	Application getApplication() {
 		return app;
 	}
 
@@ -561,7 +561,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the peers
 	 */
-	public PeersSet getPeers() {
+	PeersSet getPeers() {
 		return peers;
 	}
 
@@ -702,11 +702,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * mempool can be updated as well.
 	 * 
 	 * @param block the block
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted while performing the operation
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	protected void rebaseMempoolAt(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
+	protected void rebaseMempoolAt(Block block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		mempool.rebaseAt(block);
 	}
 
@@ -719,8 +720,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws NodeException, InterruptedException, ApplicationTimeoutException {
+	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
 		result.forEachTransaction(action); // process the resulting transactions
@@ -1139,8 +1142,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					try {
 						blockchain.add(block);
 					}
-					catch (ApplicationTimeoutException e) {
-						LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
+					catch (ApplicationTimeoutException | ClosedApplicationException | MisbehavingApplicationException e) {
+						LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because of a problem with the application: " + e.getMessage());
 					}
 				}
 

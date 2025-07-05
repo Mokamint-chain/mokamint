@@ -50,8 +50,8 @@ import java.util.stream.Stream;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.Hasher;
-import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions5;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.UnmarshallingContexts;
 import io.hotmoka.marshalling.api.MarshallingContext;
@@ -555,10 +555,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 		catch (ClosedApplicationException | InvalidKeyException | SignatureException e) {
 			// this node is misbehaving because the application it is connected to is misbehaving or its key is wrong
-			throw new NodeException(e);
+			throw new NodeException(e); // TODO
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
+		}
+		catch (MisbehavingApplicationException e) {
+			throw new NodeException(e); // TODO
 		}
 	}
 
@@ -581,8 +584,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws VerificationException if {@code block} cannot be added since it does not respect all consensus rules
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean add(Block block) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+	public boolean add(Block block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, ClosedApplicationException, MisbehavingApplicationException {
 		return add(block, Optional.of(Mode.COMPLETE));
 	}
 
@@ -596,8 +602,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread is interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	boolean addVerified(Block block) throws NodeException, InterruptedException, ApplicationTimeoutException {
+	boolean addVerified(Block block) throws InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, ClosedApplicationException, MisbehavingApplicationException {
 		try {
 			return add(block, Optional.empty());
 		}
@@ -623,9 +632,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	public void rebase(Mempool mempool, Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
-		FunctionWithExceptions3<Transaction, Rebase, NodeException, InterruptedException, ApplicationTimeoutException> function = txn -> new Rebase(txn, mempool, newBase);
-		environment.computeInReadonlyTransaction(NodeException.class, InterruptedException.class, ApplicationTimeoutException.class, function).updateMempool();
+	public void rebase(Mempool mempool, Block newBase) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		FunctionWithExceptions4<Transaction, Rebase, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException> function = txn -> new Rebase(txn, mempool, newBase);
+		environment.computeInReadonlyTransaction(InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function).updateMempool();
 	}
 
 	/**
@@ -671,9 +680,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * Creates a context for the addition of blocks, inside the same database transaction.
 		 * 
 		 * @param txn the database transaction
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private BlockAdder(Transaction txn) throws NodeException {
+		private BlockAdder(Transaction txn) {
 			this.txn = txn;
 		}
 
@@ -683,12 +691,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param block the block to add
 		 * @param verification the verification mode of the block, if any
 		 * @return this same adder
-		 * @throws NodeException if the node is misbehaving
 		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+		 * @throws MisbehavingApplicationException if the application is misbehaving
+		 * @throws ClosedApplicationException if the application is already closed
 		 */
-		private BlockAdder add(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private BlockAdder add(Block block, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
@@ -713,12 +722,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param block the block to add
 		 * @param verification the verification mode of the block, if any
 		 * @return this same adder
-		 * @throws NodeException if the node is misbehaving
 		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
 		 * @throws InterruptedException if the current thread is interrupted
 		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+		 * @throws MisbehavingApplicationException if the application is misbehaving
+		 * @throws ClosedApplicationException if the application is already closed
 		 */
-		private BlockAdder connect(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private BlockAdder connect(Block block, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			byte[] hashOfBlockToAdd = block.getHash();
 
 			// optimization check, to avoid repeated verification
@@ -746,7 +756,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				node.onHeadChanged(blocksAddedToTheCurrentBestChain);
 		}
 
-		private void updateMempool() throws NodeException, InterruptedException, ApplicationTimeoutException {
+		private void updateMempool() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (!blocksAddedToTheCurrentBestChain.isEmpty())
 				// if the head has been improved, we update the mempool by removing
 				// the transactions that have been added in blockchain and potentially adding
@@ -778,7 +788,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return connected;
 		}
 
-		private void addBlockAndConnectOrphans(Block blockToAdd, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private void addBlockAndConnectOrphans(Block blockToAdd, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			// we use a working set, since the addition of a single block might trigger the further addition of orphan blocks, recursively
 			var ws = new ArrayList<Block>();
 			ws.add(blockToAdd);
@@ -802,24 +812,24 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			while (!ws.isEmpty());
 		}
 
-		private void computeBlocksAddedToTheCurrentBestChain(Optional<byte[]> initialHeadHash) throws NodeException {
+		private void computeBlocksAddedToTheCurrentBestChain(Optional<byte[]> initialHeadHash) {
 			if (blocksAdded.isEmpty())
 				return;
 
 			// we move backwards from the initial head until we hit the current best chain
 			Block start;
 			if (initialHeadHash.isEmpty())
-				start = getGenesis(txn).orElseThrow(() -> new DatabaseException("The blockchain has been expanded but it still misses a genesis block"));
+				start = getGenesis(txn).orElseThrow(() -> new UncheckedDatabaseException("The blockchain has been expanded but it still misses a genesis block"));
 			else {
 				byte[] hashOfCursor = initialHeadHash.get();
-				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot find the original head of the blockchain"));
+				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new UncheckedDatabaseException("Cannot find the original head of the blockchain"));
 				while (!isContainedInTheBestChain(txn, cursor, hashOfCursor))
 					if (cursor instanceof NonGenesisBlock ngb) {
 						hashOfCursor = ngb.getHashOfPreviousBlock();
-						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot follow the path to the original head of the blockchain, backwards"));
+						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new UncheckedDatabaseException("Cannot follow the path to the original head of the blockchain, backwards"));
 					}
 					else
-						throw new DatabaseException("The original head is in a dangling path");
+						throw new UncheckedDatabaseException("The original head is in a dangling path");
 
 				start = cursor;
 			}
@@ -833,15 +843,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
 				if (hashOfBlockFromBestChain != null)
 					blocksAddedToTheCurrentBestChain.addLast(getBlock(txn, hashOfBlockFromBestChain.getBytes())
-							.orElseThrow(() -> new DatabaseException("Cannot follow the new best chain upwards")));
+							.orElseThrow(() -> new UncheckedDatabaseException("Cannot follow the new best chain upwards")));
 			}
 			while (hashOfBlockFromBestChain != null);
 		}
 
-		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+		private boolean add(Block blockToAdd, byte[] hashOfBlockToAdd, Optional<Block> previous, boolean isOrphan, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (verification.isPresent() || isOrphan) {
 				try {
-					new BlockVerification(txn, node, blockToAdd, previous, isOrphan ? Mode.COMPLETE : verification.get());
+					new BlockVerification(txn, node, config, blockToAdd, previous, isOrphan ? Mode.COMPLETE : verification.get());
 				}
 				catch (VerificationException e) {
 					if (isOrphan) {
@@ -868,9 +878,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 *         the block was already in the tree; or that it is a genesis
 		 *         block and there is already a genesis block in the tree; or that it
 		 *         is a non-genesis block whose previous is not in the tree
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) throws NodeException {
+		private boolean add(Block block, byte[] hashOfBlock, Optional<Block> previous) {
 			if (block instanceof NonGenesisBlock ngb) {
 				if (isInFrozenPart(txn, previous.get().getDescription())) {
 					LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since its previous block is in the frozen part of the blockchain");
@@ -910,9 +919,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param newHead the new head
 		 * @param newHeadHash the hash of {@code newHead}
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private void setHead(Block newHead, byte[] newHeadHash) throws NodeException {
+		private void setHead(Block newHead, byte[] newHeadHash) {
 			try {
 				updateChain(newHead, newHeadHash);
 				storeOfBlocks.put(txn, HASH_OF_HEAD, fromBytes(newHeadHash));
@@ -923,7 +931,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				LOGGER.info(() -> "blockchain: height " + heightOfHead + ": block " + newHead.getHexHash() + " set as head");
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new UncheckedDatabaseException(e);
 			}
 		}
 
@@ -932,9 +940,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param newHead the block that gets set as new head
 		 * @param newHeadHash the hash of {@code block}
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private void updateChain(Block newHead, byte[] newHeadHash) throws NodeException {
+		private void updateChain(Block newHead, byte[] newHeadHash) {
 			try {
 				Block cursor = newHead;
 				byte[] cursorHash = newHeadHash;
@@ -956,7 +963,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						long heightCopy = height;
 						var oldBytes = old.getBytes();
 						Block oldBlock = getBlock(txn, oldBytes)
-							.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
+							.orElseThrow(() -> new UncheckedDatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
 		
 						removeReferencesToTransactionsInside(txn, oldBlock);
 					}
@@ -965,11 +972,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 					if (cursor instanceof NonGenesisBlock ngb) {
 						if (height <= 0L)
-							throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+							throw new UncheckedDatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
 		
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 						var cursorHashCopy = cursorHash;
-						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
+						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new UncheckedDatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
 						cursorHash = hashOfPrevious;
 						height--;
 						heightBI = fromBytes(longToBytes(height));
@@ -977,7 +984,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						old = storeOfChain.get(txn, heightBI);
 					}
 					else if (height > 0L)
-						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+						throw new UncheckedDatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
 				}
 				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 		
@@ -988,7 +995,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				byte[] startOfNonFrozenPartHash;
 		
 				if (maybeStartOfNonFrozenPartHash.isEmpty()) {
-					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new DatabaseException("The head has changed but the genesis hash is missing"));
+					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new UncheckedDatabaseException("The head has changed but the genesis hash is missing"));
 					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
 				}
 				else
@@ -999,7 +1006,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					do {
 						var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
 						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash)
-								.orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy)
+								.orElseThrow(() -> new UncheckedDatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy)
 									+ " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
 		
 						if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
@@ -1007,7 +1014,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 						ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getHeight() + 1)));
 						if (aboveStartOfNonFrozenPartHash == null)
-							throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
+							throw new UncheckedDatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
 		
 						byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
 		
@@ -1022,7 +1029,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				}
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new UncheckedDatabaseException(e);
 			}
 		}
 
@@ -1059,7 +1066,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				.forEach(action);
 		}
 
-		private void removeDataHigherThan(Transaction txn, long height) throws NodeException {
+		private void removeDataHigherThan(Transaction txn, long height) {
 			Optional<Block> cursor = getHead(txn);
 		
 			if (cursor.isPresent()) {
@@ -1079,7 +1086,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 						var blockCopy = block;
-						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + blockCopy.getHexHash() + " has no previous block in the database"));
+						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new UncheckedDatabaseException("Block " + blockCopy.getHexHash() + " has no previous block in the database"));
 					}
 					else
 						throw new UncheckedDatabaseException("The current best chain contains a genesis block " + block.getHexHash() + " at height " + blockHeight);
@@ -1114,7 +1121,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private Block newBlock;
 		private Block oldBlock;
 
-		private Rebase(Transaction txn, Mempool mempool, Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
+		/**
+		 * It assumes that newBase is actually connected to the blockchain.
+		 */
+		private Rebase(Transaction txn, Mempool mempool, Block newBase) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			this.txn = txn;
 			this.mempool = mempool;
 			this.newBase = newBase;
@@ -1142,34 +1152,34 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			mempool.update(newBase, toAdd.stream(), toRemove.stream());
 		}
 
-		private boolean reachedSharedAncestor() throws NodeException {
+		private boolean reachedSharedAncestor() {
 			if (newBlock.equals(oldBlock))
 				return true;
 			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
-				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash() + " and " + newBlock.getHexHash());
+				throw new UncheckedDatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash() + " and " + newBlock.getHexHash());
 			else
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws NodeException, InterruptedException, ApplicationTimeoutException {
+		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
+				throw new UncheckedDatabaseException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws NodeException, InterruptedException, ApplicationTimeoutException {
+		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
+				throw new UncheckedDatabaseException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws NodeException, InterruptedException, ApplicationTimeoutException {
+		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			while (newBlock instanceof NonGenesisBlock ngb) {
 				markAllTransactionsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
@@ -1181,10 +1191,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
+		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
 				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
 		}
@@ -1194,10 +1202,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
+		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Transaction[]::new))
 				toRemove.add(intoTransactionEntry(transaction));
 		}
@@ -1208,22 +1214,19 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @param transaction the transaction
 		 * @return the resulting transaction entry
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
-		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-		 * @throws NodeException if the node is misbehaving
 		 */
-		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, ApplicationTimeoutException, NodeException {
+		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			try {
 				return mempool.mkTransactionEntry(transaction);
 			}
-			catch (TransactionRejectedException | ClosedApplicationException e) {
-				// either the database contains a block with a rejected transaction: it should not be there!
-				// or the node is misbehaving because the application it is connected to is misbehaving
-				throw new NodeException(e);
+			catch (TransactionRejectedException e) {
+				// the transactions in the database are not rejected, hence the application is misbehaving here
+				throw new MisbehavingApplicationException(e);
 			}
 		}
 
-		private Block getBlock(byte[] hash) throws NodeException {
-			return Blockchain.this.getBlock(txn, hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
+		private Block getBlock(byte[] hash) {
+			return Blockchain.this.getBlock(txn, hash).orElseThrow(() -> new UncheckedDatabaseException("Missing block with hash " + Hex.toHexString(hash)));
 		}
 	}
 
@@ -1234,21 +1237,23 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param block the block to add
 	 * @param verification the kind of verification to perform on the node; if missing, no verification is performed
 	 * @return true if and only if the block has been actually connected; this is false if the node has been added among the orphan blocks
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws VerificationException if the required verification fails
 	 * @throws InterruptedException if the current thread gets interrupted while performing the action
 	 * @throws ApplicationTimeoutException if the application is non-responsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	public boolean add(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+	public boolean add(Block block, Optional<Mode> verification) throws ClosedDatabaseException, VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		BlockAdder adder;
 
-		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).add(block, verification);
+		FunctionWithExceptions5<Transaction, BlockAdder, VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException> function = txn -> new BlockAdder(txn).add(block, verification);
 
 		try (var scope = mkScope()) {
-			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
+			adder = environment.computeInTransaction(VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	
 		adder.informNode();
@@ -1269,17 +1274,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws VerificationException if the required verification fails
 	 * @throws InterruptedException if the current thread gets interrupted while performing the action
 	 * @throws ApplicationTimeoutException if the application is non-responsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public boolean connect(Block block, Optional<Mode> verification) throws NodeException, VerificationException, InterruptedException, ApplicationTimeoutException {
+	public boolean connect(Block block, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException, ClosedDatabaseException {
 		BlockAdder adder;
 
-		FunctionWithExceptions4<Transaction, BlockAdder, NodeException, VerificationException, InterruptedException, ApplicationTimeoutException> function = txn -> new BlockAdder(txn).connect(block, verification);
+		FunctionWithExceptions5<Transaction, BlockAdder, VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException> function = txn -> new BlockAdder(txn).connect(block, verification);
 
 		try (var scope = mkScope()) {
-			adder = environment.computeInTransaction(NodeException.class, VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, function);
+			adder = environment.computeInTransaction(VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	
 		adder.informNode();
@@ -1288,12 +1296,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		return adder.addedBlockHasBeenConnected();
 	}
 
-	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) throws NodeException {
+	private boolean isInFrozenPart(Transaction txn, BlockDescription blockDescription) {
 		var totalWaitingTimeOfStartOfNonFrozenPart = getTotalWaitingTimeOfStartOfNonFrozenPart(txn);
 		return totalWaitingTimeOfStartOfNonFrozenPart.isPresent() && totalWaitingTimeOfStartOfNonFrozenPart.getAsLong() > blockDescription.getTotalWaitingTime();
 	}
 
-	private Environment createBlockchainEnvironment() throws NodeException {
+	private Environment createBlockchainEnvironment() {
 		try {
 			var path = config.getDir().resolve("blocks");
 			var env = new Environment(path.toString());
@@ -1301,18 +1309,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return env;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
-	private Store openStore(String name) throws NodeException {
+	private Store openStore(String name) {
 		try {
 			Store store = environment.computeInTransaction(txn -> environment.openStoreWithoutDuplicatesWithPrefixing(name, txn));
 			LOGGER.info("blockchain: opened the store of " + name + " inside the blocks database");
 			return store;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new UncheckedDatabaseException(e);
 		}
 	}
 
@@ -1862,7 +1870,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	}
 
-	private void gcBlocksRootedAt(Transaction txn, byte[] hash) throws NodeException {
+	private void gcBlocksRootedAt(Transaction txn, byte[] hash) {
 		var ws = new ArrayList<byte[]>();
 		ws.add(hash);
 
@@ -1884,7 +1892,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// take care of updating storeOfTransactions and storeOfChain
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new UncheckedDatabaseException(e);
 			}
 			
 			LOGGER.fine(() -> "blockchain: garbage-collected block " + Hex.toHexString(currentHash));

@@ -126,11 +126,12 @@ public class Mempool {
 	 * all transactions in the blocks from P (excluded) to {@code newBase} in this mempool.
 	 * 
 	 * @param newBase the new base that must be set for this mempool
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	public void rebaseAt(Block newBase) throws NodeException, InterruptedException, ApplicationTimeoutException {
+	public void rebaseAt(Block newBase) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		synchronized (mempool) {
 			blockchain.rebase(this, newBase);
 		}

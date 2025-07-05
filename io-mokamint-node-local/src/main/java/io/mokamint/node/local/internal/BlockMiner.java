@@ -172,8 +172,10 @@ public class BlockMiner {
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
 	 * @throws TaskRejectedExecutionException if the node is shutting down 
 	 * @throws NodeException if the node is misbehaving
+	 * @throws MisbehavingApplicationException if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	public void mine() throws NodeException, InterruptedException, ApplicationTimeoutException, TaskRejectedExecutionException {
+	public void mine() throws NodeException, InterruptedException, TaskRejectedExecutionException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		LOGGER.info("mining: starting mining on top of block " + previous.getHexHash());
 		transactionExecutionTask.start();
 
@@ -210,9 +212,9 @@ public class BlockMiner {
 	 * Adds the given transaction entry to the mempool of the mining task.
 	 * 
 	 * @param entry the entry to add
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void add(TransactionEntry entry) throws NodeException {
+	public void add(TransactionEntry entry) throws ClosedDatabaseException {
 		if (blockchain.getTransactionAddress(previous, entry.getHash()).isEmpty())
 			synchronized (mempool) {
 				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
@@ -267,10 +269,8 @@ public class BlockMiner {
 	 *
 	 * @param block the block
 	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws ApplicationTimeoutException if the application did not provide an answer in time
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private void commitIfBetterThanHead(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, NodeException, ClosedApplicationException, MisbehavingApplicationException {
 		// it is theoretically possible that head and block have exactly the same power:
 		// this might lead to temporary forks, when a node follows one chain and another node
 		// follows another chain, both with the same power. However, such forks would be
@@ -315,7 +315,7 @@ public class BlockMiner {
 		}
 	}
 
-	private void addToBlockchain(Block block) throws InterruptedException, ApplicationTimeoutException, NodeException {
+	private void addToBlockchain(Block block) throws InterruptedException, ApplicationTimeoutException, ClosedDatabaseException, ClosedApplicationException, MisbehavingApplicationException {
 		// we do not require to verify the block, since we trust that we create verifiable blocks only
 		if (!interrupted && blockchain.addVerified(block))
 			node.whisperWithoutAddition(block);

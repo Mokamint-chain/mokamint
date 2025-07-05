@@ -19,6 +19,7 @@ package io.mokamint.node.local.internal;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.api.NodeException;
 import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
@@ -97,7 +98,7 @@ public class MiningTask implements Task {
 			blockMiner.add(entry);
 	}
 
-	private void mineOverHead() throws NodeException, InterruptedException, TaskRejectedExecutionException {
+	private void mineOverHead() throws ClosedDatabaseException, InterruptedException, TaskRejectedExecutionException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
 			suspendUntilSomethingChanges();
@@ -118,8 +119,8 @@ public class MiningTask implements Task {
 				blockMiner = new BlockMiner(node);
 				blockMiner.mine();
 			}
-			catch (ApplicationTimeoutException e) {
-				LOGGER.warning("mining: the application is unresponsive: I will wait five seconds and then try again: " + e.getMessage());
+			catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
+				LOGGER.warning("mining: there is an application problem: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
 			}
 			catch (NodeException e) {

@@ -33,7 +33,6 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
-import io.mokamint.node.api.NodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -101,18 +100,20 @@ public class BlockVerification {
 	 * 
 	 * @param txn the Xodus transaction during which verification occurs
 	 * @param node the node whose blocks get verified
+	 * @param config the configuration of {@code node}
 	 * @param block the block
 	 * @param previous the previous of {@code block}, already in blockchain; this can be empty only if {@code block} is a genesis block
 	 * @throws VerificationException if verification fails
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws MisbehavingApplicationException  if the application is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, Block block, Optional<Block> previous, Mode mode) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
+	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, LocalNodeConfig config, Block block, Optional<Block> previous, Mode mode) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		this.txn = txn;
 		this.node = node;
 		this.mode = mode;
-		this.config = node.getConfig();
+		this.config = config;
 		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.block = block;
 		this.previous = previous.orElse(null);
@@ -131,9 +132,9 @@ public class BlockVerification {
 	 * @throws VerificationException if verification fails
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
+	private void verifyAsGenesis(GenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException {
 		creationTimeIsNotTooMuchInTheFuture();
 		blockMatchesItsExpectedDescription(block);
 		hasValidSignature();
@@ -149,11 +150,12 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if verification fails
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 */
-	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
+	private void verifyAsNonGenesis(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		creationTimeIsNotTooMuchInTheFuture();
 		hasValidSignature();
 		deadlineMatchesItsExpectedChallenge();
@@ -221,11 +223,11 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
 	 * 
 	 * @throws VerificationException if that condition in violated
-	 * @throws NodeException if the node is misbehaving
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	private void deadlineHasValidProlog() throws VerificationException, NodeException, InterruptedException, ApplicationTimeoutException {
+	private void deadlineHasValidProlog() throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException {
 		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
 			var prolog = deadline.getProlog();
 
@@ -244,9 +246,6 @@ public class BlockVerification {
 			}
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
-			}
-			catch (ClosedApplicationException e) {
-				throw new NodeException(e);
 			}
 		}
 	}
@@ -356,9 +355,8 @@ public class BlockVerification {
 	 * Checks if the creation time of {@link #block} is not too much in the future.
 	 * 
 	 * @throws VerificationException if that condition is violated
-	 * @throws NodeException 
 	 */
-	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException, NodeException {
+	private void creationTimeIsNotTooMuchInTheFuture() throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			LocalDateTime now = node.getPeers().asNetworkDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 			// the following exception should never happen, since the blockchain is non-empty for non-genesis blocks
@@ -380,9 +378,8 @@ public class BlockVerification {
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
 	 * @throws VerificationException if some transaction is already contained in blockchain
-	 * @throws NodeException if the node is misbehaving
 	 */
-	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException, NodeException {
+	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
 				var txHash = hasherForTransactions.hash(tx);
@@ -401,15 +398,16 @@ public class BlockVerification {
 	 * @throws VerificationException if that condition is violated
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws NodeException if the node is misbehaving
+	 * @throws ClosedApplicationException if the application has been closed
+	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
+	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			var app = node.getApplication();
 
 			// if the following exception occurs, there is a coding error
 			var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
-					.orElseThrow(() -> new NoSuchElementException("The previous of the block under verification was expected to be in blockchain"));
+					.orElseThrow(() -> new UncheckedDatabaseException("The previous of the block under verification was expected to be in blockchain"));
 
 			try {
 				int id;
@@ -457,22 +455,22 @@ public class BlockVerification {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (ClosedApplicationException | UnknownGroupIdException e) {
-				// the node is misbehaving because the application it is connected to is misbehaving
-				throw new NodeException(e);
+			catch (UnknownGroupIdException e) {
+				// the application of the node is only accessible through package-protected method
+				// getApplication() and we only commit/abort a group id if we previously started one
+				// with beginBlock(). This means that this exception is either a bug in the application
+				// or somebody has been interacting with the web API of a remote application and committed/aborted
+				// the group id; in both case, from our point of view the application is misbehaving
+				throw new MisbehavingApplicationException(e);
 			}
 		}
 	}
 
-	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, ApplicationTimeoutException, NodeException {
+	private void finalStateIsTheInitialStateOfTheApplication() throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException {
 		byte[] expected;
 
 		try {
 			expected = node.getApplication().getInitialStateId();
-		}
-		catch (ClosedApplicationException e) {
-			// the node is misbehaving because the application it is connected to is misbehaving
-			throw new NodeException(e);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);

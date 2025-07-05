@@ -34,14 +34,14 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.node.Peers;
-import io.mokamint.node.api.NodeException;
+import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 import io.mokamint.node.local.internal.PeersDatabase;
 
 public class PeersDatabaseTests extends AbstractLoggedTests {
 
-	private static PeersDatabase mkDatabase(Path dir) throws NodeException, NoSuchAlgorithmException {
+	private static PeersDatabase mkDatabase(Path dir) throws ClosedNodeException, NoSuchAlgorithmException {
 		var config = LocalNodeConfigBuilders.defaults()
 			.setDir(dir)
 			.build();

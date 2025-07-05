@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
@@ -42,6 +43,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.ApplicationTimeoutException;
+import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 
 /**
@@ -56,6 +58,11 @@ public class Synchronization {
 	 * The node whose blockchain is getting synchronized.
 	 */
 	private final LocalNodeImpl node;
+
+	/**
+	 * The configuration of {@link #node}.
+	 */
+	private final LocalNodeConfig config;
 
 	/**
 	 * The peers of {@link #node}.
@@ -141,6 +148,7 @@ public class Synchronization {
 	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, NodeException {
 		LOGGER.info("sync: synchronization starts");
 		this.node = node;
+		this.config = node.getConfig();
 		this.peers = node.getPeers();
 		this.synchronizationGroupSize = node.getConfig().getSynchronizationGroupSize();
 		this.blockchain = node.getBlockchain();
@@ -598,7 +606,7 @@ public class Synchronization {
 							// we only perform non-contextual verification and only if the block was not already in blockchain,
 							// since in that case it must have been verified already; the block might already be in blockchain
 							// if the node is resuming its execution and synchronizing from the last blocks
-							new BlockVerification(null, node, block, Optional.empty(), Mode.ABSOLUTE);
+							new BlockVerification(null, node, config, block, Optional.empty(), Mode.ABSOLUTE);
 	
 						synchronized (blocksPartiallyVerified) {
 							blocksPartiallyVerified.add(block);
@@ -620,7 +628,7 @@ public class Synchronization {
 				Thread.currentThread().interrupt();
 				LOGGER.warning("sync: non-contextual block verifier #" + num + " has been interrupted");
 			}
-			catch (ApplicationTimeoutException e) {
+			catch (ApplicationTimeoutException | ClosedApplicationException | MisbehavingApplicationException e) {
 				LOGGER.warning("sync: non-contextual block verifier #" + num + " stops since the application is misbehaving: " + e.getMessage());
 			}
 			catch (NodeException | RuntimeException e) {
@@ -710,8 +718,8 @@ public class Synchronization {
 				Thread.currentThread().interrupt();
 				LOGGER.warning("sync: block adder #" + num + " has been interrupted");
 			}
-			catch (ApplicationTimeoutException e) {
-				LOGGER.warning("sync: block adder #" + num + " stops because the application is misbehaving: " + e.getMessage());
+			catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
+				LOGGER.warning("sync: block adder #" + num + " stops because of an application problem: " + e.getMessage());
 			}
 			catch (NodeException | RuntimeException e) {
 				LOGGER.log(Level.SEVERE, "sync: block adder #" + num + " stops because the node is misbehaving", e);
