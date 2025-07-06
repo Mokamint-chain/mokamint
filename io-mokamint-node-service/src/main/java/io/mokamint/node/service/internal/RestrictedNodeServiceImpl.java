@@ -24,8 +24,9 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerRejectedException;
@@ -52,7 +53,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where clients can connect to query the restricted API of a Mokamint node.
  */
 @ThreadSafe
-public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implements RestrictedNodeService {
+public class RestrictedNodeServiceImpl extends AbstractRPCWebSocketServer implements RestrictedNodeService {
 
 	/**
 	 * The node whose API is published.
@@ -99,90 +100,45 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 		LOGGER.info(logPrefix + "closed");
 	}
 
-	protected void onAddPeer(AddPeerMessage message, Session session) {
-		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
+	@Override
+	protected void processRequest(Session session, RpcMessage message) throws IOException, InterruptedException, TimeoutException {
+		var id = message.getId();
 
 		try {
-			try {
-				sendObjectAsync(session, AddPeerResultMessages.of(node.add(message.getPeer()), message.getId()));
-			}
-			catch (ClosedPeerException | PeerRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "addPeer() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "addPeer() request failed: " + e.getMessage());
+			switch (message) {
+			case RemoveMinerMessage rmm -> sendObjectAsync(session, RemoveMinerResultMessages.of(node.removeMiner(rmm.getUUID()), id));
+			case OpenMinerMessage omm -> sendObjectAsync(session, OpenMinerResultMessages.of(node.openMiner(omm.getPort()), id));
+			case RemovePeerMessage rpm -> sendObjectAsync(session, RemovePeerResultMessages.of(node.remove(rpm.getPeer()), id));
+			case AddPeerMessage apm -> sendObjectAsync(session, AddPeerResultMessages.of(node.add(apm.getPeer()), id));
+			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
 		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		catch (ClosedPeerException | PeerRejectedException | FailedDeploymentException e) {
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
+		catch (ClosedNodeException e) {
+			LOGGER.warning(logPrefix + "request processing failed since the serviced node has been closed: " + e.getMessage());
+		}
+	}
+
+	protected void onAddPeer(AddPeerMessage message, Session session) {
+		LOGGER.info(logPrefix + "received an " + ADD_PEER_ENDPOINT + " request");
+		scheduleRequest(session, message);
 	};
 
 	protected void onRemovePeer(RemovePeerMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + REMOVE_PEER_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, RemovePeerResultMessages.of(node.remove(message.getPeer()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "removePeer() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "removePeer() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	protected void onOpenMiner(OpenMinerMessage message, Session session) {
 		LOGGER.info(logPrefix + "received an " + OPEN_MINER_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, OpenMinerResultMessages.of(node.openMiner(message.getPort()), message.getId()));
-			}
-			catch (FailedDeploymentException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "openMiner() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "openMiner() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	protected void onRemoveMiner(RemoveMinerMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + REMOVE_MINER_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, RemoveMinerResultMessages.of(node.removeMiner(message.getUUID()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "removeMiner() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "removeMiner() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class AddPeersEndpoint extends AbstractServerEndpoint<RestrictedNodeServiceImpl> {

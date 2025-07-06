@@ -34,8 +34,9 @@ import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
@@ -108,7 +109,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where clients can connect to query the public API of a Mokamint node.
  */
 @ThreadSafe
-public class PublicNodeServiceImpl extends AbstractWebSocketServer implements PublicNodeService {
+public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements PublicNodeService {
 
 	/**
 	 * The node whose API is published.
@@ -245,6 +246,38 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 	}
 
 	@Override
+	protected void processRequest(Session session, RpcMessage message) throws IOException, InterruptedException, TimeoutException {
+		var id = message.getId();
+
+		try {
+			switch (message) {
+			case GetInfoMessage gim -> sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), id));
+			case GetPeerInfosMessage gpim -> sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), id));
+			case GetMinerInfosMessage gmim -> sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), id));
+			case GetTaskInfosMessage gtim -> sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), id));
+			case GetTransactionMessage gtm -> sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(gtm.getHash()), id));
+			case GetTransactionRepresentationMessage gtrm -> sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(gtrm.getHash()), id));
+			case GetTransactionAddressMessage gtam -> sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(gtam.getHash()), id));
+			case GetBlockMessage gbm -> sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(gbm.getHash()), id));
+			case GetBlockDescriptionMessage gbdm -> sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(gbdm.getHash()), id));
+			case GetConfigMessage gcm -> sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), id));
+			case GetChainInfoMessage gcim -> sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), id));
+			case GetChainPortionMessage gcpm -> sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(gcpm.getStart(), gcpm.getCount()), id));
+			case AddTransactionMessage atm -> sendObjectAsync(session, AddTransactionResultMessages.of(node.add(atm.getTransaction()), id));
+			case GetMempoolInfoMessage gmi -> sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), id));
+			case GetMempoolPortionMessage gmpm -> sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(gmpm.getStart(), gmpm.getCount()), id));
+			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
+			}
+		}
+		catch (TransactionRejectedException | ApplicationTimeoutException e) {
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
+		}
+		catch (ClosedNodeException e) {
+			LOGGER.warning(logPrefix + "request processing failed since the serviced node has been closed: " + e.getMessage());
+		}
+	}
+
+	@Override
 	public Optional<URI> getURI() {
 		return uri;
 	}
@@ -340,22 +373,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetInfo(GetInfoMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_INFO_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetInfoResultMessages.of(node.getInfo(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getInfo() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getInfo() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -373,22 +391,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetPeerInfos(GetPeerInfosMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_PEER_INFOS_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getPeerInfos() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getPeerInfos() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session,  message);
 	};
 
 	public static class GetPeerInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -406,22 +409,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetMinerInfos(GetMinerInfosMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MINER_INFOS_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getMinerInfos() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getMinerInfos() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session,  message);
 	}
 
 	public static class GetMinerInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -439,22 +427,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTaskInfos(GetTaskInfosMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TASK_INFOS_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getTaskInfos() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getTaskInfos() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	}
 
 	public static class GetTaskInfosEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -472,22 +445,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTransaction(GetTransactionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(message.getHash()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getTransaction() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getTransaction() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	}
 
 	public static class GetTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -505,25 +463,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_REPRESENTATION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(message.getHash()), message.getId()));
-			}
-			catch (TransactionRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getTransactionRepresentation() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getTransactionRepresentation() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	}
 
 	public static class GetTransactionRepresentationEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -542,22 +482,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ADDRESS_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(message.getHash()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getTransactionAddress() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getTransactionAddress() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	}
 
 	public static class GetTransactionAddressEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -575,22 +500,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetBlock(GetBlockMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_BLOCK_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(message.getHash()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getBlock() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getBlock() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetBlockEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -608,22 +518,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetBlockDescription(GetBlockDescriptionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_BLOCK_DESCRIPTION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(message.getHash()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getBlockDescription() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getBlockDescription() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetBlockDescriptionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -641,22 +536,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetConfig(GetConfigMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_CONFIG_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getConfig() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getConfig() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetConfigEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -674,22 +554,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetChainInfo(GetChainInfoMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_CHAIN_INFO_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getChainInfo() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getChainInfo() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetChainInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -707,22 +572,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_CHAIN_PORTION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(message.getStart(), message.getCount()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getChainPortion() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getChainPortion() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetChainPortionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -740,25 +590,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onAddTransaction(AddTransactionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + ADD_TRANSACTION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
-			}
-			catch (TransactionRejectedException | ApplicationTimeoutException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "addTransaction() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "addTransaction() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class AddTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -777,22 +609,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetMempoolInfo(GetMempoolInfoMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MEMPOOL_INFO_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getMempoolInfo() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getMempoolInfo() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetMempoolInfoEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
@@ -810,22 +627,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 
 	protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MEMPOOL_PORTION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(message.getStart(), message.getCount()), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getMempoolPortion() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedNodeException e) {
-				LOGGER.warning(logPrefix + "getMempoolPortion() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	}
 
 	public static class GetMempoolPortionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
