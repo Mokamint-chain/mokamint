@@ -239,53 +239,65 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			this.mempool = new Mempool(this);
 			this.peers = new PeersSet(this);
 			this.uuid = getInfo().getUUID();
-
-			try {
-				if (init)
-					blockchain.initialize();
-			}
-			catch (AlreadyInitializedException e) {
-				close();
-				throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
-			}
-			catch (ApplicationTimeoutException e) {
-				close();
-				throw new NodeCreationException("The application timed out", e);
-			}
-			catch (InvalidKeyException | SignatureException e) {
-				close();
-				throw new NodeCreationException("The genesis block could not be signed", e);
-			}
-			catch (ClosedDatabaseException e) {
-				close();
-				throw new NodeCreationException("The database is already closed", e);
-			}
-			catch (ClosedApplicationException e) {
-				close();
-				throw new NodeCreationException("The application is already closed", e);
-			}
-			catch (MisbehavingApplicationException e) {
-				close();
-				throw new NodeCreationException("The application is misbehaving", e);
-			}
-
-			try {
-				schedulePeriodicSynchronization();
-				schedule(this::processWhisperedPeers, "peers whispering process");
-				schedule(this::processWhisperedBlocks, "blocks whispering process");
-				schedule(this::processWhisperedTransactions, "transactions whispering process");
-				schedulePeriodicPingToAllPeersAndReconnection();
-				schedulePeriodicWhisperingOfAllServices();
-				schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-				schedule(miningTask, "blocks mining process");
-			}
-			catch (TaskRejectedExecutionException e) {
-				close();
-				throw new NodeCreationException("Could not spawn the node's tasks", e);
-			}
 		}
 		catch (ClosedNodeException e) { // the node cannot be already closed
 			throw new RuntimeException("The node has been unexpectedly closed", e);
+		}
+
+		// if the application gets closed, this node cannot work properly anymore and we close it as well
+		app.addOnCloseHandler(this::close);
+
+		if (init)
+			initialize();
+
+		scheduleTasks();
+	}
+
+	private void initialize() throws NodeCreationException, InterruptedException {
+		try {
+			blockchain.initialize();
+		}
+		catch (AlreadyInitializedException e) {
+			close();
+			throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
+		}
+		catch (ApplicationTimeoutException e) {
+			close();
+			throw new NodeCreationException("The application timed out", e);
+		}
+		catch (InvalidKeyException | SignatureException e) {
+			close();
+			throw new NodeCreationException("The genesis block could not be signed", e);
+		}
+		catch (ClosedDatabaseException e) {
+			close();
+			 // the database cannot be already closed
+			throw new RuntimeException("The database has been unexpectedly closed", e);
+		}
+		catch (ClosedApplicationException e) {
+			close();
+			throw new NodeCreationException("The application is already closed", e);
+		}
+		catch (MisbehavingApplicationException e) {
+			close();
+			throw new NodeCreationException("The application is misbehaving", e);
+		}
+	}
+
+	private void scheduleTasks() throws NodeCreationException {
+		try {
+			schedulePeriodicSynchronization();
+			schedule(this::processWhisperedPeers, "peers whispering process");
+			schedule(this::processWhisperedBlocks, "blocks whispering process");
+			schedule(this::processWhisperedTransactions, "transactions whispering process");
+			schedulePeriodicPingToAllPeersAndReconnection();
+			schedulePeriodicWhisperingOfAllServices();
+			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
+			schedule(miningTask, "blocks mining process");
+		}
+		catch (TaskRejectedExecutionException e) {
+			close();
+			throw new NodeCreationException("Could not spawn the node's tasks", e);
 		}
 	}
 
@@ -342,7 +354,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlock(hash);
 		}
-		catch (ClosedDatabaseException e) { // TODO
+		catch (ClosedDatabaseException e) {
+			// the database is encapsulated in this implementation and closed
+			// only when also the node gets closed
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -352,7 +366,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			return blockchain.getBlockDescription(hash);
 		}
-		catch (ClosedDatabaseException e) { // TODO
+		catch (ClosedDatabaseException e) {
 			throw new ClosedNodeException(e);
 		}
 	}
@@ -401,7 +415,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				return blockchain.getChainInfo();
 			}
 			catch (ClosedDatabaseException e) {
-				throw new ClosedNodeException(e); // TODO
+				throw new ClosedNodeException(e);
 			}
 		}
 	}
@@ -413,7 +427,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				return ChainPortions.of(blockchain.getChain(start, count));
 			}
 			catch (ClosedDatabaseException e) {
-				throw new ClosedNodeException(e); // TODO
+				throw new ClosedNodeException(e);
 			}
 		}
 	}
@@ -429,7 +443,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 			miningTask.add(result);
 		}
-		catch (ClosedDatabaseException | ClosedApplicationException e) { // TODO
+		catch (ClosedDatabaseException | ClosedApplicationException e) {
 			throw new ClosedNodeException(e);
 		}
 
@@ -458,7 +472,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return blockchain.getTransaction(hash);
 			}
-			catch (ClosedDatabaseException e) { // TODO
+			catch (ClosedDatabaseException e) {
 				throw new ClosedNodeException(e);
 			}
 		}
@@ -474,7 +488,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				return Optional.of(app.getRepresentation(maybeTransaction.get()));
 		}
 		catch (ClosedDatabaseException | ClosedApplicationException e) {
-			throw new ClosedNodeException(e); // TODO
+			// the database is encapsulated inside this node: if it is closed, then it is because close() has
+			// been called on this node; moreover, if the application has been closed then this node is meant
+			// to be closed as well, through the on close handler added to the application in the constructor of this node
+			throw new ClosedNodeException(e);
 		}
 	}
 
@@ -484,7 +501,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return blockchain.getTransactionAddress(hash);
 			}
-			catch (ClosedDatabaseException e) { // TODO
+			catch (ClosedDatabaseException e) {
 				throw new ClosedNodeException(e);
 			}
 		}
@@ -497,7 +514,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try (var scope = mkScope()) {
 			result = peers.add(peer);
 		}
-		catch (ClosedDatabaseException e) { // TODO
+		catch (ClosedDatabaseException e) {
 			throw new ClosedNodeException(e);
 		}
 	
@@ -516,7 +533,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			try {
 				return peers.remove(peer);
 			}
-			catch (ClosedDatabaseException e) { // TODO
+			catch (ClosedDatabaseException e) {
 				throw new ClosedNodeException(e);
 			}
 		}
@@ -526,7 +543,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public Optional<MinerInfo> openMiner(int port) throws FailedDeploymentException, ClosedNodeException {
 		try (var scope = mkScope()) {
 			var miner = RemoteMiners.open(port, miningSpecification, this::checkForMiners);
-			// addOnCloseHandler(() -> tryClose(miner)); // TODO: use this instead of minersToCloseAtTheEnd
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
@@ -563,7 +579,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the application
 	 */
-	Application getApplication() {
+	protected Application getApplication() {
 		return app;
 	}
 
@@ -572,7 +588,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the peers
 	 */
-	PeersSet getPeers() {
+	protected PeersSet getPeers() {
 		return peers;
 	}
 
@@ -581,7 +597,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the miners
 	 */
-	public MinersSet getMiners() {
+	protected MinersSet getMiners() {
 		return miners;
 	}
 
@@ -590,7 +606,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the blockchain
 	 */
-	public Blockchain getBlockchain() {
+	protected Blockchain getBlockchain() {
 		return blockchain;
 	}
 
@@ -599,7 +615,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the key pair
 	 */
-	public KeyPair getKeys() {
+	protected KeyPair getKeys() {
 		return keyPair;
 	}
 
@@ -1225,7 +1241,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
 			if (maybeStartTimeOfNonFrozenPart.isPresent())
-				app.keepFrom(maybeStartTimeOfNonFrozenPart.get()); // TODO: this should be inside an exclusive transaction on the blockchain's database?
+				app.keepFrom(maybeStartTimeOfNonFrozenPart.get()); // TODO: should this be inside an exclusive transaction on the blockchain's database?
 		}
 		catch (TimeoutException e) {
 			LOGGER.log(Level.WARNING, "cannot identify the non-frozen part of the blockchain because the application is unresponsive: " + e.getMessage());
@@ -1273,11 +1289,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			peers.close();
 		}
 		finally {
-			closeBlockchain();
+			blockchain.close();
 		}
-	}
-
-	private void closeBlockchain() {
-		blockchain.close();
 	}
 }

@@ -152,6 +152,11 @@ public class VerificationTests extends AbstractLoggedTests {
 		private TestNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
 			super(config, nodeKeys, application, false);
 		}
+
+		@Override
+		protected Blockchain getBlockchain() {
+			return super.getBlockchain();
+		}
 	}
 
 	@Test

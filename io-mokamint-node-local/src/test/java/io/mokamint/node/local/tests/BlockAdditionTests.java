@@ -58,6 +58,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.internal.Blockchain;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -144,6 +145,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
 			super(mkConfig(dir), nodeKeys, application, false);
+		}
+
+		@Override
+		protected Blockchain getBlockchain() {
+			return super.getBlockchain();
 		}
 	}
 

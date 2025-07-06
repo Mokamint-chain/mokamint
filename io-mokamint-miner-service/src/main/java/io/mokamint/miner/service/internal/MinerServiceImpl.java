@@ -73,41 +73,17 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	 * Creates a miner service by adapting the given miner.
 	 * 
 	 * @param miner the adapted miner; if this is missing, the service won't provide deadlines but
-	 *              will anyway connect to the 
+	 *              will anyway connect to the remote miner
 	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
-	public MinerServiceImpl(Miner miner, URI uri, int timeout) throws FailedDeploymentException {
+	public MinerServiceImpl(Optional<Miner> miner, URI uri, int timeout) throws FailedDeploymentException {
 		super(timeout);
 
-		this.miner = Optional.of(miner);
-		// TODO: check that miner has the same mining specification as the remote
+		this.miner = miner;
 		this.logPrefix = "miner service working for " + uri + ": ";
-
-		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
-		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
-
-		this.session = getSession(MINING_ENDPOINT);
-
-		LOGGER.info(logPrefix + "bound");
-	}
-
-	/**
-	 * Creates a miner service without a miner. It won't provide deadlines to the connected
-	 * remote miner, by allows one to call the methods of the remote miner anyway.
-	 * 
-	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
-	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
-	 *                beyond that threshold, a timeout exception is thrown
-	 * @throws FailedDeploymentException if the service cannot be deployed
-	 */
-	public MinerServiceImpl(URI uri, int timeout) throws FailedDeploymentException {
-		super(timeout);
-
-		this.miner = Optional.empty();
-		this.logPrefix = "miner service connected to " + uri + ": ";
 
 		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
 		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.service;
 
 import java.net.URI;
+import java.util.Optional;
 
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.Miner;
@@ -41,7 +42,7 @@ public final class MinerServices {
 	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
 	public static MinerService of(Miner miner, URI uri, int timeout) throws FailedDeploymentException {
-		return new MinerServiceImpl(miner, uri, timeout);
+		return new MinerServiceImpl(Optional.of(miner), uri, timeout);
 	}
 
 	/**
@@ -55,6 +56,6 @@ public final class MinerServices {
 	 * @throws FailedDeploymentException if the service cannot be deployed
 	 */
 	public static MinerService of(URI uri, int timeout) throws FailedDeploymentException {
-		return new MinerServiceImpl(uri, timeout);
+		return new MinerServiceImpl(Optional.empty(), uri, timeout);
 	}
 }

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -56,7 +57,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		class MinerServiceTest extends MinerServiceImpl {
 
 			public MinerServiceTest() throws FailedDeploymentException {
-				super(miner, URI, 30_000);
+				super(Optional.of(miner), URI, 30_000);
 			}
 
 			@Override
