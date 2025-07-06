@@ -24,8 +24,9 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
@@ -74,7 +75,7 @@ import jakarta.websocket.server.ServerEndpointConfig;
  * where clients can connect to query the API of a Mokamint application.
  */
 @ThreadSafe
-public class ApplicationServiceImpl extends AbstractWebSocketServer implements ApplicationService {
+public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implements ApplicationService {
 
 	/**
 	 * The application whose API is published.
@@ -127,24 +128,52 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 		LOGGER.info(logPrefix + "closed");
 	}
 
-	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + CHECK_PROLOG_EXTRA_ENDPOINT + " request");
+	@Override
+	protected void processRequest(Session session, RpcMessage message) throws IOException, InterruptedException, TimeoutException {
+		var id = message.getId();
 
 		try {
-			try {
-				sendObjectAsync(session, CheckPrologExtraResultMessages.of(application.checkPrologExtra(message.getExtra()), message.getId()));
+			switch (message) {
+			case CheckPrologExtraMessage cpem -> sendObjectAsync(session, CheckPrologExtraResultMessages.of(application.checkPrologExtra(cpem.getExtra()), id));
+			case CheckTransactionMessage ctm -> {
+				application.checkTransaction(ctm.getTransaction());
+				sendObjectAsync(session, CheckTransactionResultMessages.of(id));
 			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "checkPrologExtra() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
+			case GetPriorityMessage cpm -> sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(cpm.getTransaction()), id));
+			case GetRepresentationMessage grm -> sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(grm.getTransaction()), id));
+			case GetInitialStateIdMessage gism -> sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), id));
+			case BeginBlockMessage bbm -> sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(bbm.getHeight(), bbm.getWhen(), bbm.getStateId()), id));
+			case DeliverTransactionMessage dtm -> {
+				application.deliverTransaction(dtm.getGroupId(), dtm.getTransaction());
+				sendObjectAsync(session, DeliverTransactionResultMessages.of(id));
 			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "checkPrologExtra() request failed: " + e.getMessage());
+			case EndBlockMessage ebm -> sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(ebm.getGroupId(), ebm.getDeadline()), id));
+			case CommitBlockMessage cbm -> {
+				application.commitBlock(cbm.getGroupId());
+				sendObjectAsync(session, CommitBlockResultMessages.of(id));
+			}
+			case AbortBlockMessage abm -> {
+				application.abortBlock(abm.getGroupId());
+				sendObjectAsync(session, AbortBlockResultMessages.of(id));
+			}
+			case KeepFromMessage kfm -> {
+				application.keepFrom(kfm.getStart());
+				sendObjectAsync(session, KeepFromResultMessages.of(id));
+			}
+			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
 		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
+		catch (TransactionRejectedException | UnknownStateException | UnknownGroupIdException e) {
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
+		catch (ClosedApplicationException e) {
+			LOGGER.warning(logPrefix + "request processing failed since the serviced node has been closed: " + e.getMessage());
+		}
+	}
+
+	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CHECK_PROLOG_EXTRA_ENDPOINT + " request");
+		scheduleRequest(session, message);
 	};
 
 	public static class CheckPrologExtraEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -162,26 +191,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + CHECK_TRANSACTION_ENDPOINT + " request");
-
-		try {
-			try {
-				application.checkTransaction(message.getTransaction());
-				sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()));
-			}
-			catch (TransactionRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "checkTrasaction() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "checkTransaction() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class CheckTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -200,25 +210,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onGetPriority(GetPriorityMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_PRIORITY_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(message.getTransaction()), message.getId()));
-			}
-			catch (TransactionRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getPriority() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "getPriority() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetPriorityEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -237,25 +229,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onGetRepresentation(GetRepresentationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_REPRESENTATION_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(message.getTransaction()), message.getId()));
-			}
-			catch (TransactionRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getRepresentation() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "getRepresentation() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetRepresentationEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -274,22 +248,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onGetInitialStateId(GetInitialStateIdMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_INITIAL_STATE_ID_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "getInitialStateId() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "getInitialStateId() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class GetInitialStateIdEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -307,25 +266,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onBeginBlock(BeginBlockMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + BEGIN_BLOCK_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(message.getHeight(), message.getWhen(), message.getStateId()), message.getId()));
-			}
-			catch (UnknownStateException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "beginBlock() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "beginBlock() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class BeginBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -344,26 +285,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + DELIVER_TRANSACTION_ENDPOINT + " request");
-
-		try {
-			try {
-				application.deliverTransaction(message.getGroupId(), message.getTransaction());
-				sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()));
-			}
-			catch (UnknownGroupIdException | TransactionRejectedException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "deliverTransaction() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "deliverTransaction() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class DeliverTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -382,25 +304,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onEndBlock(EndBlockMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + END_BLOCK_ENDPOINT + " request");
-
-		try {
-			try {
-				sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(message.getGroupId(), message.getDeadline()), message.getId()));
-			}
-			catch (UnknownGroupIdException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "endBlock() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "endBlock() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class EndBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -419,26 +323,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onCommitBlock(CommitBlockMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + COMMIT_BLOCK_ENDPOINT + " request");
-
-		try {
-			try {
-				application.commitBlock(message.getGroupId());
-				sendObjectAsync(session, CommitBlockResultMessages.of(message.getId()));
-			}
-			catch (UnknownGroupIdException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "commitBlock() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "commitBlock() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class CommitBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -457,26 +342,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onAbortBlock(AbortBlockMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + ABORT_BLOCK_ENDPOINT + " request");
-
-		try {
-			try {
-				application.abortBlock(message.getGroupId());
-				sendObjectAsync(session, AbortBlockResultMessages.of(message.getId()));
-			}
-			catch (UnknownGroupIdException e) {
-				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "abortBlock() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "abortBlock() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class AbortBlockEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
@@ -495,23 +361,7 @@ public class ApplicationServiceImpl extends AbstractWebSocketServer implements A
 
 	protected void onKeepFrom(KeepFromMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + KEEP_FROM_ENDPOINT + " request");
-
-		try {
-			try {
-				application.keepFrom(message.getStart());
-				sendObjectAsync(session, KeepFromResultMessages.of(message.getId()));
-			}
-			catch (InterruptedException e) {
-				LOGGER.warning(logPrefix + "keepFrom() has been interrupted: " + e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-			catch (TimeoutException | ClosedApplicationException e) {
-				LOGGER.warning(logPrefix + "keepFrom() request failed: " + e.getMessage());
-			}
-		}
-		catch (IOException e) {
-			LOGGER.warning(logPrefix + "cannot send to session: it might be closed: " + e.getMessage());
-		}
+		scheduleRequest(session, message);
 	};
 
 	public static class KeepFromEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
