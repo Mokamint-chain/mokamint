@@ -54,11 +54,12 @@ import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
@@ -227,7 +228,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TransactionRejectedException, TimeoutException, PeerException, PeerRejectedException, ClosedNodeException, FailedDeploymentException, NodeCreationException {
+			private Run() throws InterruptedException, TimeoutException, FailedDeploymentException, NodeCreationException, ClosedPeerException, PeerRejectedException, ClosedNodeException, TransactionRejectedException, ApplicationTimeoutException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -275,14 +276,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						service.close();
 			}
 
-			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
+			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException, ApplicationTimeoutException {
 				for (Transaction tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
 					Thread.sleep(50);
 				}
 			}
 
-			private void addPeers() throws InterruptedException, TimeoutException, PeerException, PeerRejectedException, ClosedNodeException {
+			private void addPeers() throws InterruptedException, TimeoutException, ClosedPeerException, PeerRejectedException, ClosedNodeException {
 				for (int pos = 0; pos < nodes.length; pos++)
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}

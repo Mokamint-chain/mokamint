@@ -37,6 +37,7 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.Memories;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.PublicNode;
@@ -744,7 +745,7 @@ public class PublicNodeServiceImpl extends AbstractWebSocketServer implements Pu
 			try {
 				sendObjectAsync(session, AddTransactionResultMessages.of(node.add(message.getTransaction()), message.getId()));
 			}
-			catch (TransactionRejectedException e) {
+			catch (TransactionRejectedException | ApplicationTimeoutException e) {
 				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 			}
 			catch (InterruptedException e) {

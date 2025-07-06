@@ -139,11 +139,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param transaction the transaction
 	 * @return the mempool entry holding the transaction
 	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid
+	 * @throws ApplicationTimeoutException if the application connected to this node timed out during the analysis of {@code transaction}
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.

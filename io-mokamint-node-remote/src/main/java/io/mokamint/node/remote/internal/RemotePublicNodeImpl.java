@@ -56,6 +56,7 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.Memories;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -468,11 +469,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddTransaction(transaction, id);
-		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class);
+		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class, ApplicationTimeoutException.class);
 	}
 
 	protected void sendAddTransaction(Transaction transaction, String id) {

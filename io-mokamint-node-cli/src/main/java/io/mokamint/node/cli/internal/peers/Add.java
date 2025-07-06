@@ -23,7 +23,7 @@ import io.hotmoka.cli.CommandException;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
@@ -57,7 +57,7 @@ public class Add extends AbstractRestrictedRpcCommand {
 		try {
 			return remote.add(Peers.of(uri)).orElseThrow(() -> new CommandException("Peer " + uri + " has not been added to the set of peers: was it already present?"));
 		}
-		catch (PeerException e) {
+		catch (ClosedPeerException e) {
 			throw new CommandException("Cannot establish a connection to " + uri, e);
 		}
 		catch (PeerRejectedException e) {

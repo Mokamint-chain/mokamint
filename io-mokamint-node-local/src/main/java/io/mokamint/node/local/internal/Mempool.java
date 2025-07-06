@@ -35,6 +35,7 @@ import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
@@ -42,7 +43,6 @@ import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**

@@ -35,14 +35,14 @@ import java.util.stream.IntStream;
 import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 
@@ -401,7 +401,7 @@ public class Synchronization {
 
 				LOGGER.info("sync: block downloading from " + peer + " stops because no useful hashes have been provided anymore by the peer");
 			}
-			catch (PeerException e) {
+			catch (ClosedPeerException e) {
 				// peers.ban(peer); // TODO: we cannot ban it since we do not distinguish with a closed peer
 				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is misbehaving: " + e.getMessage());
 			}
@@ -467,11 +467,11 @@ public class Synchronization {
 		 * @param hashes the hashes of the blocks to download
 		 * @return true if and only if all blocks could have been downloaded
 		 * @throws InterruptedException if the current thread gets interrupted
-		 * @throws PeerException if the peer is misbehaving
+		 * @throws ClosedPeerException if the peer is misbehaving
 		 * @throws PeerTimeoutException if the peer does not answer on time
 		 * @throws ClosedDatabaseException if the database is already closed
 		 */
-		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
+		private boolean downloadNextGroupOfBlocks(byte[][] hashes) throws InterruptedException, ClosedPeerException, PeerTimeoutException, ClosedDatabaseException {
 			var blocks = new Block[hashes.length];
 
 			// in a first iteration, we download blocks only if no other downloader is taking care of them,
@@ -504,7 +504,7 @@ public class Synchronization {
 			return true;
 		}
 
-		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, String blockHash) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
+		private Optional<Block> downloadBlock(Block[] blocks, int pos, byte[] hash, String blockHash) throws InterruptedException, ClosedPeerException, PeerTimeoutException, ClosedDatabaseException {
 			Optional<Block> maybeBlock = peers.getBlock(peer, hash);
 
 			if (maybeBlock.isPresent()) {
@@ -535,7 +535,7 @@ public class Synchronization {
 		/**
 		 * Download the next group of hashes.
 		 */
-		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, PeerException, PeerTimeoutException, ClosedDatabaseException {
+		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, ClosedPeerException, PeerTimeoutException, ClosedDatabaseException {
 			long height = getHeight();
 			LOGGER.info("sync: downloading from " + peer + " the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + "]");
 			Optional<ChainPortion> maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize + 1);

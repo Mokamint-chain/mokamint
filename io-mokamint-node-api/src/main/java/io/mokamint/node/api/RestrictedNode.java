@@ -37,13 +37,13 @@ public interface RestrictedNode extends Node {
 	 * @param peer the peer to add
 	 * @return the information about the added peer; this is empty if the peer has not been added nor reconnected,
 	 *         for instance because it was already present or the node has already reached a maximum number of peers
-	 * @throws PeerException if {@code peer} is misbehaving
+	 * @throws ClosedPeerException if {@code peer} is misbehaving
 	 * @throws PeerRejectedException if {@code peer} was rejected for some reason
 	 * @throws TimeoutException if no answer arrives within a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node is already closed
 	 */
-	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, PeerException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<PeerInfo> add(Peer peer) throws PeerRejectedException, ClosedPeerException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Removes the given peer from the set of peers of this node, if it was there.

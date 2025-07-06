@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -36,6 +35,7 @@ import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
+import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.miner.remote.api.RemoteMiner;
 import io.mokamint.nonce.Challenges;
@@ -194,24 +194,20 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		// of being banned by the node we are working for
 		try {
 			check.check(deadline);
+			LOGGER.info(logPrefix + "notifying deadline: " + deadline);
+			requests.runAllActionsFor(deadline);
 		}
 		catch (IllegalDeadlineException e) {
 			LOGGER.warning(logPrefix + "removing session " + session.getId() + " since it sent an illegal deadline: " + e.getMessage());
 			removeSession(session);
 			close(session, new CloseReason(CloseCodes.CANNOT_ACCEPT, e.getMessage()));
-			return;
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			return;
 		}
-		catch (TimeoutException e) {
-			LOGGER.warning(logPrefix + "timed out while checking the validity of " + deadline + ": " + e.getMessage());
-			return;
+		catch (DeadlineValidityCheckException e) {
+			LOGGER.warning(logPrefix + "the check of the validity of " + deadline + " failed: " + e.getMessage());
 		}
-
-		LOGGER.info(logPrefix + "notifying deadline: " + deadline);
-		requests.runAllActionsFor(deadline);
 	}
 
 	private void close(Session session, CloseReason reason) {

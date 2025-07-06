@@ -16,43 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.api;
 
+import java.util.concurrent.TimeoutException;
+
 /**
- * An exception thrown if a peer is misbehaving.
+ * An exception thrown if the application connected to a local node is unresponsive.
  */
 @SuppressWarnings("serial")
-public class PeerException extends Exception {
-
-	/**
-	 * Creates the exception.
-	 */
-	public PeerException() {
-	}
-
-	/**
-	 * Creates the exception.
-	 * 
-	 * @param message the message
-	 */
-	public PeerException(String message) {
-		super(message);
-	}
+public class ApplicationTimeoutException extends Exception {
 
 	/**
 	 * Creates the exception.
 	 * 
 	 * @param cause the cause of the exception
 	 */
-	public PeerException(Exception cause) {
-		super(cause);
-	}
-
-	/**
-	 * Creates the exception.
-	 * 
-	 * @param message the message of the exception
-	 * @param cause the cause of the exception
-	 */
-	public PeerException(String message, Exception cause) {
-		super(message, cause);
+	public ApplicationTimeoutException(TimeoutException cause) {
+		super(cause.getMessage());
 	}
 }

@@ -51,11 +51,13 @@ import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.RemoteMiners;
+import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.Memories;
 import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.TaskInfos;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
@@ -69,7 +71,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.TaskInfo;
@@ -80,7 +82,6 @@ import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -433,7 +434,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
+	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ClosedNodeException, ApplicationTimeoutException, InterruptedException {
 		TransactionEntry result;
 
 		try {
@@ -508,7 +509,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, PeerException, PeerRejectedException {
+	public Optional<PeerInfo> add(Peer peer) throws TimeoutException, InterruptedException, ClosedNodeException, ClosedPeerException, PeerRejectedException {
 		Optional<PeerInfo> result;
 	
 		try (var scope = mkScope()) {
@@ -713,12 +714,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, TimeoutException, InterruptedException {
+	private void checkForMiners(Deadline deadline) throws IllegalDeadlineException, DeadlineValidityCheckException, InterruptedException {
 		try {
 			check(deadline);
 		}
-		catch (ClosedApplicationException e) { // TODO
-			throw new RuntimeException(e);
+		catch (ClosedApplicationException | ApplicationTimeoutException e) {
+			throw new DeadlineValidityCheckException(e);
 		}
 	}
 
@@ -1149,7 +1150,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 					if (peers.add(peer).isPresent())
 						scheduleSynchronizationIfPossible();
 				}
-				catch (PeerTimeoutException | PeerException e) {
+				catch (PeerTimeoutException | ClosedPeerException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because it is misbehaving: " + e.getMessage());
 				}
 				catch (PeerRejectedException e) {
@@ -1200,7 +1201,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
 	 */
-	private void processWhisperedTransactions() throws InterruptedException, ClosedDatabaseException, ClosedApplicationException {
+	private void processWhisperedTransactions() throws InterruptedException, ClosedDatabaseException {
 		while (!Thread.currentThread().isInterrupted()) {
 			var whisperedInfo = whisperedTransactionsQueue.take();
 			var whisperedTransactionMessage = whisperedInfo.message;
@@ -1210,7 +1211,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				try {
 					mempool.add(tx);
 				}
-				catch (ApplicationTimeoutException e) {
+				catch (ApplicationTimeoutException | ClosedApplicationException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
 				}
 				catch (TransactionRejectedException e) {
@@ -1241,7 +1242,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		try {
 			Optional<LocalDateTime> maybeStartTimeOfNonFrozenPart = blockchain.getStartingTimeOfNonFrozenHistory();
 			if (maybeStartTimeOfNonFrozenPart.isPresent())
-				app.keepFrom(maybeStartTimeOfNonFrozenPart.get()); // TODO: should this be inside an exclusive transaction on the blockchain's database?
+				app.keepFrom(maybeStartTimeOfNonFrozenPart.get());
 		}
 		catch (TimeoutException e) {
 			LOGGER.log(Level.WARNING, "cannot identify the non-frozen part of the blockchain because the application is unresponsive: " + e.getMessage());

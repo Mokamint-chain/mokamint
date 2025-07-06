@@ -23,6 +23,7 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.Transactions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -56,6 +57,9 @@ public class Add extends AbstractPublicRpcCommand {
 	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
+		}
+		catch (ApplicationTimeoutException e) {
+			throw new CommandException("The application of the node timed out", e);
 		}
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);

@@ -130,20 +130,16 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 		}
 
 		var stopDone = new AtomicInteger(0);
-		// we simulate an application failure at the fifth block, but only at the first attempts
-		try {
-			when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new TimeoutException("stopped at fifth"));
-		}
-		catch (TimeoutException e) {
-			throw new RuntimeException("Unexpected exception", e);
-		}
+		// we simulate an application failure at the fifth block, but only at the first attempts:
+		// at the next attempt, the application will start working again and mining will proceed
+		when(app.beginBlock(longThat(l -> l == 4 && stopDone.getAndIncrement() <= 1), any(), any())).thenThrow(new TimeoutException("stopped at fifth"));
 
 		try (var service = ApplicationServices.open(app, port);
 			 var remote = RemoteApplications.of(uri, 2000);
 			 var node = new MyLocalNode(mkConfig(chain), remote)) {
 
 			// we wait until seven blocks get added
-			assertTrue(sevenBlocksAdded.tryAcquire(1, 20, TimeUnit.SECONDS));
+			assertTrue(sevenBlocksAdded.tryAcquire(1, 25, TimeUnit.SECONDS));
 		}
 	}
 }

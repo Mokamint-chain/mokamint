@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.miner.remote.api;
 
-import java.util.concurrent.TimeoutException;
-
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -29,9 +27,10 @@ public interface DeadlineValidityCheck {
 	 * Performs the check. If and only if it fails, an exception is thrown.
 	 * 
 	 * @param deadline the deadline to check
-	 * @throws IllegalDeadlineException if and only if the deadline is invalid
+	 * @throws IllegalDeadlineException if the deadline is invalid
 	 * @throws InterruptedException if the current thread has been interrupted
-	 * @throws TimeoutException if the check did not answer in time
+	 * @throws DeadlineValidityCheckException if the check for the validity of {@code deadline} could not be accomplished for some reason
+	 *                                        (which is not a request of interruption)
 	 */
-	void check(Deadline deadline) throws IllegalDeadlineException, InterruptedException, TimeoutException;
+	void check(Deadline deadline) throws IllegalDeadlineException, InterruptedException, DeadlineValidityCheckException;
 }

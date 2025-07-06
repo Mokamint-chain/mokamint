@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
-
-import java.util.concurrent.TimeoutException;
+package io.mokamint.miner.remote.api;
 
 /**
- * An exception thrown if the application connected to a local node is unresponsive.
+ * An exception stating that the check for validity of a deadline could not be accomplished.
  */
 @SuppressWarnings("serial")
-public class ApplicationTimeoutException extends TimeoutException { // TODO: use Exception as superclass
+public class DeadlineValidityCheckException extends Exception {
+
+	/**
+	 * Creates the exception.
+	 * 
+	 * @param message the message in the exception
+	 */
+	public DeadlineValidityCheckException(String message) {
+		super(message);
+	}
 
 	/**
 	 * Creates the exception.
 	 * 
 	 * @param cause the cause of the exception
 	 */
-	public ApplicationTimeoutException(TimeoutException cause) {
-		super(cause.getMessage());
+	public DeadlineValidityCheckException(Throwable cause) {
+		super(cause);
 	}
 }

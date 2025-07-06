@@ -27,7 +27,7 @@ import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.AddPeerMessages;
@@ -106,7 +106,7 @@ public class RestrictedNodeServiceImpl extends AbstractWebSocketServer implement
 			try {
 				sendObjectAsync(session, AddPeerResultMessages.of(node.add(message.getPeer()), message.getId()));
 			}
-			catch (PeerException | PeerRejectedException e) {
+			catch (ClosedPeerException | PeerRejectedException e) {
 				sendObjectAsync(session, ExceptionMessages.of(e, message.getId()));
 			}
 			catch (InterruptedException e) {

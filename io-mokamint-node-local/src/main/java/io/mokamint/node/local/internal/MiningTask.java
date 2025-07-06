@@ -23,8 +23,8 @@ import java.util.logging.Logger;
 
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownStateException;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.local.ApplicationTimeoutException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 

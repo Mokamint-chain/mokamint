@@ -40,7 +40,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.PeerException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.messages.AddPeerMessages;
 import io.mokamint.node.messages.AddPeerResultMessages;
@@ -114,12 +114,12 @@ public class RemoteRestrictedNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddPeer(AddPeerMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new PeerException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new ClosedPeerException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteRestrictedNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(PeerException.class, () -> remote.add(peer));
+			var exception = assertThrows(ClosedPeerException.class, () -> remote.add(peer));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
