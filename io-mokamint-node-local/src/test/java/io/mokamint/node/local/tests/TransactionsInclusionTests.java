@@ -46,20 +46,19 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.exceptions.CheckSupplier;
 import io.hotmoka.exceptions.UncheckFunction;
-import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
+import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.Transaction;
@@ -67,6 +66,7 @@ import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
+import io.mokamint.node.local.internal.DatabaseException;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
@@ -107,7 +107,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException, NodeCreationException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -150,7 +150,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, NodeCreationException {
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException {
 				super(config, init);
 			}
 
@@ -203,7 +203,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, NodeCreationException  {
+				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException  {
 					super(config, init);
 				}
 
@@ -228,7 +228,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TimeoutException, FailedDeploymentException, NodeCreationException, ClosedPeerException, PeerRejectedException, ClosedNodeException, TransactionRejectedException, ApplicationTimeoutException {
+			private Run() throws InterruptedException, TimeoutException, FailedDeploymentException, ClosedPeerException, PeerRejectedException, ClosedNodeException, TransactionRejectedException, ApplicationTimeoutException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -257,12 +257,12 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					node.getSeenAll().acquire();
 			}
 
-			private TestNode[] openNodes(Path dir) throws InterruptedException, TimeoutException, FailedDeploymentException, NodeCreationException {
-				FunctionWithExceptions4<Integer, TestNode, NodeCreationException, TimeoutException, InterruptedException, FailedDeploymentException> function = num -> mkNode(dir, num);
+			private TestNode[] openNodes(Path dir) throws InterruptedException, TimeoutException, FailedDeploymentException {
+				FunctionWithExceptions3<Integer, TestNode, TimeoutException, InterruptedException, FailedDeploymentException> function = num -> mkNode(dir, num);
 
-				return CheckSupplier.check(NodeCreationException.class, TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, () -> 
+				return CheckSupplier.check(TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, () -> 
 					IntStream.range(0, NUM_NODES).parallel().mapToObj(Integer::valueOf)
-						.map(UncheckFunction.uncheck(NodeCreationException.class, TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, function)).toArray(TestNode[]::new));
+						.map(UncheckFunction.uncheck(TimeoutException.class, InterruptedException.class, FailedDeploymentException.class, function)).toArray(TestNode[]::new));
 			}
 
 			private void closeNodes() {
@@ -288,14 +288,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					nodes[pos].add(getPeer((pos + 1) % NUM_NODES));
 			}
 
-			private TestNode mkNode(Path dir, int num) throws NodeCreationException, TimeoutException, InterruptedException, FailedDeploymentException {
+			private TestNode mkNode(Path dir, int num) throws TimeoutException, InterruptedException, FailedDeploymentException {
 				TestNode result;
 
 				try {
 					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 				}
 				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException e) {
-					throw new NodeCreationException(e);
+					throw new DatabaseException(e);
 				}
 
 				var uri = getPeer(num).getURI();

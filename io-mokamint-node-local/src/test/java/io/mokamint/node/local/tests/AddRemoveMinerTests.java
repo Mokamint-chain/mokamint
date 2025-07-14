@@ -40,7 +40,6 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.MinerInfo;
@@ -115,7 +114,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1() throws InterruptedException, NodeCreationException {
+			private MyLocalNode1() throws InterruptedException {
 				super(config1, node1Keys, app, true);
 			}
 
@@ -132,7 +131,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2() throws InterruptedException, NodeCreationException {
+			private MyLocalNode2() throws InterruptedException {
 				super(config2, node2Keys, app, false);
 			}
 

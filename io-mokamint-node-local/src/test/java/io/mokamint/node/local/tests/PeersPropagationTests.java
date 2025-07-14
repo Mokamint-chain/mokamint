@@ -41,7 +41,6 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
@@ -94,7 +93,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -160,7 +159,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -211,7 +210,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException, NodeCreationException {
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException {
 				super(config, nodeKey, app, false);
 				
 				this.expected = expected;

@@ -49,7 +49,6 @@ import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -135,11 +134,11 @@ public class MempoolTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, NodeCreationException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 

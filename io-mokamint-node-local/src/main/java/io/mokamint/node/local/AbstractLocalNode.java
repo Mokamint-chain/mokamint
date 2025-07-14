@@ -20,7 +20,6 @@ import java.security.KeyPair;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -38,9 +37,8 @@ public abstract class AbstractLocalNode extends LocalNodeImpl {
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws NodeCreationException if the creation of the node failed
 	 */
-	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeCreationException {
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
 		super(config, keyPair, app, init);
 	}
 }

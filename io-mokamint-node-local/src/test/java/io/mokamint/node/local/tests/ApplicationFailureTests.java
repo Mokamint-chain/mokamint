@@ -45,7 +45,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -116,7 +115,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, NodeCreationException, ClosedNodeException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, ClosedNodeException {
 				super(config, nodeKeys, app, true);
 				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 			}

@@ -45,7 +45,6 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -139,7 +138,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException, ClosedNodeException, WrongKeyException {
+		private MiningNode(LocalNodeConfig config) throws InterruptedException, ClosedNodeException, WrongKeyException {
 			super(config, nodeKeys, app, true);
 			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
 		}
@@ -157,7 +156,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends AbstractLocalNode {
 
-		private NonMiningNode(LocalNodeConfig config) throws InterruptedException, NodeCreationException {
+		private NonMiningNode(LocalNodeConfig config) throws InterruptedException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 

@@ -55,7 +55,6 @@ import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
 import io.mokamint.miner.remote.api.IllegalDeadlineException;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.Memories;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
@@ -63,6 +62,7 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
@@ -71,7 +71,6 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.TaskInfo;
@@ -221,9 +220,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws NodeCreationException if the creation of the node failed
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeCreationException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
 		super(ClosedNodeException::new);
 
 		this.config = config;
@@ -242,7 +240,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			this.uuid = getInfo().getUUID();
 		}
 		catch (ClosedNodeException e) { // the node cannot be already closed
-			throw new RuntimeException("The node has been unexpectedly closed", e);
+			throw new DatabaseException("The node has been unexpectedly closed", e);
 		}
 
 		// if the application gets closed, this node cannot work properly anymore and we close it as well
@@ -254,38 +252,38 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		scheduleTasks();
 	}
 
-	private void initialize() throws NodeCreationException, InterruptedException {
+	private void initialize() throws InterruptedException {
 		try {
 			blockchain.initialize();
 		}
 		catch (AlreadyInitializedException e) {
 			close();
-			throw new NodeCreationException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
+			throw new DatabaseException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
 		}
 		catch (ApplicationTimeoutException e) {
 			close();
-			throw new NodeCreationException("The application timed out", e);
+			throw new DatabaseException("The application timed out", e);
 		}
 		catch (InvalidKeyException | SignatureException e) {
 			close();
-			throw new NodeCreationException("The genesis block could not be signed", e);
+			throw new DatabaseException("The genesis block could not be signed", e);
 		}
 		catch (ClosedDatabaseException e) {
 			close();
 			 // the database cannot be already closed
-			throw new RuntimeException("The database has been unexpectedly closed", e);
+			throw new DatabaseException("The database has been unexpectedly closed", e);
 		}
 		catch (ClosedApplicationException e) {
 			close();
-			throw new NodeCreationException("The application is already closed", e);
+			throw new DatabaseException("The application is already closed", e);
 		}
 		catch (MisbehavingApplicationException e) {
 			close();
-			throw new NodeCreationException("The application is misbehaving", e);
+			throw new DatabaseException("The application is misbehaving", e);
 		}
 	}
 
-	private void scheduleTasks() throws NodeCreationException {
+	private void scheduleTasks() {
 		try {
 			schedulePeriodicSynchronization();
 			schedule(this::processWhisperedPeers, "peers whispering process");
@@ -298,7 +296,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 		catch (TaskRejectedExecutionException e) {
 			close();
-			throw new NodeCreationException("Could not spawn the node's tasks", e);
+			throw new DatabaseException("Could not spawn the node's tasks", e);
 		}
 	}
 

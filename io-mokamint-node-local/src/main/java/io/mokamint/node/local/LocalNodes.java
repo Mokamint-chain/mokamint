@@ -19,7 +19,6 @@ package io.mokamint.node.local;
 import java.security.KeyPair;
 
 import io.mokamint.application.api.Application;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -41,9 +40,8 @@ public abstract class LocalNodes {
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
 	 * @throws InterruptedException if the initialization of the node was interrupted
-	 * @throws NodeCreationException if the creation of the node failed
 	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, NodeCreationException {
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }

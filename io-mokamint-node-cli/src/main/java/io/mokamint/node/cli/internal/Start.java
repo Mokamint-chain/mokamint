@@ -43,7 +43,6 @@ import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
@@ -244,35 +243,31 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The key of the node could not be encoded!", e);
 			}
 
-			try (var app = mkApplication()) {
-				System.out.print("Starting a local node... ");
-				try (var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
-					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+			System.out.print("Starting a local node... ");
 
-					if (plotsAndKeyPairs.size() >= 1) {
-						if (plotsAndKeyPairs.size() == 1)
-							System.out.print("Starting a local miner with 1 plot... ");
-						else
-							System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
+			try (var app = mkApplication(); var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
+				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
-						try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
-							if (node.add(miner).isPresent()) {
-								System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-								publishPublicAndRestrictedNodeServices(0);
-							}
-							else
-								throw new CommandException("The miner has not been added!");
-						}
-						catch (ClosedNodeException e) {
-							throw new CommandException("The node is already closed!", e);
-						}
-					}
+				if (plotsAndKeyPairs.size() >= 1) {
+					if (plotsAndKeyPairs.size() == 1)
+						System.out.print("Starting a local miner with 1 plot... ");
 					else
-						publishPublicAndRestrictedNodeServices(0);
+						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
+
+					try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+						if (node.add(miner).isPresent()) {
+							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+							publishPublicAndRestrictedNodeServices(0);
+						}
+						else
+							throw new CommandException("The miner has not been added!");
+					}
+					catch (ClosedNodeException e) {
+						throw new CommandException("The node is already closed!", e);
+					}
 				}
-				catch (NodeCreationException e) {
-					throw new CommandException("The creation of the node failed", e);
-				}
+				else
+					publishPublicAndRestrictedNodeServices(0);
 			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?

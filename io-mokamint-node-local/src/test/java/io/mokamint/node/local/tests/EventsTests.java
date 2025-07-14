@@ -47,7 +47,6 @@ import io.mokamint.application.api.Application;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
-import io.mokamint.node.NodeCreationException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -182,7 +181,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NodeCreationException, NoSuchAlgorithmException, ClosedNodeException {
+			private MyLocalNode() throws InterruptedException, NoSuchAlgorithmException, ClosedNodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -248,7 +247,7 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends AbstractLocalNode {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, NodeCreationException, ClosedNodeException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -273,7 +272,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException, NodeCreationException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -297,7 +296,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, ClosedNodeException, NodeCreationException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException {
 				super(config, nodeKeys, app, true);
 
 				var miner = mock(Miner.class);
@@ -369,7 +368,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, ClosedNodeException, NodeCreationException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException {
 				super(config, nodeKeys, app, true);
 				add(myMiner);
 			}
