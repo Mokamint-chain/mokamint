@@ -81,6 +81,7 @@ import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -240,7 +241,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			this.uuid = getInfo().getUUID();
 		}
 		catch (ClosedNodeException e) { // the node cannot be already closed
-			throw new DatabaseException("The node has been unexpectedly closed", e);
+			throw new LocalNodeException("The node has been unexpectedly closed", e);
 		}
 
 		// if the application gets closed, this node cannot work properly anymore and we close it as well
@@ -258,28 +259,28 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 		catch (AlreadyInitializedException e) {
 			close();
-			throw new DatabaseException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
+			throw new LocalNodeException("The blockchain database is already initialized: delete \"" + config.getDir() + "\" and try again", e);
 		}
 		catch (ApplicationTimeoutException e) {
 			close();
-			throw new DatabaseException("The application timed out", e);
+			throw new LocalNodeException("The application timed out", e);
 		}
 		catch (InvalidKeyException | SignatureException e) {
 			close();
-			throw new DatabaseException("The genesis block could not be signed", e);
+			throw new LocalNodeException("The genesis block could not be signed", e);
 		}
 		catch (ClosedDatabaseException e) {
 			close();
 			 // the database cannot be already closed
-			throw new DatabaseException("The database has been unexpectedly closed", e);
+			throw new LocalNodeException("The database has been unexpectedly closed", e);
 		}
 		catch (ClosedApplicationException e) {
 			close();
-			throw new DatabaseException("The application is already closed", e);
+			throw new LocalNodeException("The application is already closed", e);
 		}
 		catch (MisbehavingApplicationException e) {
 			close();
-			throw new DatabaseException("The application is misbehaving", e);
+			throw new LocalNodeException("The application is misbehaving", e);
 		}
 	}
 
@@ -296,7 +297,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 		catch (TaskRejectedExecutionException e) {
 			close();
-			throw new DatabaseException("Could not spawn the node's tasks", e);
+			throw new LocalNodeException("Could not spawn the node's tasks", e);
 		}
 	}
 

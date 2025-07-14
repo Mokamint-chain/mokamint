@@ -37,6 +37,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.ChallengeMatchException;
 import io.mokamint.nonce.api.Deadline;
@@ -407,7 +408,7 @@ public class BlockVerification {
 
 			// if the following exception occurs, there is a coding error
 			var creationTimeOfPrevious = node.getBlockchain().creationTimeOf(txn, previous)
-					.orElseThrow(() -> new DatabaseException("The previous of the block under verification was expected to be in blockchain"));
+					.orElseThrow(() -> new LocalNodeException("The previous of the block under verification was expected to be in blockchain"));
 
 			try {
 				int id;

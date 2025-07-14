@@ -14,20 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local.internal;
+package io.mokamint.node.local;
 
 /**
- * An exception stating that the database of a Mokamint node is corrupted.
+ * An exception stating that a local Hotmoka node was not able to perform an operation.
+ * This is a bug in the code of the node or a limit of the system. For instance,
+ * it might occur because a database is corrupted, or a cryptographic algorithm is not available
+ * or because a file cannot be accessed. Therefore, this exception is not meant to be caught.
  */
 @SuppressWarnings("serial")
-public class DatabaseException extends RuntimeException {
+public class LocalNodeException extends RuntimeException {
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public DatabaseException(String message) {
+	public LocalNodeException(String message) {
 		super(message);
 	}
 
@@ -36,7 +39,7 @@ public class DatabaseException extends RuntimeException {
 	 * 
 	 * @param cause the cause
 	 */
-	public DatabaseException(Throwable cause) {
+	public LocalNodeException(Throwable cause) {
 		super(cause);
 	}
 
@@ -46,7 +49,7 @@ public class DatabaseException extends RuntimeException {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public DatabaseException(String message, Throwable cause) {
+	public LocalNodeException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

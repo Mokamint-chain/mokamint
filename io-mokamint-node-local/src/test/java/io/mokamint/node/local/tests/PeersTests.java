@@ -71,9 +71,9 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.LocalNodes;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.DatabaseException;
 import io.mokamint.node.service.internal.PublicNodeServiceImpl;
 
 public class PeersTests extends AbstractLoggedTests {
@@ -132,7 +132,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 		catch (TimeoutException | ClosedNodeException | NoSuchAlgorithmException e) {
 			// fake, it's just out of stubbing
-			throw new DatabaseException("Unexpected exception", e);
+			throw new LocalNodeException("Unexpected exception", e);
 		}
 	}
 

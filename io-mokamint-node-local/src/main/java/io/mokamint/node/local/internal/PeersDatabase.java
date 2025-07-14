@@ -38,6 +38,7 @@ import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
@@ -117,12 +118,12 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		try (var scope = mkScope()) {
 			var bi = environment.computeInReadonlyTransaction(txn -> storeOfPeers.get(txn, UUID));
 			if (bi == null)
-				throw new DatabaseException("The UUID of the node is not in the peers database");
+				throw new LocalNodeException("The UUID of the node is not in the peers database");
 
 			return MarshallableUUID.from(bi).uuid;
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -138,7 +139,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			return bi == null ? Stream.empty() : ArrayOfPeers.from(bi).stream();
 		}
 		catch (IOException | ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -159,7 +160,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			return environment.computeInTransaction(txn -> add(txn, peer, force));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -176,7 +177,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			return environment.computeInTransaction(txn -> remove(txn, peer));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -223,7 +224,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 					LOGGER.info("db: the UUID of the node is " + MarshallableUUID.from(bi).uuid);
 			}
 			catch (IOException | ExodusException e) {
-				throw new DatabaseException(e);
+				throw new LocalNodeException(e);
 			}
 		});
 	}
@@ -306,7 +307,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -327,7 +328,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -345,7 +346,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 			return store;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 }

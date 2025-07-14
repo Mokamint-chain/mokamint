@@ -65,8 +65,8 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.DatabaseException;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
@@ -295,7 +295,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 				}
 				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException e) {
-					throw new DatabaseException(e);
+					throw new LocalNodeException(e);
 				}
 
 				var uri = getPeer(num).getURI();

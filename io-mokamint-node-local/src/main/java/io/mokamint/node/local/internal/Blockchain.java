@@ -77,6 +77,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
+import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -252,7 +253,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::isEmpty);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -273,7 +274,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			result = environment.computeInReadonlyTransaction(this::getGenesisHash);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 
 		genesisHashCache = result.map(byte[]::clone);
@@ -296,7 +297,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return genesisCache = environment.computeInReadonlyTransaction(this::getGenesis);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -311,7 +312,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::getHead);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -326,7 +327,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::getStartOfNonFrozenPart);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -342,7 +343,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::getStartingTimeOfNonFrozenHistory);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -357,7 +358,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::getHeightOfHead);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -373,7 +374,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getBlock(txn, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -389,7 +390,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getBlockDescription(txn, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -405,7 +406,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getTransaction(txn, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -422,7 +423,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getTransactionAddress(txn, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -440,7 +441,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getTransactionAddress(txn, block, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -455,7 +456,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(this::getChainInfo);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -474,7 +475,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> getChain(txn, start, count));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -490,7 +491,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> containsBlock(txn, hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -506,7 +507,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return environment.computeInReadonlyTransaction(txn -> isBetterThanHead(txn, block));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -529,7 +530,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return getGenesis().map(genesis -> genesis.getStartDateTimeUTC().plus(block.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -814,17 +815,17 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			// we move backwards from the initial head until we hit the current best chain
 			Block start;
 			if (initialHeadHash.isEmpty())
-				start = getGenesis(txn).orElseThrow(() -> new DatabaseException("The blockchain has been expanded but it still misses a genesis block"));
+				start = getGenesis(txn).orElseThrow(() -> new LocalNodeException("The blockchain has been expanded but it still misses a genesis block"));
 			else {
 				byte[] hashOfCursor = initialHeadHash.get();
-				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot find the original head of the blockchain"));
+				Block cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new LocalNodeException("Cannot find the original head of the blockchain"));
 				while (!isContainedInTheBestChain(txn, cursor, hashOfCursor))
 					if (cursor instanceof NonGenesisBlock ngb) {
 						hashOfCursor = ngb.getHashOfPreviousBlock();
-						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new DatabaseException("Cannot follow the path to the original head of the blockchain, backwards"));
+						cursor = getBlock(txn, hashOfCursor).orElseThrow(() -> new LocalNodeException("Cannot follow the path to the original head of the blockchain, backwards"));
 					}
 					else
-						throw new DatabaseException("The original head is in a dangling path");
+						throw new LocalNodeException("The original head is in a dangling path");
 
 				start = cursor;
 			}
@@ -838,7 +839,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				hashOfBlockFromBestChain = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(height)));
 				if (hashOfBlockFromBestChain != null)
 					blocksAddedToTheCurrentBestChain.addLast(getBlock(txn, hashOfBlockFromBestChain.getBytes())
-							.orElseThrow(() -> new DatabaseException("Cannot follow the new best chain upwards")));
+							.orElseThrow(() -> new LocalNodeException("Cannot follow the new best chain upwards")));
 			}
 			while (hashOfBlockFromBestChain != null);
 		}
@@ -926,7 +927,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				LOGGER.info(() -> "blockchain: height " + heightOfHead + ": block " + newHead.getHexHash() + " set as head");
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new LocalNodeException(e);
 			}
 		}
 
@@ -958,7 +959,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						long heightCopy = height;
 						var oldBytes = old.getBytes();
 						Block oldBlock = getBlock(txn, oldBytes)
-							.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
+							.orElseThrow(() -> new LocalNodeException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
 		
 						removeReferencesToTransactionsInside(txn, oldBlock);
 					}
@@ -967,11 +968,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 					if (cursor instanceof NonGenesisBlock ngb) {
 						if (height <= 0L)
-							throw new DatabaseException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+							throw new LocalNodeException("The current best chain contains the non-genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
 		
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 						var cursorHashCopy = cursorHash;
-						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
+						cursor = getBlock(txn, hashOfPrevious).orElseThrow(() -> new LocalNodeException("Block " + Hex.toHexString(cursorHashCopy) + " has no previous block in the database"));
 						cursorHash = hashOfPrevious;
 						height--;
 						heightBI = fromBytes(longToBytes(height));
@@ -979,7 +980,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						old = storeOfChain.get(txn, heightBI);
 					}
 					else if (height > 0L)
-						throw new DatabaseException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
+						throw new LocalNodeException("The current best chain contains a genesis block " + Hex.toHexString(cursorHash) + " at height " + height);
 				}
 				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 		
@@ -990,7 +991,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				byte[] startOfNonFrozenPartHash;
 		
 				if (maybeStartOfNonFrozenPartHash.isEmpty()) {
-					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new DatabaseException("The head has changed but the genesis hash is missing"));
+					startOfNonFrozenPartHash = getGenesisHash(txn).orElseThrow(() -> new LocalNodeException("The head has changed but the genesis hash is missing"));
 					setStartOfNonFrozenPartHash(txn, startOfNonFrozenPartHash);
 				}
 				else
@@ -1001,7 +1002,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					do {
 						var startOfNonFrozenPartHashCopy = startOfNonFrozenPartHash;
 						var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash)
-								.orElseThrow(() -> new DatabaseException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy)
+								.orElseThrow(() -> new LocalNodeException("Block " + Hex.toHexString(startOfNonFrozenPartHashCopy)
 									+ " should be the start of the non-frozen part of the blockchain, but it cannot be found in the database"));
 		
 						if (totalTimeOfNewHead - descriptionOfStartOfNonFrozenPart.getTotalWaitingTime() <= maximalHistoryChangeTime)
@@ -1009,7 +1010,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 						ByteIterable aboveStartOfNonFrozenPartHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getHeight() + 1)));
 						if (aboveStartOfNonFrozenPartHash == null)
-							throw new DatabaseException("The block above the start of the non-frozen part of the blockchain is not in the database");
+							throw new LocalNodeException("The block above the start of the non-frozen part of the blockchain is not in the database");
 		
 						byte[] newStartOfNonFrozenPartHash = aboveStartOfNonFrozenPartHash.getBytes();
 		
@@ -1024,7 +1025,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				}
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new LocalNodeException(e);
 			}
 		}
 
@@ -1040,7 +1041,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
 					}
 					catch (ExodusException e) {
-						throw new DatabaseException(e);
+						throw new LocalNodeException(e);
 					}
 				};
 			}
@@ -1076,15 +1077,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 							storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
 						}
 						catch (ExodusException e) {
-							throw new DatabaseException(e);
+							throw new LocalNodeException(e);
 						}
 
 						byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();
 						var blockCopy = block;
-						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new DatabaseException("Block " + blockCopy.getHexHash() + " has no previous block in the database"));
+						block = getBlock(txn, hashOfPrevious).orElseThrow(() -> new LocalNodeException("Block " + blockCopy.getHexHash() + " has no previous block in the database"));
 					}
 					else
-						throw new DatabaseException("The current best chain contains a genesis block " + block.getHexHash() + " at height " + blockHeight);
+						throw new LocalNodeException("The current best chain contains a genesis block " + block.getHexHash() + " at height " + blockHeight);
 				}
 			}
 		}
@@ -1097,7 +1098,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
 					}
 					catch (ExodusException e) {
-						throw new DatabaseException(e);
+						throw new LocalNodeException(e);
 					}
 				}
 			}
@@ -1151,7 +1152,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (newBlock.equals(oldBlock))
 				return true;
 			else if (newBlock instanceof GenesisBlock || oldBlock instanceof GenesisBlock)
-				throw new DatabaseException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash() + " and " + newBlock.getHexHash());
+				throw new LocalNodeException("Cannot identify a shared ancestor block between " + oldBlock.getHexHash() + " and " + newBlock.getHexHash());
 			else
 				return false;
 		}
@@ -1162,7 +1163,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
+				throw new LocalNodeException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
 		}
 
 		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
@@ -1171,7 +1172,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
-				throw new DatabaseException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
+				throw new LocalNodeException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
 		}
 
 		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
@@ -1221,7 +1222,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		private Block getBlock(byte[] hash) {
-			return Blockchain.this.getBlock(txn, hash).orElseThrow(() -> new DatabaseException("Missing block with hash " + Hex.toHexString(hash)));
+			return Blockchain.this.getBlock(txn, hash).orElseThrow(() -> new LocalNodeException("Missing block with hash " + Hex.toHexString(hash)));
 		}
 	}
 
@@ -1248,7 +1249,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			adder = environment.computeInTransaction(VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	
 		adder.informNode();
@@ -1281,7 +1282,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			adder = environment.computeInTransaction(VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	
 		adder.informNode();
@@ -1303,7 +1304,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return env;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1314,7 +1315,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return store;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1330,7 +1331,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_HEAD)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1346,7 +1347,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.ofNullable(storeOfBlocks.get(txn, STATE_ID_OF_HEAD)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1362,7 +1363,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_START_OF_NON_FROZEN_PART)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1380,13 +1381,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.empty();
 
 		Block startOfNonFrozenPart = getBlock(txn, maybeStartOfNonFrozenPartHash.get())
-			.orElseThrow(() -> new DatabaseException("The hash of the start of the non-frozen part of the blockchain is set but its block cannot be found in the database"));
+			.orElseThrow(() -> new LocalNodeException("The hash of the start of the non-frozen part of the blockchain is set but its block cannot be found in the database"));
 
 		if (startOfNonFrozenPart instanceof GenesisBlock gb)
 			return Optional.of(gb.getStartDateTimeUTC());
 
 		return Optional.of(getGenesis(txn)
-			.orElseThrow(() -> new DatabaseException("The database is not empty but its genesis block is not set"))
+			.orElseThrow(() -> new LocalNodeException("The database is not empty but its genesis block is not set"))
 			.getStartDateTimeUTC().plus(startOfNonFrozenPart.getDescription().getTotalWaitingTime(), ChronoUnit.MILLIS));
 	}
 
@@ -1401,7 +1402,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.ofNullable(storeOfBlocks.get(txn, HASH_OF_GENESIS)).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1416,7 +1417,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return Optional.ofNullable(storeOfBlocks.get(txn, POWER_OF_HEAD)).map(ByteIterable::getBytes).map(BigInteger::new);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1434,13 +1435,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			else {
 				long chainHeight = bytesToLong(heightBI.getBytes());
 				if (chainHeight < 0L)
-					throw new DatabaseException("The database contains a negative chain length");
+					throw new LocalNodeException("The database contains a negative chain length");
 
 				return OptionalLong.of(chainHeight);
 			}
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1458,13 +1459,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			else {
 				long totalWaitingTime = bytesToLong(totalWaitingTimeBI.getBytes());
 				if (totalWaitingTime < 0L)
-					throw new DatabaseException("The database contains a negative total waiting time for the start of the non-frozen part of the blockchain");
+					throw new LocalNodeException("The database contains a negative total waiting time for the start of the non-frozen part of the blockchain");
 
 				return OptionalLong.of(totalWaitingTime);
 			}
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1482,7 +1483,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			forwards = storeOfForwards.get(txn, fromBytes(hash));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 
 		if (forwards == null)
@@ -1491,7 +1492,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			int size = config.getHashingForBlocks().length();
 			byte[] hashes = forwards.getBytes();
 			if (hashes.length % size != 0)
-				throw new DatabaseException("The forward map has been corrupted");
+				throw new LocalNodeException("The forward map has been corrupted");
 			else if (hashes.length == size) // frequent case, worth optimizing
 				return Stream.of(hashes);
 			else
@@ -1524,7 +1525,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1548,7 +1549,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1569,24 +1570,24 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			var ref = TransactionRef.from(txBI);
 			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
 			if (blockHash == null)
-				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+				throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
 			Block block = getBlock(txn, blockHash.getBytes())
-				.orElseThrow(() -> new DatabaseException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes())));
+				.orElseThrow(() -> new LocalNodeException("The current best chain misses the block at height " + ref.height  + " with hash " + Hex.toHexString(blockHash.getBytes())));
 
 			if (block instanceof NonGenesisBlock ngb) {
 				try {
 					return Optional.of(ngb.getTransaction(ref.progressive));
 				}
 				catch (IndexOutOfBoundsException e) {
-					throw new DatabaseException("Transaction " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
+					throw new LocalNodeException("Transaction " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
 				}
 			}
 			else
-				throw new DatabaseException("Transaction " + Hex.toHexString(hash) + " seems contained in a genesis block, which is impossible");
+				throw new LocalNodeException("Transaction " + Hex.toHexString(hash) + " seems contained in a genesis block, which is impossible");
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1607,12 +1608,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			var ref = TransactionRef.from(txBI);
 			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
 			if (blockHash == null)
-				throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+				throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
 			return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1644,7 +1645,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 					ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
 					if (blockHash == null)
-						throw new DatabaseException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
+						throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
 					return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
 				}
@@ -1666,11 +1667,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					hashOfBlock = hashOfPrevious;
 				}
 				else
-					throw new DatabaseException("The block " + initialHash + " is not connected to the best chain");
+					throw new LocalNodeException("The block " + initialHash + " is not connected to the best chain");
 			}
 		}
 		catch (ExodusException | IOException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1701,7 +1702,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		if (isEmpty(txn))
 			return true;
 		else {
-			BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new DatabaseException("The database of blocks is non-empty but the power of the head is not set"));
+			BigInteger powerOfHead = getPowerOfHead(txn).orElseThrow(() -> new LocalNodeException("The database of blocks is non-empty but the power of the head is not set"));
 			return block.getDescription().getPower().compareTo(powerOfHead) > 0;
 		}
 	}
@@ -1713,7 +1714,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return hashOfBlockFromBestChain != null && Arrays.equals(hashOfBlockFromBestChain.getBytes(), blockHash);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1743,10 +1744,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (maybeHead.isPresent())
 				return maybeHead;
 			else
-				throw new DatabaseException("The head hash is set but it is not in the database");
+				throw new LocalNodeException("The head hash is set but it is not in the database");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1766,10 +1767,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (maybeStartOfNonFrozenPart.isPresent())
 				return maybeStartOfNonFrozenPart;
 			else
-				throw new DatabaseException("The hash of the start of non-frozen part of the blockchain is set but it is not in the database");
+				throw new LocalNodeException("The hash of the start of non-frozen part of the blockchain is set but it is not in the database");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1785,15 +1786,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (maybeGenesisHash.isEmpty())
 				return Optional.empty();
 
-			Block genesis = getBlock(txn, maybeGenesisHash.get()).orElseThrow(() -> new DatabaseException("The genesis hash is set but it is not in the database"));
+			Block genesis = getBlock(txn, maybeGenesisHash.get()).orElseThrow(() -> new LocalNodeException("The genesis hash is set but it is not in the database"));
 
 			if (genesis instanceof GenesisBlock gb)
 				return Optional.of(gb);
 			else
-				throw new DatabaseException("The genesis hash is set but it refers to a non-genesis block in the database");
+				throw new LocalNodeException("The genesis hash is set but it refers to a non-genesis block in the database");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1810,7 +1811,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			storeOfBlocks.put(txn, fromBytes(hashOfBlock), fromBytes(block.toByteArrayWithoutConfigurationData()));
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1826,7 +1827,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return storeOfBlocks.get(txn, fromBytes(hashOfBlock)) != null;
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1842,7 +1843,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			LOGGER.info("blockchain: height 0: block " + Hex.toHexString(newGenesisHash) + " set as genesis");
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1855,12 +1856,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private void setStartOfNonFrozenPartHash(Transaction txn, byte[] startOfNonFrozenPartHash) {
 		try {
 			storeOfBlocks.put(txn, HASH_OF_START_OF_NON_FROZEN_PART, fromBytes(startOfNonFrozenPartHash));
-			var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new DatabaseException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database"));
+			var descriptionOfStartOfNonFrozenPart = getBlockDescription(txn, startOfNonFrozenPartHash).orElseThrow(() -> new LocalNodeException("Trying to set the start of the non-frozen part of the blockchain to a block not present in the database"));
 			storeOfBlocks.put(txn, TOTAL_WAITING_TIME_OF_START_OF_NON_FROZEN_PART, fromBytes(longToBytes(descriptionOfStartOfNonFrozenPart.getTotalWaitingTime())));
 			LOGGER.fine(() -> "blockchain: block " + Hex.toHexString(startOfNonFrozenPartHash) + " set as start of non-frozen part, at height " + descriptionOfStartOfNonFrozenPart.getHeight());
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1886,7 +1887,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				// take care of updating storeOfTransactions and storeOfChain
 			}
 			catch (ExodusException e) {
-				throw new DatabaseException(e);
+				throw new LocalNodeException(e);
 			}
 			
 			LOGGER.fine(() -> "blockchain: garbage-collected block " + Hex.toHexString(currentHash));
@@ -1901,15 +1902,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		var maybeHeadHash = getHeadHash(txn);
 		if (maybeHeadHash.isEmpty())
-			throw new DatabaseException("The hash of the genesis is set but there is no head hash set in the database");
+			throw new LocalNodeException("The hash of the genesis is set but there is no head hash set in the database");
 
 		OptionalLong maybeChainHeight = getHeightOfHead(txn);
 		if (maybeChainHeight.isEmpty())
-			throw new DatabaseException("The hash of the genesis is set but the height of the current best chain is missing");
+			throw new LocalNodeException("The hash of the genesis is set but the height of the current best chain is missing");
 
 		Optional<byte[]> maybeStateId = getStateIdOfHead(txn);
 		if (maybeStateId.isEmpty())
-			throw new DatabaseException("The hash of the genesis is set but the state identifier for the head is missing");
+			throw new LocalNodeException("The hash of the genesis is set but the state identifier for the head is missing");
 
 		return ChainInfos.of(maybeChainHeight.getAsLong() + 1, maybeGenesisHash, maybeHeadHash, maybeStateId);
 	}
@@ -1929,12 +1930,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			for (var bi: hashes)
 				if (bi == null)
-					throw new DatabaseException("The current best chain misses an element");
+					throw new LocalNodeException("The current best chain misses an element");
 
 			return Stream.of(hashes).map(ByteIterable::getBytes);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
@@ -1946,7 +1947,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			storeOfForwards.put(txn, hashOfPrevious, newForwards);
 		}
 		catch (ExodusException e) {
-			throw new DatabaseException(e);
+			throw new LocalNodeException(e);
 		}
 	}
 
