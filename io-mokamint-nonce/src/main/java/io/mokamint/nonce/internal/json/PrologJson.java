@@ -29,18 +29,18 @@ import io.mokamint.nonce.internal.PrologImpl;
  */
 public abstract class PrologJson implements JsonRepresentation<Prolog> {
 	private final String chainId;
-	private final String nodeSignatureName; // TODO: improve these names at next release
-	private final String nodePublicKey;
-	private final String plotSignatureName;
-	private final String plotPublicKey;
+	private final String signatureForBlocks;
+	private final String publicKeyForSigningBlocks;
+	private final String signatureForDeadlines;
+	private final String publicKeyForSigningDeadlines;
 	private final String extra;
 
 	protected PrologJson(Prolog prolog) {
 		this.chainId = prolog.getChainId();
-		this.nodeSignatureName = prolog.getSignatureForBlocks().getName();
-		this.nodePublicKey = prolog.getPublicKeyForSigningBlocksBase58();
-		this.plotSignatureName = prolog.getSignatureForDeadlines().getName();
-		this.plotPublicKey = prolog.getPublicKeyForSigningDeadlinesBase58();
+		this.signatureForBlocks = prolog.getSignatureForBlocks().getName();
+		this.publicKeyForSigningBlocks = prolog.getPublicKeyForSigningBlocksBase58();
+		this.signatureForDeadlines = prolog.getSignatureForDeadlines().getName();
+		this.publicKeyForSigningDeadlines = prolog.getPublicKeyForSigningDeadlinesBase58();
 		this.extra = Hex.toHexString(prolog.getExtra());
 	}
 
@@ -49,19 +49,19 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 	}
 
 	public String getSignatureForBlocks() {
-		return nodeSignatureName;
+		return signatureForBlocks;
 	}
 
 	public String getPublicKeyForSigningBlocks() {
-		return nodePublicKey;
+		return publicKeyForSigningBlocks;
 	}
 
 	public String getSignatureForDeadlines() {
-		return plotSignatureName;
+		return signatureForDeadlines;
 	}
 
 	public String getPublicKeyForSigningDeadlines() {
-		return plotPublicKey;
+		return publicKeyForSigningDeadlines;
 	}
 
 	public String getExtra() {
