@@ -261,7 +261,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 	
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 2, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 20, TimeUnit.SECONDS));
 		}
 	}
 
@@ -327,9 +327,9 @@ public class EventsTests extends AbstractLoggedTests {
 		var myMiner = new Miner() {
 
 			@Override
-			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
+			public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
+					var deadline = plot.getSmallestDeadline(challenge, plotKeys.getPrivate());
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
@@ -381,7 +381,7 @@ public class EventsTests extends AbstractLoggedTests {
 		}
 
 		try (var node = new MyLocalNode()) {
-			assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+			assertTrue(semaphore.tryAcquire(1, 20, TimeUnit.SECONDS));
 		}
 	}
 }

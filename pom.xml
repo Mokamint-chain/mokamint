@@ -69,6 +69,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       </developer>
     </developers>
 
+    <!-- specific profiles might add more modules to these -->
     <modules>
       <module>io-mokamint-node-api</module>
       <module>io-mokamint-node</module>
@@ -110,7 +111,6 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-integration</module>
       <module>io-mokamint-application-cli</module>
       <module>io-mokamint-application-empty</module>
-      <module>io-mokamint-docker</module>
     </modules>
 
     <distributionManagement>
@@ -207,6 +207,15 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>io-mokamint-docker</module>
+      </modules>
     </profile>
   </profiles>
 
