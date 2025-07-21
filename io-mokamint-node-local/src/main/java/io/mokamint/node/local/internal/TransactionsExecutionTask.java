@@ -52,22 +52,6 @@ import io.mokamint.nonce.api.Deadline;
 public class TransactionsExecutionTask implements Task {
 
 	/**
-	 * A source of transactions to execute.
-	 */
-	public interface Source {
-
-		/**
-		 * Takes a transaction to execute. It blocks to wait for new transactions
-		 * if this source is currently empty.
-		 * 
-		 * @return the transaction entry read from this source
-		 * @throws InterruptedException if the current thread is interrupted while blocked
-		 *                              waiting for a new transaction to arrive
-		 */
-		TransactionEntry take() throws InterruptedException;
-	}
-
-	/**
 	 * The node for which transactions are being executed.
 	 */
 	private final LocalNodeImpl node;
@@ -121,6 +105,22 @@ public class TransactionsExecutionTask implements Task {
 	private volatile Future<?> future;
 
 	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
+
+	 /**
+	  * A source of transactions to execute.
+	  */
+	public interface Source {
+	
+		/**
+		 * Takes a transaction to execute. It blocks to wait for new transactions
+		 * if this source is currently empty.
+		 * 
+		 * @return the transaction entry read from this source
+		 * @throws InterruptedException if the current thread is interrupted while blocked
+		 *                              waiting for a new transaction to arrive
+		 */
+		TransactionEntry take() throws InterruptedException;
+	}
 
 	/**
 	 * Creates a transaction execution task.
@@ -271,13 +271,16 @@ public class TransactionsExecutionTask implements Task {
 		if (!successfullyDeliveredTransactions.contains(tx) && !rejectedTransactions.contains(tx)) {
 			int txSize = tx.size();
 
+			// if the following condition does not hold, the transaction is not included in the block that we are mining
+			// and disappears from the mempool of this object; this does not mean that it is lost, since
+			// it remains in the mempool of the node and will have a chance to be selected later at the next block(s)
 			if (sizeUpToNow + txSize <= maxSize) {
-				// synchronization guarantees that requests to stop the execution
-				// leave the transactions list aligned with the state of the application 
-				synchronized (stopLock) {
-					if (Thread.currentThread().isInterrupted())
-						throw new InterruptedException("Interrupted");
+				if (Thread.currentThread().isInterrupted())
+					throw new InterruptedException("Interrupted");
 
+				// synchronization guarantees that requests to stop the execution
+				// leave the transactions list aligned with the state of the application
+				synchronized (stopLock) {
 					try {
 						app.deliverTransaction(id, tx);
 					}

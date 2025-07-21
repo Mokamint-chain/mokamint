@@ -167,6 +167,8 @@ public class Mempool {
 
 		var entry = mkTransactionEntry(transaction);
 		int maxSize = config.getMempoolSize();
+		int maxBlockSize = config.getMaxBlockSize();
+		int txSize;
 
 		synchronized (mempool) {
 			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
@@ -175,6 +177,8 @@ public class Mempool {
 			else if (mempool.contains(entry))
 				// the transaction was already in the mempool
 				throw new TransactionRejectedException("Repeated transaction " + entry);
+			else if ((txSize = transaction.size()) > maxBlockSize)
+				throw new TransactionRejectedException("Cannot add transaction " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
 			else if (mempool.size() >= maxSize)
 				throw new TransactionRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
 			else

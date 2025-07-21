@@ -331,8 +331,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 		else
 			trimmedExtra = Hex.toHexString(extra);
 
-		return "chainId: " + chainIdTrimmed + ", nodeSignatureName: " + signatureForBlocks + ", nodePublicKey: " + publicKeyForSigningBlocksBase58 +
-			", plotSignatureName: " + signatureForDeadlines + ", plotPublicKey: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + trimmedExtra;
+		return "chainId: " + chainIdTrimmed + ", signatureForBlocks: " + signatureForBlocks + ", publicKeyForSigningBlocksBase58: " + publicKeyForSigningBlocksBase58 +
+			", signatureForDeadlines: " + signatureForDeadlines + ", publicKeyForSigningDeadlinesBase58: " + publicKeyForSigningDeadlinesBase58 + ", extra: " + trimmedExtra;
 	}
 
 	@Override
