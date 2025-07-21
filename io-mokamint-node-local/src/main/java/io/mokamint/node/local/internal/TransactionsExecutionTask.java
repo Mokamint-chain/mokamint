@@ -264,6 +264,9 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		if (Thread.currentThread().isInterrupted())
+			throw new InterruptedException("Interrupted");
+
 		var tx = next.getTransaction();
 
 		// the following might actually occur if a transaction arrives during the execution of this task
@@ -275,9 +278,6 @@ public class TransactionsExecutionTask implements Task {
 			// and disappears from the mempool of this object; this does not mean that it is lost, since
 			// it remains in the mempool of the node and will have a chance to be selected later at the next block(s)
 			if (sizeUpToNow + txSize <= maxSize) {
-				if (Thread.currentThread().isInterrupted())
-					throw new InterruptedException("Interrupted");
-
 				// synchronization guarantees that requests to stop the execution
 				// leave the transactions list aligned with the state of the application
 				synchronized (stopLock) {
