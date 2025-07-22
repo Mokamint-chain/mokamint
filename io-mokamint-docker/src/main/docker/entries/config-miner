@@ -44,6 +44,6 @@ PUBLIC_KEY_MINER_BASE58=$(mokamint-node keys create miner_configuration/miner.pe
 chmod og-rwx miner_configuration/miner.pem
 echo -e "${RED}done${NC}"
 
-echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for chain id \"${CHAIN_ID}\", public key for signing blocks ${PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58} (${SIGNATURE_FOR_BLOCKS}, base58), signature for deadlines $SIGNATURE_FOR_DEADLINES, hashing algorithm ${HASHING_FOR_DEADLINES}, extra \"${EXTRA}\"..."
+echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for chain id \"${CHAIN_ID}\", public key for signing blocks ${PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58} (${SIGNATURE_FOR_BLOCKS}, base58), public key for signing deadlines ${PUBLIC_KEY_MINER_BASE58} (${SIGNATURE_FOR_DEADLINES}, base58), hashing algorithm ${HASHING_FOR_DEADLINES}, extra \"${EXTRA}\"..."
 mokamint-plotter create miner_configuration/plot.plot 0 $PLOT_SIZE "$CHAIN_ID" $PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58 $PUBLIC_KEY_MINER_BASE58 --hashing=$HASHING_FOR_DEADLINES --signature-of-node=$SIGNATURE_FOR_BLOCKS --signature-of-plot=$SIGNATURE_FOR_DEADLINES --extra "$EXTRA"
 echo -e "${RED}done${NC}"

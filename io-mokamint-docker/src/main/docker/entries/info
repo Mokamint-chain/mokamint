@@ -24,6 +24,7 @@ echo "  For instance:"
 echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka-io:8025 -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION config-miner${NC}"
 echo
 echo -e "* ${RED}mine:${NC}         create a mining service for a remote miner, whose configuration has been created with config-miner"
+echo -e "    ${BLUE}MINER_PUBLIC_SERVICE_URI:${NC} the URI of an already existing remote miner"
 echo
 echo "  For instance:"
 echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka-io:8025 -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION mine${NC}"
