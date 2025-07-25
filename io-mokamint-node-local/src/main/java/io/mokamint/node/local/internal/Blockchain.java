@@ -712,37 +712,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return this;
 		}
 
-		/**
-		 * Adds the given block to the blockchain.
-		 * 
-		 * @param block the block to add
-		 * @param verification the verification mode of the block, if any
-		 * @return this same adder
-		 * @throws VerificationException if {@code block} cannot be added since it does not respect the consensus rules
-		 * @throws InterruptedException if the current thread is interrupted
-		 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-		 * @throws MisbehavingApplicationException if the application is misbehaving
-		 * @throws ClosedApplicationException if the application is already closed
-		 */
-		private BlockAdder connect(Block block, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
-			byte[] hashOfBlockToAdd = block.getHash();
-
-			// optimization check, to avoid repeated verification
-			if (containsBlock(txn, hashOfBlockToAdd)) {
-				connected = true;
-				LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
-			}
-			else {
-				Optional<byte[]> initialHeadHash = getHeadHash(txn);
-				addBlockAndConnectOrphans(block, verification);
-				computeBlocksAddedToTheCurrentBestChain(initialHeadHash);
-
-				connected |= somethingHasBeenAdded();
-			}
-
-			return this;
-		}
-
 		private void informNode() {
 			blocksToAddAmongOrphans.forEach(orphans::add);
 			blocksToRemoveFromOrphans.forEach(orphans::remove);
@@ -802,8 +771,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 							blocksToRemoveFromOrphans.add((NonGenesisBlock) cursor); // orphan blocks are always non-genesis blocks
 					}
 				}
-				else if (cursor instanceof NonGenesisBlock ngb)
+				else if (cursor instanceof NonGenesisBlock ngb) {
 					blocksToAddAmongOrphans.add(ngb);
+					LOGGER.fine(() -> "blockchain: added block " + cursor.getHexHash() + " to the orphans");
+				}
 			}
 			while (!ws.isEmpty());
 		}
@@ -848,8 +819,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (verification.isPresent() || isOrphan) {
 				try {
 					new BlockVerification(txn, node, config, blockToAdd, previous, isOrphan ? Mode.COMPLETE : verification.get());
+					LOGGER.fine(() -> "blockchain: verified block " + blockToAdd.getHexHash() + " [" + (isOrphan ? Mode.COMPLETE : verification.get()) + "]");
 				}
 				catch (VerificationException e) {
+					LOGGER.warning("blockchain: failed verification of block " + blockToAdd.getHexHash());
 					if (isOrphan) {
 						LOGGER.warning("blockchain: discarding orphan block " + blockToAdd.getHexHash() + " since it does not pass verification: " + e.getMessage());
 						blocksToRemoveFromOrphans.add((NonGenesisBlock) blockToAdd); // orphan blocks are never genesis blocks
@@ -1276,7 +1249,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	public boolean connect(Block block, Optional<Mode> verification) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException, ClosedDatabaseException {
 		BlockAdder adder;
 
-		FunctionWithExceptions5<Transaction, BlockAdder, VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException> function = txn -> new BlockAdder(txn).connect(block, verification);
+		FunctionWithExceptions5<Transaction, BlockAdder, VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException> function = txn -> new BlockAdder(txn).add(block, verification);
 
 		try (var scope = mkScope()) {
 			adder = environment.computeInTransaction(VerificationException.class, InterruptedException.class, ApplicationTimeoutException.class, ClosedApplicationException.class, MisbehavingApplicationException.class, function);

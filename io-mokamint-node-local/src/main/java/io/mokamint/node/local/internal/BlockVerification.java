@@ -439,10 +439,10 @@ public class BlockVerification {
 						}
 					}
 
-					var found = app.endBlock(id, block.getDescription().getDeadline());
+					var finalState = app.endBlock(id, block.getDescription().getDeadline());
 
-					if (!Arrays.equals(block.getStateId(), found))
-						throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(found) + ")");
+					if (!Arrays.equals(block.getStateId(), finalState))
+						throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(finalState) + ")");
 
 					success = true;
 				}
