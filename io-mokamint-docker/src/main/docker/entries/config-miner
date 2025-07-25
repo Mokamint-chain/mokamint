@@ -19,7 +19,7 @@ MINER_PUBLIC_SERVICE_URI=${MINER_PUBLIC_SERVICE_URI:-ws://panarea.hotmoka.io:802
 PLOT_SIZE=${PLOT_SIZE:-1000}
 EXTRA=${EXTRA:""}
 
-echo -e "${BOLD_GREEN}I will use the following parameters for the creation of the configuration directory of a Mokamint miner}:${NC}"
+echo -e "${BOLD_GREEN}I will use the following parameters for the creation of the configuration directory of a Mokamint miner:${NC}"
 echo
 echo -e "               ${BLUE}PLOT_SIZE${NC}=${RED}$PLOT_SIZE${NC}"
 echo -e "${BLUE}MINER_PUBLIC_SERVICE_URI${NC}=${RED}\"$MINER_PUBLIC_SERVICE_URI\"${NC}"
