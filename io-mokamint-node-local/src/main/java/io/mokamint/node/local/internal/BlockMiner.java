@@ -134,9 +134,14 @@ public class BlockMiner {
 	private final TransactionsExecutionTask transactionExecutionTask;
 
 	/**
-	 * True if and only if a new block has been committed.
+	 * True if and only if a new block has been created.
 	 */
-	private boolean committed;
+	private volatile boolean created;
+
+	/**
+	 * True if and only if a new block has been asked to be committed to the application.
+	 */
+	private volatile boolean askedToCommit;
 
 	/**
 	 * Set to true when the task has completed, also in the case when it could not find any deadline.
@@ -198,6 +203,7 @@ public class BlockMiner {
 
 						if (!interrupted) {
 							var block = createNewBlock();
+							created = true;
 
 							if (!interrupted)
 								commitIfBetterThanHead(block);
@@ -282,8 +288,8 @@ public class BlockMiner {
 		// follows another chain, both with the same power. However, such forks would be
 		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.isBetterThanHead(block)) {
+			askedToCommit = true;
 			transactionExecutionTask.commitBlock();
-			committed = true;
 			node.onMined(block);
 			addToBlockchain(block);
 		}
@@ -301,7 +307,7 @@ public class BlockMiner {
 		transactionExecutionTask.stop();
 
 		try {
-			if (!committed)
+			if (created && !askedToCommit)
 				transactionExecutionTask.abortBlock();
 
 			node.onMiningCompleted(previous);
