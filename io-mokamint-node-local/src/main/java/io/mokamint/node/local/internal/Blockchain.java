@@ -699,7 +699,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			// optimization check, to avoid repeated verification
 			if (containsBlock(txn, hashOfBlockToAdd)) {
 				connected = true;
-				LOGGER.warning("blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
+				LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 			}
 			else {
 				Optional<byte[]> initialHeadHash = getHeadHash(txn);
@@ -855,7 +855,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					return false;
 				}
 				else if (containsBlock(txn, hashOfBlock)) {
-					LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already present in blockchain");
+					LOGGER.fine(() -> "blockchain: not adding block " + block.getHexHash() + " since it is already in blockchain");
 					return false;
 				}
 				else {
