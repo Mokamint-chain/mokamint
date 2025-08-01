@@ -115,7 +115,7 @@ public class BlockVerification {
 		this.node = node;
 		this.mode = mode;
 		this.config = config;
-		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
+		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);  // TODO: maybe getBytes?
 		this.block = block;
 		this.previous = previous.orElse(null);
 		this.deadline = block instanceof NonGenesisBlock ngb ? ngb.getDescription().getDeadline() : null;

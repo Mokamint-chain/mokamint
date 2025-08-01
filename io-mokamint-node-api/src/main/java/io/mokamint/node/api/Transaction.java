@@ -28,7 +28,7 @@ import io.hotmoka.marshalling.api.Marshallable;
 public interface Transaction extends Marshallable, Whisperable, Comparable<Transaction> {
 
 	/**
-	 * Yields the bytes of the transaction. The meaning of these bytes if application-dependent.
+	 * Yields the bytes of the transaction. The meaning of these bytes is application-dependent.
 	 * 
 	 * @return the bytes of the transaction
 	 */

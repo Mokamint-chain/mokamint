@@ -202,7 +202,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
-			this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+			this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray); // TODO: maybe getBytes?
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);

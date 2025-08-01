@@ -222,7 +222,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
 		try {
-			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);
+			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);  // TODO: maybe getBytes?
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);

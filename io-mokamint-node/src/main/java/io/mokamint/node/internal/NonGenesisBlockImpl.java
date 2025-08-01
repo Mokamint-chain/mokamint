@@ -204,7 +204,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	
 		int n = 0;
 		var hashingForTransactions = getDescription().getHashingForTransactions();
-		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);
+		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);  // TODO: maybe getBytes?
 	
 		for (var transaction: transactions)
 			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hasher) + " (" + hashingForTransactions + ")");
