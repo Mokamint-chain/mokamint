@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
-import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.BeginBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#beginBlock(long, byte[], LocalDateTime)} method.

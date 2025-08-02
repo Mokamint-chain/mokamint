@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
-import io.mokamint.application.messages.internal.gson.EndBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.EndBlockResultMessageJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**

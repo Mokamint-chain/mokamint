@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.api.Hasher;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
@@ -35,7 +34,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.Transaction;
-import io.mokamint.node.internal.gson.BlockJson;
+import io.mokamint.node.internal.json.BlockJson;
 
 /**
  * The implementation of a non-genesis block of the Mokamint blockchain.
@@ -204,10 +203,9 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	
 		int n = 0;
 		var hashingForTransactions = getDescription().getHashingForTransactions();
-		Hasher<Transaction> hasher = hashingForTransactions.getHasher(Transaction::toByteArray);  // TODO: maybe getBytes?
 	
 		for (var transaction: transactions)
-			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hasher) + " (" + hashingForTransactions + ")");
+			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hashingForTransactions) + " (" + hashingForTransactions + ")");
 	}
 
 	@Override

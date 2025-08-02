@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.internal.GetRepresentationMessageImpl;
-import io.mokamint.application.messages.internal.gson.GetRepresentationMessageDecoder;
-import io.mokamint.application.messages.internal.gson.GetRepresentationMessageEncoder;
-import io.mokamint.application.messages.internal.gson.GetRepresentationMessageJson;
+import io.mokamint.application.messages.internal.json.GetRepresentationMessageDecoder;
+import io.mokamint.application.messages.internal.json.GetRepresentationMessageEncoder;
+import io.mokamint.application.messages.internal.json.GetRepresentationMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**

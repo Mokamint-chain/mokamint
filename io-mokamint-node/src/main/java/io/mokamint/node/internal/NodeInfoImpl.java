@@ -27,7 +27,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Version;
-import io.mokamint.node.internal.gson.NodeInfoJson;
+import io.mokamint.node.internal.json.NodeInfoJson;
 
 /**
  * Implementation of the non-consensus information of a Mokamint node.

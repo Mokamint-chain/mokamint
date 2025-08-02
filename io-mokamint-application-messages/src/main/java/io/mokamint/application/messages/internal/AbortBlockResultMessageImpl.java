@@ -19,7 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
-import io.mokamint.application.messages.internal.gson.AbortBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.AbortBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the

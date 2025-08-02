@@ -24,7 +24,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.internal.gson.MempoolEntryJson;
+import io.mokamint.node.internal.json.MempoolEntryJson;
 
 /**
  * An implementation of an entry of the mempool of a Mokamint node.

@@ -35,7 +35,7 @@ import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
-import io.mokamint.node.internal.gson.BlockDescriptionJson;
+import io.mokamint.node.internal.json.BlockDescriptionJson;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.api.Challenge;
 

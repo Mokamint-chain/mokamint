@@ -21,7 +21,7 @@ import java.util.Objects;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.internal.gson.TaskInfoJson;
+import io.mokamint.node.internal.json.TaskInfoJson;
 
 /**
  * An implementation of task information.

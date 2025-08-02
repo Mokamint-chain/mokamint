@@ -34,9 +34,9 @@ import io.mokamint.node.api.Transaction;
 import io.mokamint.node.internal.AbstractBlock;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
-import io.mokamint.node.internal.gson.BlockDecoder;
-import io.mokamint.node.internal.gson.BlockEncoder;
-import io.mokamint.node.internal.gson.BlockJson;
+import io.mokamint.node.internal.json.BlockDecoder;
+import io.mokamint.node.internal.json.BlockEncoder;
+import io.mokamint.node.internal.json.BlockJson;
 
 /**
  * Providers of blocks.

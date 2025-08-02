@@ -21,7 +21,7 @@ module io.mokamint.node {
 	exports io.mokamint.node;
 
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.node.internal.gson to com.google.gson;
+	opens io.mokamint.node.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.hotmoka.marshalling.api;

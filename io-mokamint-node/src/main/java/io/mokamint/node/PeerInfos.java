@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.internal.PeerInfoImpl;
-import io.mokamint.node.internal.gson.PeerInfoDecoder;
-import io.mokamint.node.internal.gson.PeerInfoEncoder;
-import io.mokamint.node.internal.gson.PeerInfoJson;
+import io.mokamint.node.internal.json.PeerInfoJson;
 
 /**
  * Providers of peer information objects.
@@ -45,23 +45,27 @@ public abstract class PeerInfos {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PeerInfoEncoder {
+	public static class Encoder extends MappedEncoder<PeerInfo, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PeerInfoDecoder {
+	public static class Decoder extends MappedDecoder<PeerInfo, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**

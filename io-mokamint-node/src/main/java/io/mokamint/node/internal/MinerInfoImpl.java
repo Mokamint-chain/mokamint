@@ -22,7 +22,7 @@ import java.util.UUID;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.internal.gson.MinerInfoJson;
+import io.mokamint.node.internal.json.MinerInfoJson;
 
 /**
  * An implementation of miner information.

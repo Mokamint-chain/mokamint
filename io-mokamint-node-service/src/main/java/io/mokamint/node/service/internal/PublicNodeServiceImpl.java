@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandler;
-import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.RpcMessage;
@@ -42,7 +42,6 @@ import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
@@ -119,7 +118,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	/**
 	 * The hasher for the transactions.
 	 */
-	private final Hasher<Transaction> hasherForTransactions;
+	private final HashingAlgorithm hashingForTransactions;
 
 	/**
 	 * The public URI of the machine where this service is running. If this is missing,
@@ -202,7 +201,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
-			this.hasherForTransactions = node.getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray); // TODO: maybe getBytes?
+			this.hashingForTransactions = node.getConfig().getHashingForTransactions();
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
@@ -691,7 +690,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hasherForTransactions)));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hashingForTransactions)));
 	    }
 
 		@SuppressWarnings("resource")

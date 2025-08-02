@@ -19,11 +19,12 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -70,8 +71,13 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	}
 
 	@Override
-	public String getHexHash(Hasher<Transaction> hasher) {
-		return Hex.toHexString(hasher.hash(this));
+	public String getHexHash(HashingAlgorithm hashing) {
+		return Hex.toHexString(getHash(hashing));
+	}
+
+	@Override
+	public byte[] getHash(HashingAlgorithm hashing) {
+		return hashing.getHasher(Function.identity()).hash(bytes); // TODO: maybe getBytes ?
 	}
 
 	@Override

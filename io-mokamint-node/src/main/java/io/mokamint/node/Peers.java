@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.net.URI;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.internal.PeerImpl;
-import io.mokamint.node.internal.gson.PeerDecoder;
-import io.mokamint.node.internal.gson.PeerEncoder;
-import io.mokamint.node.internal.gson.PeerJson;
+import io.mokamint.node.internal.json.PeerJson;
 
 /**
  * Providers of peers.
@@ -57,23 +57,27 @@ public abstract class Peers {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends PeerEncoder {
+	public static class Encoder extends MappedEncoder<Peer, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends PeerDecoder {
+	public static class Decoder extends MappedDecoder<Peer, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**

@@ -24,7 +24,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainInfo;
-import io.mokamint.node.internal.gson.ChainInfoJson;
+import io.mokamint.node.internal.json.ChainInfoJson;
 
 /**
  * Implementation of the chain information of a Mokamint node.

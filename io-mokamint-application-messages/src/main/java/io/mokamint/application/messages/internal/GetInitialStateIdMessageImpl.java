@@ -19,7 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
-import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageJson;
+import io.mokamint.application.messages.internal.json.GetInitialStateIdMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link Application#getInitialStateId()}.

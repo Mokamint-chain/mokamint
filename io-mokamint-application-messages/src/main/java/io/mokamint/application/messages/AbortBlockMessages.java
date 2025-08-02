@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.internal.AbortBlockMessageImpl;
-import io.mokamint.application.messages.internal.gson.AbortBlockMessageDecoder;
-import io.mokamint.application.messages.internal.gson.AbortBlockMessageEncoder;
-import io.mokamint.application.messages.internal.gson.AbortBlockMessageJson;
+import io.mokamint.application.messages.internal.json.AbortBlockMessageDecoder;
+import io.mokamint.application.messages.internal.json.AbortBlockMessageEncoder;
+import io.mokamint.application.messages.internal.json.AbortBlockMessageJson;
 
 /**
  * A provider of {@link AbortBlockMessage}.

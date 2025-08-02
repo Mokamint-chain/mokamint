@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.internal.CommitBlockMessageImpl;
-import io.mokamint.application.messages.internal.gson.CommitBlockMessageDecoder;
-import io.mokamint.application.messages.internal.gson.CommitBlockMessageEncoder;
-import io.mokamint.application.messages.internal.gson.CommitBlockMessageJson;
+import io.mokamint.application.messages.internal.json.CommitBlockMessageDecoder;
+import io.mokamint.application.messages.internal.json.CommitBlockMessageEncoder;
+import io.mokamint.application.messages.internal.json.CommitBlockMessageJson;
 
 /**
  * A provider of {@link CommitBlockMessage}.

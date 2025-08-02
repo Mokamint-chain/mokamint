@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
 import io.mokamint.application.messages.internal.CheckPrologExtraResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMessageJson;
+import io.mokamint.application.messages.internal.json.CheckPrologExtraResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.CheckPrologExtraResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.CheckPrologExtraResultMessageJson;
 
 /**
  * A provider of {@link CheckPrologExtraResultMessage}.

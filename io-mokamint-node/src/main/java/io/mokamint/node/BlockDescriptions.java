@@ -33,9 +33,9 @@ import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.internal.AbstractBlockDescription;
 import io.mokamint.node.internal.GenesisBlockDescriptionImpl;
 import io.mokamint.node.internal.NonGenesisBlockDescriptionImpl;
-import io.mokamint.node.internal.gson.BlockDescriptionDecoder;
-import io.mokamint.node.internal.gson.BlockDescriptionEncoder;
-import io.mokamint.node.internal.gson.BlockDescriptionJson;
+import io.mokamint.node.internal.json.BlockDescriptionDecoder;
+import io.mokamint.node.internal.json.BlockDescriptionEncoder;
+import io.mokamint.node.internal.json.BlockDescriptionJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**

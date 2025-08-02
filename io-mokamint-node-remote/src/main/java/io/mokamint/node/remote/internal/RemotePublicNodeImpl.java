@@ -50,7 +50,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
-import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
@@ -168,7 +168,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	/**
 	 * The hasher to use for the transactions.
 	 */
-	private final Hasher<Transaction> hasherForTransactions;
+	private final HashingAlgorithm hashingForTransactions;
 
 	/**
 	 * The prefix used in the log messages;
@@ -222,7 +222,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		addSession(WHISPER_TRANSACTION_ENDPOINT, uri, WhisperTransactionEndpoint::new);
 
 		try {
-			this.hasherForTransactions = getConfig().getHashingForTransactions().getHasher(Transaction::toByteArray);  // TODO: maybe getBytes?
+			this.hashingForTransactions = getConfig().getHashingForTransactions();
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
@@ -713,7 +713,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + message.getWhispered().getHexHash(hasherForTransactions)));
+			addMessageHandler(session, (WhisperTransactionMessage message) -> whisper(message, _whisperer -> false, false, "transaction " + message.getWhispered().getHexHash(hashingForTransactions)));
 		}
 
 		@Override

@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.internal.EndBlockMessageImpl;
-import io.mokamint.application.messages.internal.gson.EndBlockMessageDecoder;
-import io.mokamint.application.messages.internal.gson.EndBlockMessageEncoder;
-import io.mokamint.application.messages.internal.gson.EndBlockMessageJson;
+import io.mokamint.application.messages.internal.json.EndBlockMessageDecoder;
+import io.mokamint.application.messages.internal.json.EndBlockMessageEncoder;
+import io.mokamint.application.messages.internal.json.EndBlockMessageJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**

@@ -27,7 +27,7 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.internal.gson.PeerJson;
+import io.mokamint.node.internal.json.PeerJson;
 
 /**
  * An implementation of a peer.

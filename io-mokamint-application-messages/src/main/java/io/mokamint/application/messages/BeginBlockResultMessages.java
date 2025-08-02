@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.internal.BeginBlockResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.BeginBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.BeginBlockResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.BeginBlockResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.BeginBlockResultMessageJson;
 
 /**
  * A provider of {@link BeginBlockResultMessage}.

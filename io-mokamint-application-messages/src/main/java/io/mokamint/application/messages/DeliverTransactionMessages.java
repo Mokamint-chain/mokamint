@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.internal.DeliverTransactionMessageImpl;
-import io.mokamint.application.messages.internal.gson.DeliverTransactionMessageDecoder;
-import io.mokamint.application.messages.internal.gson.DeliverTransactionMessageEncoder;
-import io.mokamint.application.messages.internal.gson.DeliverTransactionMessageJson;
+import io.mokamint.application.messages.internal.json.DeliverTransactionMessageDecoder;
+import io.mokamint.application.messages.internal.json.DeliverTransactionMessageEncoder;
+import io.mokamint.application.messages.internal.json.DeliverTransactionMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**

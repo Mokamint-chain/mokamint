@@ -18,9 +18,9 @@ package io.mokamint.node;
 
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.internal.MempoolInfoImpl;
-import io.mokamint.node.internal.gson.MempoolInfoDecoder;
-import io.mokamint.node.internal.gson.MempoolInfoEncoder;
-import io.mokamint.node.internal.gson.MempoolInfoJson;
+import io.mokamint.node.internal.json.MempoolInfoDecoder;
+import io.mokamint.node.internal.json.MempoolInfoEncoder;
+import io.mokamint.node.internal.json.MempoolInfoJson;
 
 /**
  * Providers of mempool information objects.

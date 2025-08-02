@@ -19,12 +19,12 @@ package io.mokamint.node;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.NodeInfoImpl;
-import io.mokamint.node.internal.gson.NodeInfoDecoder;
-import io.mokamint.node.internal.gson.NodeInfoEncoder;
-import io.mokamint.node.internal.gson.NodeInfoJson;
+import io.mokamint.node.internal.json.NodeInfoJson;
 
 /**
  * Providers of non-consensus node information.
@@ -48,23 +48,27 @@ public abstract class NodeInfos {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends NodeInfoEncoder {
+	public static class Encoder extends MappedEncoder<NodeInfo, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends NodeInfoDecoder {
+	public static class Decoder extends MappedDecoder<NodeInfo, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
     /**

@@ -19,7 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
-import io.mokamint.application.messages.internal.gson.CommitBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.CommitBlockResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the

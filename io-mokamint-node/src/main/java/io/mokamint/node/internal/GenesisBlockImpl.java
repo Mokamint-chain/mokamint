@@ -27,7 +27,7 @@ import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
-import io.mokamint.node.internal.gson.BlockJson;
+import io.mokamint.node.internal.json.BlockJson;
 
 /**
  * The implementation of a genesis block of a Mokamint blockchain.

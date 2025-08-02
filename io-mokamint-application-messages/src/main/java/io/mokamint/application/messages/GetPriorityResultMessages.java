@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.internal.GetPriorityResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.GetPriorityResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.GetPriorityResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.GetPriorityResultMessageJson;
+import io.mokamint.application.messages.internal.json.GetPriorityResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.GetPriorityResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.GetPriorityResultMessageJson;
 
 /**
  * A provider of {@link GetPriorityResultMessage}.

@@ -20,9 +20,9 @@ import java.io.IOException;
 
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.VersionImpl;
-import io.mokamint.node.internal.gson.VersionDecoder;
-import io.mokamint.node.internal.gson.VersionEncoder;
-import io.mokamint.node.internal.gson.VersionJson;
+import io.mokamint.node.internal.json.VersionDecoder;
+import io.mokamint.node.internal.json.VersionEncoder;
+import io.mokamint.node.internal.json.VersionJson;
 
 /**
  * Providers of versions.

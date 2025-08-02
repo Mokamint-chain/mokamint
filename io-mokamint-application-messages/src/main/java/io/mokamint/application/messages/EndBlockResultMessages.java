@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.internal.EndBlockResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.EndBlockResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.EndBlockResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.EndBlockResultMessageJson;
+import io.mokamint.application.messages.internal.json.EndBlockResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.EndBlockResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.EndBlockResultMessageJson;
 
 /**
  * A provider of {@link EndBlockResultMessage}.

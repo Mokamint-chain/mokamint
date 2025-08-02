@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.internal.CheckTransactionResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.CheckTransactionResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.CheckTransactionResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.CheckTransactionResultMessageJson;
+import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
 
 /**
  * A provider of {@link CheckTransactionResultMessage}.

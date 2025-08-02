@@ -19,7 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
-import io.mokamint.application.messages.internal.gson.CheckTransactionResultMessageJson;
+import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**

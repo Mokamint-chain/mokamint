@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.internal.GetPriorityMessageImpl;
-import io.mokamint.application.messages.internal.gson.GetPriorityMessageDecoder;
-import io.mokamint.application.messages.internal.gson.GetPriorityMessageEncoder;
-import io.mokamint.application.messages.internal.gson.GetPriorityMessageJson;
+import io.mokamint.application.messages.internal.json.GetPriorityMessageDecoder;
+import io.mokamint.application.messages.internal.json.GetPriorityMessageEncoder;
+import io.mokamint.application.messages.internal.json.GetPriorityMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**

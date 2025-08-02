@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
-import io.mokamint.application.messages.internal.gson.GetInitialStateIdResultMessageJson;
+import io.mokamint.application.messages.internal.json.GetInitialStateIdResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#getInitialStateId()} method.

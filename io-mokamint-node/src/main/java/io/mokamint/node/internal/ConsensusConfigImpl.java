@@ -31,7 +31,7 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
-import io.mokamint.node.internal.gson.BasicConsensusConfigJson;
+import io.mokamint.node.internal.json.BasicConsensusConfigJson;
 
 /**
  * The configuration of a Mokamint node. Nodes of the same network must agree

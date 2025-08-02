@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.closeables.AbstractAutoCloseableWithLock;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.api.Hasher;
+import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions4;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions5;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -128,11 +128,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final Store storeOfTransactions;
 
 	/**
-	 * A hasher for the transactions.
-	 */
-	private final Hasher<io.mokamint.node.api.Transaction> hasherForTransactions;
-
-	/**
 	 * The maximal time (in milliseconds) that history can be changed before being considered as definitely frozen;
 	 * a negative value means that the history is always allowed to be changed, without limits.
 	 */
@@ -207,7 +202,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		this.node = node;
 		this.config = node.getConfig();
-		this.hasherForTransactions = config.getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
 		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
 		this.orphans = Memories.of(config.getOrphansMemorySize());
 		this.environment = createBlockchainEnvironment();
@@ -1005,13 +999,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private void addReferencesToTransactionsInside(Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
 				long height = ngb.getDescription().getHeight();
-
+				HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
 				int count = ngb.getTransactionsCount();
 				for (int pos = 0; pos < count; pos++) {
 					var ref = new TransactionRef(height, pos);
 					
 					try {
-						storeOfTransactions.put(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))), ByteIterable.fromBytes(ref.toByteArray()));
+						storeOfTransactions.put(txn, ByteIterable.fromBytes(ngb.getTransaction(pos).getHash(hashingForTransactions)), ByteIterable.fromBytes(ref.toByteArray()));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1066,9 +1060,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
 				int count = ngb.getTransactionsCount();
+				HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
+
 				for (int pos = 0; pos < count; pos++) {
 					try {
-						storeOfTransactions.delete(txn, ByteIterable.fromBytes(hasherForTransactions.hash(ngb.getTransaction(pos))));
+						storeOfTransactions.delete(txn, ByteIterable.fromBytes(ngb.getTransaction(pos).getHash(hashingForTransactions)));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1625,8 +1621,10 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				else if (block instanceof NonGenesisBlock ngb) {
 					// we check if the transaction is inside the table of transactions of the block
 					int length = ngb.getTransactionsCount();
+					HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
+
 					for (int pos = 0; pos < length; pos++)
-						if (Arrays.equals(hash, hasherForTransactions.hash(ngb.getTransaction(pos))))
+						if (Arrays.equals(hash, ngb.getTransaction(pos).getHash(hashingForTransactions)))
 							return Optional.of(TransactionAddresses.of(hashOfBlock, pos));
 
 					// otherwise we continue with the previous block, if any

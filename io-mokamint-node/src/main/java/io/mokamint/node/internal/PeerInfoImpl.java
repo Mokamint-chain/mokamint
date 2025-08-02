@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Peers.Json;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.internal.gson.PeerInfoJson;
+import io.mokamint.node.internal.json.PeerInfoJson;
 
 /**
  * An implementation of peer information.

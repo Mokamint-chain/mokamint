@@ -26,7 +26,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolPortion;
-import io.mokamint.node.internal.gson.MempoolPortionJson;
+import io.mokamint.node.internal.json.MempoolPortionJson;
 
 /**
  * Implementation of information about the transactions of a sorted, sequential portion of the

@@ -25,7 +25,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainPortion;
-import io.mokamint.node.internal.gson.ChainPortionJson;
+import io.mokamint.node.internal.json.ChainPortionJson;
 
 /**
  * Implementation of information about the hashes of a sequential portion of the

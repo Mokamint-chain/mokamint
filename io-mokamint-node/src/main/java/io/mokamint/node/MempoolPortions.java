@@ -21,9 +21,9 @@ import java.util.stream.Stream;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.internal.MempoolPortionImpl;
-import io.mokamint.node.internal.gson.MempoolPortionDecoder;
-import io.mokamint.node.internal.gson.MempoolPortionEncoder;
-import io.mokamint.node.internal.gson.MempoolPortionJson;
+import io.mokamint.node.internal.json.MempoolPortionDecoder;
+import io.mokamint.node.internal.json.MempoolPortionEncoder;
+import io.mokamint.node.internal.json.MempoolPortionJson;
 
 /**
  * Providers of objects containing the transaction information objects of a sorted,

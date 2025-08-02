@@ -20,9 +20,9 @@ import java.time.LocalDateTime;
 
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.internal.KeepFromMessageImpl;
-import io.mokamint.application.messages.internal.gson.KeepFromMessageDecoder;
-import io.mokamint.application.messages.internal.gson.KeepFromMessageEncoder;
-import io.mokamint.application.messages.internal.gson.KeepFromMessageJson;
+import io.mokamint.application.messages.internal.json.KeepFromMessageDecoder;
+import io.mokamint.application.messages.internal.json.KeepFromMessageEncoder;
+import io.mokamint.application.messages.internal.json.KeepFromMessageJson;
 
 /**
  * A provider of {@link KeepFromMessage}.

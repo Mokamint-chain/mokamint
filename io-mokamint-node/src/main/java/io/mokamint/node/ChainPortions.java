@@ -20,9 +20,9 @@ import java.util.stream.Stream;
 
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.internal.ChainPortionImpl;
-import io.mokamint.node.internal.gson.ChainPortionDecoder;
-import io.mokamint.node.internal.gson.ChainPortionEncoder;
-import io.mokamint.node.internal.gson.ChainPortionJson;
+import io.mokamint.node.internal.json.ChainPortionDecoder;
+import io.mokamint.node.internal.json.ChainPortionEncoder;
+import io.mokamint.node.internal.json.ChainPortionJson;
 
 /**
  * Providers of objects containing the hashes of a sorted, sequential portion

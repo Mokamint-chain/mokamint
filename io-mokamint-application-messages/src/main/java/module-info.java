@@ -20,7 +20,7 @@ limitations under the License.
 module io.mokamint.application.messages {
 	exports io.mokamint.application.messages;
 	// beans must be accessible, encoded and decoded by reflection through Gson
-	opens io.mokamint.application.messages.internal.gson to com.google.gson;
+	opens io.mokamint.application.messages.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.application.messages.api;
 	requires io.mokamint.node;

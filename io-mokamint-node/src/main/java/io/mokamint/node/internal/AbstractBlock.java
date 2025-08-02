@@ -40,7 +40,7 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.internal.gson.BlockJson;
+import io.mokamint.node.internal.json.BlockJson;
 import io.mokamint.nonce.api.Deadline;
 
 /**

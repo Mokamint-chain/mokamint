@@ -20,9 +20,9 @@ import java.util.Optional;
 
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.internal.ChainInfoImpl;
-import io.mokamint.node.internal.gson.ChainInfoDecoder;
-import io.mokamint.node.internal.gson.ChainInfoEncoder;
-import io.mokamint.node.internal.gson.ChainInfoJson;
+import io.mokamint.node.internal.json.ChainInfoDecoder;
+import io.mokamint.node.internal.json.ChainInfoEncoder;
+import io.mokamint.node.internal.json.ChainInfoJson;
 
 /**
  * Providers of chain information objects.

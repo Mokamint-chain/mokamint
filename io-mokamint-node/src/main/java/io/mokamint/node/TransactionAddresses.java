@@ -18,9 +18,9 @@ package io.mokamint.node;
 
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.internal.TransactionAddressImpl;
-import io.mokamint.node.internal.gson.TransactionAddressDecoder;
-import io.mokamint.node.internal.gson.TransactionAddressEncoder;
-import io.mokamint.node.internal.gson.TransactionAddressJson;
+import io.mokamint.node.internal.json.TransactionAddressDecoder;
+import io.mokamint.node.internal.json.TransactionAddressEncoder;
+import io.mokamint.node.internal.json.TransactionAddressJson;
 
 /**
  * Providers of transaction address objects.

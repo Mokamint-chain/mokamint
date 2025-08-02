@@ -19,7 +19,7 @@ package io.mokamint.node.internal;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolInfo;
-import io.mokamint.node.internal.gson.MempoolInfoJson;
+import io.mokamint.node.internal.json.MempoolInfoJson;
 
 /**
  * An implementation of the information of the mempool of a Mokamint node.

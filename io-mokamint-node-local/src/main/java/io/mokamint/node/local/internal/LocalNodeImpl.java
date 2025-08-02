@@ -812,8 +812,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void whisperWithoutAddition(Transaction transaction) {
 		if (alreadyWhispered.add(transaction)) {
 			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-			var hasherForTransactions = config.getHashingForTransactions().getHasher(Transaction::toByteArray);  // TODO: maybe getBytes? also move into field
-			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(hasherForTransactions), false));
+			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(config.getHashingForTransactions()), false));
 		}
 	}
 

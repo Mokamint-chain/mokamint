@@ -22,7 +22,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
-import io.mokamint.application.messages.internal.gson.GetRepresentationResultMessageJson;
+import io.mokamint.application.messages.internal.json.GetRepresentationResultMessageJson;
 import io.mokamint.node.api.Transaction;
 
 /**

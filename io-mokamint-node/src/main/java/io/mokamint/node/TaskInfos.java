@@ -18,9 +18,9 @@ package io.mokamint.node;
 
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.internal.TaskInfoImpl;
-import io.mokamint.node.internal.gson.TaskInfoDecoder;
-import io.mokamint.node.internal.gson.TaskInfoEncoder;
-import io.mokamint.node.internal.gson.TaskInfoJson;
+import io.mokamint.node.internal.json.TaskInfoDecoder;
+import io.mokamint.node.internal.json.TaskInfoEncoder;
+import io.mokamint.node.internal.json.TaskInfoJson;
 
 /**
  * Providers of task information objects.

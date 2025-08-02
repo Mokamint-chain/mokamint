@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.messages.internal.KeepFromResultMessageImpl;
-import io.mokamint.application.messages.internal.gson.KeepFromResultMessageDecoder;
-import io.mokamint.application.messages.internal.gson.KeepFromResultMessageEncoder;
-import io.mokamint.application.messages.internal.gson.KeepFromResultMessageJson;
+import io.mokamint.application.messages.internal.json.KeepFromResultMessageDecoder;
+import io.mokamint.application.messages.internal.json.KeepFromResultMessageEncoder;
+import io.mokamint.application.messages.internal.json.KeepFromResultMessageJson;
 
 /**
  * A provider of {@link KeepFromResultMessage}.

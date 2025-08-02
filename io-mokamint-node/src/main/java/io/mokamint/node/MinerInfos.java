@@ -20,9 +20,9 @@ import java.util.UUID;
 
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.internal.MinerInfoImpl;
-import io.mokamint.node.internal.gson.MinerInfoDecoder;
-import io.mokamint.node.internal.gson.MinerInfoEncoder;
-import io.mokamint.node.internal.gson.MinerInfoJson;
+import io.mokamint.node.internal.json.MinerInfoDecoder;
+import io.mokamint.node.internal.json.MinerInfoEncoder;
+import io.mokamint.node.internal.json.MinerInfoJson;
 
 /**
  * Providers of miner information objects.

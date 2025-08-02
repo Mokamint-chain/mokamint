@@ -20,9 +20,9 @@ import java.time.LocalDateTime;
 
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.internal.BeginBlockMessageImpl;
-import io.mokamint.application.messages.internal.gson.BeginBlockMessageDecoder;
-import io.mokamint.application.messages.internal.gson.BeginBlockMessageEncoder;
-import io.mokamint.application.messages.internal.gson.BeginBlockMessageJson;
+import io.mokamint.application.messages.internal.json.BeginBlockMessageDecoder;
+import io.mokamint.application.messages.internal.json.BeginBlockMessageEncoder;
+import io.mokamint.application.messages.internal.json.BeginBlockMessageJson;
 
 /**
  * A provider of {@link BeginBlockMessage}.

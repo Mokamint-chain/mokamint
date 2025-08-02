@@ -18,9 +18,9 @@ package io.mokamint.node;
 
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.internal.MempoolEntryImpl;
-import io.mokamint.node.internal.gson.MempoolEntryDecoder;
-import io.mokamint.node.internal.gson.MempoolEntryEncoder;
-import io.mokamint.node.internal.gson.MempoolEntryJson;
+import io.mokamint.node.internal.json.MempoolEntryDecoder;
+import io.mokamint.node.internal.json.MempoolEntryEncoder;
+import io.mokamint.node.internal.json.MempoolEntryJson;
 
 /**
  * Providers of entries of the mempool of a Mokamint node.

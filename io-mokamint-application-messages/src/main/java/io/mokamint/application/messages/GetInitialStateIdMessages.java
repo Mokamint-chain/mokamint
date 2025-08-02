@@ -18,9 +18,9 @@ package io.mokamint.application.messages;
 
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.internal.GetInitialStateIdMessageImpl;
-import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageDecoder;
-import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageEncoder;
-import io.mokamint.application.messages.internal.gson.GetInitialStateIdMessageJson;
+import io.mokamint.application.messages.internal.json.GetInitialStateIdMessageDecoder;
+import io.mokamint.application.messages.internal.json.GetInitialStateIdMessageEncoder;
+import io.mokamint.application.messages.internal.json.GetInitialStateIdMessageJson;
 
 /**
  * A provider of {@link GetInitialStateIdMessage}.

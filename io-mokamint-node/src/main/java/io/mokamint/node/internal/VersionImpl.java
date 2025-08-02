@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Version;
-import io.mokamint.node.internal.gson.VersionJson;
+import io.mokamint.node.internal.json.VersionJson;
 
 /**
  * Implementation of the version of a Mokamint node.

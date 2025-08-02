@@ -19,7 +19,7 @@ package io.mokamint.application.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
-import io.mokamint.application.messages.internal.gson.CheckPrologExtraResultMessageJson;
+import io.mokamint.application.messages.internal.json.CheckPrologExtraResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link Application#checkPrologExtra(byte[])} method.

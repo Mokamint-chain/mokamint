@@ -21,7 +21,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.internal.gson.BasicConsensusConfigJson;
+import io.mokamint.node.internal.json.BasicConsensusConfigJson;
 
 /**
  * The builder of consensus configurations, according to the builder pattern.

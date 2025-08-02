@@ -23,9 +23,9 @@ import java.security.NoSuchAlgorithmException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.internal.BasicConsensusConfigBuilder;
-import io.mokamint.node.internal.gson.BasicConsensusConfigDecoder;
-import io.mokamint.node.internal.gson.BasicConsensusConfigEncoder;
-import io.mokamint.node.internal.gson.BasicConsensusConfigJson;
+import io.mokamint.node.internal.json.BasicConsensusConfigDecoder;
+import io.mokamint.node.internal.json.BasicConsensusConfigEncoder;
+import io.mokamint.node.internal.json.BasicConsensusConfigJson;
 
 /**
  * Providers of basic consensus configurations.

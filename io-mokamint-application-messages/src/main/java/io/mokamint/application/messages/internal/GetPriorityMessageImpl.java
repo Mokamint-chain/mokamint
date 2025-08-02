@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetPriorityMessage;
-import io.mokamint.application.messages.internal.gson.GetPriorityMessageJson;
+import io.mokamint.application.messages.internal.json.GetPriorityMessageJson;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
 

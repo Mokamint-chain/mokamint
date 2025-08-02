@@ -24,7 +24,7 @@ import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.internal.gson.TransactionAddressJson;
+import io.mokamint.node.internal.json.TransactionAddressJson;
 
 /**
  * The implementation of the address of a transaction inside a blockchain
