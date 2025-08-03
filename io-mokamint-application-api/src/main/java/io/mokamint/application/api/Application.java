@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandlersContainer;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.api.Deadline;
@@ -255,6 +256,18 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
 	void keepFrom(LocalDateTime start) throws ClosedApplicationException, TimeoutException, InterruptedException;
+
+	/**
+	 * Publishes the given block, that has just been added to the blockchain.
+	 * The application might exploit this hook, for instance, in order to trigger
+	 * events on the basis of the content of the block. Or it might just do nothing.
+	 * 
+	 * @param block the block to publish
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	void publish(Block block) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Closes this application. After this closure, the methods of this application will throw

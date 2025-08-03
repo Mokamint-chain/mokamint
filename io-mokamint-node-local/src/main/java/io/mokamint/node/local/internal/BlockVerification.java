@@ -432,10 +432,10 @@ public class BlockVerification {
 						}
 					}
 
-					var finalState = app.endBlock(id, block.getDescription().getDeadline());
+					var finalStateId = app.endBlock(id, block.getDescription().getDeadline());
 
-					if (!Arrays.equals(block.getStateId(), finalState))
-						throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(finalState) + ")");
+					if (!Arrays.equals(block.getStateId(), finalStateId))
+						throw new VerificationException("Final state mismatch (expected " + Hex.toHexString(block.getStateId()) + " but found " + Hex.toHexString(finalStateId) + ")");
 
 					success = true;
 				}

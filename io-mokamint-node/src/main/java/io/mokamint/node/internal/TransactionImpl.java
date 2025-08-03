@@ -77,7 +77,7 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public byte[] getHash(HashingAlgorithm hashing) {
-		return hashing.getHasher(Function.identity()).hash(bytes); // TODO: maybe getBytes ?
+		return hashing.getHasher(Function.identity()).hash(bytes);
 	}
 
 	@Override

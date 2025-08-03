@@ -207,6 +207,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final BlockingQueue<WhisperedInfo<WhisperTransactionMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
 
 	/**
+	 * The queue of blocks to publish.
+	 */
+	private final BlockingQueue<Block> blocksToPublishQueue = new ArrayBlockingQueue<>(1000);
+
+	/**
 	 * The mining specification of every miner that works with this node.
 	 */
 	private final MiningSpecification miningSpecification;
@@ -290,6 +295,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedule(this::processWhisperedPeers, "peers whispering process");
 			schedule(this::processWhisperedBlocks, "blocks whispering process");
 			schedule(this::processWhisperedTransactions, "transactions whispering process");
+			schedule(this::publisher, "block publishing process");
 			schedulePeriodicPingToAllPeersAndReconnection();
 			schedulePeriodicWhisperingOfAllServices();
 			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
@@ -938,6 +944,13 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 *                      case the list is longer than a single element; in any case, this list is never empty
 	 */
 	protected void onHeadChanged(Deque<Block> pathToNewHead) {
+		// it is not essential to publish the blocks immediately, therefore
+		// we use a queue, in order to avoid delaying this hook
+		pathToNewHead.forEach(block -> {
+			if (!blocksToPublishQueue.offer(block))
+				LOGGER.warning("cannot shcedule the publication of block " + block.getHexHash() + " since the publishing queue is full");
+		});
+
 		miningTask.restartFromCurrentHead();
 	}
 
@@ -1002,7 +1015,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				LOGGER.warning("node " + uuid + ": " + this + " exits since the node is shutting down");
 			}
 			catch (RuntimeException e) {
-				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " failed", e);
+				LOGGER.log(Level.SEVERE, "node " + uuid + ": " + this + " threw an exception", e);
 			}
 			finally {
 				currentlyExecutingTasks.remove(this);
@@ -1221,6 +1234,19 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
 			boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
 			onWhispered(tx);
+		}
+	}
+
+	private void publisher() throws InterruptedException, ClosedApplicationException {
+		while (true) {
+			Block block = blocksToPublishQueue.take();
+
+			try {
+				app.publish(block);
+			}
+			catch (TimeoutException e) {
+				LOGGER.warning("cannot publish block " + block.getHexHash() + " since the application is unresponsive");
+			}
 		}
 	}
 

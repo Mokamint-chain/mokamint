@@ -88,6 +88,7 @@ import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.api.Deadline;
@@ -554,5 +555,10 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, KeepFromResultMessages.Decoder.class, KeepFromMessages.Encoder.class);
 		}
+	}
+
+	@Override
+	public void publish(Block block) throws ClosedApplicationException, InterruptedException {
+		// TODO Auto-generated method stub
 	}
 }

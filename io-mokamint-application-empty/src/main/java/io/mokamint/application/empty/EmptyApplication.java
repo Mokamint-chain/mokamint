@@ -24,6 +24,7 @@ import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
+import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.nonce.api.Deadline;
 
@@ -110,6 +111,11 @@ public class EmptyApplication extends AbstractApplication {
 
 	@Override
 	public void keepFrom(LocalDateTime start) throws ClosedApplicationException {
+		try (var scope = mkScope()) {}
+	}
+
+	@Override
+	public void publish(Block block) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
 
