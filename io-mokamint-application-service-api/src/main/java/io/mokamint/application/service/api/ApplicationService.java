@@ -80,6 +80,11 @@ public interface ApplicationService extends WebSocketServer {
 	 */
 	String KEEP_FROM_ENDPOINT = "/keep_from";
 
+	/**
+	 * The network endpoint path where {@link Application#publish(io.mokamint.node.api.Block)} is published.
+	 */
+	String PUBLISH_ENDPOINT = "/publish";
+
 	@Override
 	void close() throws InterruptedException;
 }

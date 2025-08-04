@@ -25,12 +25,15 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,9 +58,12 @@ import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
+import io.mokamint.application.messages.api.PublishResultMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
+import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -745,6 +751,65 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendKeepFrom();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a publish() request reaches the service, the application gets informed")
+	public void servicePublishWorks() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
+		
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		doNothing().when(app).publish(block);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws FailedDeploymentException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onPublishResult(PublishResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
+			}
+
+			private void sendPublish() {
+				sendPublish(block, ID);
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendPublish();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

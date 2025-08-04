@@ -27,6 +27,7 @@ import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.KEEP_FROM_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.PUBLISH_ENDPOINT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,6 +66,8 @@ import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
+import io.mokamint.application.messages.PublishMessages;
+import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
@@ -87,6 +90,8 @@ import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
+import io.mokamint.application.messages.api.PublishMessage;
+import io.mokamint.application.messages.api.PublishResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Transaction;
@@ -134,6 +139,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
 		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
 		addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
+		addSession(PUBLISH_ENDPOINT, uri, PublishEndpoint::new);
 	}
 
 	@Override
@@ -144,31 +150,25 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 
 	@Override
 	protected void notifyResult(RpcMessage message) {
-		if (message instanceof CheckPrologExtraResultMessage cperm)
-			onCheckPrologExtraResult(cperm);
-		else if (message instanceof CheckTransactionResultMessage ctrm)
-			onCheckTransactionResult(ctrm);
-		else if (message instanceof GetPriorityResultMessage gprm)
-			onGetPriorityResult(gprm);
-		else if (message instanceof GetRepresentationResultMessage grrm)
-			onGetRepresentationResult(grrm);
-		else if (message instanceof GetInitialStateIdResultMessage gisirm)
-			onGetInitialStateIdResult(gisirm);
-		else if (message instanceof BeginBlockResultMessage bbrm)
-			onBeginBlockResult(bbrm);
-		else if (message instanceof DeliverTransactionResultMessage dtrm)
-			onDeliverTransactionResult(dtrm);
-		else if (message instanceof EndBlockResultMessage ebrm)
-			onEndBlockResult(ebrm);
-		else if (message instanceof CommitBlockResultMessage cbrm)
-			onCommitBlockResult(cbrm);
-		else if (message instanceof AbortBlockResultMessage abrm)
-			onAbortBlockResult(abrm);
-		else if (message instanceof KeepFromResultMessage kfrm)
-			onKeepFromResult(kfrm);
-		else if (message != null && !(message instanceof ExceptionMessage)) {
-			LOGGER.warning("unexpected message of class " + message.getClass().getName());
-			return;
+		switch (message) {
+		case CheckPrologExtraResultMessage cperm -> onCheckPrologExtraResult(cperm);
+		case CheckTransactionResultMessage ctrm -> onCheckTransactionResult(ctrm);
+		case GetPriorityResultMessage gprm -> onGetPriorityResult(gprm);
+		case GetRepresentationResultMessage grrm -> onGetRepresentationResult(grrm);
+		case GetInitialStateIdResultMessage gisirm -> onGetInitialStateIdResult(gisirm);
+		case BeginBlockResultMessage bbrm -> onBeginBlockResult(bbrm);
+		case DeliverTransactionResultMessage dtrm -> onDeliverTransactionResult(dtrm);
+		case EndBlockResultMessage ebrm -> onEndBlockResult(ebrm);
+		case CommitBlockResultMessage cbrm -> onCommitBlockResult(cbrm);
+		case AbortBlockResultMessage abrm -> onAbortBlockResult(abrm);
+		case KeepFromResultMessage kfrm -> onKeepFromResult(kfrm);
+		case PublishResultMessage prm -> onPublishResult(prm);
+		default -> {
+			if (message != null && !(message instanceof ExceptionMessage)) {
+				LOGGER.warning("unexpected message of class " + message.getClass().getName());
+				return;
+			}
+		}
 		}
 
 		super.notifyResult(message);
@@ -558,7 +558,35 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void publish(Block block) throws ClosedApplicationException, InterruptedException {
-		// TODO Auto-generated method stub
+	public void publish(Block block) throws ClosedApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen(ClosedApplicationException::new);
+		var id = nextId();
+		sendPublish(block, id);
+		waitForResult(id, PublishResultMessage.class);
+	}
+
+	/**
+	 * Sends a {@link PublishMessage} to the application service.
+	 * 
+	 * @param block the block to publish
+	 * @param id the identifier of the message
+	 */
+	protected void sendPublish(Block block, String id) {
+		sendObjectAsync(PUBLISH_ENDPOINT, PublishMessages.of(block, id));
+	}
+
+	/**
+	 * Hook called when a {@link PublishResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onPublishResult(PublishResultMessage message) {}
+
+	private class PublishEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, PublishResultMessages.Decoder.class, PublishMessages.Encoder.class);
+		}
 	}
 }

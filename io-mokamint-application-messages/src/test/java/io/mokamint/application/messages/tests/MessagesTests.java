@@ -303,8 +303,9 @@ public class MessagesTests extends AbstractLoggedTests {
 		var transaction3 = Transactions.of(bytes3);
 		var stateId = new byte[87];
 		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
 
-		var publishMessage1 = PublishMessages.of(Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate()), "id");
+		var publishMessage1 = PublishMessages.of(block, "id");
 		String encoded = new PublishMessages.Encoder().encode(publishMessage1);
 		var publishMessage2 = new PublishMessages.Decoder().decode(encoded);
 		assertEquals(publishMessage1, publishMessage2);

@@ -53,6 +53,8 @@ import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
+import io.mokamint.application.messages.PublishMessages;
+import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
@@ -64,6 +66,7 @@ import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
+import io.mokamint.application.messages.api.PublishMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.node.api.TransactionRejectedException;
 import jakarta.websocket.EndpointConfig;
@@ -112,7 +115,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
 				DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
 				CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
-				KeepFromEndpoint.config(this)
+				KeepFromEndpoint.config(this), PublishEndpoint.config(this)
 		);
 
 		// if the application gets closed, then this service will be closed as well
@@ -159,6 +162,10 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			case KeepFromMessage kfm -> {
 				application.keepFrom(kfm.getStart());
 				sendObjectAsync(session, KeepFromResultMessages.of(id));
+			}
+			case PublishMessage pm -> {
+				application.publish(pm.getBlock());
+				sendObjectAsync(session, PublishResultMessages.of(id));
 			}
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
@@ -374,6 +381,24 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, KeepFromEndpoint.class, KEEP_FROM_ENDPOINT, KeepFromMessages.Decoder.class, KeepFromResultMessages.Encoder.class);
+		}
+	}
+
+	protected void onPublish(PublishMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + PUBLISH_ENDPOINT + " request");
+		scheduleRequest(session, message);
+	};
+
+	public static class PublishEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			addMessageHandler(session, (PublishMessage message) -> server.onPublish(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, PublishEndpoint.class, PUBLISH_ENDPOINT, PublishMessages.Decoder.class, PublishResultMessages.Encoder.class);
 		}
 	}
 }

@@ -24,12 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +56,7 @@ import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
+import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
@@ -64,8 +68,11 @@ import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
+import io.mokamint.application.messages.api.PublishMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
+import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.nonce.Challenges;
@@ -641,6 +648,206 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var start = LocalDateTime.now();
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			assertThrows(TimeoutException.class, () -> remote.keepFrom(start));
+		}
+	}
+
+	@Test
+	@DisplayName("publish() works")
+	public void publish() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onPublish(PublishMessage message, Session session) {
+				sendObjectAsync(session, PublishResultMessages.of(message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.publish(block);
+		}
+	}
+
+	@Test
+	@DisplayName("if publish() is slow, it leads to a time-out")
+	public void publishWorksInCaseOfTimeout() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
+
+		var finished = new Semaphore(0);
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onPublish(PublishMessage message, Session session) {
+				try {
+					Thread.sleep(TIME_OUT * 4); // <----
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+
+				sendObjectAsync(session, PublishResultMessages.of(message.getId()), RuntimeException::new);
+				finished.release();
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.publish(block));
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	@Test
+	@DisplayName("publish() ignores unexpected exceptions")
+	public void publishWorksInCaseOfUnexpectedException() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onPublish(PublishMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.publish(block));
+		}
+	}
+
+	@Test
+	@DisplayName("publish() ignores unexpected messages")
+	public void publishWorksInCaseOfUnexpectedMessage() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onPublish(PublishMessage message, Session session) {
+				sendObjectAsync(session, GetRepresentationResultMessages.of("hello", message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.publish(block));
 		}
 	}
 }
