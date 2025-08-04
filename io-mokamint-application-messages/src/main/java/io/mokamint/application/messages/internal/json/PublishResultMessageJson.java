@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,32 +18,25 @@ package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
-import io.mokamint.application.messages.internal.CheckPrologExtraResultMessageImpl;
+import io.mokamint.application.messages.api.PublishResultMessage;
+import io.mokamint.application.messages.internal.PublishResultMessageImpl;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of a {@link PublishResultMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
-	private final boolean result;
+public abstract class PublishResultMessageJson extends AbstractRpcMessageJsonRepresentation<PublishResultMessage> {
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected PublishResultMessageJson(PublishResultMessage message) {
 		super(message);
-
-		this.result = message.get();
-	}
-
-	public boolean getResult() {
-		return result;
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() throws InconsistentJsonException {
-		return new CheckPrologExtraResultMessageImpl(this);
+	public PublishResultMessage unmap() throws InconsistentJsonException {
+		return new PublishResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return PublishResultMessage.class.getName();
 	}
 }

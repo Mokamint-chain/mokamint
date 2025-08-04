@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.messages.internal.json;
+package io.mokamint.application.messages.api;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.application.messages.KeepFromMessages;
-import io.mokamint.application.messages.api.KeepFromMessage;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.application.api.Application;
+import io.mokamint.node.api.Block;
 
 /**
- * A decoder for a {@link KeepFromMessage}.
+ * The network message corresponding to the {@link Application#publish(io.mokamint.node.api.Block)} method.
  */
-public class KeepFromMessageDecoder extends MappedDecoder<KeepFromMessage, KeepFromMessages.Json> {
+@Immutable
+public interface PublishMessage extends RpcMessage {
 
-	public KeepFromMessageDecoder() {
-		super(KeepFromMessages.Json.class);
-	}
+	/**
+	 * Yields the block in the message.
+	 * 
+	 * @return the block
+	 */
+	Block getBlock();
 }

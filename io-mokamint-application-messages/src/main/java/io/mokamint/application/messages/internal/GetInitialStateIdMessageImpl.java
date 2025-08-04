@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.internal.json.GetInitialStateIdMessageJson;
@@ -32,16 +34,29 @@ public class GetInitialStateIdMessageImpl extends AbstractRpcMessage implements 
 	 * @param id the identifier of the message
 	 */
 	public GetInitialStateIdMessageImpl(String id) {
-		super(id);
+		this(id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from its JSOn representation.
 	 * 
 	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetInitialStateIdMessageImpl(GetInitialStateIdMessageJson json) {
-		super(json.getId());
+	public GetInitialStateIdMessageImpl(GetInitialStateIdMessageJson json) throws InconsistentJsonException {
+		this(json.getId(), InconsistentJsonException::new);
+	}
+
+	/**
+	 * Creates the message.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> GetInitialStateIdMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 	}
 
 	@Override

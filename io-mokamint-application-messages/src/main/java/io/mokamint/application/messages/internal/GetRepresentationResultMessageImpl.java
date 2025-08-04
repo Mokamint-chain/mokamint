@@ -16,8 +16,8 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import java.util.Objects;
-
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -42,9 +42,7 @@ public class GetRepresentationResultMessageImpl extends AbstractRpcMessage imple
 	 * @param id the identifier of the message
 	 */
 	public GetRepresentationResultMessageImpl(String result, String id) {
-		super(id);
-
-		this.result = result;
+		this(result, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -54,18 +52,27 @@ public class GetRepresentationResultMessageImpl extends AbstractRpcMessage imple
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public GetRepresentationResultMessageImpl(GetRepresentationResultMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(json.getResult(), json.getId(), InconsistentJsonException::new);
+	}
 
-		String result = json.getResult();
-		if (result == null)
-			throw new InconsistentJsonException("result cannot be null");
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param result the result of the call
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> GetRepresentationResultMessageImpl(String result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 
-		this.result = result;
+		this.result = Objects.requireNonNull(result, "result cannot be null", onIllegalArgs);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetRepresentationResultMessage grrm && super.equals(other) && Objects.equals(result, grrm.get());
+		return other instanceof GetRepresentationResultMessage grrm && super.equals(other) && java.util.Objects.equals(result, grrm.get());
 	}
 
 	@Override

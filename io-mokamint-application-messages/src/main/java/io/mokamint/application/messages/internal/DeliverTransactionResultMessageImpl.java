@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.internal.json.DeliverTransactionResultMessageJson;
@@ -34,16 +36,29 @@ public class DeliverTransactionResultMessageImpl extends AbstractVoidResultMessa
 	 * @param id the identifier of the message
 	 */
 	public DeliverTransactionResultMessageImpl(String id) {
-		super(id);
+		this(id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@¢ode json} is inconsistent
 	 */
-	public DeliverTransactionResultMessageImpl(DeliverTransactionResultMessageJson json) {
-		super(json.getId());
+	public DeliverTransactionResultMessageImpl(DeliverTransactionResultMessageJson json) throws InconsistentJsonException {
+		this(json.getId(), InconsistentJsonException::new);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> DeliverTransactionResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 	}
 
 	@Override

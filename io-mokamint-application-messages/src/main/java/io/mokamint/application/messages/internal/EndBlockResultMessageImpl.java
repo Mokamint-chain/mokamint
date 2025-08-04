@@ -19,7 +19,8 @@ package io.mokamint.application.messages.internal;
 import java.util.Arrays;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -44,9 +45,7 @@ public class EndBlockResultMessageImpl extends AbstractRpcMessage implements End
 	 * @param id the identifier of the message
 	 */
 	public EndBlockResultMessageImpl(byte[] result, String id) {
-		super(id);
-
-		this.result = result.clone();
+		this(Objects.requireNonNull(result, "result cannot be null", IllegalArgumentException::new).clone(), id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -56,18 +55,26 @@ public class EndBlockResultMessageImpl extends AbstractRpcMessage implements End
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public EndBlockResultMessageImpl(EndBlockResultMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(
+			Hex.fromHexString(Objects.requireNonNull(json.getResult(), "result cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			json.getId(),
+			InconsistentJsonException::new
+		);
+	}
 
-		var result = json.getResult();
-		if (result == null)
-			throw new InconsistentJsonException("result cannot be null");
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param result the result of the call
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> EndBlockResultMessageImpl(byte[] result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 
-		try {
-			this.result = Hex.fromHexString(result);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		this.result = Objects.requireNonNull(result, "result cannot be null", onIllegalArgs);
 	}
 
 	@Override

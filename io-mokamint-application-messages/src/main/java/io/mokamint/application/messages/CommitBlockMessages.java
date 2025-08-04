@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.internal.CommitBlockMessageImpl;
-import io.mokamint.application.messages.internal.json.CommitBlockMessageDecoder;
-import io.mokamint.application.messages.internal.json.CommitBlockMessageEncoder;
 import io.mokamint.application.messages.internal.json.CommitBlockMessageJson;
 
 /**
@@ -43,23 +43,27 @@ public abstract class CommitBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends CommitBlockMessageEncoder {
+	public static class Encoder extends MappedEncoder<CommitBlockMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends CommitBlockMessageDecoder {
+	public static class Decoder extends MappedDecoder<CommitBlockMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

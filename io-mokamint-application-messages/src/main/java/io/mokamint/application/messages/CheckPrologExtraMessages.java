@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.CheckPrologExtraMessage;
 import io.mokamint.application.messages.internal.CheckPrologExtraMessageImpl;
-import io.mokamint.application.messages.internal.json.CheckPrologExtraMessageDecoder;
-import io.mokamint.application.messages.internal.json.CheckPrologExtraMessageEncoder;
 import io.mokamint.application.messages.internal.json.CheckPrologExtraMessageJson;
 
 /**
@@ -43,23 +43,27 @@ public abstract class CheckPrologExtraMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends CheckPrologExtraMessageEncoder {
+	public static class Encoder extends MappedEncoder<CheckPrologExtraMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends CheckPrologExtraMessageDecoder {
+	public static class Decoder extends MappedDecoder<CheckPrologExtraMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

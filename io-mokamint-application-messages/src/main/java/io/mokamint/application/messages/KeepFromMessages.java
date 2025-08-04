@@ -18,10 +18,10 @@ package io.mokamint.application.messages;
 
 import java.time.LocalDateTime;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.internal.KeepFromMessageImpl;
-import io.mokamint.application.messages.internal.json.KeepFromMessageDecoder;
-import io.mokamint.application.messages.internal.json.KeepFromMessageEncoder;
 import io.mokamint.application.messages.internal.json.KeepFromMessageJson;
 
 /**
@@ -45,23 +45,27 @@ public abstract class KeepFromMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends KeepFromMessageEncoder {
+	public static class Encoder extends MappedEncoder<KeepFromMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends KeepFromMessageDecoder {
+	public static class Decoder extends MappedDecoder<KeepFromMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

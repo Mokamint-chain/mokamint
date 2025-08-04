@@ -16,7 +16,9 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.internal.json.AbortBlockResultMessageJson;
@@ -33,16 +35,29 @@ public class AbortBlockResultMessageImpl extends AbstractVoidResultMessage imple
 	 * @param id the identifier of the message
 	 */
 	public AbortBlockResultMessageImpl(String id) {
-		super(id);
+		super(id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public AbortBlockResultMessageImpl(AbortBlockResultMessageJson json) {
-		super(json.getId());
+	public AbortBlockResultMessageImpl(AbortBlockResultMessageJson json) throws InconsistentJsonException {
+		this(json.getId(), InconsistentJsonException::new);
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> AbortBlockResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 	}
 
 	@Override

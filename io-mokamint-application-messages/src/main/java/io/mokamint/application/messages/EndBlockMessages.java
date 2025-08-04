@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.internal.EndBlockMessageImpl;
-import io.mokamint.application.messages.internal.json.EndBlockMessageDecoder;
-import io.mokamint.application.messages.internal.json.EndBlockMessageEncoder;
 import io.mokamint.application.messages.internal.json.EndBlockMessageJson;
 import io.mokamint.nonce.api.Deadline;
 
@@ -45,23 +45,27 @@ public abstract class EndBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends EndBlockMessageEncoder {
+	public static class Encoder extends MappedEncoder<EndBlockMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends EndBlockMessageDecoder {
+	public static class Decoder extends MappedDecoder<EndBlockMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

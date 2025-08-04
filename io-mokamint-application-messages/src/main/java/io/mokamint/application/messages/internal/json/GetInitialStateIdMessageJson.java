@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.internal.GetInitialStateIdMessageImpl;
 
@@ -30,7 +31,7 @@ public abstract class GetInitialStateIdMessageJson extends AbstractRpcMessageJso
 	}
 
 	@Override
-	public GetInitialStateIdMessage unmap() {
+	public GetInitialStateIdMessage unmap() throws InconsistentJsonException {
 		return new GetInitialStateIdMessageImpl(this);
 	}
 

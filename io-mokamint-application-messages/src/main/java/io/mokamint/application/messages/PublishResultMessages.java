@@ -18,32 +18,31 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.GetPriorityResultMessage;
-import io.mokamint.application.messages.internal.GetPriorityResultMessageImpl;
-import io.mokamint.application.messages.internal.json.GetPriorityResultMessageJson;
+import io.mokamint.application.messages.api.PublishResultMessage;
+import io.mokamint.application.messages.internal.PublishResultMessageImpl;
+import io.mokamint.application.messages.internal.json.PublishResultMessageJson;
 
 /**
- * A provider of {@link GetPriorityResultMessage}.
+ * A provider of {@link PublishResultMessage}.
  */
-public abstract class GetPriorityResultMessages {
+public abstract class PublishResultMessages {
 
-	private GetPriorityResultMessages() {}
+	private PublishResultMessages() {}
 
 	/**
-	 * Yields a {@link GetPriorityResultMessage}.
+	 * Yields a {@link PublishResultMessage}.
 	 * 
-	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPriorityResultMessage of(long result, String id) {
-		return new GetPriorityResultMessageImpl(result, id);
+	public static PublishResultMessage of(String id) {
+		return new PublishResultMessageImpl(id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetPriorityResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<PublishResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +55,7 @@ public abstract class GetPriorityResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetPriorityResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<PublishResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +68,14 @@ public abstract class GetPriorityResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetPriorityResultMessageJson {
+    public static class Json extends PublishResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetPriorityResultMessage message) {
+    	public Json(PublishResultMessage message) {
     		super(message);
     	}
     }

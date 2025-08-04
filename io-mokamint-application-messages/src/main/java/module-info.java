@@ -27,6 +27,7 @@ module io.mokamint.application.messages {
 	requires io.mokamint.nonce;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.exceptions;
 	requires com.google.gson;
 
 	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate

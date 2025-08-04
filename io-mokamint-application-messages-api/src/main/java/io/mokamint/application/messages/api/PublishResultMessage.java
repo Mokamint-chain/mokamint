@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.messages.internal.json;
+package io.mokamint.application.messages.api;
 
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.mokamint.application.messages.AbortBlockResultMessages;
-import io.mokamint.application.messages.api.AbortBlockResultMessage;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.VoidResultMessage;
+import io.mokamint.application.api.Application;
 
 /**
- * A decoder for {@link AbortBlockResultMessage}.
+ * The network message corresponding to the result of the
+ * {@link Application#publish(io.mokamint.node.api.Block)} method.
  */
-public class AbortBlockResultMessageDecoder extends MappedDecoder<AbortBlockResultMessage, AbortBlockResultMessages.Json> {
-
-	public AbortBlockResultMessageDecoder() {
-		super(AbortBlockResultMessages.Json.class);
-	}
+@Immutable
+public interface PublishResultMessage extends VoidResultMessage {
 }

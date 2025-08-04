@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.internal.CheckTransactionResultMessageImpl;
-import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageDecoder;
-import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageEncoder;
 import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
 
 /**
@@ -42,23 +42,27 @@ public abstract class CheckTransactionResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends CheckTransactionResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<CheckTransactionResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends CheckTransactionResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<CheckTransactionResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

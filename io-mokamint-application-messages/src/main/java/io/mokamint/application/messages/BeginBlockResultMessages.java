@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.internal.BeginBlockResultMessageImpl;
-import io.mokamint.application.messages.internal.json.BeginBlockResultMessageDecoder;
-import io.mokamint.application.messages.internal.json.BeginBlockResultMessageEncoder;
 import io.mokamint.application.messages.internal.json.BeginBlockResultMessageJson;
 
 /**
@@ -43,23 +43,27 @@ public abstract class BeginBlockResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends BeginBlockResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<BeginBlockResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends BeginBlockResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<BeginBlockResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

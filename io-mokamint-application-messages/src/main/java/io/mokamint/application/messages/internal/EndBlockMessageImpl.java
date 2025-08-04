@@ -17,8 +17,9 @@ limitations under the License.
 package io.mokamint.application.messages.internal;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -41,10 +42,7 @@ public class EndBlockMessageImpl extends AbstractRpcMessage implements EndBlockM
 	 * @param id the identifier of the message
 	 */
 	public EndBlockMessageImpl(int groupId, Deadline deadline, String id) {
-		super(id);
-
-		this.groupId = groupId;
-		this.deadline = Objects.requireNonNull(deadline, "deadline cannot be null");
+		this(groupId, deadline, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -55,15 +53,29 @@ public class EndBlockMessageImpl extends AbstractRpcMessage implements EndBlockM
 	 * @throws NoSuchAlgorithmException if the message refers to a non-available cryptographic algorithm
 	 */
 	public EndBlockMessageImpl(EndBlockMessageJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
-		super(json.getId());
+		this(
+			json.getGroupId(),
+			Objects.requireNonNull(json.getDeadline(), "deadline cannot be null", InconsistentJsonException::new).unmap(),
+			json.getId(),
+			InconsistentJsonException::new
+		);
+	}
 
-		this.groupId = json.getGroupId();
+	/**
+	 * Creates the message.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param groupId the identifier of the group of transactions in the message
+	 * @param deadline the deadline in the message
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> EndBlockMessageImpl(int groupId, Deadline deadline, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 
-		var deadline = json.getDeadline();
-		if (deadline == null)
-			throw new InconsistentJsonException("deadline cannot be null");
-
-		this.deadline = deadline.unmap();
+		this.groupId = groupId;
+		this.deadline = Objects.requireNonNull(deadline, "deadline cannot be null", onIllegalArgs);
 	}
 
 	@Override

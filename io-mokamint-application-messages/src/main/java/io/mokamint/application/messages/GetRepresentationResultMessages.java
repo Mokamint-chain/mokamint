@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.internal.GetRepresentationResultMessageImpl;
-import io.mokamint.application.messages.internal.json.GetRepresentationResultMessageDecoder;
-import io.mokamint.application.messages.internal.json.GetRepresentationResultMessageEncoder;
 import io.mokamint.application.messages.internal.json.GetRepresentationResultMessageJson;
 
 /**
@@ -43,23 +43,27 @@ public abstract class GetRepresentationResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetRepresentationResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetRepresentationResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetRepresentationResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetRepresentationResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.internal.DeliverTransactionResultMessageImpl;
 
@@ -30,7 +31,7 @@ public abstract class DeliverTransactionResultMessageJson extends AbstractRpcMes
 	}
 
 	@Override
-	public DeliverTransactionResultMessage unmap() {
+	public DeliverTransactionResultMessage unmap() throws InconsistentJsonException {
 		return new DeliverTransactionResultMessageImpl(this);
 	}
 

@@ -16,10 +16,9 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import java.util.Objects;
-
 import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.Base64ConversionException;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -43,10 +42,7 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	 * @param id the identifier of the message
 	 */
 	public DeliverTransactionMessageImpl(int groupId, Transaction transaction, String id) {
-		super(id);
-
-		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
-		this.groupId = groupId;
+		this(groupId, transaction, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -56,20 +52,29 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public DeliverTransactionMessageImpl(DeliverTransactionMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(
+			json.getGroupId(),
+			Transactions.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "transaction cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
+			json.getId(),
+			InconsistentJsonException::new
+		);
+	}
 
-		var transactionBase64 = json.getTransaction();
-		if (transactionBase64 == null)
-			throw new InconsistentJsonException("transaction cannot be null");
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param groupId the identifier of the group of transactions in the message
+	 * @param transaction the transaction in the message
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> DeliverTransactionMessageImpl(int groupId, Transaction transaction, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 
-		try {
-			this.transaction = Transactions.of(Base64.fromBase64String(transactionBase64));
-		}
-		catch (Base64ConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
-
-		this.groupId = json.getGroupId();
+		this.groupId = groupId;
+		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null", onIllegalArgs);
 	}
 
 	@Override

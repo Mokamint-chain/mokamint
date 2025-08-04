@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,32 +18,33 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.GetPriorityResultMessage;
-import io.mokamint.application.messages.internal.GetPriorityResultMessageImpl;
-import io.mokamint.application.messages.internal.json.GetPriorityResultMessageJson;
+import io.mokamint.application.messages.api.PublishMessage;
+import io.mokamint.application.messages.internal.PublishMessageImpl;
+import io.mokamint.application.messages.internal.json.PublishMessageJson;
+import io.mokamint.node.api.Block;
 
 /**
- * A provider of {@link GetPriorityResultMessage}.
+ * A provider of {@link PublishMessage}.
  */
-public abstract class GetPriorityResultMessages {
+public abstract class PublishMessages {
 
-	private GetPriorityResultMessages() {}
+	private PublishMessages() {}
 
 	/**
-	 * Yields a {@link GetPriorityResultMessage}.
+	 * Yields a {@link PublishMessage}.
 	 * 
-	 * @param result the result of the call
+	 * @param block the block that must be published
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPriorityResultMessage of(long result, String id) {
-		return new GetPriorityResultMessageImpl(result, id);
+	public static PublishMessage of(Block block, String id) {
+		return new PublishMessageImpl(block, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetPriorityResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<PublishMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +57,7 @@ public abstract class GetPriorityResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetPriorityResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<PublishMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +70,14 @@ public abstract class GetPriorityResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetPriorityResultMessageJson {
+    public static class Json extends PublishMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetPriorityResultMessage message) {
+    	public Json(PublishMessage message) {
     		super(message);
     	}
     }

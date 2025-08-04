@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.internal.AbortBlockResultMessageImpl;
-import io.mokamint.application.messages.internal.json.AbortBlockResultMessageDecoder;
-import io.mokamint.application.messages.internal.json.AbortBlockResultMessageEncoder;
 import io.mokamint.application.messages.internal.json.AbortBlockResultMessageJson;
 
 /**
@@ -42,23 +42,27 @@ public abstract class AbortBlockResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends AbortBlockResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<AbortBlockResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends AbortBlockResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<AbortBlockResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

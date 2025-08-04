@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.internal.GetPriorityMessageImpl;
-import io.mokamint.application.messages.internal.json.GetPriorityMessageDecoder;
-import io.mokamint.application.messages.internal.json.GetPriorityMessageEncoder;
 import io.mokamint.application.messages.internal.json.GetPriorityMessageJson;
 import io.mokamint.node.api.Transaction;
 
@@ -44,23 +44,27 @@ public abstract class GetPriorityMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetPriorityMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetPriorityMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetPriorityMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetPriorityMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

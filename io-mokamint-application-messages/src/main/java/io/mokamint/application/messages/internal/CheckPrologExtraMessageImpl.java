@@ -17,10 +17,10 @@ limitations under the License.
 package io.mokamint.application.messages.internal;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -40,9 +40,7 @@ public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements C
 	 * @param id the identifier of the message
 	 */
 	public CheckPrologExtraMessageImpl(byte[] extra, String id) {
-		super(id);
-
-		this.extra = Objects.requireNonNull(extra);
+		this(Objects.requireNonNull(extra, "extra cannot be null", IllegalArgumentException::new).clone(), id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -52,18 +50,26 @@ public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements C
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public CheckPrologExtraMessageImpl(CheckPrologExtraMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(
+			Hex.fromHexString(Objects.requireNonNull(json.getExtra(), "extra cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			json.getId(),
+			InconsistentJsonException::new
+		);
+	}
 
-		var extra = json.getExtra();
-		if (extra == null)
-			throw new InconsistentJsonException("extra cannot be null");
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param extra the extra, application-specific bytes of the prolog
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> CheckPrologExtraMessageImpl(byte[] extra, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
 
-		try {
-			this.extra = Hex.fromHexString(extra);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
+		this.extra = Objects.requireNonNull(extra, "extra cannot be null", onIllegalArgs).clone();
 	}
 
 	@Override

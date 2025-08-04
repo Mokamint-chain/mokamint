@@ -37,11 +37,12 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
+import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
-import io.mokamint.node.BasicConsensusConfigBuilders;
 import io.mokamint.node.MempoolEntries;
 import io.mokamint.node.MempoolInfos;
 import io.mokamint.node.MempoolPortions;
@@ -621,7 +622,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	public void decodeFailsForExceptionResultIfNotException() {
 		String encoded = "{\"className\":\"java.lang.String\",\"message\":\"something went wrong\", \"type\":\"" + ExceptionMessage.class.getName() + "\",\"id\":\"id\"}";
 		DecodeException e = assertThrows(DecodeException.class, () -> new ExceptionMessages.Decoder().decode(encoded));
-		assertTrue(e.getCause() instanceof ClassCastException);
+		assertTrue(e.getCause() instanceof InconsistentJsonException);
 	}
 
 	@Test

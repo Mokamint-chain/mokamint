@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
 import io.mokamint.application.messages.internal.CommitBlockResultMessageImpl;
 
@@ -30,7 +31,7 @@ public abstract class CommitBlockResultMessageJson extends AbstractRpcMessageJso
 	}
 
 	@Override
-	public CommitBlockResultMessage unmap() {
+	public CommitBlockResultMessage unmap() throws InconsistentJsonException {
 		return new CommitBlockResultMessageImpl(this);
 	}
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,34 +16,37 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.json;
 
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
-import io.mokamint.application.messages.internal.CheckPrologExtraResultMessageImpl;
+import io.mokamint.application.messages.api.PublishMessage;
+import io.mokamint.application.messages.internal.PublishMessageImpl;
+import io.mokamint.node.Blocks;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of an {@link PublishMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
-	private final boolean result;
+public abstract class PublishMessageJson extends AbstractRpcMessageJsonRepresentation<PublishMessage> {
+	private final Blocks.Json block;
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected PublishMessageJson(PublishMessage message) {
 		super(message);
 
-		this.result = message.get();
+		this.block = new Blocks.Json(message.getBlock());
 	}
 
-	public boolean getResult() {
-		return result;
+	public Blocks.Json getBlock() {
+		return block;
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() throws InconsistentJsonException {
-		return new CheckPrologExtraResultMessageImpl(this);
+	public PublishMessage unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
+		return new PublishMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return PublishMessage.class.getName();
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.internal.GetPriorityResultMessageImpl;
 
@@ -37,7 +38,7 @@ public abstract class GetPriorityResultMessageJson extends AbstractRpcMessageJso
 	}
 
 	@Override
-	public GetPriorityResultMessage unmap() {
+	public GetPriorityResultMessage unmap() throws InconsistentJsonException {
 		return new GetPriorityResultMessageImpl(this);
 	}
 

@@ -18,8 +18,11 @@ package io.mokamint.application.messages.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Random;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +52,10 @@ import io.mokamint.application.messages.GetRepresentationMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
+import io.mokamint.application.messages.PublishMessages;
+import io.mokamint.application.messages.PublishResultMessages;
+import io.mokamint.node.BlockDescriptions;
+import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
@@ -264,5 +271,51 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new KeepFromResultMessages.Encoder().encode(keepFromResultMessage1);
 		var keepFromResultMessage2 = new KeepFromResultMessages.Decoder().decode(encoded);
 		assertEquals(keepFromResultMessage1, keepFromResultMessage2);
+	}
+
+	@Test
+	@DisplayName("publish messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForPublish() throws Exception {
+		var random = new Random();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var sha256 = HashingAlgorithms.sha256();
+
+		var keysDeadline = ed25519.getKeyPair();
+		var keysBlock = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, keysBlock.getPublic(), ed25519, keysDeadline.getPublic(), new byte[5]);
+		var previousHash = new byte[sha256.length()];
+		random.nextBytes(previousHash);
+		var value = new byte[sha256.length()];
+		random.nextBytes(value);
+		var generationSignature = new byte[sha256.length()];
+		random.nextBytes(generationSignature);
+		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
+		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
+		var bytes1 = new byte[100];
+		random.nextBytes(bytes1);
+		var bytes2 = new byte[60];
+		random.nextBytes(bytes2);
+		var bytes3 = new byte[113];
+		random.nextBytes(bytes3);
+		var transaction1 = Transactions.of(bytes1);
+		var transaction2 = Transactions.of(bytes2);
+		var transaction3 = Transactions.of(bytes3);
+		var stateId = new byte[87];
+		random.nextBytes(stateId);
+
+		var publishMessage1 = PublishMessages.of(Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate()), "id");
+		String encoded = new PublishMessages.Encoder().encode(publishMessage1);
+		var publishMessage2 = new PublishMessages.Decoder().decode(encoded);
+		assertEquals(publishMessage1, publishMessage2);
+	}
+
+	@Test
+	@DisplayName("publish result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForPublishResult() throws Exception {
+		var publishResultMessage1 = PublishResultMessages.of("id");
+		String encoded = new PublishResultMessages.Encoder().encode(publishResultMessage1);
+		var publishResultMessage2 = new PublishResultMessages.Decoder().decode(encoded);
+		assertEquals(publishResultMessage1, publishResultMessage2);
 	}
 }

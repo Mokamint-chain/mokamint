@@ -21,6 +21,8 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -40,9 +42,7 @@ public class KeepFromMessageImpl extends AbstractRpcMessage implements KeepFromM
 	 * @param id the identifier of the message
 	 */
 	public KeepFromMessageImpl(LocalDateTime start, String id) {
-		super(id);
-
-		this.start = start;
+		this(start, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -52,18 +52,31 @@ public class KeepFromMessageImpl extends AbstractRpcMessage implements KeepFromM
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public KeepFromMessageImpl(KeepFromMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(parse(Objects.requireNonNull(json.getStart(), "start cannot be null", InconsistentJsonException::new)), json.getId(), InconsistentJsonException::new);
+	}
 
-		var start = json.getStart();
-		if (start == null)
-			throw new InconsistentJsonException("start cannot be nul");
-
+	private static LocalDateTime parse(String when) throws InconsistentJsonException {
 		try {
-			this.start = LocalDateTime.parse(start, ISO_LOCAL_DATE_TIME);
+			return LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME);
 		}
 		catch (DateTimeParseException e) {
 			throw new InconsistentJsonException(e);
 		}
+	}
+
+	/**
+	 * Creates the message.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param start the limit time, before which states can be garbage-collected, present in the message
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> KeepFromMessageImpl(LocalDateTime start, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
+
+		this.start = Objects.requireNonNull(start, "start cannot be null", onIllegalArgs);
 	}
 
 	@Override

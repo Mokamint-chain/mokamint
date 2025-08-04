@@ -21,10 +21,10 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
@@ -48,48 +48,54 @@ public class BeginBlockMessageImpl extends AbstractRpcMessage implements BeginBl
 	 * @param id the identifier of the message
 	 */
 	public BeginBlockMessageImpl(long height, LocalDateTime when, byte[] stateId, String id) {
-		super(id);
-
-		this.height = height;
-		if (height < 0)
-			throw new IllegalArgumentException("height must be non-negative");
-
-		this.stateId = stateId.clone();
-		this.when = Objects.requireNonNull(when, "when cannot be null");
+		this(height, when, stateId, id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
-	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
 	public BeginBlockMessageImpl(BeginBlockMessageJson json) throws InconsistentJsonException {
-		super(json.getId());
+		this(
+			json.getHeight(),
+			parse(Objects.requireNonNull(json.getWhen(), "when cannot be null", InconsistentJsonException::new)),
+			Hex.fromHexString(Objects.requireNonNull(json.getStateId(), "stateId cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			json.getId(),
+			InconsistentJsonException::new
+		);
+	}
 
-		this.height = json.getHeight();
-
-		var stateId = json.getStateId();
-		if (stateId == null)
-			throw new InconsistentJsonException("stateId cannot be null");
-
-		var when = json.getWhen();
-		if (when == null)
-			throw new InconsistentJsonException("when cannot be null");
-
+	private static LocalDateTime parse(String when) throws InconsistentJsonException {
 		try {
-			this.stateId = Hex.fromHexString(stateId);
-		}
-		catch (HexConversionException e) {
-			throw new InconsistentJsonException(e);
-		}
-
-		try {
-			this.when = LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME);
+			return LocalDateTime.parse(when, ISO_LOCAL_DATE_TIME);
 		}
 		catch (DateTimeParseException e) {
 			throw new InconsistentJsonException(e);
 		}
+	}
+
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param height the block height in the message
+	 * @param when the block creation time in the message
+	 * @param stateId the state identifier in the message
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> BeginBlockMessageImpl(long height, LocalDateTime when, byte[] stateId, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
+
+		this.height = height;
+		if (height < 0)
+			throw onIllegalArgs.apply("height must be non-negative");
+
+		this.stateId = Objects.requireNonNull(stateId, "stateId cannot be null", onIllegalArgs).clone();
+		this.when = Objects.requireNonNull(when, "when cannot be null", onIllegalArgs);
 	}
 
 	@Override

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.messages.internal.KeepFromResultMessageImpl;
 
@@ -30,7 +31,7 @@ public abstract class KeepFromResultMessageJson extends AbstractRpcMessageJsonRe
 	}
 
 	@Override
-	public KeepFromResultMessage unmap() {
+	public KeepFromResultMessage unmap() throws InconsistentJsonException {
 		return new KeepFromResultMessageImpl(this);
 	}
 

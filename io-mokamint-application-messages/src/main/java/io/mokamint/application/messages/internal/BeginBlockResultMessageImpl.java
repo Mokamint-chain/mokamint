@@ -18,7 +18,9 @@ package io.mokamint.application.messages.internal;
 
 import java.time.LocalDateTime;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.internal.json.BeginBlockResultMessageJson;
@@ -40,20 +42,32 @@ public class BeginBlockResultMessageImpl extends AbstractRpcMessage implements B
 	 * @param id the identifier of the message
 	 */
 	public BeginBlockResultMessageImpl(int result, String id) {
-		super(id);
-
-		this.result = result;
+		this(result, id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public BeginBlockResultMessageImpl(BeginBlockResultMessageJson json) {
-		super(json.getId());
+	public BeginBlockResultMessageImpl(BeginBlockResultMessageJson json) throws InconsistentJsonException {
+		this(json.getResult(), json.getId(), InconsistentJsonException::new);
+	}
 
-		this.result = json.getResult();
+	/**
+	 * Creates a message from the given JSON representation.
+	 * 
+	 * @param <E> the exception to throw if some argument is illegal
+	 * @param result the result of the call
+	 * @param id the identifier of the message
+	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> BeginBlockResultMessageImpl(int result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		super(id, onIllegalArgs);
+
+		this.result = result;
 	}
 
 	@Override

@@ -18,10 +18,10 @@ package io.mokamint.application.messages;
 
 import java.time.LocalDateTime;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.internal.BeginBlockMessageImpl;
-import io.mokamint.application.messages.internal.json.BeginBlockMessageDecoder;
-import io.mokamint.application.messages.internal.json.BeginBlockMessageEncoder;
 import io.mokamint.application.messages.internal.json.BeginBlockMessageJson;
 
 /**
@@ -47,23 +47,27 @@ public abstract class BeginBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends BeginBlockMessageEncoder {
+	public static class Encoder extends MappedEncoder<BeginBlockMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends BeginBlockMessageDecoder {
+	public static class Decoder extends MappedDecoder<BeginBlockMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

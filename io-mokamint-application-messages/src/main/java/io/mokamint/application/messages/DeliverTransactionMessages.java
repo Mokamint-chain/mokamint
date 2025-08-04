@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.internal.DeliverTransactionMessageImpl;
-import io.mokamint.application.messages.internal.json.DeliverTransactionMessageDecoder;
-import io.mokamint.application.messages.internal.json.DeliverTransactionMessageEncoder;
 import io.mokamint.application.messages.internal.json.DeliverTransactionMessageJson;
 import io.mokamint.node.api.Transaction;
 
@@ -45,23 +45,27 @@ public abstract class DeliverTransactionMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends DeliverTransactionMessageEncoder {
+	public static class Encoder extends MappedEncoder<DeliverTransactionMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends DeliverTransactionMessageDecoder {
+	public static class Decoder extends MappedDecoder<DeliverTransactionMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

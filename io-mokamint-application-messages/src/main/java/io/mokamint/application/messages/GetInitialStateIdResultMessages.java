@@ -16,10 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.internal.GetInitialStateIdResultMessageImpl;
-import io.mokamint.application.messages.internal.json.GetInitialStateIdResultMessageDecoder;
-import io.mokamint.application.messages.internal.json.GetInitialStateIdResultMessageEncoder;
 import io.mokamint.application.messages.internal.json.GetInitialStateIdResultMessageJson;
 
 /**
@@ -43,23 +43,27 @@ public abstract class GetInitialStateIdResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetInitialStateIdResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetInitialStateIdResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetInitialStateIdResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetInitialStateIdResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**
