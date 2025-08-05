@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.internal.WhisperBlockMessageImpl;
-import io.mokamint.node.messages.internal.gson.WhisperBlockMessageDecoder;
-import io.mokamint.node.messages.internal.gson.WhisperBlockMessageEncoder;
-import io.mokamint.node.messages.internal.gson.WhisperBlockMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperBlockMessageJson;
 
 /**
  * A provider of {@link WhisperBlockMessage}.
@@ -44,23 +44,27 @@ public final class WhisperBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends WhisperBlockMessageEncoder {
+	public static class Encoder extends MappedEncoder<WhisperBlockMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends WhisperBlockMessageDecoder {
+	public static class Decoder extends MappedDecoder<WhisperBlockMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

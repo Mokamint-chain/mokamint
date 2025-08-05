@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.internal.gson.GetTaskInfosMessageJson;
+import io.mokamint.node.messages.internal.json.GetTaskInfosMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getTaskInfos()} method of a node.

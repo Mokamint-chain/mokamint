@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
-import io.mokamint.node.messages.internal.gson.AddPeerResultMessageJson;
+import io.mokamint.node.messages.internal.json.AddPeerResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link RestrictedNode#add(io.mokamint.node.api.Peer)} method.

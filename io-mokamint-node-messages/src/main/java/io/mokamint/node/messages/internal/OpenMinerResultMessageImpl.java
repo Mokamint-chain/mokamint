@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
-import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageJson;
+import io.mokamint.node.messages.internal.json.OpenMinerResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the info of the {@link RestrictedNode#openMiner(int)} method.

@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
-import io.mokamint.node.messages.internal.gson.GetMinerInfosMessageJson;
+import io.mokamint.node.messages.internal.json.GetMinerInfosMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getMinerInfos()} method of a node.

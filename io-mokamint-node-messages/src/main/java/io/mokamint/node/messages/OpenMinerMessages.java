@@ -16,11 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.OpenMinerMessage;
 import io.mokamint.node.messages.internal.OpenMinerMessageImpl;
-import io.mokamint.node.messages.internal.gson.OpenMinerMessageDecoder;
-import io.mokamint.node.messages.internal.gson.OpenMinerMessageEncoder;
-import io.mokamint.node.messages.internal.gson.OpenMinerMessageJson;
+import io.mokamint.node.messages.internal.json.OpenMinerMessageJson;
 
 /**
  * A provider of {@link OpenMinerMessage}.
@@ -43,23 +43,27 @@ public final class OpenMinerMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends OpenMinerMessageEncoder {
+	public static class Encoder extends MappedEncoder<OpenMinerMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends OpenMinerMessageDecoder {
+	public static class Decoder extends MappedDecoder<OpenMinerMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

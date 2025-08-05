@@ -18,7 +18,7 @@ package io.mokamint.node.messages.internal;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
-import io.mokamint.node.messages.internal.gson.GetChainInfoMessageJson;
+import io.mokamint.node.messages.internal.json.GetChainInfoMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@code PublicNode#getChainInfo()} method.

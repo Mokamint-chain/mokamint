@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetConfigResultMessage;
-import io.mokamint.node.messages.internal.gson.GetConfigResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetConfigResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getConfig()} method.

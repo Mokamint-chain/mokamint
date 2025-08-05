@@ -16,11 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.GetTransactionAddressMessage;
 import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetTransactionAddressMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetTransactionAddressMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetTransactionAddressMessageJson;
+import io.mokamint.node.messages.internal.json.GetTransactionAddressMessageJson;
 
 /**
  * A provider of {@link GetTransactionAddressMessage}.
@@ -43,23 +43,27 @@ public final class GetTransactionAddressMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetTransactionAddressMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetTransactionAddressMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetTransactionAddressMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetTransactionAddressMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

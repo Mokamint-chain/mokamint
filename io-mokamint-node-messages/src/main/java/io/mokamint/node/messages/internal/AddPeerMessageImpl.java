@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.AddPeerMessage;
-import io.mokamint.node.messages.internal.gson.AddPeerMessageJson;
+import io.mokamint.node.messages.internal.json.AddPeerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#add(Peer)}.

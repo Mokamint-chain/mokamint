@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
-import io.mokamint.node.messages.internal.gson.RemoveMinerMessageJson;
+import io.mokamint.node.messages.internal.json.RemoveMinerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#removeMiner(java.util.UUID)}.

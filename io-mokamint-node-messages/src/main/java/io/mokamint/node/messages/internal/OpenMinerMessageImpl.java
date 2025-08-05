@@ -20,7 +20,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.OpenMinerMessage;
-import io.mokamint.node.messages.internal.gson.OpenMinerMessageJson;
+import io.mokamint.node.messages.internal.json.OpenMinerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#openMiner(int)}.

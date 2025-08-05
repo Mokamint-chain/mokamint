@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolInfoResultMessage;
-import io.mokamint.node.messages.internal.gson.GetMempoolInfoResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMempoolInfoResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMempoolInfo()} method.

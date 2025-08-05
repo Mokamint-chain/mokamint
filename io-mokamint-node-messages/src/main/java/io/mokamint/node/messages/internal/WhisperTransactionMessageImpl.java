@@ -25,7 +25,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Transactions;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
-import io.mokamint.node.messages.internal.gson.WhisperTransactionMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
 
 /**
  * Implementation of the network message sent to whisper a transaction between whisperers.

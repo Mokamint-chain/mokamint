@@ -16,11 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.RemoveMinerResultMessage;
 import io.mokamint.node.messages.internal.RemoveMinerResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageJson;
+import io.mokamint.node.messages.internal.json.RemoveMinerResultMessageJson;
 
 /**
  * A provider of {@link RemoveMinerResultMessage}.
@@ -43,23 +43,27 @@ public final class RemoveMinerResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends RemoveMinerResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<RemoveMinerResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends RemoveMinerResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<RemoveMinerResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

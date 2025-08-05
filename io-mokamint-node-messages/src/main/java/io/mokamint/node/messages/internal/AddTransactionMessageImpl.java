@@ -26,7 +26,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.AddTransactionMessage;
-import io.mokamint.node.messages.internal.gson.AddTransactionMessageJson;
+import io.mokamint.node.messages.internal.json.AddTransactionMessageJson;
 
 /**
  * Implementation of the network message corresponding to

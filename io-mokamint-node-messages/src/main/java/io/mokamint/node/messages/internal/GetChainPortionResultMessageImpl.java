@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
-import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetChainPortionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainPortion(long, int)} method.

@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.messages.api.GetBlockDescriptionResultMessage;
 import io.mokamint.node.messages.internal.GetBlockDescriptionResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetBlockDescriptionResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetBlockDescriptionResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetBlockDescriptionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetBlockDescriptionResultMessageJson;
 
 /**
  * A provider of {@link GetBlockDescriptionResultMessage}.
@@ -46,23 +46,27 @@ public final class GetBlockDescriptionResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetBlockDescriptionResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetBlockDescriptionResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetBlockDescriptionResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetBlockDescriptionResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetChainPortionMessage;
-import io.mokamint.node.messages.internal.gson.GetChainPortionMessageJson;
+import io.mokamint.node.messages.internal.json.GetChainPortionMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getChainPortion(long, int)} method.

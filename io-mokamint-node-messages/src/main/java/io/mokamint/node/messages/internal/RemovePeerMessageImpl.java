@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemovePeerMessage;
-import io.mokamint.node.messages.internal.gson.RemovePeerMessageJson;
+import io.mokamint.node.messages.internal.json.RemovePeerMessageJson;
 
 /**
  * Implementation of the network message corresponding to {@link RestrictedNode#remove(Peer)}.

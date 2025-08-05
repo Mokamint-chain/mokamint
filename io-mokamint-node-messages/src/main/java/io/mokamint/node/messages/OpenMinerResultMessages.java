@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.messages.api.OpenMinerResultMessage;
 import io.mokamint.node.messages.internal.OpenMinerResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.OpenMinerResultMessageJson;
+import io.mokamint.node.messages.internal.json.OpenMinerResultMessageJson;
 
 /**
  * A provider of {@link OpenMinerResultMessage}.
@@ -46,23 +46,27 @@ public final class OpenMinerResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends OpenMinerResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<OpenMinerResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends OpenMinerResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<OpenMinerResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

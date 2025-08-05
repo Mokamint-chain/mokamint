@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetTransactionResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetTransactionResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetTransactionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
 
 /**
  * A provider of {@link GetTransactionResultMessage}.
@@ -46,23 +46,27 @@ public final class GetTransactionResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetTransactionResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetTransactionResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetTransactionResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetTransactionResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

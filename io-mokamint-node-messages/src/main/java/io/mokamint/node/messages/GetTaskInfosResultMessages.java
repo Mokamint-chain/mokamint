@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
 import io.mokamint.node.messages.internal.GetTaskInfosResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetTaskInfosResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetTaskInfosResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetTaskInfosResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetTaskInfosResultMessageJson;
 
 /**
  * A provider of {@link GetTaskInfosResultMessage}.
@@ -46,23 +46,27 @@ public final class GetTaskInfosResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetTaskInfosResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetTaskInfosResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetTaskInfosResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetTaskInfosResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

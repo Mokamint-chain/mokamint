@@ -18,11 +18,11 @@ package io.mokamint.node.messages;
 
 import java.util.UUID;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.RemoveMinerMessage;
 import io.mokamint.node.messages.internal.RemoveMinerMessageImpl;
-import io.mokamint.node.messages.internal.gson.RemoveMinerMessageDecoder;
-import io.mokamint.node.messages.internal.gson.RemoveMinerMessageEncoder;
-import io.mokamint.node.messages.internal.gson.RemoveMinerMessageJson;
+import io.mokamint.node.messages.internal.json.RemoveMinerMessageJson;
 
 /**
  * A provider of {@link RemoveMinerMessage}.
@@ -45,23 +45,27 @@ public final class RemoveMinerMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends RemoveMinerMessageEncoder {
+	public static class Encoder extends MappedEncoder<RemoveMinerMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends RemoveMinerMessageDecoder {
+	public static class Decoder extends MappedDecoder<RemoveMinerMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

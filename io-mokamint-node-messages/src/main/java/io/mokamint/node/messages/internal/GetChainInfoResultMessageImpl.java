@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.messages.api.GetChainInfoResultMessage;
-import io.mokamint.node.messages.internal.gson.GetChainInfoResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetChainInfoResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getChainInfo()} method.

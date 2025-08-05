@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.messages.api.GetChainPortionResultMessage;
 import io.mokamint.node.messages.internal.GetChainPortionResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetChainPortionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetChainPortionResultMessageJson;
 
 /**
  * A provider of {@link GetChainPortionResultMessage}.
@@ -44,23 +44,27 @@ public final class GetChainPortionResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetChainPortionResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetChainPortionResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetChainPortionResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetChainPortionResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

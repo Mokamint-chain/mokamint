@@ -25,7 +25,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetBlockMessage;
-import io.mokamint.node.messages.internal.gson.GetBlockMessageJson;
+import io.mokamint.node.messages.internal.json.GetBlockMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getBlock(byte[])} method of a node.

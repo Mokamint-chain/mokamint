@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
-import io.mokamint.node.messages.internal.gson.GetMempoolPortionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMempoolPortionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMempoolPortion(int, int)} method.

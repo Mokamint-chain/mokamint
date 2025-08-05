@@ -26,7 +26,7 @@ import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
-import io.mokamint.node.messages.internal.gson.GetMinerInfosResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMinerInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getMinerInfos()} method.

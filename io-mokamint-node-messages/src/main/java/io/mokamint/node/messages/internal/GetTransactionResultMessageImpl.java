@@ -27,7 +27,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
-import io.mokamint.node.messages.internal.gson.GetTransactionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransaction(byte[])} method.

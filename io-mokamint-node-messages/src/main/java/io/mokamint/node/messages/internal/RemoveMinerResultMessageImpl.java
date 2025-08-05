@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.messages.api.RemoveMinerResultMessage;
-import io.mokamint.node.messages.internal.gson.RemoveMinerResultMessageJson;
+import io.mokamint.node.messages.internal.json.RemoveMinerResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link RestrictedNode#removeMiner(java.util.UUID)} method.

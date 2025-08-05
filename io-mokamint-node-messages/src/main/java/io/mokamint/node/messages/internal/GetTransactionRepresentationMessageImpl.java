@@ -25,7 +25,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
-import io.mokamint.node.messages.internal.gson.GetTransactionRepresentationMessageJson;
+import io.mokamint.node.messages.internal.json.GetTransactionRepresentationMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getTransactionRepresentation(byte[])} method of a node.

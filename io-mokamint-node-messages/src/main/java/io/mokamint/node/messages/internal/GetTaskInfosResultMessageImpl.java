@@ -26,7 +26,7 @@ import io.mokamint.node.TaskInfos;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.messages.api.GetTaskInfosResultMessage;
-import io.mokamint.node.messages.internal.gson.GetTaskInfosResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetTaskInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTaskInfos()} method.

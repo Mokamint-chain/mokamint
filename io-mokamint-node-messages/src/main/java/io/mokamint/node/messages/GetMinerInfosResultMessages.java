@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.stream.Stream;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.messages.api.GetMinerInfosResultMessage;
 import io.mokamint.node.messages.internal.GetMinerInfosResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetMinerInfosResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetMinerInfosResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetMinerInfosResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMinerInfosResultMessageJson;
 
 /**
  * A provider of {@link GetMinerInfosResultMessage}.
@@ -46,23 +46,27 @@ public final class GetMinerInfosResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetMinerInfosResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetMinerInfosResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetMinerInfosResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetMinerInfosResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

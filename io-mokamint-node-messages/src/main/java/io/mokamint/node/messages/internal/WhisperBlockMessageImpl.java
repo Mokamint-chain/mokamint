@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
-import io.mokamint.node.messages.internal.gson.WhisperBlockMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperBlockMessageJson;
 
 /**
  * Implementation of the network message sent to whisper a block between whisperers.

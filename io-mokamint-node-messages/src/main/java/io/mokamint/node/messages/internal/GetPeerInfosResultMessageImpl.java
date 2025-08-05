@@ -26,7 +26,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetPeerInfosResultMessage;
-import io.mokamint.node.messages.internal.gson.GetPeerInfosResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetPeerInfosResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getPeerInfos()} method.

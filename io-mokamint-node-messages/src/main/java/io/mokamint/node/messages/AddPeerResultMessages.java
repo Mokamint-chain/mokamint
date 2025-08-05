@@ -18,12 +18,12 @@ package io.mokamint.node.messages;
 
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.messages.api.AddPeerResultMessage;
 import io.mokamint.node.messages.internal.AddPeerResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.AddPeerResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.AddPeerResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.AddPeerResultMessageJson;
+import io.mokamint.node.messages.internal.json.AddPeerResultMessageJson;
 
 /**
  * A provider of {@link AddPeerResultMessage}.
@@ -46,23 +46,27 @@ public final class AddPeerResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends AddPeerResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<AddPeerResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends AddPeerResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<AddPeerResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

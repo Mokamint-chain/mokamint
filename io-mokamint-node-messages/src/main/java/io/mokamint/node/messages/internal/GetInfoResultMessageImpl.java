@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
-import io.mokamint.node.messages.internal.gson.GetInfoResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetInfoResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getInfo()} method.

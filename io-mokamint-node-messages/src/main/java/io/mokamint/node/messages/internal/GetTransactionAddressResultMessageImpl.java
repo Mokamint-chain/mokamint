@@ -24,7 +24,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
-import io.mokamint.node.messages.internal.gson.GetTransactionAddressResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetTransactionAddressResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.

@@ -23,7 +23,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.messages.api.AddTransactionResultMessage;
-import io.mokamint.node.messages.internal.gson.AddTransactionResultMessageJson;
+import io.mokamint.node.messages.internal.json.AddTransactionResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method.

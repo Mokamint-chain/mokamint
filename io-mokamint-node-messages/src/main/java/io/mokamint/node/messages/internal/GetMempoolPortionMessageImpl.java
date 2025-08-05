@@ -19,7 +19,7 @@ package io.mokamint.node.messages.internal;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetMempoolPortionMessage;
-import io.mokamint.node.messages.internal.gson.GetMempoolPortionMessageJson;
+import io.mokamint.node.messages.internal.json.GetMempoolPortionMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getMempoolPortion(int, int)} method.

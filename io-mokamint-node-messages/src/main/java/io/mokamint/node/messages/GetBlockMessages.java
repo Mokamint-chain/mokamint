@@ -16,11 +16,11 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.internal.GetBlockMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetBlockMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetBlockMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetBlockMessageJson;
+import io.mokamint.node.messages.internal.json.GetBlockMessageJson;
 
 /**
  * A provider of {@link GetBlockMessage}.
@@ -43,23 +43,27 @@ public final class GetBlockMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetBlockMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetBlockMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetBlockMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetBlockMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

@@ -22,7 +22,7 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
-import io.mokamint.node.messages.internal.gson.WhisperPeerMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperPeerMessageJson;
 
 /**
  * Implementation of the network message sent to whisper a peer between whisperers.

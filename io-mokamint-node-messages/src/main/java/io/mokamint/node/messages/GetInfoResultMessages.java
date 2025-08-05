@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.messages.api.GetInfoResultMessage;
 import io.mokamint.node.messages.internal.GetInfoResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetInfoResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetInfoResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetInfoResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetInfoResultMessageJson;
 
 /**
  * A provider of {@link GetInfoResultMessage}.
@@ -44,23 +44,27 @@ public final class GetInfoResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetInfoResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetInfoResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetInfoResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetInfoResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

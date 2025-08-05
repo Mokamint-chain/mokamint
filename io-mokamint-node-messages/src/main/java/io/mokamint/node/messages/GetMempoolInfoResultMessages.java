@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.messages.api.GetMempoolInfoResultMessage;
 import io.mokamint.node.messages.internal.GetMempoolInfoResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetMempoolInfoResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetMempoolInfoResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetMempoolInfoResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMempoolInfoResultMessageJson;
 
 /**
  * A provider of {@link GetMempoolInfoResultMessage}.
@@ -44,23 +44,27 @@ public final class GetMempoolInfoResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetMempoolInfoResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetMempoolInfoResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetMempoolInfoResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetMempoolInfoResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

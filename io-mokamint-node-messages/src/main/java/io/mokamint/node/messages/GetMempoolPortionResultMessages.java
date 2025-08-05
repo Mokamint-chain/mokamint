@@ -16,12 +16,12 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.messages.api.GetMempoolPortionResultMessage;
 import io.mokamint.node.messages.internal.GetMempoolPortionResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetMempoolPortionResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetMempoolPortionResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetMempoolPortionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetMempoolPortionResultMessageJson;
 
 /**
  * A provider of {@link GetMempoolPortionResultMessage}.
@@ -44,23 +44,27 @@ public final class GetMempoolPortionResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetMempoolPortionResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetMempoolPortionResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetMempoolPortionResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetMempoolPortionResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

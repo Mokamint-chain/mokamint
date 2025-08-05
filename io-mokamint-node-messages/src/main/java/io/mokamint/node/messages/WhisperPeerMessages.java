@@ -18,13 +18,13 @@ package io.mokamint.node.messages;
 
 import java.net.URI;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.messages.internal.WhisperPeerMessageImpl;
-import io.mokamint.node.messages.internal.gson.WhisperPeerMessageDecoder;
-import io.mokamint.node.messages.internal.gson.WhisperPeerMessageEncoder;
-import io.mokamint.node.messages.internal.gson.WhisperPeerMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperPeerMessageJson;
 
 /**
  * A provider of {@link WhisperPeerMessage}.
@@ -58,23 +58,27 @@ public final class WhisperPeerMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends WhisperPeerMessageEncoder {
+	public static class Encoder extends MappedEncoder<WhisperPeerMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
 		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends WhisperPeerMessageDecoder {
+	public static class Decoder extends MappedDecoder<WhisperPeerMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**

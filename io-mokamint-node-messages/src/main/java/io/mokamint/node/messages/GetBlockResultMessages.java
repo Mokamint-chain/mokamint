@@ -19,12 +19,12 @@ package io.mokamint.node.messages;
 import java.security.InvalidKeyException;
 import java.util.Optional;
 
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.messages.api.GetBlockResultMessage;
 import io.mokamint.node.messages.internal.GetBlockResultMessageImpl;
-import io.mokamint.node.messages.internal.gson.GetBlockResultMessageDecoder;
-import io.mokamint.node.messages.internal.gson.GetBlockResultMessageEncoder;
-import io.mokamint.node.messages.internal.gson.GetBlockResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetBlockResultMessageJson;
 
 /**
  * A provider of {@link GetBlockResultMessage}.
@@ -47,23 +47,24 @@ public final class GetBlockResultMessages {
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends GetBlockResultMessageEncoder {
+	public static class Encoder extends MappedEncoder<GetBlockResultMessage, Json> {
 
-		/**
-		 * Creates a new encoder.
-		 */
-		public Encoder() {}
+		public Encoder() {
+			super(Json::new);
+		}
 	}
 
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends GetBlockResultMessageDecoder {
+	public static class Decoder extends MappedDecoder<GetBlockResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
 		 */
-		public Decoder() {}
+		public Decoder() {
+			super(Json.class);
+		}
 	}
 
 	/**
