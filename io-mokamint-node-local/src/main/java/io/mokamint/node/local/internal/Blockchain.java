@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -224,7 +223,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				catch (ExodusException e) {
 					// TODO not sure while this happens, it seems there might be transactions run for garbage collection,
 					// that will consequently find a closed environment
-					LOGGER.log(Level.SEVERE, "blockchain: failed to close the blocks database", e);
+					LOGGER.warning("blockchain: failed to close the blocks database: " + e.getMessage());
 				}
 				finally {
 					executors.shutdownNow();

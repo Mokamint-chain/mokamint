@@ -201,7 +201,9 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 
 	/**
 	 * Yields the maximal history change time for the blockchain. That is, part of the history older
-	 * than this time is assumed to be definitely frozen and it is not allowed to be changed anymore.
+	 * than this time is assumed to be definitely frozen and is not allowed to be changed anymore.
+	 * Smaller values makes garbage-collection more aggressive but risk to lose consensus with the peers
+	 * in case of large history changes.
 	 * 
 	 * @return the maximal history change time (in milliseconds); if negative, changes of history are
 	 *         always allowed, without any limit

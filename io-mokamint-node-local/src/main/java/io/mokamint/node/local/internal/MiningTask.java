@@ -139,7 +139,6 @@ public class MiningTask implements Task {
 				Thread.sleep(5000L);
 			}
 			catch (UnknownStateException e) {
-				// TODO: this happened when mining started after a long synchronization
 				LOGGER.log(Level.SEVERE, "the state information at the head of the blockchain is not available", e);
 			}
 		}

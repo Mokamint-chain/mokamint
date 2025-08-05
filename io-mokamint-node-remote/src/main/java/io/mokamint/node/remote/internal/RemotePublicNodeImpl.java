@@ -349,7 +349,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		case GetTransactionResultMessage gtrm -> onGetTransactionResult(gtrm.get());
 		case GetTransactionRepresentationResultMessage gtrrm -> onGetTransactionRepresentationResult(gtrrm.get());
 		case GetTransactionAddressResultMessage gtarm -> onGetTransactionAddressResult(gtarm.get());
-		default -> { // TODO: modify the websockets library in order to avoid this complication
+		default -> {
 			if (message != null && !(message instanceof ExceptionMessage)) {
 				LOGGER.warning(logPrefix + "unexpected message of class " + message.getClass().getName());
 				return;
