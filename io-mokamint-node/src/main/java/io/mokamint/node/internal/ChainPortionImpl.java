@@ -22,7 +22,8 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
-import io.hotmoka.crypto.HexConversionException;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.internal.json.ChainPortionJson;
@@ -46,7 +47,7 @@ public class ChainPortionImpl implements ChainPortion {
 	 * @param hashes the hashes
 	 */
 	public ChainPortionImpl(Stream<byte[]> hashes) {
-		this.hashes = hashes.map(byte[]::clone).toArray(byte[][]::new);
+		this(hashes.toArray(byte[][]::new), byte[]::clone, IllegalArgumentException::new);
 	}
 
 	/**
@@ -57,21 +58,27 @@ public class ChainPortionImpl implements ChainPortion {
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public ChainPortionImpl(ChainPortionJson json) throws InconsistentJsonException {
-		String[] hashes = json.getHashes().toArray(String[]::new);
+		this(json.getHashes().toArray(String[]::new), hash -> Hex.fromHexString(hash, InconsistentJsonException::new), InconsistentJsonException::new);
+	}
+
+	/**
+	 * Creates the message.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param <T> the type used for the elements of {@code hashes}
+	 * @param hashes the hashes in the message
+	 * @param transformation a transformation to apply to each element of {@code hashes} in order to transform them into a byte array
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception, T> ChainPortionImpl(T[] hashes, Transformation<T, E> transformation, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		this.hashes = new byte[hashes.length][];
+		for (int pos = 0; pos < hashes.length; pos++)
+			this.hashes[pos] = transformation.apply(Objects.requireNonNull(hashes[pos], "hashes cannot contain a null element", onIllegalArgs));
+	}
 
-		for (int pos = 0; pos < hashes.length; pos++) {
-			String hash = hashes[pos];
-			if (hash == null)
-				throw new InconsistentJsonException("hashes cannot contain a null element");
-
-			try {
-				this.hashes[pos] = Hex.fromHexString(hashes[pos]);
-			}
-			catch (HexConversionException e) {
-				throw new InconsistentJsonException(e);
-			}
-		}
+	private interface Transformation<T, E extends Exception> {
+		byte[] apply(T t) throws E;
 	}
 
 	@Override
