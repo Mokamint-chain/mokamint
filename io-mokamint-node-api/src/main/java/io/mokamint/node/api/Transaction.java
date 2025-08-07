@@ -35,6 +35,13 @@ public interface Transaction extends Marshallable, Whisperable, Comparable<Trans
 	byte[] getBytes();
 
 	/**
+	 * Yields the number of bytes of this transaction.
+	 * 
+	 * @return the number of bytes of this transaction
+	 */
+	int getNumberOfBytes();
+
+	/**
 	 * Yields the bytes of this transaction, Base64-encoded.
 	 * 
 	 * @return the Based64-encoded bytes

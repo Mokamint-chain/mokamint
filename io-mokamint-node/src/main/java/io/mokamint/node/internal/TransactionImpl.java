@@ -66,6 +66,11 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	}
 
 	@Override
+	public int getNumberOfBytes() {
+		return bytes.length;
+	}
+
+	@Override
 	public String toBase64String() {
 		return Base64.toBase64String(bytes);
 	}

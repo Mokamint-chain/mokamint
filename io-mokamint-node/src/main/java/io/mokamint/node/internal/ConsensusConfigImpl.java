@@ -97,6 +97,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final int maxBlockSize;
 
 	/**
+	 * The maximal size of a transactions, in bytes.
+	 */
+	public final int maxTransactionSize;
+
+	/**
 	 * The rapidity of changes of the acceleration for block creation.
 	 * It is a value between 0 (no acceleration change) to 100,000 (maximally fast change).
 	 */
@@ -117,6 +122,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.signatureForDeadlines = builder.signatureForDeadlines;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 		this.maxBlockSize = builder.maxBlockSize;
+		this.maxTransactionSize = builder.maxTransactionSize;
 		this.oblivion = builder.oblivion;
 	}
 
@@ -125,6 +131,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return other instanceof ConsensusConfigImpl<?,?> otherConfig && getClass() == other.getClass() &&
 			chainId.equals(otherConfig.chainId) &&
 			maxBlockSize == otherConfig.maxBlockSize &&
+			maxTransactionSize == otherConfig.maxTransactionSize &&
 			oblivion == otherConfig.oblivion &&
 			targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 			hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
@@ -136,7 +143,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(maxTransactionSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
 	}
 
 	@Override
@@ -180,6 +187,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("\n");
 		sb.append("# the maximal size, in bytes, of a block's transactions table\n");
 		sb.append("max_block_size = " + maxBlockSize + "\n");
+		sb.append("\n");
+		sb.append("# the maximal size, in bytes, of a transaction\n");
+		sb.append("max_transaction_size = " + maxTransactionSize + "\n");
 		sb.append("\n");
 		sb.append("# the rapidity of changes of the acceleration for the block creation time\n");
 		sb.append("# between 0 (no change) and 100,000 (maximally fast change)\n");
@@ -234,6 +244,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
+	public int getMaxTransactionSize() {
+		return maxTransactionSize;
+	}
+
+	@Override
 	public int getOblivion() {
 		return oblivion;
 	}
@@ -253,6 +268,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private SignatureAlgorithm signatureForDeadlines;
 		private int targetBlockCreationTime = 4 * 60 * 1000; // 4 minutes
 		private int maxBlockSize = 1_000_000; // 1 megabyte
+		private int maxTransactionSize = 500_000; // 500K
 		private int oblivion = 20_000;
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
@@ -310,6 +326,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (maxBlockSize != null)
 				setMaxBlockSize(maxBlockSize);
 
+			var maxTransactionSize = toml.getLong("max_transaction_size");
+			if (maxTransactionSize != null)
+				setMaxTransactionSize(maxTransactionSize);
+
 			var oblivion = toml.getLong("oblivion");
 			if (oblivion != null)
 				setOblivion(oblivion);
@@ -330,6 +350,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 			this.maxBlockSize = config.getMaxBlockSize();
+			this.maxTransactionSize = config.getMaxTransactionSize();
 			this.oblivion = config.getOblivion();
 		}
 
@@ -457,6 +478,23 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				throw new IllegalArgumentException("maxBlockSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
 			this.maxBlockSize = (int) maxBlockSize;
+			return getThis();
+		}
+
+		@Override
+		public B setMaxTransactionSize(int maxTransactionSize) {
+			if (maxTransactionSize < 0)
+				throw new IllegalArgumentException("maxTransactionSize cannot be negative");
+
+			this.maxTransactionSize = maxTransactionSize;
+			return getThis();
+		}
+
+		private B setMaxTransactionSize(long maxTransactionSize) {
+			if (maxTransactionSize < 0 || maxTransactionSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxTransactionSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+
+			this.maxTransactionSize = (int) maxTransactionSize;
 			return getThis();
 		}
 

@@ -105,6 +105,14 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setMaxBlockSize(int maxBlockSize);
 
 	/**
+	 * Sets the maximal size of a transaction.
+	 * 
+	 * @param maxTransactionSize the maximal size, in bytes
+	 * @return this builder
+	 */
+	B setMaxTransactionSize(int maxTransactionSize);
+
+	/**
 	 * Sets the rapidity of changes of acceleration.
 	 * 
 	 * @param oblivion the rapidity of changes of acceleration. It is a value between 0

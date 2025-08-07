@@ -158,6 +158,10 @@ public class Mempool {
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
 	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
+		int size = transaction.getNumberOfBytes();
+		if (size > config.getMaxTransactionSize())
+			throw new TransactionRejectedException("The transaction is " + size + " bytes long, against a maximum of " + config.getMaxTransactionSize());
+
 		try {
 			app.checkTransaction(transaction);
 		}
