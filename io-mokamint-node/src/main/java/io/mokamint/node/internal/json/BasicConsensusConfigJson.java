@@ -37,6 +37,8 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 	private final int targetBlockCreationTime;
 	private final int maxBlockSize;
 	private final int oblivion;
+	private final int maxChainPortionLength;
+	private final int maxMempoolPortionLength;
 
 	protected BasicConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();
@@ -49,6 +51,8 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.maxBlockSize = config.getMaxBlockSize();
 		this.oblivion = config.getOblivion();
+		this.maxChainPortionLength = config.getMaxChainPortionLength();
+		this.maxMempoolPortionLength = config.getMaxMempoolPortionLength();
 	}
 
 	public String getChainId() {
@@ -89,6 +93,14 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 
 	public int getOblivion() {
 		return oblivion;
+	}
+
+	public int getMaxChainPortionLength() {
+		return maxChainPortionLength;
+	}
+
+	public int getMaxMempoolPortionLength() {
+		return maxMempoolPortionLength;
 	}
 
 	@Override

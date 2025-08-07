@@ -55,25 +55,21 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * The maximal delay, in milliseconds, between a deadline request to the miners
 	 * and the reception of the first deadline from the miners. After this threshold,
 	 * deadlines might well arrive, but might get ignored by the node.
-	 * It defaults to 20000.
 	 */
 	public final int deadlineWaitTimeout;
 
 	/**
 	 * The initial points of a miner, freshly connected to a node.
-	 * It defaults to 1000.
 	 */
 	public final long minerInitialPoints;
 
 	/**
-	 * The points lost for punishment by a miner that timeouts
-	 * at a request for a deadline. It defaults to 1.
+	 * The points lost for punishment by a miner that timeouts at a request for a deadline.
 	 */
 	public final long minerPunishmentForTimeout;
 
 	/**
 	 * The points lost by a miner that provides an illegal deadline.
-	 * It defaults to 500.
 	 */
 	public final long minerPunishmentForIllegalDeadline;
 
@@ -87,31 +83,27 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	/**
 	 * The maximum number of peers kept by a node. The actual number of peers can
 	 * be larger only if peers are explicitly added as seeds or through the
-	 * {@link RestrictedNode#add(Peer)} method. It defaults to 20.
+	 * {@link RestrictedNode#add(Peer)} method.
 	 */
 	public final int maxPeers;
 
 	/**
 	 * The initial points of a peer, freshly added to a node.
-	 * It defaults to 1000.
 	 */
 	public final long peerInitialPoints;
 
 	/**
-	 * The maximal difference (in milliseconds) between the local time of a node
-	 * and of one of its peers. It defaults to 15,000 (15 seconds).
+	 * The maximal difference (in milliseconds) between the local time of a node and of one of its peers.
 	 */
 	public final int peerMaxTimeDifference;
 
 	/**
 	 * The points lost for punishment by a peer that does not answer to a ping request.
-	 * It defaults to 1.
 	 */
 	public final long peerPunishmentForUnreachable;
 
 	/**
 	 * The time, in milliseconds, allowed to contact a peer. Beyond this threshold, the request timeouts.
-	 * It defaults to 10,000 (ie, 10 seconds).
 	 */
 	public final int peerTimeout;
 
@@ -120,13 +112,11 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * Every time the peer does not answer, its points are reduced by {@link #peerPunishmentForUnreachable},
 	 * until they reach zero and the peer is removed. During a successful ping, its peers are collected
 	 * if they are useful for the node (for instance, if the node has too few peers).
-	 * It defaults to 120,000 (ie, 2 minutes).
 	 */
 	public final int peerPingInterval;
 
 	/**
-	 * The time interval, in milliseconds, between successive broadcasts
-	 * of a service open on a node. It defaults to 240,000 (ie, 4 minutes).
+	 * The time interval, in milliseconds, between successive broadcasts of a service open on a node.
 	 */
 	public final int serviceBroadcastInterval;
 
@@ -141,35 +131,32 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	/**
 	 * The size of the memory used to avoid whispering the same
 	 * message again; higher numbers reduce the circulation of spurious messages.
-	 * It defaults to 1,000.
 	 */
 	public final int whisperingMemorySize;
 
 	/**
 	 * The size of the memory used to hold orphan nodes, that is, nodes received
 	 * from the network but having no parent in the blockchain. Larger sizes allow for
-	 * out of order reception of blocks, without synchronization. It defaults to 1000.
+	 * out of order reception of blocks, without synchronization.
 	 */
 	public final int orphansMemorySize;
 
 	/**
 	 * The size of the mempool of the node, that is, the area
 	 * of memory where incoming transactions are held before being verified and added to blocks.
-	 * It defaults to 100,000.
 	 */
 	public final int mempoolSize;
 
 	/**
 	 * The size of the group of blocks whose hashes get downloaded
 	 * in one shot during synchronization.
-	 * It defaults to 500.
 	 */
 	public final int synchronizationGroupSize;
 
 	/**
 	 * The maximal time (in milliseconds) a block can be created in the future,
 	 * from now (intended as network time now). Block verification will reject blocks created
-	 * beyond this threshold. It defaults to 15,000 (15 seconds).
+	 * beyond this threshold.
 	 */
 	public final long blockMaxTimeInTheFuture;
 
@@ -179,7 +166,6 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * If negative, changes of history are always allowed, without any limit, which drastically reduces
 	 * the opportunities for garbage-collection of the blocks' database and of the database for the states of the
 	 * application, if the latter implements any garbage-collection strategy.
-	 * It defaults to one hour.
 	 */
 	public final long maximalHistoryChangeTime;
 
@@ -422,7 +408,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private Path dir = Paths.get("mokamint-chain");
 		private int deadlineWaitTimeout = 20_000;
 		private long minerInitialPoints = 1000L;
-		private long minerPunishmentForTimeout = 1L;
+		private long minerPunishmentForTimeout = 0L;
 		private long minerPunishmentForIllegalDeadline = 500L;
 		private final Set<URI> seeds = new HashSet<>();
 		private int maxPeers = 20;

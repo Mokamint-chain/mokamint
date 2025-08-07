@@ -31,6 +31,7 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.ConsensusConfigBuilder;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.internal.json.BasicConsensusConfigJson;
 
 /**
@@ -108,6 +109,18 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final int oblivion;
 
 	/**
+	 * the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 */
+	public final int maxChainPortionLength;
+
+	/**
+	 * The maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 */
+	public final int maxMempoolPortionLength;
+
+	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
@@ -124,6 +137,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.maxBlockSize = builder.maxBlockSize;
 		this.maxTransactionSize = builder.maxTransactionSize;
 		this.oblivion = builder.oblivion;
+		this.maxChainPortionLength = builder.maxChainPortionLength;
+		this.maxMempoolPortionLength = builder.maxMempoolPortionLength;
 	}
 
 	@Override
@@ -138,7 +153,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
 			hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
 			signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
-			signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
+			signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines()) &&
+			maxChainPortionLength == otherConfig.maxChainPortionLength &&
+			maxMempoolPortionLength == otherConfig.maxMempoolPortionLength;
 	}
 
 	@Override
@@ -194,6 +211,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("# the rapidity of changes of the acceleration for the block creation time\n");
 		sb.append("# between 0 (no change) and 100,000 (maximally fast change)\n");
 		sb.append("oblivion = " + oblivion + "\n");
+		sb.append("\n");
+		sb.append("# the maximal number of block hashes that can be fetched with a single call to PublicNode.getChainPortion()\n");
+		sb.append("max_chain_portion_length = " + maxChainPortionLength + "\n");
+		sb.append("\n");
+		sb.append("# the maximal number of mempool elements that can be fetched with a single call to PublicNode.getMempoolPortion()\n");
+		sb.append("max_mempool_portion_length = " + maxMempoolPortionLength + "\n");
 
 		return sb.toString();
 	}
@@ -253,6 +276,16 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return oblivion;
 	}
 
+	@Override
+	public int getMaxChainPortionLength() {
+		return maxChainPortionLength;
+	}
+
+	@Override
+	public int getMaxMempoolPortionLength() {
+		return maxMempoolPortionLength;
+	}
+
 	/**
 	 * The builder of a configuration object.
 	 * 
@@ -270,6 +303,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private int maxBlockSize = 1_000_000; // 1 megabyte
 		private int maxTransactionSize = 500_000; // 500K
 		private int oblivion = 20_000;
+		private int maxChainPortionLength = 1024;
+		private int maxMempoolPortionLength = 1024;
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
@@ -333,6 +368,14 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			var oblivion = toml.getLong("oblivion");
 			if (oblivion != null)
 				setOblivion(oblivion);
+
+			var maximalChainPortionLength = toml.getLong("max_chain_portion_length");
+			if (maximalChainPortionLength != null)
+				setMaxChainPortionLength(maximalChainPortionLength);
+
+			var maximalMempoolPortionLength = toml.getLong("max_mempool_portion_length");
+			if (maximalMempoolPortionLength != null)
+				setMaxMempoolPortionLength(maximalMempoolPortionLength);
 		}
 
 		/**
@@ -352,6 +395,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.maxBlockSize = config.getMaxBlockSize();
 			this.maxTransactionSize = config.getMaxTransactionSize();
 			this.oblivion = config.getOblivion();
+			this.maxChainPortionLength = config.getMaxChainPortionLength();
+			this.maxMempoolPortionLength = config.getMaxMempoolPortionLength();
 		}
 
 		/**
@@ -375,6 +420,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				setTargetBlockCreationTime(json.getTargetBlockCreationTime());
 				setMaxBlockSize(json.getMaxBlockSize());
 				setOblivion(json.getOblivion());
+				setMaxChainPortionLength(json.getMaxChainPortionLength());
+				setMaxMempoolPortionLength(json.getMaxMempoolPortionLength());
 			}
 			catch (NullPointerException | IllegalArgumentException e) {
 				throw new InconsistentJsonException(e.getMessage());
@@ -509,6 +556,40 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 			this.oblivion = (int) oblivion;
 			return getThis();
+		}
+
+		@Override
+		public B setMaxChainPortionLength(int maxChainPortionLength) {
+			// 2 is the minimum so that synchronization can work
+			if (maxChainPortionLength < 2)
+				throw new IllegalArgumentException("maxChainPortionLength must be at least 2");
+
+			this.maxChainPortionLength = maxChainPortionLength;
+			return getThis();
+		}
+
+		private B setMaxChainPortionLength(long maxChainPortionLength) {
+			// 2 is the minimum so that synchronization can work
+			if (maxChainPortionLength < 2 || maxChainPortionLength > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxChainPortionLength must be between 2 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMaxChainPortionLength((int) maxChainPortionLength);
+		}
+
+		@Override
+		public B setMaxMempoolPortionLength(int maximalMempoolPortionLength) {
+			if (maximalMempoolPortionLength < 1)
+				throw new IllegalArgumentException("maxMempoolPortionLength must be at least 1");
+
+			this.maxMempoolPortionLength = maximalMempoolPortionLength;
+			return getThis();
+		}
+
+		private B setMaxMempoolPortionLength(long maxMempoolPortionLength) {
+			if (maxMempoolPortionLength < 1 || maxMempoolPortionLength > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxMempoolPortionLength must be between 1 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMaxMempoolPortionLength((int) maxMempoolPortionLength);
 		}
 
 		/**

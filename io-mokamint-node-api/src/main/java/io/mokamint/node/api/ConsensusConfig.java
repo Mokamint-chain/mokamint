@@ -116,6 +116,22 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	int getOblivion();
 
 	/**
+	 * Yields the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 * 
+	 * @return the maximal number of block hashes that can be fetched with a single call
+	 */
+	int getMaxChainPortionLength();
+
+	/**
+	 * Yields the maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 * 
+	 * @return the maximal number of mempool elements that can be fetched with a single call
+	 */
+	int getMaxMempoolPortionLength();
+
+	/**
 	 * Yields a toml representation of this configuration.
 	 * 
 	 * @return the toml representation, as a string

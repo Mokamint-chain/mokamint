@@ -41,6 +41,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -246,10 +247,15 @@ public class Mempool {
 	 * @param start the initial entry slot to return
 	 * @param count the maximal number of slots to return
 	 * @return the portion from {@code start} (included) to {@code start + length} (excluded)
+	 * @throws PortionRejectedException if the request has been rejected, for instance because {@code count} is too large
 	 */
-	public MempoolPortion getPortion(int start, int count) {
+	public MempoolPortion getPortion(int start, int count) throws PortionRejectedException {
 		if (start < 0 || count <= 0)
 			return MempoolPortions.of(Stream.empty());
+
+		int max = config.getMaxMempoolPortionLength();
+		if (count > max)
+			throw new PortionRejectedException("count cannot be larger than " + max);
 
 		synchronized (mempool) {
 			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(TransactionEntry::toMempoolEntry));

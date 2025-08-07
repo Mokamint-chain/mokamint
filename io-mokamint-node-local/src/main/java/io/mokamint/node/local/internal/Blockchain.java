@@ -73,6 +73,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NonGenesisBlock;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -462,9 +463,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param count how many hashes (maximum) must be reported
 	 * @return the hashes, in order
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws PortionRejectedException if the request is rejected, for instance because {@code count} is too large
 	 */
-	public Stream<byte[]> getChain(long start, int count) throws ClosedDatabaseException {
+	public Stream<byte[]> getChain(long start, int count) throws ClosedDatabaseException, PortionRejectedException {
 		try (var scope = mkScope()) {
+			int max = config.getMaxChainPortionLength();
+			if (count > max)
+				throw new PortionRejectedException("count cannot be larger than " + max);
+
 			return environment.computeInReadonlyTransaction(txn -> getChain(txn, start, count));
 		}
 		catch (ExodusException e) {

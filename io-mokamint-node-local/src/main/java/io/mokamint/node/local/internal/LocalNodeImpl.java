@@ -73,6 +73,7 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
@@ -427,7 +428,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws ClosedNodeException, PortionRejectedException {
 		try (var scope = mkScope()) {
 			try {
 				return ChainPortions.of(blockchain.getChain(start, count));
@@ -466,7 +467,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws ClosedNodeException, PortionRejectedException {
 		try (var scope = mkScope()) {
 			return mempool.getPortion(start, count);
 		}
