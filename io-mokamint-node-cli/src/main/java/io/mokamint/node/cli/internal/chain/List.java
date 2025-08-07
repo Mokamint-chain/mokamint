@@ -31,6 +31,7 @@ import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
@@ -104,7 +105,7 @@ public class List extends AbstractPublicRpcCommand {
 		private final byte[][] hashes;
 		private final LocalDateTime startDateTimeUTC;
 
-		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
+		private MyTable(byte[] genesisHash, RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException, PortionRejectedException {
 			super(mkHeader(remote), json());
 
 			this.remote = remote;
@@ -182,8 +183,14 @@ public class List extends AbstractPublicRpcCommand {
 			from = Math.max(0L, info.getLength() - 1 - count + 1);
 
 		var maybeGenesisHash = info.getGenesisHash();
-		if (maybeGenesisHash.isPresent())
-			new MyTable(maybeGenesisHash.get(), remote).print();
+		if (maybeGenesisHash.isPresent()) {
+			try {
+				new MyTable(maybeGenesisHash.get(), remote).print();
+			}
+			catch (PortionRejectedException e) {
+				throw new CommandException("Cannot fetch the request chunk of the blockchain: " + e.getMessage());
+			}
+		}
 	}
 
 	@Override

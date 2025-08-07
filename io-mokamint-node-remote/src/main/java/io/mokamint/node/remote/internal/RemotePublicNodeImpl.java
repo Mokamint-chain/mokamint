@@ -71,6 +71,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionAddress;
@@ -457,11 +458,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public ChainPortion getChainPortion(long start, int count) throws InterruptedException, TimeoutException, ClosedNodeException {
+	public ChainPortion getChainPortion(long start, int count) throws PortionRejectedException, InterruptedException, TimeoutException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetChainPortion(start, count, id);
-		return waitForResult(id, GetChainPortionResultMessage.class);
+		return waitForResult(id, GetChainPortionResultMessage.class, PortionRejectedException.class);
 	}
 
 	protected void sendGetChainPortion(long start, int count, String id) {
@@ -493,11 +494,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolPortion getMempoolPortion(int start, int count) throws PortionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetMempoolPortion(start, count, id);
-		return waitForResult(id, GetMempoolPortionResultMessage.class);
+		return waitForResult(id, GetMempoolPortionResultMessage.class, PortionRejectedException.class);
 	}
 
 	protected void sendGetMempoolPortion(int start, int count, String id) {
@@ -623,7 +624,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
-			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
+			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
 	}
 
@@ -671,7 +672,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
-			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
+			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
 		}
 	}
 

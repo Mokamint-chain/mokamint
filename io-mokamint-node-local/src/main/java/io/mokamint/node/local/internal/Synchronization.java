@@ -43,6 +43,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 
@@ -389,13 +390,13 @@ public class Synchronization {
 					if (!downloadNextGroupOfBlocks(hashes))
 						return;
 
-					if (hashes.length < synchronizationGroupSize + 1) // if the group of hashes was not full, we stop
+					if (hashes.length < synchronizationGroupSize) // if the group of hashes was not full, we stop
 						break;
 
 					lastHashOfPreviousGroup = Optional.of(hashes[hashes.length - 1]);
 
 					synchronized (this) {
-						height += synchronizationGroupSize;
+						height += synchronizationGroupSize - 1;
 					}
 				}
 
@@ -403,6 +404,9 @@ public class Synchronization {
 			}
 			catch (ClosedPeerException e) {
 				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is already closed: " + e.getMessage());
+			}
+			catch (PortionRejectedException e) {
+				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer rejected a request for fetching block hashes: " + e.getMessage());
 			}
 			catch (PeerTimeoutException e) {
 				LOGGER.warning("sync: block downloading from " + peer + " stops because the peer is not answering: " + e.getMessage());
@@ -534,10 +538,10 @@ public class Synchronization {
 		/**
 		 * Download the next group of hashes.
 		 */
-		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, ClosedPeerException, PeerTimeoutException, ClosedDatabaseException {
+		private Optional<byte[][]> downloadNextGroupOfBlockHashes(Optional<byte[]> lastHashOfPreviousGroup) throws InterruptedException, ClosedPeerException, PeerTimeoutException, ClosedDatabaseException, PortionRejectedException {
 			long height = getHeight();
-			LOGGER.info("sync: downloading from " + peer + " the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize) + "]");
-			Optional<ChainPortion> maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize + 1);
+			LOGGER.info("sync: downloading from " + peer + " the hashes of the blocks at height [" + height + ", " + (height + synchronizationGroupSize - 1) + "]");
+			Optional<ChainPortion> maybeChain = peers.getChainPortion(peer, height, synchronizationGroupSize);
 
 			if (maybeChain.isPresent()) {
 				Optional<byte[]> genesisHash;

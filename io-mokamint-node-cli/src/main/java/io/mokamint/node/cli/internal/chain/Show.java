@@ -31,6 +31,7 @@ import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -89,8 +90,14 @@ public class Show extends AbstractPublicRpcCommand {
 				var length = remote.getChainInfo().getLength();
 				if (length <= height)
 					throw new CommandException("There is no block at height " + height + " since the chain has length " + length + "!");
-				else
-					return remote.getChainPortion(height, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at height " + height + "!"));
+				else {
+					try {
+						return remote.getChainPortion(height, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at height " + height + "!"));
+					}
+					catch (PortionRejectedException e) {
+						throw new CommandException("The node does not allow to fetch the hash of the block at the given height: " + e.getMessage());
+					}
+				}
 			}
 			// it must be --depth, since the {@code blockIdentifier} parameter is mandatory
 			else if (depth < 0)
@@ -99,8 +106,14 @@ public class Show extends AbstractPublicRpcCommand {
 				var length = remote.getChainInfo().getLength();
 				if (length <= depth)
 					throw new CommandException("There is no block at depth " + depth + " since the chain has length " + length + "!");
-				else
-					return remote.getChainPortion(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
+				else {
+					try {
+						return remote.getChainPortion(length - depth - 1, 1).getHashes().findFirst().orElseThrow(() -> new CommandException("The node cannot find the hash of the block at depth " + depth + "!"));
+					}
+					catch (PortionRejectedException e) {
+						throw new CommandException("The node does not allow to fetch the hash of the block at the given depth: " + e.getMessage());
+					}
+				}
 			}
         }
 	}

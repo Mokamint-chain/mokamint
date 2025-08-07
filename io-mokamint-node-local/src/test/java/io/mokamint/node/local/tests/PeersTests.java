@@ -67,6 +67,7 @@ import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -130,7 +131,7 @@ public class PeersTests extends AbstractLoggedTests {
 			w.thenReturn(LocalNodeConfigBuilders.defaults().build());
 			return node;
 		}
-		catch (TimeoutException | ClosedNodeException | NoSuchAlgorithmException e) {
+		catch (TimeoutException | ClosedNodeException | NoSuchAlgorithmException | PortionRejectedException e) {
 			// fake, it's just out of stubbing
 			throw new LocalNodeException("Unexpected exception", e);
 		}

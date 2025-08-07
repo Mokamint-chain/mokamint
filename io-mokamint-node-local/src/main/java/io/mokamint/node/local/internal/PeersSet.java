@@ -53,6 +53,7 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperer;
@@ -353,8 +354,9 @@ public class PeersSet implements AutoCloseable {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedPeerException if the peer is misbehaving
 	 * @throws ClosedDatabaseException if the database is already closed
+	 * @throws PortionRejectedException if the request has been rejected, for instance, because the sze of the portion is too large
 	 */
-	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, ClosedDatabaseException, ClosedPeerException {
+	public Optional<ChainPortion> getChainPortion(Peer peer, long start, int count) throws PeerTimeoutException, InterruptedException, ClosedDatabaseException, ClosedPeerException, PortionRejectedException {
 		var remote = getRemote(peer);
 		if (remote.isEmpty())
 			return Optional.empty();

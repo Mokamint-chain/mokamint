@@ -100,11 +100,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param start the height of the first block whose hash is returned
 	 * @param count how many hashes (at most) must be reported
 	 * @return the portion with the hashes, in order
+	 * @throws PortionRejectedException if the request has been rejected, for instance because the portion is too large
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	ChainPortion getChainPortion(long start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
+	ChainPortion getChainPortion(long start, int count) throws PortionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the block with the given hash, if it has been seen by this node.
@@ -201,11 +202,12 @@ public interface PublicNode extends Node, Whisperer {
 	 * @param start the number of the first entry that is returned
 	 * @param count how many entries (at most) must be reported
 	 * @return the portion with the entries, in order of increasing priority
+	 * @throws PortionRejectedException if the request has been rejected, for instance because the portion is too large
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolPortion getMempoolPortion(int start, int count) throws TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolPortion getMempoolPortion(int start, int count) throws PortionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Binds a whisperer to this node. This means that whenever this node

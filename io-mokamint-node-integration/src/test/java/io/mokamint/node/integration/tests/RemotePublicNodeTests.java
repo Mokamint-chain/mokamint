@@ -71,6 +71,7 @@ import io.mokamint.node.Transactions;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -609,6 +610,27 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("getChainPortion() works in case of PortionRejectedException")
+	public void getChainPortionWorksInCaseOfPortionRejectedException() throws Exception {
+		var exceptionMessage = "exception message";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
+
+			@Override
+			protected void onGetChainPortion(GetChainPortionMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new PortionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(PortionRejectedException.class, () -> remote.getChainPortion(5, 10));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws Exception {
 		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
@@ -674,8 +696,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Transaction) works in case of RejectedTransactionException")
-	public void addTransactionWorksInCaseOfRejectedTransactionException() throws Exception {
+	@DisplayName("add(Transaction) works in case of TransactionRejectedException")
+	public void addTransactionWorksInCaseOfTransactionRejectedException() throws Exception {
 		var exceptionMessage = "exception message";
 		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
 
@@ -716,6 +738,27 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
 			var mempool2 = remote.getMempoolPortion(10, 20);
 			assertEquals(mempool1, mempool2);
+		}
+	}
+
+	@Test
+	@DisplayName("getMempoolPortion() works in case of PortionRejectedException")
+	public void getMempoolPortionWorksInCaseOfPortionRejectedException() throws Exception {
+		var exceptionMessage = "exception message";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
+
+			@Override
+			protected void onGetMempoolPortion(GetMempoolPortionMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new PortionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
+			var exception = assertThrows(PortionRejectedException.class, () -> remote.getMempoolPortion(5, 10));
+			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
 
@@ -881,8 +924,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionRepresentation() works if it throws RejectedTransactionException")
-	public void getTransactionRepresentationWorksInCaseOfRejectedTransactionException() throws Exception {
+	@DisplayName("getTransactionRepresentation() works if it throws TransactionRejectedException")
+	public void getTransactionRepresentationWorksInCaseOfTransactionRejectedException() throws Exception {
 		byte[] hash = { 67, 56, 43 };
 		var exceptionMessage = "rejected";
 	

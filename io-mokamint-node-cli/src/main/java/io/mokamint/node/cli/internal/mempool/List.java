@@ -26,6 +26,7 @@ import io.hotmoka.cli.Table;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
@@ -54,7 +55,12 @@ public class List extends AbstractPublicRpcCommand {
 		if (from == -1L)
 			from = (int) Math.max(0, remote.getMempoolInfo().getSize() - count);
 
-		new MyTable(remote).print();
+		try {
+			new MyTable(remote).print();
+		}
+		catch (PortionRejectedException e) {
+			throw new CommandException("Cannot fetch the requested chunk of the mempool: " + e.getMessage());
+		}
 	}
 
 	private static class Row extends AbstractRow {
@@ -97,7 +103,7 @@ public class List extends AbstractPublicRpcCommand {
 	private class MyTable extends AbstractTable {
 		private final MempoolEntry[] entries;
 
-		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
+		private MyTable(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, PortionRejectedException {
 			super(mkHeader(remote), json());
 
 			LOGGER.info("requesting mempool entries with index in the interval [" + from + ", " + (from + count) + ")");

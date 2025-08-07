@@ -80,6 +80,7 @@ import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.NodeInfo;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Transaction;
@@ -523,6 +524,17 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("if a getChainPortion() request reaches the service and the request gets rejected, the caller gets an exception")
+	public void serviceGetChainPortionPortionRejectedExceptionWorks() throws Exception {
+		var node = mkNode();
+		when(node.getChainPortion(5, 10)).thenThrow(PortionRejectedException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
+			assertThrows(PortionRejectedException.class, () -> client.getChainPortion(5, 10));
+		}
+	}
+
+	@Test
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
 	public void serviceAddTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
@@ -617,6 +629,17 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetMempoolPortion();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getMempoolPortion() request reaches the service and the request gets rejected, the caller gets an exception")
+	public void serviceGetMempoolPortionPortionRejectedExceptionWorks() throws Exception {
+		var node = mkNode();
+		when(node.getMempoolPortion(5, 10)).thenThrow(PortionRejectedException.class);
+	
+		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
+			assertThrows(PortionRejectedException.class, () -> client.getMempoolPortion(5, 10));
 		}
 	}
 

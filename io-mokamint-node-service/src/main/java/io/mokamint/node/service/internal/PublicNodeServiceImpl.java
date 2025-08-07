@@ -41,6 +41,7 @@ import io.mokamint.node.Memories;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
+import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.api.WhisperMessage;
@@ -270,7 +271,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
 		}
-		catch (TransactionRejectedException | ApplicationTimeoutException e) {
+		catch (TransactionRejectedException | ApplicationTimeoutException | PortionRejectedException e) {
 			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
 		catch (ClosedNodeException e) {
@@ -585,7 +586,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetChainPortionEndpoint.class, GET_CHAIN_PORTION_ENDPOINT, GetChainPortionMessages.Decoder.class, GetChainPortionResultMessages.Encoder.class);
+			return simpleConfig(server, GetChainPortionEndpoint.class, GET_CHAIN_PORTION_ENDPOINT, GetChainPortionMessages.Decoder.class, GetChainPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -640,7 +641,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetMempoolPortionEndpoint.class, GET_MEMPOOL_PORTION_ENDPOINT, GetMempoolPortionMessages.Decoder.class, GetMempoolPortionResultMessages.Encoder.class);
+			return simpleConfig(server, GetMempoolPortionEndpoint.class, GET_MEMPOOL_PORTION_ENDPOINT, GetMempoolPortionMessages.Decoder.class, GetMempoolPortionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
