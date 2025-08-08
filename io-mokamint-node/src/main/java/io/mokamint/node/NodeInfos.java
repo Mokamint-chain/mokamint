@@ -22,6 +22,7 @@ import java.util.UUID;
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.NodeInfoImpl;
 import io.mokamint.node.internal.json.NodeInfoJson;
@@ -39,10 +40,14 @@ public abstract class NodeInfos {
 	 * @param version the version of the node
 	 * @param uuid the UUID of the node
 	 * @param localDateTimeUTC the local date and time UTC of the node
+	 * @param maxChainPortionLength the maximal number of block hashes that can be fetched with a single
+	 *                              {@link PublicNode#getChainPortion(long, int)} call
+	 * @param maxMempoolPortionLength the maximal number of mempool elements that can be fetched with a single
+	 *                                {@link PublicNode#getMempoolPortion(int, int)} call
 	 * @return the node information object
 	 */
-	public static NodeInfo of(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
-		return new NodeInfoImpl(version, uuid, localDateTimeUTC);
+	public static NodeInfo of(Version version, UUID uuid, LocalDateTime localDateTimeUTC, int maxChainPortionLength, int maxMempoolPortionLength) {
+		return new NodeInfoImpl(version, uuid, localDateTimeUTC, maxChainPortionLength, maxMempoolPortionLength);
 	}
 
 	/**

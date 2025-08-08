@@ -20,12 +20,13 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Objects;
 import java.util.UUID;
 
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Versions;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Version;
 import io.mokamint.node.internal.json.NodeInfoJson;
 
@@ -50,16 +51,30 @@ public class NodeInfoImpl implements NodeInfo {
 	private final LocalDateTime localDateTimeUTC;
 
 	/**
+	 * The maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 */
+	private final int maxChainPortionLength;
+
+	/**
+	 * The maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 */
+	private final int maxMempoolPortionLength;
+
+	/**
 	 * Yields a new node information object.
 	 * 
 	 * @param version the version of the node
 	 * @param uuid the UUID of the node
 	 * @param localDateTimeUTC the local date and time UTC of the node
+	 * @param maxChainPortionLength the maximal number of block hashes that can be fetched with a single
+	 *                              {@link PublicNode#getChainPortion(long, int)} call
+	 * @param maxMempoolPortionLength the maximal number of mempool elements that can be fetched with a single
+	 *                                {@link PublicNode#getMempoolPortion(int, int)} call
 	 */
-	public NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC) {
-		this.version = Objects.requireNonNull(version);
-		this.uuid = Objects.requireNonNull(uuid);
-		this.localDateTimeUTC = Objects.requireNonNull(localDateTimeUTC);
+	public NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC, int maxChainPortionLength, int maxMempoolPortionLength) {
+		this(version, uuid, localDateTimeUTC, maxChainPortionLength, maxMempoolPortionLength, IllegalArgumentException::new);
 	}
 
 	/**
@@ -69,33 +84,57 @@ public class NodeInfoImpl implements NodeInfo {
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public NodeInfoImpl(NodeInfoJson json) throws InconsistentJsonException {
-		Versions.Json version = json.getVersion();
-		if (version == null)
-			throw new InconsistentJsonException("version cannot be null");
+		this(
+			Objects.requireNonNull(json.getVersion(), "version cannot be null", InconsistentJsonException::new).unmap(),
+			mkUuid(json.getUuid()),
+			mkLocalDateTimeUTCUuid(json.getLocalDateTimeUTC()),
+			json.getMaxChainPortionLength(),
+			json.getMaxMempoolPortionLength()
+		);
+	}
 
-		this.version = version.unmap();
-
-		String uuid = json.getUuid();
-		if (uuid == null)
-			throw new InconsistentJsonException("uuid cannot be null");
-
+	private static LocalDateTime mkLocalDateTimeUTCUuid(String localDateTimeUTC) throws InconsistentJsonException {
 		try {
-			this.uuid = UUID.fromString(uuid);
-		}
-		catch (IllegalArgumentException e) {
-			throw new InconsistentJsonException(e);
-		}
-
-		var localDateTimeUTC = json.getLocalDateTimeUTC();
-		if (localDateTimeUTC == null)
-			throw new InconsistentJsonException("localDateTimeUTC cannot be null");
-
-		try {
-			this.localDateTimeUTC = LocalDateTime.parse(localDateTimeUTC, ISO_LOCAL_DATE_TIME);
+			return LocalDateTime.parse(Objects.requireNonNull(localDateTimeUTC, "localDateTimeUTC cannot be null", InconsistentJsonException::new), ISO_LOCAL_DATE_TIME);
 		}
 		catch (DateTimeParseException e) {
 			throw new InconsistentJsonException(e);
 		}
+	}
+
+	private static UUID mkUuid(String uuid) throws InconsistentJsonException {
+		try {
+			return UUID.fromString(Objects.requireNonNull(uuid, "uuid cannot be null", InconsistentJsonException::new));
+		}
+		catch (IllegalArgumentException e) {
+			throw new InconsistentJsonException(e);
+		}
+	}
+
+	/**
+	 * Creates the message.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param <T> the type used for the elements of {@code hashes}
+	 * @param hashes the hashes in the message
+	 * @param transformation a transformation to apply to each element of {@code hashes} in order to transform them into a byte array
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> NodeInfoImpl(Version version, UUID uuid, LocalDateTime localDateTimeUTC, int maxChainPortionLength, int maxMempoolPortionLength, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		this.version = Objects.requireNonNull(version, "version cannot be null", onIllegalArgs);
+		this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null", onIllegalArgs);
+		this.localDateTimeUTC = Objects.requireNonNull(localDateTimeUTC, "localDateTimeUTC cannot be null", onIllegalArgs);
+
+		if (maxChainPortionLength < 2)
+			throw onIllegalArgs.apply("maxChainPortionLength must be at least 2");
+
+		this.maxChainPortionLength = maxChainPortionLength;
+
+		if (maxMempoolPortionLength < 1)
+			throw onIllegalArgs.apply("maxMempoolPortionLength must be at least 1");
+
+		this.maxMempoolPortionLength = maxMempoolPortionLength;
 	}
 
 	@Override
@@ -114,19 +153,31 @@ public class NodeInfoImpl implements NodeInfo {
 	}
 
 	@Override
+	public int getMaxChainPortionLength() {
+		return maxChainPortionLength;
+	}
+
+	@Override
+	public int getMaxMempoolPortionLength() {
+		return maxMempoolPortionLength;
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof NodeInfo ni &&
 			uuid.equals(ni.getUUID()) && version.equals(ni.getVersion()) &&
+			maxChainPortionLength == ni.getMaxChainPortionLength() &&
+			maxMempoolPortionLength == ni.getMaxMempoolPortionLength() &&
 			localDateTimeUTC.equals(ni.getLocalDateTimeUTC());
 	}
 
 	@Override
 	public int hashCode() {
-		return uuid.hashCode() ^ localDateTimeUTC.hashCode();
+		return uuid.hashCode() ^ localDateTimeUTC.hashCode() ^ maxChainPortionLength ^ maxMempoolPortionLength;
 	}
 
 	@Override
 	public String toString() {
-		return "version: " + version + ", UUID: " + uuid + ", UTC date and time: " + localDateTimeUTC;
+		return "version: " + version + ", UUID: " + uuid + ", UTC date and time: " + localDateTimeUTC + ", max chain portion length: " + maxChainPortionLength + ", max mempool portion length: " + maxMempoolPortionLength;
 	}
 }

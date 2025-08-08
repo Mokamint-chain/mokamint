@@ -122,24 +122,6 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setOblivion(int oblivion);
 
 	/**
-	 * Sets the maximal number of block hashes that can be fetched with a single
-	 * {@link PublicNode#getChainPortion(long, int)} call.
-	 * 
-	 * @param maxChainPortionLength the maximal number of block hashes that can be fetched with a single call
-	 * @return this builder
-	 */
-	B setMaxChainPortionLength(int maxChainPortionLength);
-
-	/**
-	 * Sets the maximal number of mempool elements that can be fetched with a single
-	 * {@link PublicNode#getMempoolPortion(int, int)} call.
-	 * 
-	 * @param maxMempoolPortionLength the maximal number of mempool elements that can be fetched with a single call
-	 * @return this builder
-	 */
-	B setMaxMempoolPortionLength(int maxMempoolPortionLength);
-
-	/**
 	 * Builds the configuration.
 	 * 
 	 * @return the configuration

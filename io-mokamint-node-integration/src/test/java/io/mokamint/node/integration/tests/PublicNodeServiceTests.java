@@ -647,7 +647,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getInfo() request reaches the service, it sends back its node information")
 	public void serviceGetInfoWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+		var info = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")), 2048, 1024);
 
 		class MyTestClient extends RemotePublicNodeImpl {
 

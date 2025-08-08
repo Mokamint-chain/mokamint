@@ -94,7 +94,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final LocalNodeImpl node;
 
 	/**
-	 * The configuration of {@code node}.
+	 * The configuration of {@link #node}.
 	 */
 	private final LocalNodeConfig config;
 
@@ -202,7 +202,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		this.node = node;
 		this.config = node.getConfig();
-		this.maximalHistoryChangeTime = config.getMaximalHistoryChangeTime();
+		this.maximalHistoryChangeTime = config.getMaxHistoryChangeTime();
 		this.orphans = Memories.of(config.getOrphansMemorySize());
 		this.environment = createBlockchainEnvironment();
 		this.storeOfBlocks = openStore("blocks");

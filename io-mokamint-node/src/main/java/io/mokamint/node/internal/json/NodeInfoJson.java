@@ -31,11 +31,15 @@ public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 	private final Versions.Json version;
 	private final String uuid;
 	private final String localDateTimeUTC;
+	private final int maxChainPortionLength;
+	private final int maxMempoolPortionLength;
 
 	protected NodeInfoJson(NodeInfo info) {
 		this.version = new Versions.Json(info.getVersion());
 		this.uuid = info.getUUID().toString();
 		this.localDateTimeUTC = ISO_LOCAL_DATE_TIME.format(info.getLocalDateTimeUTC());
+		this.maxChainPortionLength = info.getMaxChainPortionLength();
+		this.maxMempoolPortionLength = info.getMaxMempoolPortionLength();
 	}
 
 	public Versions.Json getVersion() {
@@ -48,6 +52,14 @@ public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 
 	public String getLocalDateTimeUTC() {
 		return localDateTimeUTC;
+	}
+
+	public int getMaxChainPortionLength() {
+		return maxChainPortionLength;
+	}
+
+	public int getMaxMempoolPortionLength() {
+		return maxMempoolPortionLength;
 	}
 
 	@Override

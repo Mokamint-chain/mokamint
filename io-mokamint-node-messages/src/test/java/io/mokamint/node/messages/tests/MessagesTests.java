@@ -337,7 +337,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getInfo result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetInfoResult() throws Exception {
-		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+		var info = NodeInfos.of(Versions.of(3, 4, 5), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")), 1024, 2048);
 		var getInfoResultMessage1 = GetInfoResultMessages.of(info, "id");
 		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
 		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);

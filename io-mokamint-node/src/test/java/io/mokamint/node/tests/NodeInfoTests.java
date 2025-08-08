@@ -34,7 +34,7 @@ public class NodeInfoTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("node informations are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForNodeInfo() throws Exception {
-		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")), 512, 1973);
 		String encoded = new NodeInfos.Encoder().encode(info1);
 		var info2 = new NodeInfos.Decoder().decode(encoded);
 		assertEquals(info1, info2);

@@ -633,7 +633,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getInfo() works")
 	public void getInfoWorks() throws Exception {
-		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+		var info1 = NodeInfos.of(Versions.of(1, 2, 3), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")), 1024, 2048);
 	
 		class MyServer extends PublicTestServer {
 

@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
@@ -195,5 +196,21 @@ public interface LocalNodeConfig extends ConsensusConfig<LocalNodeConfig, LocalN
 	 * @return the maximal history change time (in milliseconds); if negative, changes of history are
 	 *         always allowed, without any limit
 	 */
-	long getMaximalHistoryChangeTime();
+	long getMaxHistoryChangeTime();
+
+	/**
+	 * Yields the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 * 
+	 * @return the maximal number of block hashes that can be fetched with a single call
+	 */
+	int getMaxChainPortionLength();
+
+	/**
+	 * Yields the maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 * 
+	 * @return the maximal number of mempool elements that can be fetched with a single call
+	 */
+	int getMaxMempoolPortionLength();
 }

@@ -35,6 +35,7 @@ import io.hotmoka.annotations.Immutable;
 import io.mokamint.node.AbstractConsensusConfig;
 import io.mokamint.node.AbstractConsensusConfigBuilder;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RestrictedNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.api.LocalNodeConfigBuilder;
@@ -167,7 +168,19 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	 * the opportunities for garbage-collection of the blocks' database and of the database for the states of the
 	 * application, if the latter implements any garbage-collection strategy.
 	 */
-	public final long maximalHistoryChangeTime;
+	public final long maxHistoryChangeTime;
+
+	/**
+	 * the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 */
+	public final int maxChainPortionLength;
+
+	/**
+	 * The maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 */
+	public final int maxMempoolPortionLength;
 
 	/**
 	 * Full constructor for the builder pattern.
@@ -194,7 +207,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		this.mempoolSize = builder.mempoolSize;
 		this.synchronizationGroupSize = builder.synchronizationGroupSize;
 		this.blockMaxTimeInTheFuture = builder.blockMaxTimeInTheFuture;
-		this.maximalHistoryChangeTime = builder.maximalHistoryChangeTime;
+		this.maxHistoryChangeTime = builder.maxHistoryChangeTime;
+		this.maxChainPortionLength = builder.maxChainPortionLength;
+		this.maxMempoolPortionLength = builder.maxMempoolPortionLength;
 	}
 
 	@Override
@@ -293,8 +308,18 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 	}
 
 	@Override
-	public long getMaximalHistoryChangeTime() {
-		return maximalHistoryChangeTime;
+	public long getMaxHistoryChangeTime() {
+		return maxHistoryChangeTime;
+	}
+
+	@Override
+	public int getMaxChainPortionLength() {
+		return maxChainPortionLength;
+	}
+
+	@Override
+	public int getMaxMempoolPortionLength() {
+		return maxMempoolPortionLength;
 	}
 
 	@Override
@@ -366,7 +391,13 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("\n");
 		sb.append("# the maximal time (in milliseconds) that history can be changed before being considered as definitely frozen;\n");
 		sb.append("# a negative value means that the history is always allowed to be changed, without limits\n");
-		sb.append("maximal_history_change_time = " + maximalHistoryChangeTime + "\n");
+		sb.append("max_history_change_time = " + maxHistoryChangeTime + "\n");
+		sb.append("\n");
+		sb.append("# the maximal number of block hashes that can be fetched with a single call to PublicNode.getChainPortion()\n");
+		sb.append("max_chain_portion_length = " + maxChainPortionLength + "\n");
+		sb.append("\n");
+		sb.append("# the maximal number of mempool elements that can be fetched with a single call to PublicNode.getMempoolPortion()\n");
+		sb.append("max_mempool_portion_length = " + maxMempoolPortionLength + "\n");
 
 		return sb.toString();
 	}
@@ -398,7 +429,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 				mempoolSize == otherConfig.mempoolSize &&
 				synchronizationGroupSize == otherConfig.synchronizationGroupSize &&
 				blockMaxTimeInTheFuture == otherConfig.blockMaxTimeInTheFuture &&
-				maximalHistoryChangeTime == otherConfig.maximalHistoryChangeTime;
+				maxHistoryChangeTime == otherConfig.maxHistoryChangeTime &&
+				maxChainPortionLength == otherConfig.maxChainPortionLength &&
+				maxMempoolPortionLength == otherConfig.maxMempoolPortionLength;
 	}
 
 	/**
@@ -424,7 +457,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private int mempoolSize = 100_000;
 		private int synchronizationGroupSize = 500;
 		private long blockMaxTimeInTheFuture = 10000L;
-		private long maximalHistoryChangeTime = 5 * synchronizationGroupSize * getTargetBlockCreationTime(); // 5 times the span of a synchronization group size
+		private long maxHistoryChangeTime = 5 * synchronizationGroupSize * getTargetBlockCreationTime(); // 5 times the span of a synchronization group size
+		private int maxChainPortionLength = 1024;
+		private int maxMempoolPortionLength = 1024;
 
 		/**
 		 * Creates a configuration builder with initial default values.
@@ -517,9 +552,17 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			if (blockMaxTimeInTheFuture != null)
 				setBlockMaxTimeInTheFuture(blockMaxTimeInTheFuture);
 
-			var maximalHistoryChangeTime = toml.getLong("maximal_history_change_time");
+			var maximalHistoryChangeTime = toml.getLong("max_history_change_time");
 			if (maximalHistoryChangeTime != null)
-				setMaximalHistoryChangeTime(maximalHistoryChangeTime);
+				setMaxHistoryChangeTime(maximalHistoryChangeTime);
+
+			var maxChainPortionLength = toml.getLong("max_chain_portion_length");
+			if (maxChainPortionLength != null)
+				setMaxChainPortionLength(maxChainPortionLength);
+
+			var maxMempoolPortionLength = toml.getLong("max_mempool_portion_length");
+			if (maxMempoolPortionLength != null)
+				setMaxMempoolPortionLength(maxMempoolPortionLength);
 		}
 
 		/**
@@ -562,7 +605,9 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 			this.mempoolSize = config.mempoolSize;
 			this.synchronizationGroupSize = config.synchronizationGroupSize;
 			this.blockMaxTimeInTheFuture = config.blockMaxTimeInTheFuture;
-			this.maximalHistoryChangeTime = config.maximalHistoryChangeTime;
+			this.maxHistoryChangeTime = config.maxHistoryChangeTime;
+			this.maxChainPortionLength = config.maxChainPortionLength;
+			this.maxMempoolPortionLength = config.maxMempoolPortionLength;
 		}
 
 		@Override
@@ -801,9 +846,43 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		}
 
 		@Override
-		public LocalNodeConfigBuilder setMaximalHistoryChangeTime(long maximalHistoryChangeTime) {
-			this.maximalHistoryChangeTime = maximalHistoryChangeTime;
+		public LocalNodeConfigBuilder setMaxHistoryChangeTime(long maxHistoryChangeTime) {
+			this.maxHistoryChangeTime = maxHistoryChangeTime;
 			return getThis();
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setMaxChainPortionLength(int maxChainPortionLength) {
+			// 2 is the minimum so that synchronization can work
+			if (maxChainPortionLength < 2)
+				throw new IllegalArgumentException("maxChainPortionLength must be at least 2");
+
+			this.maxChainPortionLength = maxChainPortionLength;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setMaxChainPortionLength(long maxChainPortionLength) {
+			// 2 is the minimum so that synchronization can work
+			if (maxChainPortionLength < 2 || maxChainPortionLength > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxChainPortionLength must be between 2 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMaxChainPortionLength((int) maxChainPortionLength);
+		}
+
+		@Override
+		public LocalNodeConfigBuilder setMaxMempoolPortionLength(int maximalMempoolPortionLength) {
+			if (maximalMempoolPortionLength < 1)
+				throw new IllegalArgumentException("maxMempoolPortionLength must be at least 1");
+
+			this.maxMempoolPortionLength = maximalMempoolPortionLength;
+			return getThis();
+		}
+
+		private LocalNodeConfigBuilder setMaxMempoolPortionLength(long maxMempoolPortionLength) {
+			if (maxMempoolPortionLength < 1 || maxMempoolPortionLength > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxMempoolPortionLength must be between 1 and " + Integer.MAX_VALUE + " inclusive");
+
+			return setMaxMempoolPortionLength((int) maxMempoolPortionLength);
 		}
 
 		@Override

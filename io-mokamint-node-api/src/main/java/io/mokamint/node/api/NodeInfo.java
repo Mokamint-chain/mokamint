@@ -49,6 +49,22 @@ public interface NodeInfo {
 	 */
 	LocalDateTime getLocalDateTimeUTC();
 
+	/**
+	 * Yields the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 * 
+	 * @return the maximal number of block hashes that can be fetched with a single call
+	 */
+	int getMaxChainPortionLength();
+
+	/**
+	 * Yields the maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 * 
+	 * @return the maximal number of mempool elements that can be fetched with a single call
+	 */
+	int getMaxMempoolPortionLength();
+
 	@Override
 	boolean equals(Object other);
 

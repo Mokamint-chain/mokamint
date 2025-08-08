@@ -59,6 +59,9 @@ public class Mempool {
 	 */
 	private final LocalNodeImpl node;
 
+	/**
+	 * The configuration of {@link #node}.
+	 */
 	private final LocalNodeConfig config;
 
 	/**

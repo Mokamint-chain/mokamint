@@ -193,7 +193,7 @@ public class PeersSet implements AutoCloseable {
 	 * @return the node information
 	 */
 	public NodeInfo getNodeInfo() {
-		return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")));
+		return NodeInfos.of(version, uuid, LocalDateTime.now(ZoneId.of("UTC")), config.getMaxChainPortionLength(), config.getMaxMempoolPortionLength());
 	}
 
 	/**

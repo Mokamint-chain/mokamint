@@ -155,7 +155,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			// we effectively disable the time check
 			.setBlockMaxTimeInTheFuture(Long.MAX_VALUE)
 			// we effectively disable the time check
-			.setMaximalHistoryChangeTime(-1L)
+			.setMaxHistoryChangeTime(-1L)
 			.build();
 	}
 

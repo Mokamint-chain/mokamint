@@ -82,7 +82,7 @@ public class PeersTests extends AbstractLoggedTests {
 	/**
 	 * The node information of the nodes used in the tests.
 	 */
-	private final static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")));
+	private final static NodeInfo info = NodeInfos.of(mkVersion(), UUID.randomUUID(), LocalDateTime.now(ZoneId.of("UTC")), 1024, 1024);
 
 	/**
 	 * The chain information of the nodes used in the tests.
@@ -298,7 +298,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 
 		var version = info.getVersion();
-		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor(), version.getPatch() + 3), UUID.randomUUID(), info.getLocalDateTimeUTC(), info.getMaxChainPortionLength(), info.getMaxMempoolPortionLength());
 		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			node.add(peer);
 			assertEquals(allPeers, node.getPeerInfos().map(PeerInfo::getPeer).collect(Collectors.toSet()));
@@ -319,7 +319,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 
 		var version = info.getVersion();
-		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor(), version.getMinor() + 3, version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC(), info.getMaxChainPortionLength(), info.getMaxMempoolPortionLength());
 		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().startsWith("Peer version " + otherInfo.getVersion() + " is incompatible with this node's version " + info.getVersion()));
@@ -340,7 +340,7 @@ public class PeersTests extends AbstractLoggedTests {
 		}
 
 		var version = info.getVersion();
-		var otherInfo = NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC());
+		var otherInfo = NodeInfos.of(Versions.of(version.getMajor() + 1, version.getMinor(), version.getPatch()), UUID.randomUUID(), info.getLocalDateTimeUTC(), info.getMaxChainPortionLength(), info.getMaxMempoolPortionLength());
 		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().startsWith("Peer version " + otherInfo.getVersion() + " is incompatible with this node's version " + info.getVersion()));
@@ -362,7 +362,7 @@ public class PeersTests extends AbstractLoggedTests {
 			}
 		}
 
-		var otherInfo = NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().minus(config.getPeerMaxTimeDifference() + 1000L, ChronoUnit.MILLIS));
+		var otherInfo = NodeInfos.of(info.getVersion(), UUID.randomUUID(), info.getLocalDateTimeUTC().minus(config.getPeerMaxTimeDifference() + 1000L, ChronoUnit.MILLIS), info.getMaxChainPortionLength(), info.getMaxMempoolPortionLength());
 		try (var service = new PublicTestServer(otherInfo, port); var node = new MyLocalNode()) {
 			PeerRejectedException e = assertThrows(PeerRejectedException.class, () -> node.add(peer));
 			assertTrue(e.getMessage().startsWith("The time of the peer is more than " + node.getConfig().getPeerMaxTimeDifference() + " ms away"));

@@ -21,6 +21,7 @@ import java.nio.file.Path;
 
 import io.mokamint.node.api.ConsensusConfigBuilder;
 import io.mokamint.node.api.Peer;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RestrictedNode;
 
 /**
@@ -210,12 +211,30 @@ public interface LocalNodeConfigBuilder extends ConsensusConfigBuilder<LocalNode
 	 * Sets the maximal history change time for the blockchain. That is, part of the history older
 	 * than this time is assumed to be definitely frozen and it is not allowed to be changed anymore.
 	 * 
-	 * @param maximalHistoryChangeTime the maximal history change time (in milliseconds);
-	 *                                 if negative, changes of history are always allowed, without any limit,
-	 *                                 which drastically reduces the opportunities for garbage-collection
-	 *                                 of the blocks' database and of the database for the states of the
-	 *                                 application, if the latter implements any garbage-collection strategy
+	 * @param maxHistoryChangeTime the maximal history change time (in milliseconds);
+	 *                             if negative, changes of history are always allowed, without any limit,
+	 *                             which drastically reduces the opportunities for garbage-collection
+	 *                             of the blocks' database and of the database for the states of the
+	 *                             application, if the latter implements any garbage-collection strategy
 	 * @return this builder
 	 */
-	LocalNodeConfigBuilder setMaximalHistoryChangeTime(long maximalHistoryChangeTime);
+	LocalNodeConfigBuilder setMaxHistoryChangeTime(long maxHistoryChangeTime);
+
+	/**
+	 * Sets the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 * 
+	 * @param maxChainPortionLength the maximal number of block hashes that can be fetched with a single call
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setMaxChainPortionLength(int maxChainPortionLength);
+
+	/**
+	 * Sets the maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 * 
+	 * @param maxMempoolPortionLength the maximal number of mempool elements that can be fetched with a single call
+	 * @return this builder
+	 */
+	LocalNodeConfigBuilder setMaxMempoolPortionLength(int maxMempoolPortionLength);
 }
