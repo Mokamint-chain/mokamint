@@ -49,6 +49,9 @@ public final class GetBlockResultMessages {
 	 */
 	public static class Encoder extends MappedEncoder<GetBlockResultMessage, Json> {
 
+		/**
+		 * Creates a new encoder.
+		 */
 		public Encoder() {
 			super(Json::new);
 		}

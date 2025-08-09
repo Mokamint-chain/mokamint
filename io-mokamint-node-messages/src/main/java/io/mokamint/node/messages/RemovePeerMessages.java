@@ -46,6 +46,9 @@ public final class RemovePeerMessages {
 	 */
 	public static class Encoder extends MappedEncoder<RemovePeerMessage, Json> {
 
+		/**
+		 * Creates a new encoder.
+		 */
 		public Encoder() {
 			super(Json::new);
 		}
