@@ -296,7 +296,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedule(this::processWhisperedPeers, "peers whispering process");
 			schedule(this::processWhisperedBlocks, "blocks whispering process");
 			schedule(this::processWhisperedTransactions, "transactions whispering process");
-			schedule(this::publisher, "block publishing process");
+			schedule(this::publisher, "blocks publishing process");
 			schedulePeriodicPingToAllPeersAndReconnection();
 			schedulePeriodicWhisperingOfAllServices();
 			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();

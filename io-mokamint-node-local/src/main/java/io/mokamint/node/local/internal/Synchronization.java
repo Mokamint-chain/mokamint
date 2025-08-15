@@ -210,7 +210,7 @@ public class Synchronization {
 
 	/**
 	 * Takes node that the given downloader wants to download a given block.
-	 * It takes node of that request, so that the peer of the downloader can
+	 * It takes note of that request, so that the peer of the downloader can
 	 * later be banned if the block turns out to be illegal.
 	 * 
 	 * @param blockHash the hash of the block requested to download
@@ -602,7 +602,7 @@ public class Synchronization {
 						if (!blockchain.containsBlock(block.getHash()))
 							// we only perform non-contextual verification and only if the block was not already in blockchain,
 							// since in that case it must have been verified already; the block might already be in blockchain
-							// if the node is resuming its execution and synchronizing from the last blocks
+							// for the first blocks downloaded during synchronization
 							new BlockVerification(null, node, config, block, Optional.empty(), Mode.ABSOLUTE);
 	
 						synchronized (blocksPartiallyVerified) {

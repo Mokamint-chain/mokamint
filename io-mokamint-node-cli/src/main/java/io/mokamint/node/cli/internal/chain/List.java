@@ -188,7 +188,7 @@ public class List extends AbstractPublicRpcCommand {
 				new MyTable(maybeGenesisHash.get(), remote).print();
 			}
 			catch (PortionRejectedException e) {
-				throw new CommandException("Cannot fetch the request chunk of the blockchain: " + e.getMessage());
+				throw new CommandException("Cannot fetch the requested chunk of the blockchain: " + e.getMessage());
 			}
 		}
 	}

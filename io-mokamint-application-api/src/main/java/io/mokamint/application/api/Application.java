@@ -55,7 +55,7 @@ import io.mokamint.nonce.api.Deadline;
  * If, instead, the final state needn't be committed, because if won't be needed in the
  * future (for instance, because <code>finalStateId</code> does not match its expected
  * value and hence block verification fails), then {@link #abortBlock(int)} is called
- * at the end, instead of {@link #commitBlock(int)}.
+ * at some moment, and {@link #commitBlock(int)} is not called.
  * 
  * <br>
  * 
@@ -221,6 +221,8 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * application, in the future, must be able to recover the state at the
 	 * end of that execution, from the identifier of that state.
 	 * This typically requires to commit the resulting state into a database.
+	 * It is guaranteed that this method is called only after {@code #endBlock(int, Deadline)}
+	 * has been called on the same {@code groupId}.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being committed
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid
@@ -235,7 +237,10 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * identified by {@code id}. This means that the application, in the future,
 	 * will not be required to recover the state at the end of that execution, from the
 	 * identifier of that state. This typically requires to abort a database transaction
-	 * and clear some resources.
+	 * and clear some resources. Note that this method might be called also when
+	 * {@link #endBlock(int, Deadline)} has not been called before for the same {@code groupId}.
+	 * The only guarantee is that {@link #beginBlock(long, LocalDateTime, byte[])} has been
+	 * called before for the same {@code groupId}.
 	 * 
 	 * @param groupId the identifier of the execution of a group of transactions that is being aborted
 	 * @throws UnknownGroupIdException if the {@code groupId} is not valid

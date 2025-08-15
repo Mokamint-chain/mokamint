@@ -134,11 +134,6 @@ public class BlockMiner {
 	private final TransactionsExecutionTask transactionExecutionTask;
 
 	/**
-	 * True if and only if a new block has been created.
-	 */
-	private volatile boolean created;
-
-	/**
 	 * True if and only if a new block has been asked to be committed to the application.
 	 */
 	private volatile boolean askedToCommit;
@@ -203,7 +198,6 @@ public class BlockMiner {
 
 						if (!interrupted) {
 							var block = createNewBlock();
-							created = true;
 
 							if (!interrupted)
 								commitIfBetterThanHead(block);
@@ -307,7 +301,7 @@ public class BlockMiner {
 		transactionExecutionTask.stop();
 
 		try {
-			if (created && !askedToCommit)
+			if (!askedToCommit)
 				transactionExecutionTask.abortBlock();
 
 			node.onMiningCompleted(previous);
