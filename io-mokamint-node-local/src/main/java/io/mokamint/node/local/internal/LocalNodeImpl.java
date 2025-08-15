@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -293,14 +294,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void scheduleTasks() {
 		try {
 			schedulePeriodicSynchronization();
-			schedule(this::processWhisperedPeers, "peers whispering process");
-			schedule(this::processWhisperedBlocks, "blocks whispering process");
-			schedule(this::processWhisperedTransactions, "transactions whispering process");
-			schedule(this::publisher, "blocks publishing process");
+			schedule(this::processWhisperedPeers, () -> "peers whispering process");
+			schedule(this::processWhisperedBlocks, () -> "blocks whispering process");
+			schedule(this::processWhisperedTransactions, () -> "transactions whispering process");
+			schedule(this::publisher, () -> "blocks publishing process");
 			schedulePeriodicPingToAllPeersAndReconnection();
 			schedulePeriodicWhisperingOfAllServices();
 			schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain();
-			schedule(miningTask, "blocks mining process");
+			schedule(miningTask, () -> "blocks mining process");
 		}
 		catch (TaskRejectedExecutionException e) {
 			close();
@@ -773,7 +774,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private void scheduleSynchronizationIfPossible() {
 		try {
-			schedule(this::synchronize, "synchronization from the peers");
+			schedule(this::synchronize, () -> "synchronization from the peers");
 		}
 		catch (TaskRejectedExecutionException e) {
 			LOGGER.warning("node " + uuid + ": synchronization request rejected, probably because the node is shutting down");
@@ -990,9 +991,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private class RunnableTask implements Runnable {
 		private final Task task;
-		private final String description;
+		private final Supplier<String> description;
 	
-		private RunnableTask(Task task, String description) {
+		private RunnableTask(Task task, Supplier<String> description) {
 			this.task = task;
 			this.description = description;
 		}
@@ -1027,7 +1028,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	
 		@Override
 		public String toString() {
-			return description;
+			return description.get();
 		}
 	}
 
@@ -1038,7 +1039,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param description the description of the task
 	 * @throws TaskRejectedExecutionException if the task could not be spawned
 	 */
-	private void schedule(Task task, String description) throws TaskRejectedExecutionException {
+	private void schedule(Task task, Supplier<String> description) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 
 		try {
@@ -1050,7 +1051,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		}
 	}
 
-	Future<?> submit(Task task, String description) throws TaskRejectedExecutionException {
+	Future<?> submit(Task task, Supplier<String> description) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 
 		try {
@@ -1074,7 +1075,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param unit the time interval unit
 	 * @throws TaskRejectedExecutionException if the task could not be spawned
 	 */
-	private void scheduleWithFixedDelay(Task task, String description, long initialDelay, long delay, TimeUnit unit) throws TaskRejectedExecutionException {
+	private void scheduleWithFixedDelay(Task task, Supplier<String> description, long initialDelay, long delay, TimeUnit unit) throws TaskRejectedExecutionException {
 		var runnable = new RunnableTask(task, description);
 	
 		try {
@@ -1092,7 +1093,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void schedulePeriodicWhisperingOfAllServices() throws TaskRejectedExecutionException {
 		long serviceBroadcastInterval = config.getServiceBrodcastInterval();
 		if (serviceBroadcastInterval >= 0)
-			scheduleWithFixedDelay(this::whisperAllServices, "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
+			scheduleWithFixedDelay(this::whisperAllServices, () -> "whispering of all node's services", 0L, serviceBroadcastInterval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -1100,7 +1101,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * and informs the application that states in the frozen part are eligible for garbage-collection.
 	 */
 	private void schedulePeriodicIdentificationOfTheNonFrozenPartOfBlockchain() throws TaskRejectedExecutionException {
-		scheduleWithFixedDelay(this::identifyNonFrozenPartOfBlockchain, "identification of the non-frozen part of the blockchain", 10000L, 10000L, TimeUnit.MILLISECONDS);
+		scheduleWithFixedDelay(this::identifyNonFrozenPartOfBlockchain, () -> "identification of the non-frozen part of the blockchain", 10000L, 10000L, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -1109,8 +1110,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private void schedulePeriodicSynchronization() throws TaskRejectedExecutionException {
 		var interval = config.getSynchronizationInterval();
 		if (interval >= 0)
-			scheduleWithFixedDelay(this::synchronize,
-				"synchronization from the peers", 0L, interval, TimeUnit.MILLISECONDS);
+			scheduleWithFixedDelay(this::synchronize, () -> "synchronization from the peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
 	private void synchronize() throws InterruptedException {
@@ -1134,7 +1134,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		var interval = config.getPeerPingInterval();
 		if (interval >= 0)
 			scheduleWithFixedDelay(this::pingAllPeersAndReconnect,
-				"ping of all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
+				() -> "ping of all peers to check connection and collect their peers", 0L, interval, TimeUnit.MILLISECONDS);
 	}
 
 	private void pingAllPeersAndReconnect() throws InterruptedException {

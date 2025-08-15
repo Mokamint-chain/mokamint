@@ -443,7 +443,8 @@ public class BlockMiner {
 				endOfWaitingPeriod.release();
 			else {
 				try {
-					future = node.submit(() -> taskBody(millisecondsToWait), "waker set in " + millisecondsToWait + " ms");
+					final long start = System.currentTimeMillis();
+					future = node.submit(() -> taskBody(millisecondsToWait), () -> "waker set for " + millisecondsToWait + " ms, still " + (start + millisecondsToWait - System.currentTimeMillis()) + " ms to wait");
 					LOGGER.info(heightMessage + "set up a waker in " + millisecondsToWait + " ms");
 				}
 				catch (TaskRejectedExecutionException e) {

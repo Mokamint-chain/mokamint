@@ -151,7 +151,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	public void start() throws TaskRejectedExecutionException {
-		future = node.submit(this, "transactions execution over block " + previous.getHexHash());
+		future = node.submit(this, () -> "transactions execution over block " + previous.getHexHash());
 	}
 
 	public void stop() {
