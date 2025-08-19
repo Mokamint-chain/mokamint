@@ -19,9 +19,10 @@ package io.mokamint.node.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Objects;
 
 import io.hotmoka.annotations.Immutable;
+import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
+import io.hotmoka.exceptions.Objects;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
@@ -46,7 +47,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @param uri the URI of the peer
 	 */
 	public PeerImpl(URI uri) {
-		this.uri = Objects.requireNonNull(uri);
+		this(Objects.requireNonNull(uri, "uri cannot be null", IllegalArgumentException::new).toString(), IllegalArgumentException::new);
 	}
 
 	/**
@@ -56,16 +57,7 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
 	public PeerImpl(PeerJson json) throws InconsistentJsonException {
-		String uri = json.getUri();
-		if (uri == null)
-			throw new InconsistentJsonException("uri cannot be null");
-
-		try {
-			this.uri = new URI(uri);
-		}
-		catch (URISyntaxException e) {
-			throw new InconsistentJsonException(e);
-		}
+		this(Objects.requireNonNull(json.getUri(), "uri cannot be null", InconsistentJsonException::new), InconsistentJsonException::new);
 	}
 
 	/**
@@ -76,11 +68,23 @@ public class PeerImpl extends AbstractMarshallable implements Peer {
 	 * @throws IOException if the peer cannot be unmarshalled
 	 */
 	public PeerImpl(UnmarshallingContext context) throws IOException {
+		this(context.readStringUnshared(), IOException::new);
+	}
+
+	/**
+	 * Creates the peer.
+	 * 
+	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param uri the URI of the peer
+	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
+	 * @throws E if some argument is illegal
+	 */
+	private <E extends Exception> PeerImpl(String uri, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		try {
-			this.uri = new URI(context.readStringUnshared());
+			this.uri = new URI(Objects.requireNonNull(uri, "uri cannot be null", onIllegalArgs));
 		}
 		catch (URISyntaxException e) {
-			throw new IOException(e);
+			throw onIllegalArgs.apply(e.getMessage());
 		}
 	}
 

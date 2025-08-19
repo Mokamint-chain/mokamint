@@ -511,6 +511,8 @@ public class PeersSet implements AutoCloseable {
 		synchronized (lock) {
 			if (bannedURIs.contains(peer.getURI()))
 				throw new PeerRejectedException("Peer " + peer + " is in the list of banned peers");
+			else if (peer.getURI().toString().length() > 2000)
+				throw new PeerRejectedException("Peer " + peer + " has a very long name, maximum is 2000 characters");
 			else if (peers.contains(peer))
 				return !remotes.containsKey(peer) && reconnect(peer).isPresent();
 			else
