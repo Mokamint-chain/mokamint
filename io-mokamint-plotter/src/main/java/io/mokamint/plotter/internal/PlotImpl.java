@@ -84,7 +84,6 @@ public class PlotImpl implements Plot {
 
 	/**
 	 * Generic data that identifies, for instance, the creator of the plot.
-	 * This can be really anything by is limited to {@link Deadline#MAX_PROLOG_SIZE} bytes.
 	 */
 	private final Prolog prolog;
 
@@ -120,8 +119,6 @@ public class PlotImpl implements Plot {
 		this.channel = reader.getChannel();
 
 		int prologLength = reader.readInt();
-		if (prologLength > Prolog.MAX_PROLOG_SIZE)
-			throw new IOException("Illegal prolog size: the maximum is " + Prolog.MAX_PROLOG_SIZE);
 		var prologBytes = new byte[prologLength];
 		if (reader.read(prologBytes) != prologLength)
 			throw new IOException("Cannot read the prolog of the plot file");
@@ -151,9 +148,7 @@ public class PlotImpl implements Plot {
 	 * by using the given hashing algorithm.
 	 * 
 	 * @param path the path to the file where the plot must be dumped
-	 * @param prolog generic data that identifies, for instance, the creator
-	 *               of the plot. This can be really anything but cannot be {@code null}
-	 *               nor longer than {@link Deadline#MAX_PROLOG_SIZE} bytes
+	 * @param prolog generic data that identifies, for instance, the creator of the plot
 	 * @param start the starting progressive number of the nonces to generate in the plot.
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive
@@ -191,9 +186,7 @@ public class PlotImpl implements Plot {
 	 * 
 	 * @param <E> the type of the exception thrown if some argument is illegal
 	 * @param path the path to the file where the plot must be dumped
-	 * @param prolog generic data that identifies, for instance, the creator
-	 *               of the plot. This can be really anything but cannot be {@code null}
-	 *               nor longer than {@link Deadline#MAX_PROLOG_SIZE} bytes
+	 * @param prolog generic data that identifies, for instance, the creator of the plot
 	 * @param start the starting progressive number of the nonces to generate in the plot.
 	 *              This must be non-negative
 	 * @param length the number of nonces to generate. This must be positive

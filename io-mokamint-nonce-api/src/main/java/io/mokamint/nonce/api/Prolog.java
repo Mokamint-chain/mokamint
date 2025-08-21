@@ -31,11 +31,6 @@ import io.hotmoka.marshalling.api.MarshallingContext;
 public interface Prolog extends Marshallable {
 
 	/**
-	 * The maximal length of the prolog, in bytes (inclusive).
-	 */
-	final int MAX_PROLOG_SIZE = 16777216; // 16 megabytes
-
-	/**
 	 * Yields the chain identifier of the blockchain where the deadline is legal.
 	 * 
 	 * @return the chain identifier

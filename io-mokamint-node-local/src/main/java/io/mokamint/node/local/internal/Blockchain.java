@@ -222,8 +222,6 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					LOGGER.info("blockchain: closed the blocks database");
 				}
 				catch (ExodusException e) {
-					// TODO not sure while this happens, it seems there might be transactions run for garbage collection,
-					// that will consequently find a closed environment
 					LOGGER.warning("blockchain: failed to close the blocks database: " + e.getMessage());
 				}
 				finally {

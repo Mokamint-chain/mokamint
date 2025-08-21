@@ -1204,10 +1204,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedBlockMessage, newSeen, whisperedInfo.description));
 				onWhispered(block);
 			}
-			// TODO: in case of VerificationException, it would be better to close the session from which the whispered block arrived
 			catch (VerificationException e) {
 				// if verification fails, we do not pass the block to our peers
-				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " failed verification: " + e.getMessage());
+				LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " did not pass verification: " + e.getMessage());
 			}
 		}
 	}

@@ -267,10 +267,6 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 		}
 	
 		this.extra = extra.clone();
-	
-		if (toByteArray().length > MAX_PROLOG_SIZE) // TODO: do we need it ?
-			throw onIllegalArgs.apply("A prolog cannot be longer than " + MAX_PROLOG_SIZE + " bytes");
-	
 		this.publicKeyForSigningBlocksBase58 = Base58.toBase58String(publicKeyForSigningBlocks);
 		this.publicKeyForSigningDeadlinesBase58 = Base58.toBase58String(publicKeyForSigningDeadlines);
 	}
