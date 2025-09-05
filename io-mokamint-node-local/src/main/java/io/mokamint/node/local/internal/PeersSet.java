@@ -168,7 +168,7 @@ public class PeersSet implements AutoCloseable {
 		}
 		catch (ClosedDatabaseException e) {
 			// how could the database have been accessed and closed? We have not even terminated to create this peers set!
-			throw new RuntimeException("The databse of peers has been unexpectedly closed", e);
+			throw new RuntimeException("The database of peers has been unexpectedly closed", e);
 		}
 		catch (InterruptedException e) {
 			close();
