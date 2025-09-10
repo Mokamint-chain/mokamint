@@ -23,15 +23,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterAll;
@@ -42,9 +46,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.application.api.Application;
 import io.mokamint.miner.MiningSpecifications;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.node.api.Block;
@@ -177,6 +183,11 @@ public class EventsTests extends AbstractLoggedTests {
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
 			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+				return Optional.empty();
+			}
 		};
 
 		class MyLocalNode extends AbstractLocalNode {
@@ -239,6 +250,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
+			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+				return Optional.empty();
 			}
 
 			@Override
@@ -355,6 +371,11 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
+			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+				return Optional.empty();
 			}
 
 			@Override

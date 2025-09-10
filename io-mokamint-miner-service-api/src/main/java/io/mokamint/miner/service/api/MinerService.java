@@ -16,8 +16,12 @@ limitations under the License.
 
 package io.mokamint.miner.service.api;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
@@ -38,6 +42,22 @@ public interface MinerService extends Remote {
 	 * @throws InterruptedException if the operation is interrupted before being completed
 	 */
 	MiningSpecification getMiningSpecification() throws ClosedMinerException, TimeoutException, InterruptedException;
+
+	/**
+	 * Yields the balance of the given public key. The key typically identifies
+	 * a miner connected to this miner service. Note that <i>balance</i> is an
+	 * application-specification concept, therefore applications might not have
+	 * anything to answer here. Moreover, miners are free to implement
+	 * an answer here or just return the empty result. This is why the result of this method is optional.
+	 * 
+	 * @param signature the signature algorithm of {@code key}
+	 * @param publicKey the public key whose balance is requested
+	 * @return the balance of {@code key}, if any
+	 * @throws ClosedMinerException if this service has been closed
+	 * @throws TimeoutException if the operation does not terminate inside the expected time window
+	 * @throws InterruptedException if the operation is interrupted before being completed
+	 */
+	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException;
 
 	/**
 	 * Closes the service.

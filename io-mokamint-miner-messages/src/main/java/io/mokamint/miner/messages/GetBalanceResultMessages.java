@@ -16,33 +16,37 @@ limitations under the License.
 
 package io.mokamint.miner.messages;
 
+import java.math.BigInteger;
+import java.util.Optional;
+
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
-import io.mokamint.miner.messages.internal.GetMiningSpecificationMessageImpl;
-import io.mokamint.miner.messages.internal.json.GetMiningSpecificationMessageJson;
+import io.mokamint.miner.messages.api.GetBalanceResultMessage;
+import io.mokamint.miner.messages.internal.GetBalanceResultMessageImpl;
+import io.mokamint.miner.messages.internal.json.GetBalanceResultMessageJson;
 
 /**
- * A provider of {@link GetMiningSpecificationMessage}.
+ * A provider of {@link GetBalanceResultMessage}.
  */
-public final class GetMiningSpecificationMessages {
+public final class GetBalanceResultMessages {
 
-	private GetMiningSpecificationMessages() {}
+	private GetBalanceResultMessages() {}
 
 	/**
-	 * Yields a {@link GetMiningSpecificationMessage}.
+	 * Yields a {@link GetBalanceResultMessage}.
 	 * 
+	 * @param balance the balance in the result, if any
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetMiningSpecificationMessage of(String id) {
-		return new GetMiningSpecificationMessageImpl(id);
+	public static GetBalanceResultMessage of(Optional<BigInteger> balance, String id) {
+		return new GetBalanceResultMessageImpl(balance, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetMiningSpecificationMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetBalanceResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -55,7 +59,7 @@ public final class GetMiningSpecificationMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetMiningSpecificationMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetBalanceResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +72,14 @@ public final class GetMiningSpecificationMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetMiningSpecificationMessageJson {
+    public static class Json extends GetBalanceResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetMiningSpecificationMessage message) {
+    	public Json(GetBalanceResultMessage message) {
     		super(message);
     	}
     }

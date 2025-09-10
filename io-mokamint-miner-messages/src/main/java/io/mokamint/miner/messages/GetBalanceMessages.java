@@ -16,33 +16,38 @@ limitations under the License.
 
 package io.mokamint.miner.messages;
 
+import java.security.PublicKey;
+
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
-import io.mokamint.miner.messages.internal.GetMiningSpecificationMessageImpl;
-import io.mokamint.miner.messages.internal.json.GetMiningSpecificationMessageJson;
+import io.mokamint.miner.messages.api.GetBalanceMessage;
+import io.mokamint.miner.messages.internal.GetBalanceMessageImpl;
+import io.mokamint.miner.messages.internal.json.GetBalanceMessageJson;
 
 /**
- * A provider of {@link GetMiningSpecificationMessage}.
+ * A provider of {@link GetBalanceMessage}.
  */
-public final class GetMiningSpecificationMessages {
+public final class GetBalanceMessages {
 
-	private GetMiningSpecificationMessages() {}
+	private GetBalanceMessages() {}
 
 	/**
-	 * Yields a {@link GetMiningSpecificationMessage}.
+	 * Yields a {@link GetBalanceMessage}.
 	 * 
+	 * @param signature the signature algorithm of {@code key}
+	 * @param publicKey the public key whose balance is required
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetMiningSpecificationMessage of(String id) {
-		return new GetMiningSpecificationMessageImpl(id);
+	public static GetBalanceMessage of(SignatureAlgorithm signature, PublicKey publicKey, String id) {
+		return new GetBalanceMessageImpl(signature, publicKey, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetMiningSpecificationMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetBalanceMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -55,7 +60,7 @@ public final class GetMiningSpecificationMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetMiningSpecificationMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetBalanceMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +73,14 @@ public final class GetMiningSpecificationMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetMiningSpecificationMessageJson {
+    public static class Json extends GetBalanceMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetMiningSpecificationMessage message) {
+    	public Json(GetBalanceMessage message) {
     		super(message);
     	}
     }

@@ -36,4 +36,9 @@ public interface RemoteMiner extends Miner {
 	 * The network endpoint path where {@link Miner#getMiningSpecification()} is published.
 	 */
 	String GET_MINING_SPECIFICATION_ENDPOINT = "/get_mining_specification";
+
+	/**
+	 * The network endpoint path where {@link Miner#getBalance(io.hotmoka.crypto.api.SignatureAlgorithm, java.security.PublicKey)} is published.
+	 */
+	String GET_BALANCE_ENDPOINT = "/get_balance";
 }

@@ -16,26 +16,36 @@ limitations under the License.
 
 package io.mokamint.miner.messages.internal;
 
+import java.math.BigInteger;
+import java.util.Optional;
+
 import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.miner.api.Miner;
-import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
-import io.mokamint.miner.messages.internal.json.GetMiningSpecificationMessageJson;
+import io.mokamint.miner.messages.api.GetBalanceResultMessage;
+import io.mokamint.miner.messages.internal.json.GetBalanceResultMessageJson;
 
 /**
- * Implementation of the network message corresponding to {@link Miner#getMiningSpecification()}.
+ * Implementation of the network message corresponding to the result of the
+ * {@link Miner#getBalance(io.hotmoka.crypto.api.SignatureAlgorithm, java.security.PublicKey)} method.
  */
-public class GetMiningSpecificationMessageImpl extends AbstractRpcMessage implements GetMiningSpecificationMessage {
+public class GetBalanceResultMessageImpl extends AbstractRpcMessage implements GetBalanceResultMessage {
+
+	/**
+	 * The result of the call.
+	 */
+	private final Optional<BigInteger> result;
 
 	/**
 	 * Creates the message.
 	 * 
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public GetMiningSpecificationMessageImpl(String id) {
-		this(id, IllegalArgumentException::new);
+	public GetBalanceResultMessageImpl(Optional<BigInteger> result, String id) {
+		this(result, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -44,29 +54,37 @@ public class GetMiningSpecificationMessageImpl extends AbstractRpcMessage implem
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetMiningSpecificationMessageImpl(GetMiningSpecificationMessageJson json) throws InconsistentJsonException {
-		this(json.getId(), InconsistentJsonException::new);
+	public GetBalanceResultMessageImpl(GetBalanceResultMessageJson json) throws InconsistentJsonException {
+		this(json.getResult(), json.getId(), InconsistentJsonException::new);
 	}
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param <E> the type of the exception thrown if some argument is illegal
+	 * @param result the result of the transaction
 	 * @param id the identifier of the message
 	 * @param onIllegalArgs the creator of the exception thrown if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> GetMiningSpecificationMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> GetBalanceResultMessageImpl(Optional<BigInteger> result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(Objects.requireNonNull(id, "id cannot be null", onIllegalArgs));
+	
+		this.result = result;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetMiningSpecificationMessage && super.equals(other);
+		return other instanceof GetBalanceResultMessage gbrm && super.equals(other) && result.equals(gbrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetMiningSpecificationMessage.class.getName();
+		return GetBalanceResultMessage.class.getName();
+	}
+
+	@Override
+	public Optional<BigInteger> get() {
+		return result;
 	}
 }

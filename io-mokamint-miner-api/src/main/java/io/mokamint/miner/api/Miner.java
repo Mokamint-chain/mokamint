@@ -16,10 +16,15 @@ limitations under the License.
 
 package io.mokamint.miner.api;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 
@@ -36,6 +41,22 @@ public interface Miner extends AutoCloseable {
 	 * @throws ClosedMinerException if the miner is already closed
 	 */
 	MiningSpecification getMiningSpecification() throws ClosedMinerException;
+
+	/**
+	 * Yields the balance of the given public key. The key typically identifies
+	 * a miner service. Note that <i>balance</i> is an
+	 * application-specification concept, therefore applications might not have
+	 * anything to answer here. Moreover, miners are free to implement
+	 * an answer here or just return the empty result. This is why the result of this method is optional.
+	 * 
+	 * @param signature the signature algorithm of {@code publicKey}
+	 * @param publicKey the public key whose balance is requested
+	 * @return the balance of {@code key}, if any
+	 * @throws ClosedMinerException if this miner has been closed
+	 * @throws TimeoutException if the operation does not terminate inside the expected time window
+	 * @throws InterruptedException if the operation is interrupted before being completed
+	 */
+	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException;
 
 	/**
 	 * Request to the miner the computation of a deadline. This call might terminate

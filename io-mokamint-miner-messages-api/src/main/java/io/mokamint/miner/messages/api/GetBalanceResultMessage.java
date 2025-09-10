@@ -14,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module defines the API of the network messages exchanged between a miner service and remote.
- */
-module io.mokamint.miner.messages.api {
-	exports io.mokamint.miner.messages.api;
+package io.mokamint.miner.messages.api;
 
-	requires transitive io.mokamint.miner.api;
-	requires transitive io.hotmoka.websockets.beans.api;
-	requires io.hotmoka.crypto.api;
-	requires io.hotmoka.annotations;
+import java.math.BigInteger;
+import java.util.Optional;
+
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
+import io.mokamint.miner.api.Miner;
+
+/**
+ * The network message corresponding to the result of the {@link Miner#getBalance(io.hotmoka.crypto.api.SignatureAlgorithm, java.security.PublicKey)} method.
+ */
+@Immutable
+public interface GetBalanceResultMessage extends ResultMessage<Optional<BigInteger>> {
 }

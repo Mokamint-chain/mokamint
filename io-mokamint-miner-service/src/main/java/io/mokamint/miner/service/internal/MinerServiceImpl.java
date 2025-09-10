@@ -16,15 +16,19 @@ limitations under the License.
 
 package io.mokamint.miner.service.internal;
 
+import static io.mokamint.miner.remote.api.RemoteMiner.GET_BALANCE_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.GET_MINING_SPECIFICATION_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.PublicKey;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
@@ -32,8 +36,10 @@ import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.miner.messages.GetBalanceMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
+import io.mokamint.miner.messages.api.GetBalanceResultMessage;
 import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.messages.api.GetMiningSpecificationResultMessage;
 import io.mokamint.miner.service.api.MinerService;
@@ -102,9 +108,19 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	}
 
 	@Override
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException {
+		ensureIsOpen(ClosedMinerException::new);
+		var id = nextId();
+		sendGetBalance(signature, publicKey, id);
+		return Optional.empty(); //waitForResult(id, GetBalanceResultMessage.class); // TODO
+	}
+
+	@Override
 	protected void notifyResult(RpcMessage message) {
 		if (message instanceof GetMiningSpecificationResultMessage gmsrm)
 			onGetMiningSpecificationResult(gmsrm);
+		else if (message instanceof GetBalanceResultMessage gbrm)
+			onGetBalanceResult(gbrm);
 		else if (message != null && !(message instanceof ExceptionMessage)) {
 			LOGGER.warning("unexpected message of class " + message.getClass().getName());
 			return;
@@ -139,11 +155,28 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	}
 
 	/**
+	 * Sends a {@link GetMiningSpecificationMessage} to the remote miner.
+	 * 
+	 * @param publicKey the public key whose balance is requested
+	 * @param id the identifier of the message
+	 */
+	protected void sendGetBalance(SignatureAlgorithm signature, PublicKey publicKey, String id) {
+		sendObjectAsync(GET_BALANCE_ENDPOINT, GetBalanceMessages.of(signature, publicKey, id));
+	}
+
+	/**
 	 * Hook called when a {@link GetMiningSpecificationResultMessage} has been received.
 	 * 
 	 * @param message the message
 	 */
 	protected void onGetMiningSpecificationResult(GetMiningSpecificationResultMessage message) {}
+
+	/**
+	 * Hook called when a {@link GetBalanceResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onGetBalanceResult(GetBalanceResultMessage message) {}
 
 	private class GetMiningSpecificationEndpoint extends Endpoint {
 

@@ -17,15 +17,19 @@ limitations under the License.
 package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.MiningSpecifications;
@@ -183,5 +187,11 @@ public class LocalMinerImpl implements LocalMiner {
 			throw new ClosedMinerException();
 
 		return miningSpecification;
+	}
+
+	@Override
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+		// TODO Auto-generated method stub
+		return Optional.empty();
 	}
 }

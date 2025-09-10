@@ -17,14 +17,19 @@ limitations under the License.
 package io.mokamint.miner.remote.internal;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
@@ -148,6 +153,12 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	public MiningSpecification getMiningSpecification() throws ClosedMinerException {
 		ensureIsOpen(ClosedMinerException::new);
 		return miningSpecification;
+	}
+
+	@Override
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+		// TODO Auto-generated method stub
+		return Optional.empty();
 	}
 
 	private void sendChallenge(Session session, Challenge challenge) {

@@ -20,8 +20,11 @@ import static io.hotmoka.crypto.HashingAlgorithms.sha256;
 import static io.hotmoka.crypto.HashingAlgorithms.shabal256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.HashingAlgorithm;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
@@ -90,6 +94,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) {
+				return Optional.empty();
+			}
+
+			@Override
 			public void close() {}
 		};
 
@@ -132,6 +141,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
+			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) {
+				return Optional.empty();
 			}
 
 			@Override
@@ -188,6 +202,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
+			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) {
+				return Optional.empty();
 			}
 
 			@Override
@@ -255,6 +274,11 @@ public class MinerServiceTests extends AbstractLoggedTests {
 			@Override
 			public MiningSpecification getMiningSpecification() {
 				return MINING_SPECIFICATION;
+			}
+
+			@Override
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) {
+				return Optional.empty();
 			}
 
 			@Override
