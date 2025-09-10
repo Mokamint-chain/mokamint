@@ -52,7 +52,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var semaphore = new Semaphore(0);
 		var miner = mkMiner();
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var miningSpecification = MiningSpecifications.of("octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		var miningSpecification = MiningSpecifications.of("description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 
 		class MinerServiceTest extends MinerServiceImpl {
 

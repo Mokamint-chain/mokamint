@@ -40,6 +40,11 @@ import io.mokamint.miner.internal.json.MiningSpecificationJson;
 public class MiningSpecificationImpl implements MiningSpecification {
 
 	/**
+	 * A description of the mining specification.
+	 */
+	private final String description;
+
+	/**
 	 * The chain id of the deadlines expected by a miner having this specification.
 	 */
 	private final String chainId;
@@ -79,6 +84,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	/**
 	 * Creates the mining specification for a miner.
 	 * 
+	 * @param description a description of the mining specification
 	 * @param chainId the chain id of the deadlines expected by the miner
 	 * @param hashingForDeadlines the hashing algorithm used for computing the deadlines expected by a miner
 	 *                            having this specification
@@ -90,8 +96,8 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 *                                  expected by a miner having this specification. This is a public key for the
 	 *                                  {@code signatureForBlocks} algorithm
 	 */
-	public MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
-		this(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks, IllegalArgumentException::new);
+	public MiningSpecificationImpl(String description, String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
+		this(description, chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks, IllegalArgumentException::new);
 	}
 
 	/**
@@ -103,6 +109,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 */
 	public MiningSpecificationImpl(MiningSpecificationJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		this(
+			json.getDescription(),
 			json.getChainId(),
 			HashingAlgorithms.of(Objects.requireNonNull(json.getHashingForDeadlines(), "hashingForDeadlines cannot be null", InconsistentJsonException::new)),
 			SignatureAlgorithms.of(Objects.requireNonNull(json.getSignatureForBlocks(), "signatureForBlocks cannot be null", InconsistentJsonException::new)),
@@ -115,6 +122,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	/**
 	 * Builds a mining specification for a miner.
 	 * 
+	 * @param description a description of the mining specification
 	 * @param chainId the chain id of the deadlines expected by the miner
 	 * @param hashingForDeadlines the hashing algorithm used for computing the deadlines expected by a miner
 	 *                            having this specification
@@ -128,7 +136,8 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 * @param onIllegalArgs the generator of the exception thrown if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> MiningSpecificationImpl(String description, String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		this.description = Objects.requireNonNull(description, "description cannot be null", onIllegalArgs);
 		this.chainId = Objects.requireNonNull(chainId, "chainId cannot be null", onIllegalArgs);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null", onIllegalArgs);
 		this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null", onIllegalArgs);
@@ -146,6 +155,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	/**
 	 * Builds a mining specification for a miner.
 	 * 
+	 * @param description a description of the mining specification
 	 * @param chainId the chain id of the deadlines expected by the miner
 	 * @param hashingForDeadlines the hashing algorithm used for computing the deadlines expected by a miner
 	 *                            having this specification
@@ -159,7 +169,8 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	 * @param onIllegalArgs the generator of the exception thrown if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> MiningSpecificationImpl(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, String publicKeyOfNodeBase58, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> MiningSpecificationImpl(String description, String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, String publicKeyOfNodeBase58, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+		this.description = Objects.requireNonNull(description, "description cannot be null", onIllegalArgs);
 		this.chainId = Objects.requireNonNull(chainId, "chainId cannot be null", onIllegalArgs);
 		this.hashingForDeadlines = Objects.requireNonNull(hashingForDeadlines, "hashingForDeadlines cannot be null", onIllegalArgs);
 		this.signatureForBlocks = Objects.requireNonNull(signatureForBlocks, "signatureForBlocks cannot be null", onIllegalArgs);
@@ -172,6 +183,11 @@ public class MiningSpecificationImpl implements MiningSpecification {
 		catch (InvalidKeySpecException e) {
 			throw onIllegalArgs.apply(e.getMessage());
 		}
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
 	}
 
 	@Override
@@ -207,6 +223,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof MiningSpecification ms
+			&& description.equals(ms.getDescription())
 			&& chainId.equals(ms.getChainId())
 			&& hashingForDeadlines.equals(ms.getHashingForDeadlines())
 			&& signatureForBlocks.equals(ms.getSignatureForBlocks())
@@ -221,7 +238,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 
 	@Override
 	public String toString() {
-		return "chain identifier: " + chainId + "\nhashing for deadlines: " + hashingForDeadlines
+		return "description: " + description + "\nchain identifier: " + chainId + "\nhashing for deadlines: " + hashingForDeadlines
 				+ "\nsignature for blocks: " + signatureForBlocks
 				+ "\nsignature for deadlines: " + signatureForDeadlines
 				+ "\npublic key for signing blocks: " + publicKeyForSigningBlocksBase58 + " (" + signatureForBlocks + ", base58)";

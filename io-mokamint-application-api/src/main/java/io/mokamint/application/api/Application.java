@@ -84,6 +84,8 @@ import io.mokamint.nonce.api.Deadline;
 @ThreadSafe
 public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 
+	// TODO add method: String getDescription() throws ClosedApplicationException, TimeoutException, InterruptedException;
+
 	/**
 	 * Checks if the given extra data from the prolog of a deadline is considered
 	 * valid by this application. This method is called whenever a node

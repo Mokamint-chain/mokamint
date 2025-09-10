@@ -35,6 +35,7 @@ public abstract class MiningSpecifications {
 	/**
 	 * Yields a mining specification for the given deadline parameters.
 	 * 
+	 * @param description a description of the mining specification
 	 * @param chainId the chain id of the deadlines expected by the miner
 	 * @param hashingForDeadlines the hashing algorithm used for computing the deadlines expected by a miner
 	 *                            having this specification
@@ -47,8 +48,8 @@ public abstract class MiningSpecifications {
 	 *                                  {@code signatureForBlocks} algorithm
 	 * @return the mining specification
 	 */
-	public static MiningSpecification of(String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
-		return new MiningSpecificationImpl(chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks);
+	public static MiningSpecification of(String description, String chainId, HashingAlgorithm hashingForDeadlines, SignatureAlgorithm signatureForBlocks, SignatureAlgorithm signatureForDeadlines, PublicKey publicKeyForSigningBlocks) {
+		return new MiningSpecificationImpl(description, chainId, hashingForDeadlines, signatureForBlocks, signatureForDeadlines, publicKeyForSigningBlocks);
 	}
 
 	/**

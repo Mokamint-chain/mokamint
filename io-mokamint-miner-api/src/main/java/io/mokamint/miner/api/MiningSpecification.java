@@ -30,6 +30,13 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 public interface MiningSpecification {
 
 	/**
+	 * Yields a description of this specification.
+	 * 
+	 * @return the description of this specification
+	 */
+	String getDescription();
+
+	/**
 	 * Yields the chain id of the deadlines computed by a miner having this specification.
 	 * 
 	 * @return the chain id

@@ -112,7 +112,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		ensureIsOpen(ClosedMinerException::new);
 		var id = nextId();
 		sendGetBalance(signature, publicKey, id);
-		return Optional.empty(); //waitForResult(id, GetBalanceResultMessage.class); // TODO
+		return waitForResult(id, GetBalanceResultMessage.class);
 	}
 
 	@Override

@@ -336,7 +336,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 		if (other instanceof Prolog otherAsProlog)
 			return publicKeyForSigningDeadlines.equals(otherAsProlog.getPublicKeyForSigningDeadlines())
 				&& publicKeyForSigningBlocks.equals(otherAsProlog.getPublicKeyForSigningBlocks())
-				// TODO: check signature algorithms as well ?
+				&& signatureForBlocks.equals(otherAsProlog.getSignatureForBlocks())
+				&& signatureForDeadlines.equals(otherAsProlog.getSignatureForDeadlines())
 				&& chainId.equals(otherAsProlog.getChainId())
 				&& Arrays.equals(extra, otherAsProlog.getExtra());
 		else

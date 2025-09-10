@@ -112,7 +112,7 @@ public class LocalMinerImpl implements LocalMiner {
 
 	private MiningSpecification extractMiningSpecification(Plot plot) {
 		var prolog = plot.getProlog();
-		return MiningSpecifications.of(prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
+		return MiningSpecifications.of("", prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
 	}
 
 	@Override

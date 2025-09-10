@@ -234,8 +234,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 		this.config = config;
 		this.keyPair = keyPair;
-		this.miningSpecification = MiningSpecifications.of(config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
 		this.app = app;
+		// TODO: ask the app about the description
+		this.miningSpecification = MiningSpecifications.of("", config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.miningTask = new MiningTask(this);
