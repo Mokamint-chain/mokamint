@@ -28,6 +28,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +53,7 @@ import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
+import io.mokamint.application.messages.GetBalanceResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
@@ -64,6 +66,7 @@ import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
+import io.mokamint.application.messages.api.GetBalanceMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -168,6 +171,52 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TransactionRejectedException.class, () -> remote.checkTransaction(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getBalance() works if balance is present")
+	public void getBalancePresentWorks() throws Exception {
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var publicKey = ed25519.getKeyPair().getPublic();
+		var balance = Optional.of(BigInteger.valueOf(42L));
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onGetBalance(GetBalanceMessage message, Session session) {
+				if (ed25519.equals(message.getSignature()) && publicKey.equals(message.getPublicKey()))
+					sendObjectAsync(session, GetBalanceResultMessages.of(balance, message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertEquals(balance, remote.getBalance(ed25519, publicKey));
+		}
+	}
+
+	@Test
+	@DisplayName("getBalance() works if balance is missing")
+	public void getBalanceMissingWorks() throws Exception {
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var publicKey = ed25519.getKeyPair().getPublic();
+		var balance = Optional.<BigInteger> empty();
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onGetBalance(GetBalanceMessage message, Session session) {
+				if (ed25519.equals(message.getSignature()) && publicKey.equals(message.getPublicKey()))
+					sendObjectAsync(session, GetBalanceResultMessages.of(balance, message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertEquals(balance, remote.getBalance(ed25519, publicKey));
 		}
 	}
 

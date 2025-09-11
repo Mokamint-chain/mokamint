@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -44,6 +45,8 @@ import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
+import io.mokamint.application.messages.GetBalanceMessages;
+import io.mokamint.application.messages.GetBalanceResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -318,5 +321,36 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new PublishResultMessages.Encoder().encode(publishResultMessage1);
 		var publishResultMessage2 = new PublishResultMessages.Decoder().decode(encoded);
 		assertEquals(publishResultMessage1, publishResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getBalance messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBalance() throws Exception {
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var publicKey = ed25519.getKeyPair().getPublic();
+		var getBalanceMessage1 = GetBalanceMessages.of(ed25519, publicKey, "id");
+		String encoded = new GetBalanceMessages.Encoder().encode(getBalanceMessage1);
+		var getBalanceMessage2 = new GetBalanceMessages.Decoder().decode(encoded);
+		assertEquals(getBalanceMessage1, getBalanceMessage2);
+	}
+
+	@Test
+	@DisplayName("getBalanceResult non-empty messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBalanceNonEmptyResult() throws Exception {
+		var balance = Optional.of(BigInteger.TEN);
+		var getBalanceResultMessage1 = GetBalanceResultMessages.of(balance, "id");
+		String encoded = new GetBalanceResultMessages.Encoder().encode(getBalanceResultMessage1);
+		var getBalanceResultMessage2 = new GetBalanceResultMessages.Decoder().decode(encoded);
+		assertEquals(getBalanceResultMessage1, getBalanceResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getBalanceResult empty messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetBalanceEmptyResult() throws Exception {
+		var balance = Optional.<BigInteger> empty();
+		var getBalanceResultMessage1 = GetBalanceResultMessages.of(balance, "id");
+		String encoded = new GetBalanceResultMessages.Encoder().encode(getBalanceResultMessage1);
+		var getBalanceResultMessage2 = new GetBalanceResultMessages.Decoder().decode(encoded);
+		assertEquals(getBalanceResultMessage1, getBalanceResultMessage2);
 	}
 }

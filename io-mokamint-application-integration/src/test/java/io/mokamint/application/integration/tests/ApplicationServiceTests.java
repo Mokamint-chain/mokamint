@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,7 @@ import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.api.GetBalanceResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
@@ -171,6 +173,39 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendCheckTransaction(transaction);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getBalance() request reaches the service, it yields the balance of the public key")
+	public void serviceGetBalanceWorks() throws Exception {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var publicKey = ed25519.getKeyPair().getPublic();
+		var balance = Optional.of(BigInteger.valueOf(42L));
+		when(app.getBalance(eq(ed25519), eq(publicKey))).thenReturn(balance);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws FailedDeploymentException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onGetBalanceResult(GetBalanceResultMessage message) {
+				if (ID.equals(message.getId()) && message.get().equals(balance))
+					semaphore.release();
+			}
+
+			private void sendGetBalance() {
+				sendGetBalance(ed25519, publicKey, ID);
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetBalance();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

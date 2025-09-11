@@ -23,6 +23,7 @@ import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANS
 import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.GET_BALANCE_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
@@ -30,12 +31,16 @@ import static io.mokamint.application.service.api.ApplicationService.KEEP_FROM_E
 import static io.mokamint.application.service.api.ApplicationService.PUBLISH_ENDPOINT;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
@@ -58,6 +63,8 @@ import io.mokamint.application.messages.DeliverTransactionMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
+import io.mokamint.application.messages.GetBalanceMessages;
+import io.mokamint.application.messages.GetBalanceResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -82,6 +89,8 @@ import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.api.GetBalanceMessage;
+import io.mokamint.application.messages.api.GetBalanceResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
@@ -128,6 +137,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 
 		this.logPrefix = "application remote(" + uri + "): ";
 
+		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
 		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
 		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
@@ -153,6 +163,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		switch (message) {
 		case CheckPrologExtraResultMessage cperm -> onCheckPrologExtraResult(cperm);
 		case CheckTransactionResultMessage ctrm -> onCheckTransactionResult(ctrm);
+		case GetBalanceResultMessage gbrm -> onGetBalanceResult(gbrm);
 		case GetPriorityResultMessage gprm -> onGetPriorityResult(gprm);
 		case GetRepresentationResultMessage grrm -> onGetRepresentationResult(grrm);
 		case GetInitialStateIdResultMessage gisirm -> onGetInitialStateIdResult(gisirm);
@@ -187,6 +198,39 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		}
 		catch (IOException e) {
 			LOGGER.warning("cannot send to " + endpoint + ": " + e.getMessage());
+		}
+	}
+
+	@Override
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen(ClosedApplicationException::new);
+		var id = nextId();
+		sendGetBalance(signature, publicKey, id);
+		return waitForResult(id, GetBalanceResultMessage.class);
+	}
+
+	/**
+	 * Sends a {@link GetBalanceMessage} to the application service.
+	 * 
+	 * @param extra the extra bytes in the message
+	 * @param id the identifier of the message
+	 */
+	protected void sendGetBalance(SignatureAlgorithm signature, PublicKey publicKey, String id) {
+		sendObjectAsync(GET_BALANCE_ENDPOINT, GetBalanceMessages.of(signature, publicKey, id));
+	}
+
+	/**
+	 * Hook called when a {@link GetBalanceResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onGetBalanceResult(GetBalanceResultMessage message) {}
+
+	private class GetBalanceEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);
 		}
 	}
 

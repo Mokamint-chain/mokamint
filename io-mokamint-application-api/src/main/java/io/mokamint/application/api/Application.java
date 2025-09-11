@@ -16,11 +16,15 @@ limitations under the License.
 
 package io.mokamint.application.api;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.api.OnCloseHandlersContainer;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.api.TransactionRejectedException;
@@ -85,6 +89,21 @@ import io.mokamint.nonce.api.Deadline;
 public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 
 	// TODO add method: String getDescription() throws ClosedApplicationException, TimeoutException, InterruptedException;
+
+	/**
+	 * Yields the balance of the given public key, if this means something for this application.
+	 * Typically, the public key is that of a miner for the Mokamint engine where this application
+	 * is running. Not all applications have a notion of balance and not all public keys must
+	 * have a balance. Therefore, this method returns an optional value.
+	 * 
+	 * @param signature the signature algorithm of the {@code publicKey}
+	 * @param publicKey the public key whose balance is required
+	 * @return the balance of {@code publicKey}, if any
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Checks if the given extra data from the prolog of a deadline is considered

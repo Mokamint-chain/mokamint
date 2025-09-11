@@ -16,10 +16,14 @@ limitations under the License.
 
 package io.mokamint.application.empty;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.hotmoka.closeables.api.OnCloseHandler;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
@@ -46,6 +50,13 @@ public class EmptyApplication extends AbstractApplication {
 	 * Creates an empty application.
 	 */
 	public EmptyApplication() {}
+
+	@Override
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			return Optional.empty();
+		}
+	}
 
 	@Override
 	public boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException {

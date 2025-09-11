@@ -26,6 +26,11 @@ import io.mokamint.node.api.Transaction;
 public interface ApplicationService extends WebSocketServer {
 
 	/**
+	 * The network endpoint path where {@link Application#getBalance(io.hotmoka.crypto.api.SignatureAlgorithm, java.security.PublicKey)} is published.
+	 */
+	String GET_BALANCE_ENDPOINT = "/get_balance";
+
+	/**
 	 * The network endpoint path where {@link Application#checkPrologExtra(byte[])} is published.
 	 */
 	String CHECK_PROLOG_EXTRA_ENDPOINT = "/check_prolog_extra";
