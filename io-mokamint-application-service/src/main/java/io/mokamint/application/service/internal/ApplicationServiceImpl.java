@@ -174,7 +174,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
 		catch (ClosedApplicationException e) {
-			LOGGER.warning(logPrefix + "request processing failed since the serviced node has been closed: " + e.getMessage());
+			LOGGER.warning(logPrefix + "request processing failed since the serviced application has been closed: " + e.getMessage());
 		}
 	}
 

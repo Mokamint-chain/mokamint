@@ -52,11 +52,12 @@ public interface Miner extends AutoCloseable {
 	 * @param signature the signature algorithm of {@code publicKey}
 	 * @param publicKey the public key whose balance is requested
 	 * @return the balance of {@code key}, if any
+	 * @throws GetBalanceException if the balance could not be determined
 	 * @throws ClosedMinerException if this miner has been closed
 	 * @throws TimeoutException if the operation does not terminate inside the expected time window
 	 * @throws InterruptedException if the operation is interrupted before being completed
 	 */
-	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException;
+	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException, TimeoutException, InterruptedException;
 
 	/**
 	 * Request to the miner the computation of a deadline. This call might terminate

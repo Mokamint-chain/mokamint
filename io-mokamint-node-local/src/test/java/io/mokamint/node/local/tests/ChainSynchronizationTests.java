@@ -140,7 +140,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 		private MiningNode(LocalNodeConfig config) throws InterruptedException, ClosedNodeException, WrongKeyException {
 			super(config, nodeKeys, app, true);
-			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override

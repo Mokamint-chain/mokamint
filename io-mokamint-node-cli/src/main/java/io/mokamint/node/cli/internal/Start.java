@@ -254,7 +254,7 @@ public class Start extends AbstractCommand {
 					else
 						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
 
-					try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+					try (var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 						if (node.add(miner).isPresent()) {
 							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 							publishPublicAndRestrictedNodeServices(0);

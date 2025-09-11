@@ -27,6 +27,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -117,7 +118,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, ClosedNodeException {
 				super(config, nodeKeys, app, true);
-				add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
+				add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 			}
 
 			@Override

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.service.tests;
 
+import static io.mokamint.miner.remote.api.RemoteMiner.GET_BALANCE_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.GET_MINING_SPECIFICATION_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
 
@@ -29,6 +30,8 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.hotmoka.websockets.server.AbstractWebSocketServer;
+import io.mokamint.miner.messages.GetBalanceMessages;
+import io.mokamint.miner.messages.GetBalanceResultMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.nonce.Challenges;
@@ -49,7 +52,7 @@ public class TestServer extends AbstractWebSocketServer {
 
 	public TestServer(int port, Consumer<Deadline> onDeadlineReceived) throws FailedDeploymentException {
 		this.onDeadlineReceived = onDeadlineReceived;
-		startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
+		startContainer("", port, GetBalanceEndpoint.config(this), GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 	}
 
 	public void requestDeadline(Challenge description) throws TimeoutException, InterruptedException, IOException {
@@ -83,6 +86,18 @@ public class TestServer extends AbstractWebSocketServer {
 		private static ServerEndpointConfig config(TestServer server) {
 			return simpleConfig(server, GetMiningSpecificationEndpoint.class, GET_MINING_SPECIFICATION_ENDPOINT,
 				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+		}
+	}
+
+	// unused, but we must deploy it otherwise the handshake with the miner service fails
+	public static class GetBalanceEndpoint extends AbstractServerEndpoint<TestServer> {
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {}
+
+		private static ServerEndpointConfig config(TestServer server) {
+			return simpleConfig(server, GetBalanceEndpoint.class, GET_BALANCE_ENDPOINT,
+					GetBalanceMessages.Decoder.class, GetBalanceResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

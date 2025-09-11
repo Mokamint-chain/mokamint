@@ -30,13 +30,16 @@ import java.util.logging.Logger;
 
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.miner.api.ClosedMinerException;
+import io.mokamint.miner.api.GetBalanceException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetBalanceMessages;
+import io.mokamint.miner.messages.GetBalanceResultMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.miner.messages.api.GetBalanceResultMessage;
@@ -92,6 +95,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		this.logPrefix = "miner service working for " + uri + ": ";
 
 		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
+		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
 		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 
 		this.session = getSession(MINING_ENDPOINT);
@@ -108,11 +112,11 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	}
 
 	@Override
-	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException {
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedMinerException::new);
 		var id = nextId();
 		sendGetBalance(signature, publicKey, id);
-		return waitForResult(id, GetBalanceResultMessage.class);
+		return waitForResult(id, GetBalanceResultMessage.class, GetBalanceException.class);
 	}
 
 	@Override
@@ -183,6 +187,14 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
+		}
+	}
+
+	private class GetBalanceEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetBalanceResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBalanceMessages.Encoder.class);		
 		}
 	}
 

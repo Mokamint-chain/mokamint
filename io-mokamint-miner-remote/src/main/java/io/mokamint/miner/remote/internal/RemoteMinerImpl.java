@@ -24,20 +24,25 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.miner.api.ClosedMinerException;
+import io.mokamint.miner.api.BalanceProvider;
+import io.mokamint.miner.api.GetBalanceException;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.miner.messages.GetBalanceMessages;
+import io.mokamint.miner.messages.GetBalanceResultMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
+import io.mokamint.miner.messages.api.GetBalanceMessage;
 import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.DeadlineValidityCheckException;
@@ -77,6 +82,11 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	private final MiningSpecification miningSpecification;
 
 	/**
+	 * The provider of the balance of a public key.
+	 */
+	private final BalanceProvider balanceProvider;
+
+	/**
 	 * An algorithm to check if deadlines are valid for the node we are working for.
 	 */
 	private final DeadlineValidityCheck check;
@@ -105,16 +115,18 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	 * @param miningSpecification the specification of the mining parameters; all services
 	 *                            that connect to this remote must provided deadlines
 	 *                            that comply with this specification
+	 * @param balanceProvider a provider of the balance of public keys
 	 * @param check the check to determine if a deadline is valid
 	 * @throws FailedDeploymentException if the miner cannot be deployed
 	 */
-	public RemoteMinerImpl(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws FailedDeploymentException {
+	public RemoteMinerImpl(int port, MiningSpecification miningSpecification, BalanceProvider balanceProvider, DeadlineValidityCheck check) throws FailedDeploymentException {
 		this.port = port;
 		this.miningSpecification = miningSpecification;
+		this.balanceProvider = balanceProvider;
 		this.check = Objects.requireNonNull(check);
 		this.logPrefix = "remote miner listening at port " + port + ": ";
 
-		startContainer("", port, GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
+		startContainer("", port, GetBalanceEndpoint.config(this), GetMiningSpecificationEndpoint.config(this), MiningEndpoint.config(this));
 
 		LOGGER.info(logPrefix + "published at ws://localhost:" + port);
 	}
@@ -123,14 +135,28 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
     protected void processRequest(Session session, RpcMessage message) throws IOException {
 		var id = message.getId();
 
-    	if (message instanceof GetMiningSpecificationMessage)
-    		sendObjectAsync(session, GetMiningSpecificationResultMessages.of(miningSpecification, id));
-    	else
-    		LOGGER.severe("Unexpected message of type " + message.getClass().getName());
+		try {
+			switch (message) {
+			case GetMiningSpecificationMessage gmsm -> sendObjectAsync(session, GetMiningSpecificationResultMessages.of(getMiningSpecification(), id));
+			case GetBalanceMessage gbm -> sendObjectAsync(session, GetBalanceResultMessages.of(getBalance(gbm.getSignature(), gbm.getPublicKey()), id));
+			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
+			}
+		}
+		catch (GetBalanceException e) {
+			sendObjectAsync(session, ExceptionMessages.of(e, id));
+		}
+		catch (ClosedMinerException e) {
+			LOGGER.warning(logPrefix + "request processing failed since the serviced miner has been closed: " + e.getMessage());
+		}
     }
 
 	protected void onGetMiningSpecification(GetMiningSpecificationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_MINING_SPECIFICATION_ENDPOINT + " request");
+		scheduleRequest(session, message);
+	};
+
+	protected void onGetBalance(GetBalanceMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_BALANCE_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
@@ -156,9 +182,9 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	}
 
 	@Override
-	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return Optional.empty();
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException {
+		ensureIsOpen(ClosedMinerException::new);
+		return balanceProvider.get(signature, publicKey);
 	}
 
 	private void sendChallenge(Session session, Challenge challenge) {
@@ -241,6 +267,20 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
 			return simpleConfig(server, GetMiningSpecificationEndpoint.class, GET_MINING_SPECIFICATION_ENDPOINT,
 				GetMiningSpecificationMessages.Decoder.class, GetMiningSpecificationResultMessages.Encoder.class);
+		}
+	}
+
+	public static class GetBalanceEndpoint extends AbstractServerEndpoint<RemoteMinerImpl> {
+		
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			addMessageHandler(session, (GetBalanceMessage message) -> server.onGetBalance(message, session));
+	    }
+	
+		private static ServerEndpointConfig config(RemoteMinerImpl server) {
+			return simpleConfig(server, GetBalanceEndpoint.class, GET_BALANCE_ENDPOINT,
+				GetBalanceMessages.Decoder.class, GetBalanceResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 

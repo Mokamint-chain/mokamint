@@ -153,7 +153,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 10000, config1.getWhisperingMemorySize(), Optional.of(peer1.getURI()));
              var service2 = PublicNodeServices.open(node2, port2, 10000, config2.getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
-			 var miner = LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys))) {
+			 var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys))) {
 
 			// without any miner, eventually node1 will realize that it cannot mine
 			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.miner.remote;
 
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.mokamint.miner.api.BalanceProvider;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.remote.api.DeadlineValidityCheck;
 import io.mokamint.miner.remote.api.RemoteMiner;
@@ -36,11 +37,12 @@ public abstract class RemoteMiners {
 	 * @param miningSpecification the specification of the mining parameters; all services
 	 *                            that connect to this remote must provided deadlines
 	 *                            that comply with this specification
+	 * @param balanceProvider a provider of the balance of public keys
 	 * @param check an algorithm to check if a deadline is valid
 	 * @return the new remote miner
 	 * @throws FailedDeploymentException if the remote miner could not be deployed
 	 */
-	public static RemoteMiner open(int port, MiningSpecification miningSpecification, DeadlineValidityCheck check) throws FailedDeploymentException {
-		return new RemoteMinerImpl(port, miningSpecification, check);
+	public static RemoteMiner open(int port, MiningSpecification miningSpecification, BalanceProvider balanceProvider, DeadlineValidityCheck check) throws FailedDeploymentException {
+		return new RemoteMinerImpl(port, miningSpecification, balanceProvider, check);
 	}
 }

@@ -30,7 +30,6 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.messages.api.GetBalanceMessage;
-import io.mokamint.miner.messages.api.GetMiningSpecificationMessage;
 import io.mokamint.miner.messages.internal.json.GetBalanceMessageJson;
 
 /**
@@ -154,6 +153,6 @@ public class GetBalanceMessageImpl extends AbstractRpcMessage implements GetBala
 
 	@Override
 	protected String getExpectedType() {
-		return GetMiningSpecificationMessage.class.getName();
+		return GetBalanceMessage.class.getName();
 	}
 }

@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.miner.remote.tests;
 
+import static io.mokamint.miner.remote.api.RemoteMiner.GET_BALANCE_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.GET_MINING_SPECIFICATION_ENDPOINT;
 import static io.mokamint.miner.remote.api.RemoteMiner.MINING_ENDPOINT;
 
@@ -27,6 +28,8 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.client.AbstractClientEndpoint;
 import io.hotmoka.websockets.client.AbstractWebSocketClient;
+import io.mokamint.miner.messages.GetBalanceMessages;
+import io.mokamint.miner.messages.GetBalanceResultMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationMessages;
 import io.mokamint.miner.messages.GetMiningSpecificationResultMessages;
 import io.mokamint.nonce.Challenges;
@@ -49,6 +52,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 		// unused, but we must deploy it otherwise the handshake with the miner service fails
 		new GetMiningSpecificationEndpoint().deployAt(uri);
+		new GetBalanceEndpoint().deployAt(uri);
 	}
 
 	@Override
@@ -76,6 +80,16 @@ public class TestClient extends AbstractWebSocketClient {
 
 		private Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri.resolve(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);
+		}
+
+		@Override
+		public void onOpen(Session session, EndpointConfig config) {}
+	}
+
+	private class GetBalanceEndpoint extends AbstractClientEndpoint<TestClient> {
+
+		private Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri.resolve(GET_BALANCE_ENDPOINT), GetBalanceResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBalanceMessages.Encoder.class);
 		}
 
 		@Override

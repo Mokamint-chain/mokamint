@@ -116,7 +116,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			long start = 65536L;
 			long length = new Random().nextInt(50, 200);
 			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, config.getHashingForDeadlines(), __ -> {});
-			add(LocalMiners.of(PlotAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override

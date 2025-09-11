@@ -23,7 +23,6 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -33,7 +32,9 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.exceptions.CheckRunnable;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.MiningSpecifications;
+import io.mokamint.miner.api.BalanceProvider;
 import io.mokamint.miner.api.ClosedMinerException;
+import io.mokamint.miner.api.GetBalanceException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
@@ -59,6 +60,11 @@ public class LocalMinerImpl implements LocalMiner {
 	private final MiningSpecification miningSpecification;
 
 	/**
+	 * The provider the balance of the public keys.
+	 */
+	private final BalanceProvider balanceProvider;
+
+	/**
 	 * The plot files used by the miner, with their associated key pair for signing
 	 * the deadlines derived from them.
 	 */
@@ -79,10 +85,12 @@ public class LocalMinerImpl implements LocalMiner {
 	/**
 	 * Builds a local miner.
 	 * 
+	 * @param balanceProvider the provider of the balance of the public keys
 	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
 	 *                         deadlines generated from them; this cannot be empty
 	 */
-	public LocalMinerImpl(PlotAndKeyPair... plotsAndKeyPairs) {
+	public LocalMinerImpl(BalanceProvider balanceProvider, PlotAndKeyPair... plotsAndKeyPairs) {
+		this.balanceProvider = balanceProvider;
 		this.plotsAndKeyPairs = plotsAndKeyPairs;
 		this.miningSpecification = extractMiningSpecification();
 
@@ -190,8 +198,10 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
-		// TODO Auto-generated method stub
-		return Optional.empty();
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException, InterruptedException {
+		if (isClosed.get())
+			throw new ClosedMinerException();
+
+		return balanceProvider.get(signature, publicKey);
 	}
 }

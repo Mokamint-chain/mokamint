@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -132,7 +133,7 @@ public class Start extends AbstractCommand {
 			else if (plotsAndKeyPairs.isEmpty())
 				throw new CommandException("No plot file could be loaded!");
 			else {
-				try (var miner = LocalMiners.of(plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+				try (var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 					startMiningService(miner);
 				}
 			}

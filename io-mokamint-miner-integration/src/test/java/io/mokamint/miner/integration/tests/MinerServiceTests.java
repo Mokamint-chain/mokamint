@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 		 * @throws FailedDeploymentException if the miner cannot be deployed
 		 */
 		private RemoteMinerTest() throws FailedDeploymentException {
-			super(PORT, MINING_SPECIFICATION, deadline -> {});
+			super(PORT, MINING_SPECIFICATION, (signature, publicKey) -> Optional.empty(), deadline -> {});
 		}
 	}
 
