@@ -22,8 +22,10 @@ module io.mokamint.application.cli {
     opens io.mokamint.application.cli.internal to info.picocli, com.google.gson; // for injecting CLI options and JSON print-out
 
     requires io.mokamint.application;
+    requires io.mokamint.application.remote;
     requires io.mokamint.application.service;
     requires io.hotmoka.cli;
+    requires io.hotmoka.websockets.client.api;
     requires jakarta.websocket.client;
 	requires java.logging;
 }

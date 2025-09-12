@@ -254,7 +254,7 @@ public class MiningSpecificationImpl implements MiningSpecification {
 
 	@Override
 	public String toString() {
-		return "description: " + description + "\nchain identifier: " + chainId + "\nhashing for deadlines: " + hashingForDeadlines
+		return "name: " + name + "description: " + description + "\nchain identifier: " + chainId + "\nhashing for deadlines: " + hashingForDeadlines
 				+ "\nsignature for blocks: " + signatureForBlocks
 				+ "\nsignature for deadlines: " + signatureForDeadlines
 				+ "\npublic key for signing blocks: " + publicKeyForSigningBlocksBase58 + " (" + signatureForBlocks + ", base58)";

@@ -23,5 +23,6 @@ module io.mokamint.node.local.api {
 
 	requires transitive io.mokamint.node.api;
 	requires transitive io.mokamint.miner.api;
+	requires transitive io.mokamint.application.api;
 	requires io.hotmoka.annotations;
 }

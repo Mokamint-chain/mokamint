@@ -31,7 +31,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "info",
-	description = "Print the specification of a remote miner.",
+	description = "Show the specification of a remote miner.",
 	showDefaultValues = true)
 public class Info extends AbstractRpcCommand<MinerService> {
 

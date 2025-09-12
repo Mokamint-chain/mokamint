@@ -643,7 +643,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @return the application
 	 */
-	protected Application getApplication() {
+	public Application getApplication() {
 		return app;
 	}
 

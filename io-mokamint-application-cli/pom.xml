@@ -24,6 +24,11 @@
       <artifactId>io-mokamint-application-service</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-remote</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
 	<dependency>
       <groupId>io.hotmoka.cli</groupId>
       <artifactId>io-hotmoka-cli</artifactId>

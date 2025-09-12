@@ -19,6 +19,7 @@ package io.mokamint.node.local.api;
 import java.util.Optional;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.application.api.Application;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.FullNode;
@@ -29,6 +30,13 @@ import io.mokamint.node.api.MinerInfo;
  */
 @ThreadSafe
 public interface LocalNode extends FullNode {
+
+	/**
+	 * Yields the application running over this node.
+	 * 
+	 * @return the application
+	 */
+	Application getApplication();
 
 	/**
 	 * Yields the configuration of this node.
