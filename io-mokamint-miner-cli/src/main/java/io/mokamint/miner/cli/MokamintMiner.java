@@ -18,9 +18,10 @@ package io.mokamint.miner.cli;
 
 import java.io.IOException;
 
-import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.hotmoka.cli.AbstractCLI;
+import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.mokamint.miner.cli.MokamintMiner.POMVersionProvider;
+import io.mokamint.miner.cli.internal.Balance;
 import io.mokamint.miner.cli.internal.Info;
 import io.mokamint.miner.cli.internal.Start;
 import picocli.CommandLine.Command;
@@ -38,6 +39,7 @@ import picocli.CommandLine.Command;
 	footer = "Copyright (c) 2023 Fausto Spoto (fausto.spoto@mokamint.io)",
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
+		Balance.class,
 		Info.class,
 		Start.class
 	}

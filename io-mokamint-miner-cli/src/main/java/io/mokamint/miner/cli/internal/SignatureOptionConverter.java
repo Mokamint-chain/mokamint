@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package io.mokamint.miner.cli.internal;
+
+import java.security.NoSuchAlgorithmException;
+
+import io.hotmoka.crypto.SignatureAlgorithms;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
+import picocli.CommandLine.ITypeConverter;
+
 /**
- * This module implements a command-line tool for working with Mokamint miners.
+ * A converter of a string option into the signature algorithm with that name.
  */
-module io.mokamint.miner.cli {
-	exports io.mokamint.miner.cli;
-	opens io.mokamint.miner.cli.internal to info.picocli, com.google.gson; // for injecting CLI options
+public class SignatureOptionConverter implements ITypeConverter<SignatureAlgorithm> {
 
-    requires io.mokamint.miner.local;
-    requires io.mokamint.miner.service;
-    requires io.mokamint.plotter;
-    requires io.hotmoka.cli;
-    requires io.hotmoka.crypto;
-    requires io.hotmoka.websockets.beans;
-    requires io.hotmoka.websockets.client.api;
-
-    requires com.google.gson;
-	requires java.logging;
+	@Override
+	public SignatureAlgorithm convert(String value) throws NoSuchAlgorithmException {
+		return SignatureAlgorithms.of(value);
+	}
 }
