@@ -47,11 +47,14 @@ import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -107,7 +110,7 @@ public class EventsTests extends AbstractLoggedTests {
 	static {
 		try {
 			var ed25519 = SignatureAlgorithms.ed25519();
-			MINING_SPECIFICATION = MiningSpecifications.of("description", CHAIN_ID, HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+			MINING_SPECIFICATION = MiningSpecifications.of("name", "description", CHAIN_ID, HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
@@ -121,6 +124,8 @@ public class EventsTests extends AbstractLoggedTests {
 		var stateHash = new byte[] { 1, 2, 3 };
 		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
@@ -191,7 +196,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, NoSuchAlgorithmException, ClosedNodeException {
+			private MyLocalNode() throws InterruptedException, NoSuchAlgorithmException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -262,7 +267,7 @@ public class EventsTests extends AbstractLoggedTests {
 	
 		class MyLocalNode extends AbstractLocalNode {
 	
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 				add(myMiner);
 			}
@@ -287,7 +292,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKeys, app, true);
 			}
 
@@ -311,7 +316,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, ClosedNodeException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKeys, app, true);
 
 				var miner = mock(Miner.class);
@@ -388,7 +393,7 @@ public class EventsTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException, ClosedNodeException {
+			private MyLocalNode() throws InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKeys, app, true);
 				add(myMiner);
 			}

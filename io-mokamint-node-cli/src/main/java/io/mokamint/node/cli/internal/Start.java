@@ -41,8 +41,10 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodes;
@@ -254,7 +256,16 @@ public class Start extends AbstractCommand {
 					else
 						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
 
-					try (var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+					io.mokamint.application.api.Info appInfo;
+
+					try {
+						appInfo = app.getInfo();
+					}
+					catch (TimeoutException e) {
+						throw new ApplicationTimeoutException(e);
+					}
+
+					try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 						if (node.add(miner).isPresent()) {
 							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 							publishPublicAndRestrictedNodeServices(0);
@@ -273,6 +284,12 @@ public class Start extends AbstractCommand {
 				// unexpected: who could interrupt this process?
 				Thread.currentThread().interrupt();
 				throw new CommandException("Unexpected interruption!", e);
+			}
+			catch (ApplicationTimeoutException e) {
+				throw new CommandException("The application timed out!", e);
+			}
+			catch (ClosedApplicationException e) {
+				throw new CommandException("The application is already unexpectedly closed!", e);
 			}
 		}
 

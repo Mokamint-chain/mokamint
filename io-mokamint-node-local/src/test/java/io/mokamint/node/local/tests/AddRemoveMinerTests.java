@@ -37,10 +37,13 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.MinerInfo;
 import io.mokamint.node.api.Peer;
@@ -83,6 +86,8 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 		var stateHash = new byte[] { 1, 2, 3 };
 		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 		var id25519 = SignatureAlgorithms.ed25519();
 		node1Keys = id25519.getKeyPair();
 		node2Keys = id25519.getKeyPair();
@@ -114,7 +119,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode1 extends AbstractLocalNode {
 
-			private MyLocalNode1() throws InterruptedException {
+			private MyLocalNode1() throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config1, node1Keys, app, true);
 			}
 
@@ -131,7 +136,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 
 		class MyLocalNode2 extends AbstractLocalNode {
 
-			private MyLocalNode2() throws InterruptedException {
+			private MyLocalNode2() throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config2, node2Keys, app, false);
 			}
 
@@ -153,7 +158,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 10000, config1.getWhisperingMemorySize(), Optional.of(peer1.getURI()));
              var service2 = PublicNodeServices.open(node2, port2, 10000, config2.getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
-			 var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys))) {
+			 var miner = LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys))) {
 
 			// without any miner, eventually node1 will realize that it cannot mine
 			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));

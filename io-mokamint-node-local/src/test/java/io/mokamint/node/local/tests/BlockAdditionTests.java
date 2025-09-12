@@ -48,9 +48,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
@@ -128,6 +131,8 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		when(application.getInitialStateId()).thenReturn(stateHash);
 		doNothing().when(application).deliverTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
+		var info = Infos.of("name", "description");
+		when(application.getInfo()).thenReturn(info);
 	}
 
 	@AfterAll
@@ -138,11 +143,11 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 

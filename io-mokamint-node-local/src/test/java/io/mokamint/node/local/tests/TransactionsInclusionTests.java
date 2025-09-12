@@ -49,7 +49,9 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.exceptions.functions.FunctionWithExceptions3;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
@@ -93,6 +95,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		doNothing().when(app).checkTransaction(any());
 		doNothing().when(app).deliverTransaction(anyInt(), any());
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 	}
 
 	private LocalNodeConfig mkConfig(Path chainDir) throws NoSuchAlgorithmException {
@@ -107,7 +111,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -116,7 +120,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			long start = 65536L;
 			long length = new Random().nextInt(50, 200);
 			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, config.getHashingForDeadlines(), __ -> {});
-			add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override
@@ -150,7 +154,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException {
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, init);
 			}
 
@@ -203,7 +207,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException  {
+				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException  {
 					super(config, init);
 				}
 
@@ -294,7 +298,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				try {
 					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 				}
-				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException e) {
+				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException | ClosedApplicationException | ApplicationTimeoutException e) {
 					throw new LocalNodeException(e);
 				}
 

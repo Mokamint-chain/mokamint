@@ -646,7 +646,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	public Info getInfo() throws ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
-		//sendGetInfo(id); // TODO
+		sendGetInfo(id);
 		return waitForResult(id, GetInfoResultMessage.class);
 	}
 

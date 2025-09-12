@@ -36,9 +36,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Transactions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.Transaction;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -68,6 +71,8 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		doNothing().when(app).checkTransaction(any());
 		when(app.getPriority(any())).thenReturn(42L);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 	}
 
 	@Test
@@ -90,7 +95,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			private final Peer expectedPeer;
 			private final Transaction expectedTransaction;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InterruptedException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;

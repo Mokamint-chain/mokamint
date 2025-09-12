@@ -48,7 +48,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@DisplayName("getMiningSpecificationResult messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetMiningSpecificationResult() throws Exception {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var miningSpecification = MiningSpecifications.of("description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		var miningSpecification = MiningSpecifications.of("name", "description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		var getMiningSpecificationResultMessage1 = GetMiningSpecificationResultMessages.of(miningSpecification, "id");
 		String encoded = new GetMiningSpecificationResultMessages.Encoder().encode(getMiningSpecificationResultMessage1);
 		var getMiningSpecificationResultMessage2 = new GetMiningSpecificationResultMessages.Decoder().decode(encoded);

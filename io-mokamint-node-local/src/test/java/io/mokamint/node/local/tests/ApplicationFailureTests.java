@@ -42,10 +42,13 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -89,6 +92,8 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 		var stateHash = new byte[] { 1, 2, 4 };
 		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
@@ -116,9 +121,9 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, ClosedNodeException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKeys, app, true);
-				add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
+				add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 			}
 
 			@Override

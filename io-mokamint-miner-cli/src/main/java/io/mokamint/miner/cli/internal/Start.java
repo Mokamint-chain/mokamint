@@ -133,7 +133,7 @@ public class Start extends AbstractCommand {
 			else if (plotsAndKeyPairs.isEmpty())
 				throw new CommandException("No plot file could be loaded!");
 			else {
-				try (var miner = LocalMiners.of((_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+				try (var miner = LocalMiners.of("Internal miner", "A miner working for " + uri, (_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
 					startMiningService(miner);
 				}
 			}

@@ -40,8 +40,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -70,6 +73,8 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 	}
 
 	@Test
@@ -93,7 +98,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -159,7 +164,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config) throws InterruptedException {
+			private MyLocalNode(LocalNodeConfig config) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -210,7 +215,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expected;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException {
+			private MyLocalNode(LocalNodeConfig config, Peer expected) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expected = expected;

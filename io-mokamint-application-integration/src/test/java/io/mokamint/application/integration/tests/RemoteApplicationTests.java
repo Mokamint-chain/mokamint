@@ -44,6 +44,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.ExceptionMessages;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockResultMessages;
@@ -54,6 +55,7 @@ import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
+import io.mokamint.application.messages.GetInfoResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
@@ -67,6 +69,7 @@ import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
+import io.mokamint.application.messages.api.GetInfoMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -171,6 +174,26 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(TransactionRejectedException.class, () -> remote.checkTransaction(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("getInfo() works")
+	public void getInfoWorks() throws Exception {
+		var info = Infos.of("name", "description");
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onGetInfo(GetInfoMessage message, Session session) {
+				sendObjectAsync(session, GetInfoResultMessages.of(info, message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertEquals(info, remote.getInfo());
 		}
 	}
 

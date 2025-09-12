@@ -54,12 +54,15 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.ChainPortions;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.Versions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
@@ -103,6 +106,8 @@ public class PeersTests extends AbstractLoggedTests {
 	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
 		when(app.checkPrologExtra(any())).thenReturn(true);
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 	}
 
@@ -183,7 +188,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws IOException, InterruptedException {
+			private MyLocalNode() throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -213,7 +218,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -256,7 +261,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException {
+			private MyLocalNode() throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 
@@ -292,7 +297,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -313,7 +318,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -334,7 +339,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 		}
@@ -357,7 +362,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws InterruptedException {
+			private MyLocalNode() throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 			}
 		}
@@ -377,7 +382,7 @@ public class PeersTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException {
+			private MyLocalNode() throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(mkConfig(dir), nodeKey, app, false);
 			}
 

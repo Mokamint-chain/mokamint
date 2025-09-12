@@ -30,6 +30,13 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
 public interface MiningSpecification {
 
 	/**
+	 * Yields the name of this specification.
+	 * 
+	 * @return the name of this specification
+	 */
+	String getName();
+
+	/**
 	 * Yields a description of this specification.
 	 * 
 	 * @return the description of this specification

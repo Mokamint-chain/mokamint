@@ -19,7 +19,10 @@ package io.mokamint.node.local;
 import java.security.KeyPair;
 
 import io.hotmoka.annotations.ThreadSafe;
+import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
 
@@ -36,9 +39,25 @@ public abstract class AbstractLocalNode extends LocalNodeImpl {
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
-	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 * @throws ApplicationTimeoutException if {@code app} is unresponsive
+	 * @throws InterruptedException if the initialization of the node was interrupted 
 	 */
-	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
+		super(config, keyPair, app, init);
+	}
+
+	/**
+	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 * @throws InterruptedException if the initialization of the node was interrupted 
+	 */
+	public AbstractLocalNode(LocalNodeConfig config, KeyPair keyPair, AbstractApplication app, boolean init) throws InterruptedException, ClosedApplicationException {
 		super(config, keyPair, app, init);
 	}
 }

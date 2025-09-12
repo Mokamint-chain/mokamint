@@ -32,7 +32,7 @@ public class MiningSpecificationTests extends AbstractLoggedTests {
 	@DisplayName("mining specifications are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorks() throws Exception {
 		var ed25519 = SignatureAlgorithms.ed25519();
-		var miningSpecification1 = MiningSpecifications.of("description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+		var miningSpecification1 = MiningSpecifications.of("name", "description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		String encoded = new MiningSpecifications.Encoder().encode(miningSpecification1);
 		var miningSpecification2 = new MiningSpecifications.Decoder().decode(encoded);
 		assertEquals(miningSpecification1, miningSpecification2);

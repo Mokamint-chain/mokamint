@@ -19,6 +19,8 @@ package io.mokamint.node.local;
 import java.security.KeyPair;
 
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.LocalNodeImpl;
@@ -39,9 +41,11 @@ public abstract class LocalNodes {
 	 * @param init if true, creates a genesis block and starts mining on top
 	 *             (initial synchronization is consequently skipped)
 	 * @return the local node
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 * @throws ApplicationTimeoutException if {@code app} is unresponsive
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 */
-	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
+	public static LocalNode of(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 		return new LocalNodeImpl(config, keyPair, app, init);
 	}
 }

@@ -49,8 +49,10 @@ import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
+import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.application.api.Info;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
@@ -230,16 +232,48 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
 	 * @param app the application
 	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 * @throws ApplicationTimeoutException if {@code app} is unresponsive
 	 * @throws InterruptedException if the initialization of the node was interrupted
 	 */
-	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws InterruptedException {
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, boolean init) throws ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
+		this(config, keyPair, app, getInfo(app), init);
+	}
+
+	/**
+	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
+	 * @throws InterruptedException if the initialization of the node was interrupted
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 */
+	public LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, AbstractApplication app, boolean init) throws InterruptedException, ClosedApplicationException {
+		this(config, keyPair, app, app.getInfo(), init);
+	}
+
+	/**
+	 * Creates a local node of a Mokamint blockchain, for the given application.
+	 * 
+	 * @param config the configuration of the node
+	 * @param keyPair the key pair that the node will use to sign the blocks that it mines
+	 * @param app the application
+	 * @param init if true, creates a genesis block and starts mining on top (initial synchronization is consequently skipped)
+	 * @throws InterruptedException if the initialization of the node was interrupted
+	 */
+	private LocalNodeImpl(LocalNodeConfig config, KeyPair keyPair, Application app, Info appInfo, boolean init) throws InterruptedException {
 		super(ClosedNodeException::new);
 
 		this.config = config;
 		this.keyPair = keyPair;
 		this.app = app;
-		// TODO: ask the app about the description
-		this.miningSpecification = MiningSpecifications.of("", config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(), getKeys().getPublic());
+		this.miningSpecification = MiningSpecifications.of(
+			appInfo.getName(), appInfo.getDescription(),
+			config.getChainId(), config.getHashingForDeadlines(), config.getSignatureForBlocks(), config.getSignatureForDeadlines(),
+			getKeys().getPublic()
+		);
 		this.peersAlreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.alreadyWhispered = Memories.of(config.getWhisperingMemorySize());
 		this.miningTask = new MiningTask(this);
@@ -262,6 +296,24 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			initialize();
 
 		scheduleTasks();
+	}
+
+	/**
+	 * Yields the information about the given application.
+	 * 
+	 * @param app the application
+	 * @return the information about {@code app}
+	 * @throws ClosedApplicationException if {@code app} is already closed
+	 * @throws ApplicationTimeoutException if the operation times out
+	 * @throws InterruptedException if the operation gets interrupted before completion
+	 */
+	private static Info getInfo(Application app) throws ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
+		try {
+			return app.getInfo();
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
 	}
 
 	private void initialize() throws InterruptedException {

@@ -27,6 +27,7 @@ import io.mokamint.miner.internal.MiningSpecificationImpl;
  * The JSON representation of a {@link MiningSpecification}.
  */
 public abstract class MiningSpecificationJson implements JsonRepresentation<MiningSpecification> {
+	private final String name;
 	private final String description;
 	private final String chainId;
 	private final String hashingForDeadlines;
@@ -35,12 +36,17 @@ public abstract class MiningSpecificationJson implements JsonRepresentation<Mini
 	private final String publicKeyForSigningBlocksBase58;
 
 	protected MiningSpecificationJson(MiningSpecification spec) {
+		this.name = spec.getName();
 		this.description = spec.getDescription();
 		this.chainId = spec.getChainId();
 		this.hashingForDeadlines = spec.getHashingForDeadlines().getName();
 		this.signatureForBlocks = spec.getSignatureForBlocks().getName();
 		this.signatureForDeadlines = spec.getSignatureForDeadlines().getName();
 		this.publicKeyForSigningBlocksBase58 = spec.getPublicKeyForSigningBlocksBase58();
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public String getDescription() {

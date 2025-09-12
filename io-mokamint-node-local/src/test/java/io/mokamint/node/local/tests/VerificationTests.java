@@ -47,10 +47,13 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Transactions;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.PortionRejectedException;
@@ -125,12 +128,14 @@ public class VerificationTests extends AbstractLoggedTests {
 
 	private static Application mockApplication() throws Exception {
 		var application = mock(Application.class);
+		var info = Infos.of("name", "description");
 
 		when(application.checkPrologExtra(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
 		when(application.getInitialStateId()).thenReturn(stateId);
 		doNothing().when(application).deliverTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateId);
+		when(application.getInfo()).thenReturn(info);
 
 		return application;
 	}
@@ -141,15 +146,15 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	private static class TestNode extends AbstractLocalNode {
-		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException {
+		private TestNode(Path dir) throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			this(dir, application);
 		}
 
-		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException {
+		private TestNode(Path dir, Application application) throws NoSuchAlgorithmException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			super(mkConfig(dir), nodeKeys, application, false);
 		}
 
-		private TestNode(LocalNodeConfig config) throws InterruptedException {
+		private TestNode(LocalNodeConfig config) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			super(config, nodeKeys, application, false);
 		}
 

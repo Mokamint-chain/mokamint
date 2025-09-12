@@ -44,6 +44,7 @@ import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.hotmoka.websockets.beans.api.ExceptionMessage;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownGroupIdException;
@@ -56,6 +57,7 @@ import io.mokamint.application.messages.api.CommitBlockResultMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetBalanceResultMessage;
+import io.mokamint.application.messages.api.GetInfoResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
@@ -173,6 +175,37 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendCheckTransaction(transaction);
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a getInfo() request reaches the service, it yields the information object")
+	public void serviceGetInfoWorks() throws Exception {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws FailedDeploymentException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onGetInfoResult(GetInfoResultMessage message) {
+				if (ID.equals(message.getId()) && message.get().equals(info))
+					semaphore.release();
+			}
+
+			private void sendGetInfo() {
+				sendGetInfo(ID);
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendGetInfo();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

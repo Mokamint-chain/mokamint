@@ -43,9 +43,12 @@ import org.junit.jupiter.api.io.TempDir;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
+import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.AbstractLocalNode;
@@ -105,6 +108,8 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 		var stateHash = new byte[] { 1, 2, 3 };
 		when(app.getInitialStateId()).thenReturn(stateHash);
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
+		var info = Infos.of("name", "description");
+		when(app.getInfo()).thenReturn(info);
 		var ed25519 = SignatureAlgorithms.ed25519();
 		nodeKeys = ed25519.getKeyPair();
 		plotKeys = ed25519.getKeyPair();
@@ -138,9 +143,9 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class MiningNode extends AbstractLocalNode {
 
-		private MiningNode(LocalNodeConfig config) throws InterruptedException, ClosedNodeException, WrongKeyException {
+		private MiningNode(LocalNodeConfig config) throws InterruptedException, ClosedNodeException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException {
 			super(config, nodeKeys, app, true);
-			add(LocalMiners.of((_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
 		}
 
 		@Override
@@ -156,7 +161,7 @@ public class ChainSynchronizationTests extends AbstractLoggedTests {
 
 	private class NonMiningNode extends AbstractLocalNode {
 
-		private NonMiningNode(LocalNodeConfig config) throws InterruptedException {
+		private NonMiningNode(LocalNodeConfig config) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 			super(config, nodeKeys, app, false); // <--- does not start mining by itself
 		}
 

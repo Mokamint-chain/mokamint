@@ -84,14 +84,16 @@ public class LocalMinerImpl implements LocalMiner {
 	/**
 	 * Builds a local miner.
 	 * 
+	 * @param name the name of the specification of the miner
+	 * @param description the description of the specification of the miner
 	 * @param balanceProvider the provider of the balance of the public keys
 	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
 	 *                         deadlines generated from them; this cannot be empty
 	 */
-	public LocalMinerImpl(BalanceProvider balanceProvider, PlotAndKeyPair... plotsAndKeyPairs) {
+	public LocalMinerImpl(String name, String description, BalanceProvider balanceProvider, PlotAndKeyPair... plotsAndKeyPairs) {
 		this.balanceProvider = balanceProvider;
 		this.plotsAndKeyPairs = plotsAndKeyPairs;
-		this.miningSpecification = extractMiningSpecification();
+		this.miningSpecification = extractMiningSpecification(name, description);
 
 		LOGGER.info("created miner " + uuid);
 	}
@@ -100,12 +102,14 @@ public class LocalMinerImpl implements LocalMiner {
 	 * Scans the provided plots and extracts the mining specification, that must be
 	 * shared among all of them.
 	 * 
+	 * @param name the name of the specification of this miner
+	 * @param description the description of the specification of this miner
 	 * @return the mining specification
 	 */
-	private MiningSpecification extractMiningSpecification() {
+	private MiningSpecification extractMiningSpecification(String name, String description) {
 		MiningSpecification[] specifications = Stream.of(plotsAndKeyPairs)
 			.map(PlotAndKeyPair::getPlot)
-			.map(this::extractMiningSpecification)
+			.map(plot -> extractMiningSpecification(name, description, plot))
 			.distinct()
 			.toArray(MiningSpecification[]::new);
 
@@ -117,9 +121,9 @@ public class LocalMinerImpl implements LocalMiner {
 			return specifications[0];
 	}
 
-	private MiningSpecification extractMiningSpecification(Plot plot) {
+	private MiningSpecification extractMiningSpecification(String name, String description, Plot plot) {
 		var prolog = plot.getProlog();
-		return MiningSpecifications.of("", prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
+		return MiningSpecifications.of(name, description, prolog.getChainId(), plot.getHashing(), prolog.getSignatureForBlocks(), prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningBlocks());
 	}
 
 	@Override

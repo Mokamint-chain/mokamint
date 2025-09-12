@@ -16,8 +16,6 @@ limitations under the License.
 
 package io.mokamint.application.internal;
 
-import java.util.concurrent.TimeoutException;
-
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.mokamint.application.Infos;
@@ -58,12 +56,14 @@ public abstract class ApplicationImpl extends AbstractAutoCloseableWithLockAndOn
 	}
 
 	@Override
-	public Info getInfo() throws ClosedApplicationException, TimeoutException, InterruptedException {
-		// by default, we access the @Name and @Description annotations, but subclasses may redefine
-		Name name = getClass().getAnnotation(Name.class);
-		Description description = getClass().getAnnotation(Description.class);
+	public Info getInfo() throws ClosedApplicationException {
+		try (var scope = mkScope()) {
+			// by default, we access the @Name and @Description annotations, but subclasses may redefine
+			Name name = getClass().getAnnotation(Name.class);
+			Description description = getClass().getAnnotation(Description.class);
 
-		return Infos.of(name != null ? name.value() : "<unknown>", description != null ? description.value() : "<unknown>");
+			return Infos.of(name != null ? name.value() : "<unknown>", description != null ? description.value() : "<unknown>");
+		}
 	}
 
 	/**

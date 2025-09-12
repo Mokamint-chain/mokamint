@@ -47,7 +47,7 @@ public class MinerServiceTests extends AbstractLoggedTests {
 	static {
 		try {
 			var ed25519 = SignatureAlgorithms.ed25519();
-			MINING_SPECIFICATION = MiningSpecifications.of("description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
+			MINING_SPECIFICATION = MiningSpecifications.of("name", "description", "octopus", HashingAlgorithms.shabal256(), ed25519, ed25519, ed25519.getKeyPair().getPublic());
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
