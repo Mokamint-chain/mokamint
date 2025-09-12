@@ -60,10 +60,10 @@ public abstract class MiningSpecifications {
 		/**
 		 * Creates the JSON representation for the given mining specification.
 		 * 
-		 * @param output the mining specification
+		 * @param spec the mining specification
 		 */
-		public Json(MiningSpecification output) {
-			super(output);
+		public Json(MiningSpecification spec) {
+			super(spec);
 		}
 	}
 

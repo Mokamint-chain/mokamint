@@ -19,10 +19,17 @@ limitations under the License.
  */
 module io.mokamint.application {
 	exports io.mokamint.application;
+	// beans must be accessible, encoded and decoded by reflection through Gson
+	opens io.mokamint.application.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.application.api;
 	requires io.hotmoka.closeables;
 	requires io.hotmoka.annotations;
+	requires io.hotmoka.exceptions;
+	requires io.hotmoka.websockets.beans;
+	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate
+	// classes without the no-args constructor
+	requires jdk.unsupported;
 
 	uses io.mokamint.application.api.Application;
 }

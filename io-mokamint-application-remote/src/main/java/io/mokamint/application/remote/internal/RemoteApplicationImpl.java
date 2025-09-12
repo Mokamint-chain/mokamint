@@ -24,6 +24,7 @@ import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOC
 import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_BALANCE_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.GET_INFO_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_PRIORITY_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
@@ -47,6 +48,7 @@ import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.application.api.ClosedApplicationException;
+import io.mokamint.application.api.Info;
 import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockMessages;
@@ -65,6 +67,8 @@ import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
+import io.mokamint.application.messages.GetInfoMessages;
+import io.mokamint.application.messages.GetInfoResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -91,6 +95,8 @@ import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
 import io.mokamint.application.messages.api.GetBalanceResultMessage;
+import io.mokamint.application.messages.api.GetInfoMessage;
+import io.mokamint.application.messages.api.GetInfoResultMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdResultMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
@@ -138,6 +144,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		this.logPrefix = "application remote(" + uri + "): ";
 
 		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
+		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
 		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
@@ -164,6 +171,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		case CheckPrologExtraResultMessage cperm -> onCheckPrologExtraResult(cperm);
 		case CheckTransactionResultMessage ctrm -> onCheckTransactionResult(ctrm);
 		case GetBalanceResultMessage gbrm -> onGetBalanceResult(gbrm);
+		case GetInfoResultMessage girm -> onGetInfoResult(girm);
 		case GetPriorityResultMessage gprm -> onGetPriorityResult(gprm);
 		case GetRepresentationResultMessage grrm -> onGetRepresentationResult(grrm);
 		case GetInitialStateIdResultMessage gisirm -> onGetInitialStateIdResult(gisirm);
@@ -631,6 +639,38 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
 			return deployAt(uri, PublishResultMessages.Decoder.class, PublishMessages.Encoder.class);
+		}
+	}
+
+	@Override
+	public Info getInfo() throws ClosedApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen(ClosedApplicationException::new);
+		var id = nextId();
+		//sendGetInfo(id); // TODO
+		return waitForResult(id, GetInfoResultMessage.class);
+	}
+
+	/**
+	 * Sends a {@link GetInfoMessage} to the application service.
+	 * 
+	 * @param id the identifier of the message
+	 */
+	protected void sendGetInfo(String id) {
+		sendObjectAsync(GET_INFO_ENDPOINT, GetInfoMessages.of(id));
+	}
+
+	/**
+	 * Hook called when a {@link GetInfoResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onGetInfoResult(GetInfoResultMessage message) {}
+
+	private class GetInfoEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws FailedDeploymentException {
+			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 	}
 }

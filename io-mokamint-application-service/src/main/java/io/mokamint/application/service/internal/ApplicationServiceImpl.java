@@ -47,6 +47,8 @@ import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
+import io.mokamint.application.messages.GetInfoMessages;
+import io.mokamint.application.messages.GetInfoResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -65,6 +67,7 @@ import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
+import io.mokamint.application.messages.api.GetInfoMessage;
 import io.mokamint.application.messages.api.GetInitialStateIdMessage;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
@@ -114,7 +117,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 
 		startContainer("", port,
 				CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
-				GetBalanceEndpoint.config(this),
+				GetInfoEndpoint.config(this), GetBalanceEndpoint.config(this),
 				GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
 				DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
@@ -146,6 +149,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 				application.checkTransaction(ctm.getTransaction());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(id));
 			}
+			case GetInfoMessage gim -> sendObjectAsync(session, GetInfoResultMessages.of(application.getInfo(), id));
 			case GetBalanceMessage gbm -> sendObjectAsync(session, GetBalanceResultMessages.of(application.getBalance(gbm.getSignature(), gbm.getPublicKey()), id));
 			case GetPriorityMessage gpm -> sendObjectAsync(session, GetPriorityResultMessages.of(application.getPriority(gpm.getTransaction()), id));
 			case GetRepresentationMessage grm -> sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(grm.getTransaction()), id));
@@ -180,6 +184,24 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		}
 		catch (ClosedApplicationException e) {
 			LOGGER.warning(logPrefix + "request processing failed since the serviced application has been closed: " + e.getMessage());
+		}
+	}
+
+	protected void onGetInfo(GetInfoMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + GET_INFO_ENDPOINT + " request");
+		scheduleRequest(session, message);
+	};
+
+	public static class GetInfoEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			addMessageHandler(session, (GetInfoMessage message) -> server.onGetInfo(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, GetInfoEndpoint.class, GET_INFO_ENDPOINT, GetInfoMessages.Decoder.class, GetInfoResultMessages.Encoder.class);
 		}
 	}
 

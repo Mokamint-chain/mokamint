@@ -31,6 +31,11 @@ public interface ApplicationService extends WebSocketServer {
 	String GET_BALANCE_ENDPOINT = "/get_balance";
 
 	/**
+	 * The network endpoint path where {@link Application#getInfo()} is published.
+	 */
+	String GET_INFO_ENDPOINT = "/get_info";
+
+	/**
 	 * The network endpoint path where {@link Application#checkPrologExtra(byte[])} is published.
 	 */
 	String CHECK_PROLOG_EXTRA_ENDPOINT = "/check_prolog_extra";

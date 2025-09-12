@@ -20,6 +20,11 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.hotmoka.websockets</groupId>
+      <artifactId>io-hotmoka-websockets-beans</artifactId>
+      <version>${io.hotmoka.websockets.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.closeables</groupId>
       <artifactId>io-hotmoka-closeables</artifactId>
       <version>${io.hotmoka.closeables.version}</version>
@@ -28,6 +33,11 @@
       <groupId>io.hotmoka.annotations</groupId>
       <artifactId>io-hotmoka-annotations</artifactId>
       <version>${io.hotmoka.annotations.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka.exceptions</groupId>
+      <artifactId>io-hotmoka-exceptions</artifactId>
+      <version>${io.hotmoka.exceptions.version}</version>
     </dependency>
   </dependencies>
 

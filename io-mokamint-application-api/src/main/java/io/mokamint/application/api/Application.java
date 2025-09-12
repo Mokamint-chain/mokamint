@@ -88,7 +88,15 @@ import io.mokamint.nonce.api.Deadline;
 @ThreadSafe
 public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 
-	// TODO add method: String getDescription() throws ClosedApplicationException, TimeoutException, InterruptedException;
+	/**
+	 * Yields information about this application.
+	 * 
+	 * @return the information
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	Info getInfo() throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Yields the balance of the given public key, if this means something for this application.

@@ -23,6 +23,7 @@ module io.mokamint.application.messages {
 	opens io.mokamint.application.messages.internal.json to com.google.gson;
 
 	requires transitive io.mokamint.application.messages.api;
+	requires transitive io.mokamint.application;
 	requires io.mokamint.node;
 	requires io.mokamint.nonce;
 	requires io.hotmoka.websockets.beans;

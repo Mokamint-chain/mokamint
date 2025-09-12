@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import io.hotmoka.crypto.HashingAlgorithms;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.testing.AbstractLoggedTests;
+import io.mokamint.application.Infos;
 import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
@@ -47,6 +48,8 @@ import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
+import io.mokamint.application.messages.GetInfoMessages;
+import io.mokamint.application.messages.GetInfoResultMessages;
 import io.mokamint.application.messages.GetInitialStateIdMessages;
 import io.mokamint.application.messages.GetInitialStateIdResultMessages;
 import io.mokamint.application.messages.GetPriorityMessages;
@@ -118,6 +121,24 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new DeliverTransactionResultMessages.Encoder().encode(deliverTransactionResultMessage1);
 		var deliverTransactionResultMessage2 = new DeliverTransactionResultMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionResultMessage1, deliverTransactionResultMessage2);
+	}
+
+	@Test
+	@DisplayName("getInfo messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetInfo() throws Exception {
+		var getInfoMessage1 = GetInfoMessages.of("id");
+		String encoded = new GetInfoMessages.Encoder().encode(getInfoMessage1);
+		var getInfoMessage2 = new GetInfoMessages.Decoder().decode(encoded);
+		assertEquals(getInfoMessage1, getInfoMessage2);
+	}
+
+	@Test
+	@DisplayName("getInfo result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForGetInfoResult() throws Exception {
+		var getInfoResultMessage1 = GetInfoResultMessages.of(Infos.of("Star Wars", "an fantastic application"), "id");
+		String encoded = new GetInfoResultMessages.Encoder().encode(getInfoResultMessage1);
+		var getInfoResultMessage2 = new GetInfoResultMessages.Decoder().decode(encoded);
+		assertEquals(getInfoResultMessage1, getInfoResultMessage2);
 	}
 
 	@Test
