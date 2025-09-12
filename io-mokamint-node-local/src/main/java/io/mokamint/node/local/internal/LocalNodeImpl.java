@@ -16,8 +16,10 @@ limitations under the License.
 
 package io.mokamint.node.local.internal;
 
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.util.Deque;
@@ -45,6 +47,7 @@ import java.util.stream.Stream;
 
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
+import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
@@ -551,7 +554,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<MinerInfo> openMiner(int port) throws FailedDeploymentException, ClosedNodeException {
 		try (var scope = mkScope()) {
-			var miner = RemoteMiners.open(port, miningSpecification, (signature, publicKey) -> Optional.empty(), this::checkForMiners); // TODO: balanceProvider
+			var miner = RemoteMiners.open(port, miningSpecification, this::getBalance, this::checkForMiners);
 			Optional<MinerInfo> maybeInfo = miners.add(miner);
 			if (maybeInfo.isPresent())
 				minersToCloseAtTheEnd.add(miner);
@@ -669,6 +672,20 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		 * @throws ClosedApplicationException if the application has been closed
 		 */
 		void body() throws InterruptedException, ClosedDatabaseException, ClosedNodeException, ClosedApplicationException;
+	}
+
+	private Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws InterruptedException {
+		try {
+			return app.getBalance(signature, publicKey);
+		}
+		catch (ClosedApplicationException e) {
+			LOGGER.warning("could not determine the balance of a public key since the application is already closed");
+			return Optional.empty();
+		}
+		catch (TimeoutException e) {
+			LOGGER.warning("could not determine the balance of a public key since the balance provider timed out");
+			return Optional.empty();
+		}
 	}
 
 	/**

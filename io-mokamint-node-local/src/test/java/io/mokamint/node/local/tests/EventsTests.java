@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterAll;
@@ -185,7 +184,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, InterruptedException {
 				return Optional.empty();
 			}
 		};
@@ -253,7 +252,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, InterruptedException {
 				return Optional.empty();
 			}
 
@@ -374,7 +373,7 @@ public class EventsTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, TimeoutException, InterruptedException {
+			public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey key) throws ClosedMinerException, InterruptedException {
 				return Optional.empty();
 			}
 

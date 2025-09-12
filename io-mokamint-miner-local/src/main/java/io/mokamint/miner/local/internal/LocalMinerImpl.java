@@ -34,7 +34,6 @@ import io.hotmoka.exceptions.UncheckFunction;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.BalanceProvider;
 import io.mokamint.miner.api.ClosedMinerException;
-import io.mokamint.miner.api.GetBalanceException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.nonce.api.Challenge;
@@ -198,7 +197,7 @@ public class LocalMinerImpl implements LocalMiner {
 	}
 
 	@Override
-	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException, InterruptedException {
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, InterruptedException {
 		if (isClosed.get())
 			throw new ClosedMinerException();
 

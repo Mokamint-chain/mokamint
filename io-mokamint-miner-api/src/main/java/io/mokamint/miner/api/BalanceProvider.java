@@ -33,7 +33,7 @@ public interface BalanceProvider {
 	 * @param signature the signature algorithm of {@code publicKey}
 	 * @param publicKey the public key whose balance is requested
 	 * @return the balance, if any
-	 * @throws GetBalanceException if the balance could not be determined
+	 * @throws InterruptedException if the operation gets interrupted before completion
 	 */
-	Optional<BigInteger> get(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException;
+	Optional<BigInteger> get(SignatureAlgorithm signature, PublicKey publicKey) throws InterruptedException;
 }

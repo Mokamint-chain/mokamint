@@ -30,13 +30,11 @@ import java.util.logging.Logger;
 import io.hotmoka.annotations.ThreadSafe;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
-import io.hotmoka.websockets.beans.ExceptionMessages;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
-import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.BalanceProvider;
-import io.mokamint.miner.api.GetBalanceException;
+import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.messages.GetBalanceMessages;
 import io.mokamint.miner.messages.GetBalanceResultMessages;
@@ -132,7 +130,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	}
 
 	@Override
-    protected void processRequest(Session session, RpcMessage message) throws IOException {
+    protected void processRequest(Session session, RpcMessage message) throws IOException, InterruptedException {
 		var id = message.getId();
 
 		try {
@@ -141,9 +139,6 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 			case GetBalanceMessage gbm -> sendObjectAsync(session, GetBalanceResultMessages.of(getBalance(gbm.getSignature(), gbm.getPublicKey()), id));
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
-		}
-		catch (GetBalanceException e) {
-			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
 		catch (ClosedMinerException e) {
 			LOGGER.warning(logPrefix + "request processing failed since the serviced miner has been closed: " + e.getMessage());
@@ -182,7 +177,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	}
 
 	@Override
-	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException {
+	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, InterruptedException {
 		ensureIsOpen(ClosedMinerException::new);
 		return balanceProvider.get(signature, publicKey);
 	}
@@ -280,7 +275,7 @@ public class RemoteMinerImpl extends AbstractRPCWebSocketServer implements Remot
 	
 		private static ServerEndpointConfig config(RemoteMinerImpl server) {
 			return simpleConfig(server, GetBalanceEndpoint.class, GET_BALANCE_ENDPOINT,
-				GetBalanceMessages.Decoder.class, GetBalanceResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+				GetBalanceMessages.Decoder.class, GetBalanceResultMessages.Encoder.class);
 		}
 	}
 

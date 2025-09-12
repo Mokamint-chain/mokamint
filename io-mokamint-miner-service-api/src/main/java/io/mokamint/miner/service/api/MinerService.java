@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.client.api.Remote;
 import io.mokamint.miner.api.ClosedMinerException;
-import io.mokamint.miner.api.GetBalanceException;
 import io.mokamint.miner.api.MiningSpecification;
 
 /**
@@ -54,12 +53,11 @@ public interface MinerService extends Remote {
 	 * @param signature the signature algorithm of {@code publicKey}
 	 * @param publicKey the public key whose balance is requested
 	 * @return the balance of {@code key}, if any
-	 * @throws GetBalanceException if the balance could not be determined
 	 * @throws ClosedMinerException if this miner has been closed
 	 * @throws TimeoutException if the operation does not terminate inside the expected time window
 	 * @throws InterruptedException if the operation is interrupted before being completed
 	 */
-	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws GetBalanceException, ClosedMinerException, TimeoutException, InterruptedException;
+	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException;
 
 	/**
 	 * Closes the service.
