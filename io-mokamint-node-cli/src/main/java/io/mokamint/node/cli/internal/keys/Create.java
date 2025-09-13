@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.cli.internal.keys;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -47,6 +48,9 @@ public class Create extends AbstractCommand {
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
 	private SignatureAlgorithm signature;
 
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection;
+
 	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
 	private boolean json;
 
@@ -60,18 +64,30 @@ public class Create extends AbstractCommand {
 			var publicKeyBase58 = Base58.toBase58String(signature.encodingOf(keys.getPublic()));
 			entropy.dump(path);
 
+			String result;
 			if (json) {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
 				answer.fileName = path.toString();
-				System.out.println(new Gson().toJsonTree(answer));
+				result = new Gson().toJsonTree(answer) + "\n";
 			}
 			else {
-				System.out.println("A new key pair has been created and saved as \"" + path + "\".");
+				result = "A new key pair has been created and saved as \"" + path + "\".\n";
 				if (publicKeyBase58.length() > 100)
 					publicKeyBase58 = publicKeyBase58.substring(0, 100) + "...";
 
-				System.out.println("Its public key is " + publicKeyBase58 + " (" + signature + ", base58).");
+				result += "Its public key is " + publicKeyBase58 + " (" + signature + ", base58).\n";
+			}
+
+			if (redirection == null)
+				System.out.print(result);
+			else {
+				try {
+					Files.writeString(redirection, result);
+				}
+				catch (IOException e) {
+					throw new CommandException("Could not write the output into \"" + redirection + "\": " + e.getMessage());
+				}
 			}
 		}
 		catch (IOException e) {

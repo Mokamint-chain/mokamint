@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.application.cli.internal;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.AbstractRpcCommand;
@@ -29,20 +32,39 @@ import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "info", description = "Show infromation about an application.")
+@Command(name = "info", description = "Show information about an application.")
 public class Info extends AbstractRpcCommand<RemoteApplication> {
 
 	@Option(names = "--uri", description = "the network URI where the application's API is published", defaultValue = "ws://localhost:8032")
 	private URI uri;
 
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection;
+
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
 	private void body(RemoteApplication remote) throws TimeoutException, InterruptedException, CommandException {
 		try {
 			var info = remote.getInfo();
 
-			if (json())
-				System.out.println(new Infos.Encoder().encode(info));
+			String result;
+			if (json)
+				result = new Infos.Encoder().encode(info).toString() + "\n";
 			else
-				System.out.println(info);
+				result = info.toString() + "\n";
+
+			if (redirection == null)
+				System.out.print(result);
+			else {
+				try {
+					Files.writeString(redirection, result);
+				}
+				catch (IOException e) {
+					throw new CommandException("Could not write the output into \"" + redirection + "\": " + e.getMessage());
+				}
+			}
+				
 		}
 		catch (ClosedApplicationException e) {
 			throw new CommandException("The application at " + uri + " is already closed.", e);

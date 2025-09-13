@@ -17,6 +17,8 @@ limitations under the License.
 package io.mokamint.node.cli.internal;
 
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.AbstractRpcCommand;
@@ -33,11 +35,16 @@ import picocli.CommandLine.Option;
  */
 public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<RemoteRestrictedNode> {
 
-	protected AbstractRestrictedRpcCommand() {
-	}
-
 	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")
 	private URI restrictedUri;
+
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection; // TODO: this is currently ignored in most commands
+
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
+	protected AbstractRestrictedRpcCommand() {}
 
 	/**
 	 * Yields the URI of the restricted API of the remote service.
@@ -46,6 +53,25 @@ public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<Re
 	 */
 	protected final URI restrictedUri() {
 		return restrictedUri;
+	}
+
+	/**
+	 * Determines if the output is required in JSON format.
+	 * 
+	 * @return true if and only if that condition holds
+	 */
+	protected final boolean json() {
+		return json;
+	}
+
+	/**
+	 * Yields the path where the output must be redirected.
+	 * If missing, the output must be printed to the standard output.
+	 * 
+	 * @return the path, if any
+	 */
+	protected final Optional<Path> redirection() {
+		return Optional.ofNullable(redirection);
 	}
 
 	/**

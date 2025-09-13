@@ -8,4 +8,4 @@ NC='\033[0m' # No Color
 echo -e "${BOLD_GREEN}Starting a mining service for a remote miner.${NC}"
 echo -e "${BLUE}MINER_PUBLIC_SERVICE_URI${NC}=${RED}\"$MINER_PUBLIC_SERVICE_URI\"${NC}"
 
-mokamint-miner-print-logs start miner_configuration/plot.plot miner_configuration/miner.pem --uri ${MINER_PUBLIC_SERVICE_URI}
+mokamint-miner-print-logs start miner_configuration/plot.plot miner_configuration/miner.pem --plot-password --uri ${MINER_PUBLIC_SERVICE_URI}

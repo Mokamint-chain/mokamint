@@ -16,7 +16,10 @@ limitations under the License.
 
 package io.mokamint.miner.cli.internal;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.AbstractRpcCommand;
@@ -38,8 +41,13 @@ public class Info extends AbstractRpcCommand<MinerService> {
 	@Option(names = "--uri", description = "the network URI where the API of the remote miner is published", defaultValue = "ws://localhost:8025")
 	private URI uri;
 
-	protected Info() {
-	}
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection;
+
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
+	protected Info() {}
 
 	@Override
 	protected void execute() throws CommandException {
@@ -50,16 +58,28 @@ public class Info extends AbstractRpcCommand<MinerService> {
 		try {
 			MiningSpecification miningSpecification = service.getMiningSpecification();
 
-			if (json()) {
+			String result;
+			if (json) {
 				try {
-					System.out.println(new MiningSpecifications.Encoder().encode(miningSpecification));
+					result = new MiningSpecifications.Encoder().encode(miningSpecification) + "\n";
 				}
 				catch (EncodeException e) {
 					throw new CommandException("Could not encode the mining specification in JSON format: " + e.getMessage());
 				}
 			}
 			else
-				System.out.println(miningSpecification);
+				result = miningSpecification.toString() + "\n";
+
+			if (redirection == null)
+				System.out.print(result);
+			else {
+				try {
+					Files.writeString(redirection, result);
+				}
+				catch (IOException e) {
+					throw new CommandException("Could not write the output into \"" + redirection + "\": " + e.getMessage());
+				}
+			}
 		}
 		catch (ClosedMinerException e) {
 			throw new CommandException("The mining remote has been closed: " + e.getMessage());

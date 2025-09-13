@@ -39,8 +39,10 @@ SIGNATURE_FOR_DEADLINES=$(echo $MINER_SPECIFICATION | python3 -c "import sys, js
 PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyForSigningBlocksBase58'])")
 echo -e "${RED}done${NC}"
 
-echo -n "Creating the miner.pem key pair of the miner service... "
-PUBLIC_KEY_MINER_BASE58=$(mokamint-node keys create miner_configuration/miner.pem --signature=$SIGNATURE_FOR_DEADLINES --json | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyBase58'])")
+echo -n "Creating the miner.pem key pair of the miner service: "
+mokamint-node keys create miner_configuration/miner.pem --signature=$SIGNATURE_FOR_DEADLINES --password --json --redirection miner_creation.json
+PUBLIC_KEY_MINER_BASE58=$(cat miner_creation.json | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyBase58'])")
+rm miner_creation.json
 chmod og-rwx miner_configuration/miner.pem
 echo -e "${RED}done:${NC} the public key is ${BOLD_GREEN}${PUBLIC_KEY_MINER_BASE58}${NC} (${SIGNATURE_FOR_DEADLINES}, base58)"
 

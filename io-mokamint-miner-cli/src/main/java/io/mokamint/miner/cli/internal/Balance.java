@@ -16,8 +16,11 @@ limitations under the License.
 
 package io.mokamint.miner.cli.internal;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
@@ -51,6 +54,12 @@ public class Balance extends AbstractRpcCommand<MinerService> {
 	@Option(names = "--uri", description = "the network URI where the API of the remote miner is published", defaultValue = "ws://localhost:8025")
 	private URI uri;
 
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection;
+
+	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
+	private boolean json;
+
 	protected Balance() {
 	}
 
@@ -72,13 +81,25 @@ public class Balance extends AbstractRpcCommand<MinerService> {
 		try {
 			Optional<BigInteger> maybeBalance = service.getBalance(signature, publicKey);
 
-			if (json()) {
+			String result;
+			if (json) {
 				var answer = new Answer();
 				answer.balance = maybeBalance.orElse(null);
-				System.out.println(new Gson().toJsonTree(answer));
+				result = new Gson().toJsonTree(answer).toString() + "\n";
 			}
 			else
-				System.out.println(maybeBalance.map(BigInteger::toString).orElse("not available"));
+				result = maybeBalance.map(BigInteger::toString).orElse("not available") + "\n";
+
+			if (redirection == null)
+				System.out.print(result);
+			else {
+				try {
+					Files.writeString(redirection, result);
+				}
+				catch (IOException e) {
+					throw new CommandException("Could not write the output into \"" + redirection + "\": " + e.getMessage());
+				}
+			}
 		}
 		catch (ClosedMinerException e) {
 			throw new CommandException("The mining remote has been closed: " + e.getMessage());
