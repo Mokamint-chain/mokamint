@@ -732,7 +732,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Determines if this blockchain has been expanded with this adder, not necessarily
+		 * Determines if this blockchain has been strictly expanded with this adder, not necessarily
 		 * along its best chain. The addition of orphan blocks is not considered as an expansion.
 		 * 
 		 * @return true if and only if this blockchain has been expanded
@@ -742,7 +742,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 
 		/**
-		 * Determines if the node required to add or connect has been actually connected to the blockchain tree by the operation.
+		 * Determines if the block required to add or connect is now actually connected
+		 * to the blockchain tree by the operation, not necessarily along its best chain
 		 * 
 		 * @return true if and only if that condition holds
 		 */

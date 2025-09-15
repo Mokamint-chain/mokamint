@@ -40,8 +40,8 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
 import io.mokamint.node.api.ChainPortion;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.ClosedPeerException;
+import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -158,7 +158,10 @@ public class Synchronization {
 
 		// if the node has been disconnected, it will have constructed its own branch; as long as this is less than 1000 blocks long,
 		// the subsequent choice allows synchronization upon reconnection, otherwise the node will not be able to synchronize anymore
-		this.startingHeight = Math.max(blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L), blockchain.getHeightOfHead().orElse(0L) - 1000L);
+		this.startingHeight = Math.max(
+			blockchain.getStartOfNonFrozenPart().map(Block::getDescription).map(BlockDescription::getHeight).orElse(0L),
+			blockchain.getHeightOfHead().orElse(0L) - 1000L
+		);
 		this.downloaders = mkBlockDownloaders();
 		this.nonContextualVerifiers = mkNonContextualVerifiers();
 		this.blockAdders = mkBlockAdders();
@@ -378,7 +381,11 @@ public class Synchronization {
 
 		private void run() {
 			try {
-				Optional<byte[]> lastHashOfPreviousGroup = Optional.empty();
+				// we compute the hash that expect to be at the beginning of the downloaded chain:
+				// if it does not match with what we actually load from the peer, then either the
+				// peer is byzantine or the node has diverged for too long from the peer and there
+				// is no hope of synchronizing anymore
+				Optional<byte[]> lastHashOfPreviousGroup = blockchain.getChain(startingHeight, 1).findFirst();
 
 				while (!terminated) {
 					Optional<byte[][]> maybeHashes = downloadNextGroupOfBlockHashes(lastHashOfPreviousGroup);
@@ -682,19 +689,19 @@ public class Synchronization {
 						}
 					}
 
-					String blockHash = block.getHexHash();
-
 					try {
 						// we only perform the relative (contextual) checks, since the absolute ones have been performed by the non-contextual verifiers
 						if (!blockchain.connect(block, Optional.of(Mode.RELATIVE))) {
 							// if the block could not be connected to the blockchain tree, it either means that
 							// the downloader peer is forging blocks, or that it is providing a very weak history, on a branch that has
 							// been garbage-collected in this node; therefore, banning such a peer looks like the right thing to do
+							String blockHash = block.getHexHash();
 							LOGGER.warning("sync: block " + blockHash + " could not be connected: I'm banning all peers that downloaded that block");
 							banDownloadersOf(blockHash);
 						}
 					}
 					catch (VerificationException e) {
+						String blockHash = block.getHexHash();
 						LOGGER.warning("sync: contextual verification of block " + blockHash + " failed, I'm banning all peers that downloaded that block: " + e.getMessage());
 						// block verification might fail also if the state of the previous block of "block" has been garbage-collected;
 						// but that means that the peer is providing a very weak history, on a branch that has been garbage-collected in this node;
