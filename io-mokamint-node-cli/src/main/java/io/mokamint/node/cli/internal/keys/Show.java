@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.node.cli.internal.keys;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -47,6 +48,9 @@ public class Show extends AbstractCommand {
 			converter = SignatureOptionConverter.class, defaultValue = "ed25519")
 	private SignatureAlgorithm signature;
 
+	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
+	private Path redirection;
+
 	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
 	private boolean json;
 
@@ -69,15 +73,28 @@ public class Show extends AbstractCommand {
 			if (!full && privateKeyBase58.length() > 100)
 				privateKeyBase58 = privateKeyBase58.substring(0, 100) + "...";
 
+			String result;
+
 			if (json) {
 				var answer = new Answer();
 				answer.publicKeyBase58 = publicKeyBase58;
 				answer.privateKeyBase58 = privateKeyBase58;
-				System.out.println(new Gson().toJsonTree(answer));
+				result = new Gson().toJsonTree(answer) + "\n";
 			}
 			else {
-				System.out.println(" Public key: " + publicKeyBase58 + " (" + signature + ", base58)");
-				System.out.println("Private key: " + privateKeyBase58 + " (" + signature + ", base58)");
+				result = " Public key: " + publicKeyBase58 + " (" + signature + ", base58)";
+				result += "Private key: " + privateKeyBase58 + " (" + signature + ", base58)\n";
+			}
+
+			if (redirection == null)
+				System.out.print(result);
+			else {
+				try {
+					Files.writeString(redirection, result);
+				}
+				catch (IOException e) {
+					throw new CommandException("Could not write the output into \"" + redirection + "\": " + e.getMessage());
+				}
 			}
 		}
 		catch (IOException e) {
