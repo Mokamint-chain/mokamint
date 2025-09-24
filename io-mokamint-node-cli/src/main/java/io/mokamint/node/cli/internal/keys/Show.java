@@ -82,7 +82,7 @@ public class Show extends AbstractCommand {
 				result = new Gson().toJsonTree(answer) + "\n";
 			}
 			else {
-				result = " Public key: " + publicKeyBase58 + " (" + signature + ", base58)";
+				result = " Public key: " + publicKeyBase58 + " (" + signature + ", base58)\n";
 				result += "Private key: " + privateKeyBase58 + " (" + signature + ", base58)\n";
 			}
 
