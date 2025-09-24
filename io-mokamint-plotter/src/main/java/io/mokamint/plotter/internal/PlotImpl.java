@@ -59,8 +59,10 @@ import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.nonce.api.Prolog;
+import io.mokamint.plotter.PlotSizes;
 import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
+import io.mokamint.plotter.api.PlotSize;
 import io.mokamint.plotter.internal.json.PlotJson;
 
 /**
@@ -103,6 +105,11 @@ public class PlotImpl implements Plot {
 	private final HashingAlgorithm hashing;
 
 	/**
+	 * The sizes of the plot.
+	 */
+	private final PlotSize plotSize;
+
+	/**
 	 * The executors used to look for the smallest deadlines.
 	 */
 	private final ExecutorService executors = Executors.newCachedThreadPool();
@@ -141,6 +148,8 @@ public class PlotImpl implements Plot {
 			throw new IOException("Cannot read the name of the hashing algorithm used for the plot file");
 		var hashingName = new String(hashingNameBytes, Charset.forName("UTF-8"));
 		this.hashing = HashingAlgorithms.of(hashingName);
+
+		this.plotSize = PlotSizes.of(prolog, length, hashing);
 	}
 
 	/**
@@ -207,6 +216,7 @@ public class PlotImpl implements Plot {
 		this.start = start;
 		this.length = length;
 		this.hashing = Objects.requireNonNull(hashing, "hashing cannot be null", onIllegalArgs);
+		this.plotSize = PlotSizes.of(prolog, length, hashing);
 
 		new Dumper(path, Objects.requireNonNull(onNewPercent, "onNewPercent cannot be null", onIllegalArgs));
 
@@ -219,15 +229,13 @@ public class PlotImpl implements Plot {
 	 */
 	private class Dumper {
 		private final FileChannel channel;
-		private final int nonceSize = Challenge.SCOOPS_PER_NONCE * 2 * hashing.length();
-		private final int metadataSize = getMetadataSize();
-		private final long plotSize = metadataSize + length * nonceSize;
+		private final int metadataSize = plotSize.getMetadataSize();
 		private final IntConsumer onNewPercent;
 		private final AtomicInteger alreadyDone = new AtomicInteger();
 
 		private Dumper(Path where, IntConsumer onNewPercent) throws IOException {
 			long startTime = System.currentTimeMillis();
-			LOGGER.info("Starting creating a plot file of " + plotSize + " bytes");
+			LOGGER.info("Starting creating a plot file of " + plotSize.getTotalSize() + " bytes");
 
 			this.onNewPercent = onNewPercent;
 		
@@ -248,7 +256,7 @@ public class PlotImpl implements Plot {
 		private void sizePlotFile() throws IOException {
 			// by forcing a write to the last byte of the file, we guarantee
 			// that it is fully created (but randomly initialized, for now)
-			channel.position(plotSize - 1);
+			channel.position(plotSize.getTotalSize() - 1);
 			var buffer = ByteBuffer.wrap(new byte[1]);
 			channel.write(buffer);
 		}
@@ -342,26 +350,14 @@ public class PlotImpl implements Plot {
 		}
 	}
 
-	/**
-	 * Yields the size of the metadata reported before the nonces.
-	 * 
-	 * @return the size of the metadata, in bytes
-	 */
-	private int getMetadataSize() {
-		return 4 + prolog.toByteArray().length // prolog
-			+ 8 // start
-			+ 8 // length
-			+ 4 + hashing.getName().getBytes(Charset.forName("UTF-8")).length; // hashing algorithm
-	}
-
 	private class SmallestDeadlineFinder {
 		private final Challenge challenge;
 		private final int scoopNumber;
 		private final byte[] generationSignature;
 		private final Deadline deadline;
-		private final int scoopSize = 2 * hashing.length();
+		private final int scoopSize = plotSize.getScoopSize();
 		private final long groupSize = length * scoopSize;
-		private final int metadataSize = getMetadataSize();
+		private final int metadataSize = plotSize.getMetadataSize();
 		private final Hasher<byte[]> hasher;
 		private final PrivateKey privateKey;
 

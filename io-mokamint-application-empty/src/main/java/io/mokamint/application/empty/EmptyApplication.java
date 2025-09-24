@@ -36,8 +36,8 @@ import io.mokamint.nonce.api.Deadline;
  * An empty Mokamint application. It can be used for experimenting with
  * the creation of new Mokamint chains.
  */
-@Name("empty")
-@Description("an application with no state, accepting all transactions, useful for experiments")
+@Name("Empty")
+@Description("A stateless blockchain, accepting all transactions, useful for experiments")
 public class EmptyApplication extends AbstractApplication {
 	private final AtomicInteger nextId = new AtomicInteger();
 
