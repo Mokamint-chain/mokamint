@@ -17,11 +17,12 @@ echo -e "* ${RED}info:${NC}         print this information message"
 echo
 echo -e "* ${RED}config-miner:${NC} create the configuration directory of a miner service connected to a remote miner"
 echo -e "    ${BLUE}MINER_PUBLIC_SERVICE_URI:${NC} the URI of an already existing remote miner"
+echo -e "    ${BLUE}PUBLIC_KEY_MINER_BASE58:${NC} the Base58-encoded public key to use to identify the miner service"
 echo -e "    ${BLUE}PLOT_SIZE:${NC} the number of nonces of the plot that the miner will use for mining"
 echo -e "    ${BLUE}EXTRA:${NC} base58-encoded extra data to put in the nonces of the plot"
 echo
 echo "  For instance:"
-echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka.io:8025 -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION config-miner${NC}"
+echo -e "  ${BOLD_CYAN}docker run -it -e MINER_PUBLIC_SERVICE_URI=ws://panarea.hotmoka.io:8025 -e PUBLIC_KEY_MINER_BASE58=E4hbKgLjoen1sRNRmyPC59jgkjifCCUxjmGCAPnnSwvQ -v miner_configuration:/home/mokamint/miner_configuration mokamint/mokamint:VERSION config-miner${NC}"
 echo
 echo -e "* ${RED}mine:${NC}         create a mining service for a remote miner, whose configuration has been created with config-miner"
 echo -e "    ${BLUE}MINER_PUBLIC_SERVICE_URI:${NC} the URI of an already existing remote miner"
