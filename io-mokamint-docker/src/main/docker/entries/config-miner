@@ -16,21 +16,21 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 MINER_PUBLIC_SERVICE_URI=${MINER_PUBLIC_SERVICE_URI:-ws://panarea.hotmoka.io:8025}
+PUBLIC_KEY_MINER_BASE58=${PUBLIC_KEY_MINER_BASE58:-""}
 PLOT_SIZE=${PLOT_SIZE:-1000}
 EXTRA=${EXTRA:-""}
-RECREATE_KEYS=${RECREATE_KEYS:-false}
 
 echo -e "${BOLD_GREEN}I will use the following parameters for the creation of the configuration directory of a Mokamint miner:${NC}"
 echo
 echo -e "               ${BLUE}PLOT_SIZE${NC}=${RED}$PLOT_SIZE${NC}"
 echo -e "${BLUE}MINER_PUBLIC_SERVICE_URI${NC}=${RED}\"$MINER_PUBLIC_SERVICE_URI\"${NC}"
+echo -e " ${BLUE}PUBLIC_KEY_MINER_BASE58${NC}=${RED}\"$PUBLIC_KEY_MINER_BASE58\"${NC}"
 echo -e "                   ${BLUE}EXTRA${NC}=${RED}$EXTRA${NC}"
-echo -e "           ${BLUE}RECREATE_KEYS${NC}=${RED}$RECREATE_KEYS${NC}"
 echo
 
-#echo -n "Cleaning the directory miner_configuration... "
-#rm -rf miner_configuration/*
-#echo -e "${RED}done${NC}"
+echo -n "Cleaning the directory miner_configuration... "
+rm -rf miner_configuration/*
+echo -e "${RED}done${NC}"
 
 echo -n "Asking the mining specification to $MINER_PUBLIC_SERVICE_URI... "
 MINER_SPECIFICATION=$(mokamint-miner info --json --uri $MINER_PUBLIC_SERVICE_URI)
@@ -40,23 +40,6 @@ SIGNATURE_FOR_BLOCKS=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json;
 SIGNATURE_FOR_DEADLINES=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['signatureForDeadlines'])")
 PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58=$(echo $MINER_SPECIFICATION | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyForSigningBlocksBase58'])")
 echo -e "${RED}done${NC}"
-
-if [ -f "miner_configuration/miner.pem" ] && [ "$RECREATE_KEYS" != true ]; then
-  # it already exists: we recycle it in order to avoid the creation of many key pairs
-  echo -e "${BOLD_GREEN}Recycling the previously created miner.pem key pair of the miner service. If this is not what you want, rerun this command with option -e RECREATE_KEYS=true${NC}"
-  mokamint-node keys show miner_configuration/miner.pem --password --json --redirection miner_show.json
-  PUBLIC_KEY_MINER_BASE58=$(cat miner_show.json | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyBase58'])")
-  rm miner_show.json
-else
-  # it does not exist yet: we create it
-  echo -n "Creating the miner.pem key pair of the miner service: "
-  mokamint-node keys create miner_configuration/miner.pem --signature=$SIGNATURE_FOR_DEADLINES --password --json --redirection miner_creation.json
-  PUBLIC_KEY_MINER_BASE58=$(cat miner_creation.json | python3 -c "import sys, json; print(json.load(sys.stdin)['publicKeyBase58'])")
-  rm miner_creation.json
-fi
-
-chmod og-rwx miner_configuration/miner.pem
-echo -e "${RED}done:${NC} the public key is ${BOLD_GREEN}${PUBLIC_KEY_MINER_BASE58}${NC} (${SIGNATURE_FOR_DEADLINES}, base58)"
 
 echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for chain id \"${CHAIN_ID}\", public key for signing blocks ${PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58} (${SIGNATURE_FOR_BLOCKS}, base58), public key for signing deadlines ${PUBLIC_KEY_MINER_BASE58} (${SIGNATURE_FOR_DEADLINES}, base58), hashing algorithm ${HASHING_FOR_DEADLINES}, extra \"${EXTRA}\"..."
 mokamint-plotter create miner_configuration/plot.plot 0 $PLOT_SIZE "$CHAIN_ID" $PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58 $PUBLIC_KEY_MINER_BASE58 --hashing=$HASHING_FOR_DEADLINES --signature-of-node=$SIGNATURE_FOR_BLOCKS --signature-of-plot=$SIGNATURE_FOR_DEADLINES --extra "$EXTRA"

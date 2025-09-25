@@ -383,7 +383,7 @@ public non-sealed class NonGenesisBlockDescriptionImpl extends AbstractBlockDesc
 		builder.append("    * generation signature: " + Hex.toHexString(challenge.getGenerationSignature()) + " (" + challenge.getHashingForGenerations() + ")\n");
 		builder.append("  * nonce: " + deadline.getProgressive() + "\n");
 		builder.append("  * value: " + Hex.toHexString(deadline.getValue()) + " (" + challenge.getHashingForDeadlines() + ")\n");
-		builder.append("  * miner's signature: " + Hex.toHexString(deadline.getSignature()) + " (" + prolog.getSignatureForDeadlines() + ")");
+		builder.append("  * miner's signature: " + Hex.toHexString(deadline.getExtra()) + " (" + prolog.getSignatureForDeadlines() + ")");
 	}
 
 	@Override

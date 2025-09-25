@@ -19,7 +19,7 @@ package io.mokamint.miner.local;
 import io.mokamint.miner.api.BalanceProvider;
 import io.mokamint.miner.local.api.LocalMiner;
 import io.mokamint.miner.local.internal.LocalMinerImpl;
-import io.mokamint.plotter.api.PlotAndKeyPair;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * A provider of miners that work on the local machine.
@@ -34,13 +34,12 @@ public abstract class LocalMiners {
 	 * @param name the name of the specification of the miner
 	 * @param description the description of the specification of the miner
 	 * @param balanceProvider the provider of the balance of the public keys
-	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
-	 *                         deadlines generated from them; this cannot be empty; all plots must be for
-	 *                         the same mining specification (same chain identifier, same signature algorithms,
-	 *                         same public key for the node etc.)
+	 * @param plots the plot files used for mining; this cannot be empty; all plots must be for
+	 *              the same mining specification (same chain identifier, same signature algorithms,
+	 *              same public key for the node etc.)
 	 * @return the new local miner
 	 */
-	public static LocalMiner of(String name, String description, BalanceProvider balanceProvider, PlotAndKeyPair... plotsAndKeyPairs) {
-		return new LocalMinerImpl(name, description, balanceProvider, plotsAndKeyPairs);
+	public static LocalMiner of(String name, String description, BalanceProvider balanceProvider, Plot... plots) {
+		return new LocalMinerImpl(name, description, balanceProvider, plots);
 	}
 }

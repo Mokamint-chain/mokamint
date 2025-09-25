@@ -312,8 +312,8 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
-	public boolean isExtraEmpty() {
-		return extra.length == 0;
+	public boolean hasExtra() {
+		return extra.length > 0;
 	}
 
 	@Override

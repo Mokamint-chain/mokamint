@@ -101,7 +101,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 
 		when(app.checkDeadline(eq(deadline))).thenReturn(true);
 
@@ -607,7 +607,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 		byte[] finalStateId = { 25, 12, 20, 24 };
 		when(app.endBlock(groupId, deadline)).thenReturn(finalStateId);
 
@@ -651,7 +651,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 		var exceptionMessage = "unknown group id";
 		when(app.endBlock(groupId, deadline)).thenThrow(new UnknownGroupIdException(exceptionMessage));
 	
@@ -852,7 +852,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var generationSignature = new byte[sha256.length()];
 		random.nextBytes(generationSignature);
 		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
-		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, challenge);
 		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
 		var bytes1 = new byte[100];
 		random.nextBytes(bytes1);

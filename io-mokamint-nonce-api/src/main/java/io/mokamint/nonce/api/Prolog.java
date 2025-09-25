@@ -64,15 +64,18 @@ public interface Prolog extends Marshallable {
 	String getPublicKeyForSigningBlocksBase58();
 
 	/**
-	 * Yields the signature algorithm that miners must use to sign deadlines
-	 * having this prolog, with the key {@link #getPublicKeyForSigningDeadlines()}.
+	 * Yields the signature algorithm used by the keys that identify the miners.
+	 * The identifier of the miner of a deadline having this prolog
+	 * is the key {@link #getPublicKeyForSigningDeadlines()}. Application
+	 * might decide to actually sign deadlines with this algorithm, using the
+	 * extra field of the deadlines. In general, there is no need to actually sign the deadlines.
 	 * 
 	 * @return the signature algorithm
 	 */
 	SignatureAlgorithm getSignatureForDeadlines();
 
 	/**
-	 * Yields the public key that miners must use to sign deadlines having this prolog.
+	 * Yields the public key that identifies the miner of a deadline having this prolog.
 	 * 
 	 * @return the public key; this is guaranteed to be a valid key for
 	 *         {@link #getSignatureForDeadlines()}
@@ -80,7 +83,7 @@ public interface Prolog extends Marshallable {
 	PublicKey getPublicKeyForSigningDeadlines();
 
 	/**
-	 * Yields the public key that miners must use to sign deadlines having this prolog,
+	 * Yields the public key that identifies the miner of a deadline having this prolog,
 	 * in Base58 format.
 	 * 
 	 * @return the public key; this is guaranteed to be a valid key for
@@ -96,11 +99,11 @@ public interface Prolog extends Marshallable {
 	byte[] getExtra();
 
 	/**
-	 * Determines if the extra field is empty.
+	 * Determines if the extra field is not empty.
 	 * 
-	 * @return true if and only if the extra field is empty
+	 * @return true if and only if the extra field is not empty
 	 */
-	boolean isExtraEmpty();
+	boolean hasExtra();
 
 	@Override
 	String toString();

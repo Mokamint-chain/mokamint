@@ -52,10 +52,8 @@ import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.RestrictedNodeServices;
-import io.mokamint.plotter.AbstractPlotArgs;
-import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.WrongKeyException;
-import picocli.CommandLine.ArgGroup;
+import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -64,38 +62,8 @@ import picocli.CommandLine.Parameters;
 @Command(name = "start", description = "Start a new node.")
 public class Start extends AbstractCommand {
 
-	/**
-	 * The args required for each plot file added to the miner.
-	 */
-	private static class PlotArgs extends AbstractPlotArgs {
-
-		@Parameters(index = "0", description = "the file containing a plot")
-		private Path plot;
-
-		@Parameters(index = "1", description = "the file containing the key pair of the plot")
-		private Path keyPair;
-
-		@Option(names = "--plot-password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
-		private char[] password;
-
-		@Override
-		public Path getPlot() {
-			return plot;
-		}
-
-		@Override
-		public Path getKeyPair() {
-			return keyPair;
-		}
-
-		@Override
-		public char[] getPassword() {
-			return password;
-		}
-	}
-
-	@ArgGroup(exclusive = false, multiplicity = "0..*")
-	private PlotArgs[] plotArgs;
+	@Parameters(index = "0", description = "the plot files to use for mining")
+	private Path[] plots;
 
 	@Option(names = "--application", description = "the name of the application that will run in the node")
 	private String application;
@@ -118,8 +86,8 @@ public class Start extends AbstractCommand {
 	@Option(names = "--init", description = "create a genesis block at start-up and start mining", defaultValue = "false")
 	private boolean init;
 
-	@Option(names = "--uri", description = "the URI of the public API of the node, such as ws://my.machine.com:8030; if missing, the node will try to use its public IP and the public port numbers")
-	private URI uri;
+	@Option(names = "--visible-as", description = "the URI of the public API of the node, such as ws://my.machine.com:8030; if missing, the node will try to use its public IP and the public port numbers")
+	private URI visibleAs;
 
 	@Option(names = "--public-port", description = "network ports where the public API of the node will be published")
 	private int[] publicPorts;
@@ -141,8 +109,8 @@ public class Start extends AbstractCommand {
 			return;
 		}
 
-		if (plotArgs == null)
-			plotArgs = new PlotArgs[0];
+		if (plots == null)
+			plots = new Path[0];
 
 		if (publicPorts == null)
 			publicPorts = new int[0];
@@ -160,7 +128,7 @@ public class Start extends AbstractCommand {
 	private class Run {
 		private final KeyPair keyPair;
 		private final LocalNodeConfig config;
-		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
+		private final List<Plot> plots = new ArrayList<>();
 		private LocalNode node;
 
 		private Run() throws CommandException {
@@ -203,27 +171,22 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) throws CommandException {
-			if (pos < plotArgs.length) {
-				var plotArg = plotArgs[pos];
-				System.out.print("Loading " + plotArg.plot + "... ");
-				try (var plotAndKeyPair = plotArg.load()) {
+			if (Start.this.plots != null && pos < Start.this.plots.length) {
+				var path = Start.this.plots[pos];
+				System.out.print("Loading " + path + "... ");
+				try (var plot = Plots.load(path)) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-					plotsAndKeyPairs.add(plotAndKeyPair);
+					plots.add(plot);
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error while accessing plot file " + plotArg.plot + " and its key pair " + plotArg.keyPair + "! " + e.getMessage() + "|@"));
-					LOGGER.warning("I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair: " + e.getMessage());
+					System.out.println(Ansi.AUTO.string("@|red I/O error while accessing plot file " + path + "! " + e.getMessage() + "|@"));
+					LOGGER.warning("I/O error while acccessing plot file \"" + path + "\" and its key pair: " + e.getMessage());
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses an unknown hashing algorithm!|@"));
-					LOGGER.warning("the plot file \"" + plotArg + "\" uses an unknown hashing algorithm: " + e.getMessage());
-					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
-				}
-				catch (WrongKeyException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses a different key pair than " + plotArg.keyPair + "!|@"));
-					LOGGER.warning("the plot file \"" + plotArg + "\" uses a different key pair than " + plotArg.keyPair + ": " + e.getMessage());
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + path + " uses an unknown hashing algorithm!|@"));
+					LOGGER.warning("the plot file \"" + path + "\" uses an unknown hashing algorithm: " + e.getMessage());
 					loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(pos + 1);
 				}
 			}
@@ -250,11 +213,11 @@ public class Start extends AbstractCommand {
 			try (var app = mkApplication(); var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
-				if (plotsAndKeyPairs.size() >= 1) {
-					if (plotsAndKeyPairs.size() == 1)
+				if (plots.size() >= 1) {
+					if (plots.size() == 1)
 						System.out.print("Starting a local miner with 1 plot... ");
 					else
-						System.out.print("Starting a local miner with " + plotsAndKeyPairs.size() + " plots... ");
+						System.out.print("Starting a local miner with " + plots.size() + " plots... ");
 
 					io.mokamint.application.api.Info appInfo;
 
@@ -265,7 +228,7 @@ public class Start extends AbstractCommand {
 						throw new ApplicationTimeoutException(e);
 					}
 
-					try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+					try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plots.toArray(Plot[]::new))) {
 						if (node.add(miner).isPresent()) {
 							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 							publishPublicAndRestrictedNodeServices(0);
@@ -296,7 +259,7 @@ public class Start extends AbstractCommand {
 		private void publishPublicAndRestrictedNodeServices(int pos) throws CommandException, InterruptedException {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
-				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(uri))) {
+				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(visibleAs))) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 					publishPublicAndRestrictedNodeServices(pos + 1);
 				}

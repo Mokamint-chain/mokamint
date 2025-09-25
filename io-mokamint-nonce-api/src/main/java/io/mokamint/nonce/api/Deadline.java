@@ -18,8 +18,6 @@ package io.mokamint.nonce.api;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.marshalling.api.Marshallable;
@@ -63,13 +61,20 @@ public interface Deadline extends Marshallable {
 	Challenge getChallenge();
 
 	/**
-	 * The signature of the deadline. This has been computed with the
-	 * private key corresponding to {@link Prolog#getPublicKeyForSigningDeadlines()}
-	 * in the prolog.
+	 * Yields the application-specific data of the deadline.
+	 * If these are used by the application, then they are probably signed
+	 * with the mining key of the prolog, to avoid replacing them.
 	 * 
-	 * @return the signature
+	 * @return the application-specific data of the deadline
 	 */
-	byte[] getSignature();
+	byte[] getExtra();
+
+	/**
+	 * Determines if the extra field is not empty.
+	 * 
+	 * @return true if and only if the extra field is not empty
+	 */
+	boolean hasExtra();
 
 	/**
 	 * Yields the milliseconds to wait for this deadline, assuming the given acceleration.
@@ -103,17 +108,6 @@ public interface Deadline extends Marshallable {
 	 * @return true if and only if this deadline is valid
 	 */
 	boolean isValid();
-
-	/**
-	 * Determines if the signature of this deadline is valid, that is,
-	 * it is a correct signature of this deadline with the key in the prolog.
-	 * derived from the corresponding nonce.
-	 * 
-	 * @return true if and only if the signature of this deadline is valid
-	 * @throws InvalidKeyException if the key in the prolog of this deadline is invalid
-	 * @throws SignatureException if the signature in this deadline cannot be verified
-	 */
-	boolean signatureIsValid() throws InvalidKeyException, SignatureException;
 
 	/**
 	 * Yields the power of this deadline. This is the ratio between the worst possible deadline value

@@ -102,7 +102,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, challenge, plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 43L, value, challenge);
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))
@@ -137,7 +137,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 		var nodePublicKey = ed25519.getKeyPair().getPublic();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodePublicKey, ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber + 1, generationSignature, shabal256, hashingForGenerations), plotKeyPair.getPrivate()); // <-- +1
+		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber + 1, generationSignature, shabal256, hashingForGenerations)); // <-- +1
 
 		Consumer<Deadline> onDeadlineReceived = received -> {
 			if (deadline.equals(received))

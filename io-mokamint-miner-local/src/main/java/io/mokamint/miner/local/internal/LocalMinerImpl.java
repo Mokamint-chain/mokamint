@@ -18,9 +18,7 @@ package io.mokamint.miner.local.internal;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.PublicKey;
-import java.security.SignatureException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,7 +38,6 @@ import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.PlotAndKeyPair;
 
 /**
  * The implementation of a local miner.
@@ -64,10 +61,9 @@ public class LocalMinerImpl implements LocalMiner {
 	private final BalanceProvider balanceProvider;
 
 	/**
-	 * The plot files used by the miner, with their associated key pair for signing
-	 * the deadlines derived from them.
+	 * The plot files used by the miner.
 	 */
-	private final PlotAndKeyPair[] plotsAndKeyPairs;
+	private final Plot[] plots;
 
 	/**
 	 * The prefix reported in the log messages.
@@ -87,12 +83,11 @@ public class LocalMinerImpl implements LocalMiner {
 	 * @param name the name of the specification of the miner
 	 * @param description the description of the specification of the miner
 	 * @param balanceProvider the provider of the balance of the public keys
-	 * @param plotsAndKeyPairs the plot files used for mining and their associated key for signing the
-	 *                         deadlines generated from them; this cannot be empty
+	 * @param plotsAndKeyPairs the plot files used for mining; this cannot be empty
 	 */
-	public LocalMinerImpl(String name, String description, BalanceProvider balanceProvider, PlotAndKeyPair... plotsAndKeyPairs) {
+	public LocalMinerImpl(String name, String description, BalanceProvider balanceProvider, Plot... plots) {
 		this.balanceProvider = balanceProvider;
-		this.plotsAndKeyPairs = plotsAndKeyPairs;
+		this.plots = plots;
 		this.miningSpecification = extractMiningSpecification(name, description);
 
 		LOGGER.info("created miner " + uuid);
@@ -107,8 +102,7 @@ public class LocalMinerImpl implements LocalMiner {
 	 * @return the mining specification
 	 */
 	private MiningSpecification extractMiningSpecification(String name, String description) {
-		MiningSpecification[] specifications = Stream.of(plotsAndKeyPairs)
-			.map(PlotAndKeyPair::getPlot)
+		MiningSpecification[] specifications = Stream.of(plots)
 			.map(plot -> extractMiningSpecification(name, description, plot))
 			.distinct()
 			.toArray(MiningSpecification[]::new);
@@ -138,9 +132,9 @@ public class LocalMinerImpl implements LocalMiner {
 
 		LOGGER.info(logPrefix + "received challenge: " + challenge);
 		var hashingForDeadlines = challenge.getHashingForDeadlines();
-		var plots = Stream.of(plotsAndKeyPairs)
-			.filter(plotAndKeyPair -> plotAndKeyPair.getPlot().getHashing().equals(hashingForDeadlines))
-			.toArray(PlotAndKeyPair[]::new);
+		var plots = Stream.of(this.plots)
+			.filter(plot -> plot.getHashing().equals(hashingForDeadlines))
+			.toArray(Plot[]::new);
 
 		if (plots.length == 0)
 			LOGGER.warning(logPrefix + "no matching plot for hashing " + hashingForDeadlines);
@@ -148,7 +142,7 @@ public class LocalMinerImpl implements LocalMiner {
 			try {
 				CheckRunnable.check(InterruptedException.class, () ->
 				Stream.of(plots)
-					.map(UncheckFunction.uncheck(InterruptedException.class, plotAndKeyPair -> getSmallestDeadline(plotAndKeyPair, challenge)))
+					.map(UncheckFunction.uncheck(InterruptedException.class, plot -> getSmallestDeadline(plot, challenge)))
 					.flatMap(Optional::stream)
 					.min(Deadline::compareByValue)
 					.ifPresent(onDeadlineComputed::accept));
@@ -163,16 +157,16 @@ public class LocalMinerImpl implements LocalMiner {
 	 * Yields the smallest deadline from the given plot file. If the plot file
 	 * cannot be read, an empty optional is returned.
 	 * 
-	 * @param plotAndKeyPair the plot file with its associated key pair for signing deadlines
+	 * @param plot the plot file
 	 * @param challenge the challenge for which the deadline is requested
 	 * @return the deadline, if any
 	 * @throws InterruptedException if the thread is interrupted while computing the smallest deadline
 	 */
-	private Optional<Deadline> getSmallestDeadline(PlotAndKeyPair plotAndKeyPair, Challenge challenge) throws InterruptedException {
+	private Optional<Deadline> getSmallestDeadline(Plot plot, Challenge challenge) throws InterruptedException {
 		try {
-			return Optional.of(plotAndKeyPair.getPlot().getSmallestDeadline(challenge, plotAndKeyPair.getKeyPair().getPrivate()));
+			return Optional.of(plot.getSmallestDeadline(challenge));
 		}
-		catch (IOException | InvalidKeyException | SignatureException | IncompatibleChallengeException e) {
+		catch (IOException | IncompatibleChallengeException e) {
 			LOGGER.warning(logPrefix + "cannot use a plot file: " + e.getMessage());
 			return Optional.empty();
 		}
@@ -185,8 +179,8 @@ public class LocalMinerImpl implements LocalMiner {
 
 	@Override
 	public String toString() {
-		long nonces = Stream.of(plotsAndKeyPairs).map(PlotAndKeyPair::getPlot).mapToLong(Plot::getLength).sum();
-		String howManyPlots = plotsAndKeyPairs.length == 1 ? "1 plot" : (plotsAndKeyPairs.length + " plots");
+		long nonces = Stream.of(plots).mapToLong(Plot::getLength).sum();
+		String howManyPlots = plots.length == 1 ? "1 plot" : (plots.length + " plots");
 		String howManyNonces = nonces == 1 ? "1 nonce" : (nonces + " nonces");
 		
 		return "a local miner with " + howManyPlots + " and up to " + howManyNonces;

@@ -35,10 +35,8 @@ import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;
-import io.mokamint.plotter.AbstractPlotArgs;
-import io.mokamint.plotter.api.PlotAndKeyPair;
-import io.mokamint.plotter.api.WrongKeyException;
-import picocli.CommandLine.ArgGroup;
+import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -49,38 +47,8 @@ import picocli.CommandLine.Parameters;
 	showDefaultValues = true)
 public class Start extends AbstractCommand {
 
-	/**
-	 * The args required for each plot file added to the miner.
-	 */
-	private static class PlotArgs extends AbstractPlotArgs {
-
-		@Parameters(index = "0", description = "the file containing a plot")
-		private Path plot;
-
-		@Parameters(index = "1", description = "the file containing the key pair of the plot")
-		private Path keyPair;
-
-		@Option(names = "--plot-password", description = "the password of the key pair of the plot", interactive = true, defaultValue = "")
-		private char[] password;
-
-		@Override
-		public Path getPlot() {
-			return plot;
-		}
-
-		@Override
-		public Path getKeyPair() {
-			return keyPair;
-		}
-
-		@Override
-		public char[] getPassword() {
-			return password;
-		}
-	}
-
-	@ArgGroup(exclusive = false, multiplicity = "1..*")
-	private PlotArgs[] plotArgs;
+	@Parameters(index = "0", description = "the paths of the plots used for mining")
+	private Path[] plots;
 
 	@Option(names = "--uri", description = "the URI of the remote mining endpoint", defaultValue = "ws://localhost:8025")
 	private URI uri;
@@ -93,7 +61,7 @@ public class Start extends AbstractCommand {
 	}
 
 	private class Run {
-		private final List<PlotAndKeyPair> plotsAndKeyPairs = new ArrayList<>();
+		private final List<Plot> plots = new ArrayList<>();
 
 		private Run() throws CommandException {
 			loadPlotsAndStartMiningService(0);
@@ -106,34 +74,31 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsAndStartMiningService(int pos) throws CommandException {
-			if (pos < plotArgs.length) {
-				var plotArg = plotArgs[pos];
-				System.out.print("Loading " + plotArg.plot + "... ");
-				try (var plotAndKeyPair = plotArg.load()) {
+			if (Start.this.plots == null)
+				throw new CommandException("At least one plot file must be specified!");
+			else if (pos < Start.this.plots.length) {
+				var pathOfPlot = Start.this.plots[pos];
+				System.out.print("Loading " + pathOfPlot + "... ");
+				try (var plot = Plots.load(pathOfPlot)) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-					plotsAndKeyPairs.add(plotAndKeyPair);
+					plots.add(plot);
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (IOException e) {
-					System.out.println(Ansi.AUTO.string("@|red I/O error while accessing plot file " + plotArg.plot + " and its key pair " + plotArg.keyPair + "! " + e.getMessage() + "|@"));
-					LOGGER.warning("I/O error while acccessing plot file \"" + plotArg.getPlot() + "\" and its key pair: " + e.getMessage());
+					System.out.println(Ansi.AUTO.string("@|red I/O error while accessing plot file " + pathOfPlot + "! " + e.getMessage() + "|@"));
+					LOGGER.warning("I/O error while acccessing plot file \"" + pathOfPlot + "\" and its key pair: " + e.getMessage());
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 				catch (NoSuchAlgorithmException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses an unknown hashing algorithm!|@"));
-					LOGGER.warning("the plot file \"" + plotArg + "\" uses an unknown hashing algorithm: " + e.getMessage());
-					loadPlotsAndStartMiningService(pos + 1);
-				}
-				catch (WrongKeyException e) {
-					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + plotArg.plot + " uses a different key pair than " + plotArg.keyPair + "!|@"));
-					LOGGER.warning("the plot file \"" + plotArg + "\" uses a different key pair than " + plotArg.keyPair + ": " + e.getMessage());
+					System.out.println(Ansi.AUTO.string("@|red failed since the plot file " + pathOfPlot + " uses an unknown hashing algorithm!|@"));
+					LOGGER.warning("the plot file \"" + pathOfPlot + "\" uses an unknown hashing algorithm: " + e.getMessage());
 					loadPlotsAndStartMiningService(pos + 1);
 				}
 			}
-			else if (plotsAndKeyPairs.isEmpty())
-				throw new CommandException("No plot file could be loaded!");
+			else if (plots.isEmpty())
+				throw new CommandException("No plot file have been loaded!");
 			else {
-				try (var miner = LocalMiners.of("Internal miner", "A miner working for " + uri, (_signature, _publicKey) -> Optional.empty(), plotsAndKeyPairs.toArray(PlotAndKeyPair[]::new))) {
+				try (var miner = LocalMiners.of("Internal miner", "A miner working for " + uri, (_signature, _publicKey) -> Optional.empty(), plots.toArray(Plot[]::new))) {
 					startMiningService(miner);
 				}
 			}

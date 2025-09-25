@@ -17,10 +17,7 @@ limitations under the License.
 package io.mokamint.nonce;
 
 import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.SignatureException;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
@@ -41,20 +38,16 @@ public abstract class Deadlines {
 	private Deadlines() {}
 
 	/**
-	 * Yields a deadline.
+	 * Yields a deadline without application-specific data.
 	 * 
 	 * @param prolog the prolog of the nonce of the deadline
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
 	 * @param challenge the challenge the deadline responds to
-	 * @param privateKey the private key that will be used to sign the deadline; it must match the
-	 *                   public key contained in the prolog
 	 * @return the deadline
-	 * @throws SignatureException if the signature of the deadline failed
-	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new DeadlineImpl(prolog, progressive, value, challenge, privateKey);
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge) {
+		return new DeadlineImpl(prolog, progressive, value, challenge);
 	}
 
 	/**
@@ -64,11 +57,11 @@ public abstract class Deadlines {
 	 * @param progressive the progressive number of the nonce of the deadline
 	 * @param value the value of the deadline
 	 * @param challenge the challenge the deadline responds to
-	 * @param signature the signature of the resulting deadline
+	 * @param extra application-specific data
 	 * @return the deadline
 	 */
-	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] signature) {
-		return new DeadlineImpl(prolog, progressive, value, challenge, signature);
+	public static Deadline of(Prolog prolog, long progressive, byte[] value, Challenge challenge, byte[] extra) {
+		return new DeadlineImpl(prolog, progressive, value, challenge, extra);
 	}
 
 	/**

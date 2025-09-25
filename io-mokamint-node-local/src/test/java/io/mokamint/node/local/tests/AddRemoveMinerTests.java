@@ -51,8 +51,8 @@ import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
+import io.mokamint.plotter.api.Plot;
 
 /**
  * Tests about the addition and removal of a miner from a network of nodes.
@@ -158,7 +158,7 @@ public class AddRemoveMinerTests extends AbstractLoggedTests {
 			 var service1 = PublicNodeServices.open(node1, port1, 10000, config1.getWhisperingMemorySize(), Optional.of(peer1.getURI()));
              var service2 = PublicNodeServices.open(node2, port2, 10000, config2.getWhisperingMemorySize(), Optional.of(peer2.getURI()));
 			 var plot = Plots.create(chain1.resolve("small.plot"), prolog, 1000, 500, config1.getHashingForDeadlines(), __ -> {});
-			 var miner = LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys))) {
+			 var miner = LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), new Plot[] { plot })) {
 
 			// without any miner, eventually node1 will realize that it cannot mine
 			assertTrue(node1CannotMine.tryAcquire(1, 20, TimeUnit.SECONDS));

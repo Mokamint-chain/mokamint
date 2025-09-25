@@ -26,10 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -327,24 +324,20 @@ public class PlotImpl implements Plot {
 	}
 
 	@Override
-	public Deadline getSmallestDeadline(Challenge challenge, PrivateKey privateKey) throws IOException, InterruptedException, InvalidKeyException, SignatureException, IncompatibleChallengeException {
+	public Deadline getSmallestDeadline(Challenge challenge) throws IOException, InterruptedException, IncompatibleChallengeException {
 		if (!challenge.getHashingForDeadlines().equals(hashing))
 			throw new IncompatibleChallengeException("The challenge and the plot file use different hashing algorithms");
 
 		// we run this is its own thread, since it uses nio channels that would be closed
 		// if the executing thread is interrupted, which is not what we want
 		try {
-			return executors.submit(() -> new SmallestDeadlineFinder(challenge, privateKey).deadline).get();
+			return executors.submit(() -> new SmallestDeadlineFinder(challenge).deadline).get();
 		}
 		catch (ExecutionException e) {
 			var cause = e.getCause();
 
 			if (cause instanceof IOException io)
 				throw io;
-			else if (cause instanceof InvalidKeyException ike)
-				throw ike;
-			else if (cause instanceof SignatureException se)
-				throw se;
 			else
 				throw new RuntimeException("Unexpected exception", e);
 		}
@@ -359,14 +352,12 @@ public class PlotImpl implements Plot {
 		private final long groupSize = length * scoopSize;
 		private final int metadataSize = plotSize.getMetadataSize();
 		private final Hasher<byte[]> hasher;
-		private final PrivateKey privateKey;
 
-		private SmallestDeadlineFinder(Challenge challenge, PrivateKey privateKey) throws IOException, InvalidKeyException, SignatureException {
+		private SmallestDeadlineFinder(Challenge challenge) throws IOException {
 			this.challenge = challenge;
 			this.scoopNumber = challenge.getScoopNumber();
 			this.generationSignature = challenge.getGenerationSignature();
 			this.hasher = hashing.getHasher(Function.identity());
-			this.privateKey = privateKey;
 
 			// we first determine the progressive that minimizes the value of the deadline
 			// and then compute the deadline with that progressive: this avoids constructing and signing many deadlines,
@@ -415,8 +406,8 @@ public class PlotImpl implements Plot {
 			}
 		}
 
-		private Deadline mkDeadline(ProgressiveAndValue pav) throws InvalidKeyException, SignatureException {
-			return Deadlines.of(prolog, pav.progressive, pav.value, challenge, privateKey);
+		private Deadline mkDeadline(ProgressiveAndValue pav) {
+			return Deadlines.of(prolog, pav.progressive, pav.value, challenge);
 		}
 
 		/**

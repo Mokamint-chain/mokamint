@@ -25,11 +25,9 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -158,14 +156,14 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					Deadline deadline = plot.getSmallestDeadline(challenge, plotKeys.getPrivate());
+					Deadline deadline = plot.getSmallestDeadline(challenge);
 					deadlineValue = deadline.getValue();
 					onDeadlineComputed.accept(deadline);
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IncompatibleChallengeException | IOException | InvalidKeyException | SignatureException e) {
+				catch (IncompatibleChallengeException | IOException e) {
 					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
@@ -224,19 +222,18 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public void requestDeadline(Challenge description, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					var deadline = plot.getSmallestDeadline(description, plotKeys.getPrivate());
+					var deadline = plot.getSmallestDeadline(description);
 					var illegalDeadline = Deadlines.of(
 							deadline.getProlog(),
 							Math.abs(deadline.getProgressive() + 1), deadline.getValue(),
-							deadline.getChallenge(),
-							plotKeys.getPrivate());
+							deadline.getChallenge());
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IncompatibleChallengeException | IOException | InvalidKeyException | SignatureException e) {
+				catch (IncompatibleChallengeException | IOException e) {
 					throw new RuntimeException("Unexpected exception", e);
 				}
 			}
@@ -349,20 +346,20 @@ public class EventsTests extends AbstractLoggedTests {
 			@Override
 			public void requestDeadline(Challenge challenge, Consumer<Deadline> onDeadlineComputed) {
 				try {
-					var deadline = plot.getSmallestDeadline(challenge, plotKeys.getPrivate());
+					var deadline = plot.getSmallestDeadline(challenge);
 					var prolog = deadline.getProlog();
 					var illegalDeadline = Deadlines.of(
 							Prologs.of(prolog.getChainId() + "!", prolog.getSignatureForBlocks(), prolog.getPublicKeyForSigningBlocks(),
 							prolog.getSignatureForDeadlines(), prolog.getPublicKeyForSigningDeadlines(), prolog.getExtra()),
 							deadline.getProgressive(), deadline.getValue(),
-							deadline.getChallenge(), plotKeys.getPrivate());
+							deadline.getChallenge(), deadline.getExtra());
 
 					onDeadlineComputed.accept(illegalDeadline);
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				catch (IncompatibleChallengeException | IOException | InvalidKeyException | SignatureException e) {
+				catch (IncompatibleChallengeException | IOException e) {
 					throw new RuntimeException("Unexpected exception", e);
 				}
 			}

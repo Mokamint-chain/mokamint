@@ -763,17 +763,6 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (!deadline.isValid())
 			throw new IllegalDeadlineException("Invalid deadline");
 
-		try {
-			if (!deadline.signatureIsValid())
-				throw new IllegalDeadlineException("Invalid deadline's signature");
-		}
-		catch (InvalidKeyException e) {
-			throw new IllegalDeadlineException("The key in the prolog of the deadline is invalid");
-		}
-		catch (SignatureException e) {
-			throw new IllegalDeadlineException("The signature of the deadline could not be verified");
-		}
-
 		if (!prolog.getChainId().equals(config.getChainId()))
 			throw new IllegalDeadlineException("Wrong chain identifier in deadline");
 		else if (!prolog.getPublicKeyForSigningBlocks().equals(keyPair.getPublic()))

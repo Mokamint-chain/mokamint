@@ -97,11 +97,6 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 	private static PrivateKey privateKey;
 
 	/**
-	 * The private key used to sign the deadlines.
-	 */
-	private static PrivateKey plotPrivateKey;
-
-	/**
 	 * The plots used for creating the deadlines.
 	 */
 	private static Plot plot1;
@@ -117,7 +112,6 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		var plotKeyPair = signature.getKeyPair();
 
 		privateKey = nodeKeys.getPrivate();
-		plotPrivateKey = plotKeyPair.getPrivate();
 
 		PROLOG = Prologs.of("octopus", signature, nodeKeys.getPublic(), signature, plotKeyPair.getPublic(), new byte[0]);
 		plot1 = Plots.create(plotDir.resolve("plot1.plot"), PROLOG, 65536L, 50L, hashing, __ -> {});
@@ -227,7 +221,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 			var value = new byte[hashingForDeadlines.length()];
 			for (int pos = 0; pos < value.length; pos++)
 				value[pos] = (byte) pos;
-			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotPrivateKey);
+			var deadline = Deadlines.of(PROLOG, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 			var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, unknownPrevious, config.getTargetBlockCreationTime(), config.getOblivion(), hashingForBlocks, config.getHashingForTransactions()), Stream.empty(), stateHash, privateKey);
 
 			assertTrue(blockchain.add(genesis));
@@ -478,7 +472,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 	private NonGenesisBlock computeNextBlock(Block previous, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
 		var challenge = previous.getDescription().getNextChallenge();
-		var deadline = plot.getSmallestDeadline(challenge, plotPrivateKey);
+		var deadline = plot.getSmallestDeadline(challenge);
 		var description = previous.getNextBlockDescription(deadline);
 		return Blocks.of(description, Stream.empty(), stateHash, privateKey);
 	}

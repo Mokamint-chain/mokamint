@@ -122,7 +122,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 
 		class MyServer extends PublicTestServer {
 
@@ -500,7 +500,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 		byte[] finalStateId = { 24, 12, 20, 24 };
 		var groupId = 42;
 
@@ -534,7 +534,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var ed25519 = SignatureAlgorithms.ed25519();
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 		var groupId = 42;
 		var exceptionMessage = "unknown group id";
 
@@ -751,7 +751,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var generationSignature = new byte[sha256.length()];
 		random.nextBytes(generationSignature);
 		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
-		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, challenge);
 		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
 		var bytes1 = new byte[100];
 		random.nextBytes(bytes1);
@@ -798,7 +798,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var generationSignature = new byte[sha256.length()];
 		random.nextBytes(generationSignature);
 		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
-		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, challenge);
 		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
 		var bytes1 = new byte[100];
 		random.nextBytes(bytes1);
@@ -857,7 +857,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var generationSignature = new byte[sha256.length()];
 		random.nextBytes(generationSignature);
 		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
-		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, challenge);
 		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
 		var bytes1 = new byte[100];
 		random.nextBytes(bytes1);
@@ -904,7 +904,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 		var generationSignature = new byte[sha256.length()];
 		random.nextBytes(generationSignature);
 		var challenge = Challenges.of(47, generationSignature, sha256, sha256);
-		var deadline = Deadlines.of(prolog, 42L, value, challenge, keysDeadline.getPrivate());
+		var deadline = Deadlines.of(prolog, 42L, value, challenge);
 		var description = BlockDescriptions.of(42L, BigInteger.TEN, 1000L, 180L, BigInteger.TWO, deadline, previousHash, 4000, 256, sha256, sha256);
 		var bytes1 = new byte[100];
 		random.nextBytes(bytes1);

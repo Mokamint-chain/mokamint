@@ -72,10 +72,8 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Tests about the inclusion of transactions in blockchain.
@@ -111,7 +109,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		private final Plot plot;
 		private final KeyPair plotKeys;
 
-		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException {
+		private NodeWithLocalMiner(LocalNodeConfig config, boolean init) throws IOException, InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 			super(config, config.getSignatureForBlocks().getKeyPair(), app, init);
 
 			this.plotKeys = config.getSignatureForDeadlines().getKeyPair();
@@ -120,7 +118,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			long start = 65536L;
 			long length = new Random().nextInt(50, 200);
 			this.plot = Plots.create(config.getDir().resolve("plot.plot"), prolog, start, length, config.getHashingForDeadlines(), __ -> {});
-			add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
+			add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), plot));
 		}
 
 		@Override
@@ -154,7 +152,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 		class TestNode extends NodeWithLocalMiner {
 
-			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException {
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, init);
 			}
 
@@ -207,7 +205,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return added;
 				}
 
-				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, WrongKeyException, ClosedApplicationException, ApplicationTimeoutException  {
+				private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException  {
 					super(config, init);
 				}
 
@@ -298,7 +296,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				try {
 					result = new TestNode(mkConfig(dir.resolve("node" + num)), num == 0);
 				}
-				catch (NoSuchAlgorithmException | IOException | WrongKeyException | ClosedNodeException | ClosedApplicationException | ApplicationTimeoutException e) {
+				catch (NoSuchAlgorithmException | IOException | ClosedNodeException | ClosedApplicationException | ApplicationTimeoutException e) {
 					throw new LocalNodeException(e);
 				}
 

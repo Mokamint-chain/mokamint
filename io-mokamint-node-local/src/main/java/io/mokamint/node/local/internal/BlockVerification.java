@@ -154,7 +154,6 @@ public class BlockVerification {
 		hasValidSignature();
 		deadlineMatchesItsExpectedChallenge();
 		deadlineHasValidProlog();
-		deadlineHasValidSignature();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
 		transactionsSizeIsNotTooBig(block);
@@ -166,29 +165,21 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} is valid.
 	 * 
 	 * @throws VerificationException if that condition in violated
+	 * @throws InterruptedException if the current thread gets interrupted
+	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
+	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	private void deadlineIsValid() throws VerificationException {
-		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
+	private void deadlineIsValid() throws VerificationException, ClosedApplicationException, InterruptedException, ApplicationTimeoutException {
+		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
 			if (!deadline.isValid())
 				throw new VerificationException("Invalid deadline");
-	}
 
-	/**
-	 * Checks if the deadline of {@link #block} has a valid signature.
-	 * 
-	 * @throws VerificationException if that condition in violated
-	 */
-	private void deadlineHasValidSignature() throws VerificationException {
-		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
 			try {
-				if (!deadline.signatureIsValid())
-					throw new VerificationException("Invalid deadline's signature");
+				if (!node.getApplication().checkDeadline(deadline))
+					throw new VerificationException("The application rejected the deadline as invalid");
 			}
-			catch (InvalidKeyException e) {
-				throw new VerificationException("Invalid key in the prolog of the deadline");
-			}
-			catch (SignatureException e) {
-				throw new VerificationException("The signature of the deadline could not be verified");
+			catch (TimeoutException e) {
+				throw new ApplicationTimeoutException(e);
 			}
 		}
 	}
@@ -217,11 +208,8 @@ public class BlockVerification {
 	 * Checks if the deadline of {@link #block} has a prolog valid for the {@link #node}.
 	 * 
 	 * @throws VerificationException if that condition in violated
-	 * @throws InterruptedException if the current thread gets interrupted
-	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
-	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	private void deadlineHasValidProlog() throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException {
+	private void deadlineHasValidProlog() throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE) {
 			var prolog = deadline.getProlog();
 
@@ -233,14 +221,6 @@ public class BlockVerification {
 
 			if (!prolog.getSignatureForDeadlines().equals(config.getSignatureForDeadlines()))
 				throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
-
-			try {
-				if (!node.getApplication().checkDeadline(deadline))
-					throw new VerificationException("The application rejected the deadline");
-			}
-			catch (TimeoutException e) {
-				throw new ApplicationTimeoutException(e);
-			}
 		}
 	}
 

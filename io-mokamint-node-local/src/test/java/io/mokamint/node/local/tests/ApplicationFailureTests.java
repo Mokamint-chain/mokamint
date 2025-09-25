@@ -55,10 +55,8 @@ import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.PlotAndKeyPairs;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.api.WrongKeyException;
 
 /**
  * Tests about the possible failures of the application of a node.
@@ -113,7 +111,7 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 	@Test
 	@DisplayName("if the application fails temporarily, the node resumes mining")
-	@Timeout(20)
+	@Timeout(25)
 	public void ifApplicationFailsTemporarilyThenNodeRestartsMining(@TempDir Path chain) throws Exception {
 		var port = 8032;
 		var uri = URI.create("ws://localhost:" + port);
@@ -121,9 +119,9 @@ public class ApplicationFailureTests extends AbstractLoggedTests {
 
 		class MyLocalNode extends AbstractLocalNode {
 
-			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, WrongKeyException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Application app) throws InterruptedException, ClosedNodeException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKeys, app, true);
-				add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), PlotAndKeyPairs.of(plot, plotKeys)));
+				add(LocalMiners.of("Test", "Testing mining endpoint", (_signature, _publicKey) -> Optional.empty(), plot));
 			}
 
 			@Override

@@ -34,14 +34,14 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 	private final long progressive;
 	private final String value;
 	private final Challenges.Json challenge;
-	private final String signature;
+	private final String extra;
 
 	protected DeadlineJson(Deadline deadline) {
 		this.prolog = new Prologs.Json(deadline.getProlog());
 		this.progressive = deadline.getProgressive();
 		this.value = Hex.toHexString(deadline.getValue());
 		this.challenge = new Challenges.Json(deadline.getChallenge());
-		this.signature = Hex.toHexString(deadline.getSignature());
+		this.extra = Hex.toHexString(deadline.getExtra());
 	}
 
 	public Prologs.Json getProlog() {
@@ -60,8 +60,8 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		return challenge;
 	}
 
-	public String getSignature() {
-		return signature;
+	public String getExtra() {
+		return extra;
 	}
 
 	@Override
