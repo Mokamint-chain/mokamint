@@ -95,6 +95,13 @@ public interface Prolog extends Marshallable {
 	 */
 	byte[] getExtra();
 
+	/**
+	 * Determines if the extra field is empty.
+	 * 
+	 * @return true if and only if the extra field is empty
+	 */
+	boolean isExtraEmpty();
+
 	@Override
 	String toString();
 

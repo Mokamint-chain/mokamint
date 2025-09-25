@@ -36,8 +36,8 @@ import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
-import io.mokamint.application.messages.CheckPrologExtraMessages;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckDeadlineMessages;
+import io.mokamint.application.messages.CheckDeadlineResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
@@ -70,21 +70,33 @@ import io.mokamint.nonce.Prologs;
 public class MessagesTests extends AbstractLoggedTests {
 
 	@Test
-	@DisplayName("checkPrologExtra messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForCheckPrologExtra() throws Exception {
-		var checkPrologExtraMessage1 = CheckPrologExtraMessages.of(new byte[] { 13, 1, 19, 73 }, "id");
-		String encoded = new CheckPrologExtraMessages.Encoder().encode(checkPrologExtraMessage1);
-		var checkPrologExtraMessage2 = new CheckPrologExtraMessages.Decoder().decode(encoded);
-		assertEquals(checkPrologExtraMessage1, checkPrologExtraMessage2);
+	@DisplayName("checkDeadline messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForCheckDeadline() throws Exception {
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
+		var value = new byte[hashingForDeadlines.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+		var checkDeadlineMessage1 = CheckDeadlineMessages.of(deadline, "id");
+		String encoded = new CheckDeadlineMessages.Encoder().encode(checkDeadlineMessage1);
+		var checkDeadlineMessage2 = new CheckDeadlineMessages.Decoder().decode(encoded);
+		assertEquals(checkDeadlineMessage1, checkDeadlineMessage2);
 	}
 
 	@Test
-	@DisplayName("checkPrologExtraResult messages are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForCheckPrologExtraResult() throws Exception {
-		var checkPrologExtraResultMessage1 = CheckPrologExtraResultMessages.of(true, "id");
-		String encoded = new CheckPrologExtraResultMessages.Encoder().encode(checkPrologExtraResultMessage1);
-		var checkPrologExtraResultMessage2 = new CheckPrologExtraResultMessages.Decoder().decode(encoded);
-		assertEquals(checkPrologExtraResultMessage1, checkPrologExtraResultMessage2);
+	@DisplayName("checkDeadlineResult messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForCheckDeadlineResult() throws Exception {
+		var checkDeadlineResultMessage1 = CheckDeadlineResultMessages.of(true, "id");
+		String encoded = new CheckDeadlineResultMessages.Encoder().encode(checkDeadlineResultMessage1);
+		var checkDeadlineResultMessage2 = new CheckDeadlineResultMessages.Decoder().decode(encoded);
+		assertEquals(checkDeadlineResultMessage1, checkDeadlineResultMessage2);
 	}
 
 	@Test

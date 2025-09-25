@@ -70,7 +70,7 @@ public class PeersConnectDisconnectTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
-		when(app.checkPrologExtra(any())).thenReturn(true);
+		when(app.checkDeadline(any())).thenReturn(true);
 		var stateHash = new byte[] { 1, 2, 4 };
 		when(app.endBlock(anyInt(), any())).thenReturn(stateHash);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();

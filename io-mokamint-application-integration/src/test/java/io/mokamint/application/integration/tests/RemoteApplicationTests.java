@@ -49,7 +49,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckDeadlineResultMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
 import io.mokamint.application.messages.DeliverTransactionResultMessages;
@@ -63,7 +63,7 @@ import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.api.CheckDeadlineMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
@@ -108,24 +108,35 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("checkPrologExtra() works")
-	public void checkPrologExtraWorks() throws Exception {
+	@DisplayName("checkDeadline() works")
+	public void checkDeadlineWorks() throws Exception {
 		boolean result1 = true;
-		byte[] extra = { 13, 1, 19, 73 };
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
+		var value = new byte[hashingForDeadlines.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
 
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
-				if (Arrays.equals(extra, message.getExtra()))
-					sendObjectAsync(session, CheckPrologExtraResultMessages.of(result1, message.getId()), RuntimeException::new);
+			protected void onCheckDeadline(CheckDeadlineMessage message, Session session) {
+				if (deadline.equals(message.getDeadline()))
+					sendObjectAsync(session, CheckDeadlineResultMessages.of(result1, message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
-			var result2 = remote.checkPrologExtra(extra);
+			var result2 = remote.checkDeadline(deadline);
 			assertSame(result1, result2);
 		}
 	}

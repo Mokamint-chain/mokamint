@@ -19,6 +19,7 @@ package io.mokamint.application.service.api;
 import io.hotmoka.websockets.server.api.WebSocketServer;
 import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Transaction;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * A websocket server for the public API of a Mokamint application.
@@ -36,9 +37,9 @@ public interface ApplicationService extends WebSocketServer {
 	String GET_INFO_ENDPOINT = "/get_info";
 
 	/**
-	 * The network endpoint path where {@link Application#checkPrologExtra(byte[])} is published.
+	 * The network endpoint path where {@link Application#checkDeadline(Deadline)} is published.
 	 */
-	String CHECK_PROLOG_EXTRA_ENDPOINT = "/check_prolog_extra";
+	String CHECK_DEADLINE_ENDPOINT = "/check_deadline";
 
 	/**
 	 * The network endpoint path where {@link Application#checkTransaction(Transaction)} is published.

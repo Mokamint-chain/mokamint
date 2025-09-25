@@ -16,31 +16,31 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import java.util.Arrays;
+import java.security.NoSuchAlgorithmException;
 
-import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
-import io.mokamint.application.messages.internal.json.CheckPrologExtraMessageJson;
+import io.mokamint.application.messages.api.CheckDeadlineMessage;
+import io.mokamint.application.messages.internal.json.CheckDeadlineMessageJson;
+import io.mokamint.nonce.api.Deadline;
 
 /**
- * Implementation of the network message corresponding to {@link Application#checkPrologExtra(byte[])}.
+ * Implementation of the network message corresponding to {@link Application#checkDeadline(byte[])}.
  */
-public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements CheckPrologExtraMessage {
-	private final byte[] extra;
+public class CheckDeadlineMessageImpl extends AbstractRpcMessage implements CheckDeadlineMessage {
+	private final Deadline deadline;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param extra the extra, application-specific bytes of the prolog
+	 * @param deadline the deadline to check
 	 * @param id the identifier of the message
 	 */
-	public CheckPrologExtraMessageImpl(byte[] extra, String id) {
-		this(Objects.requireNonNull(extra, "extra cannot be null", IllegalArgumentException::new).clone(), id, IllegalArgumentException::new);
+	public CheckDeadlineMessageImpl(Deadline deadline, String id) {
+		this(deadline, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -48,10 +48,11 @@ public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements C
 	 * 
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
+	 * @throws NoSuchAlgorithmException if the JSON refers to a missing cryptographic algorithm
 	 */
-	public CheckPrologExtraMessageImpl(CheckPrologExtraMessageJson json) throws InconsistentJsonException {
+	public CheckDeadlineMessageImpl(CheckDeadlineMessageJson json) throws InconsistentJsonException, NoSuchAlgorithmException {
 		this(
-			Hex.fromHexString(Objects.requireNonNull(json.getExtra(), "extra cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
+			Objects.requireNonNull(json.getDeadline(), "deadline cannot be null", InconsistentJsonException::new).unmap(),
 			json.getId(),
 			InconsistentJsonException::new
 		);
@@ -61,29 +62,29 @@ public class CheckPrologExtraMessageImpl extends AbstractRpcMessage implements C
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param <E> the exception to throw if some argument is illegal
-	 * @param extra the extra, application-specific bytes of the prolog
+	 * @param deadline the deadline to check
 	 * @param id the identifier of the message
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> CheckPrologExtraMessageImpl(byte[] extra, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> CheckDeadlineMessageImpl(Deadline deadline, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 
-		this.extra = Objects.requireNonNull(extra, "extra cannot be null", onIllegalArgs).clone();
+		this.deadline = Objects.requireNonNull(deadline, "deadline cannot be null", onIllegalArgs);
 	}
 
 	@Override
-	public byte[] getExtra() {
-		return extra.clone();
+	public Deadline getDeadline() {
+		return deadline;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckPrologExtraMessage cpem && super.equals(other) && Arrays.equals(extra, cpem.getExtra());
+		return other instanceof CheckDeadlineMessage cdm && super.equals(other) && deadline.equals(cdm.getDeadline());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraMessage.class.getName();
+		return CheckDeadlineMessage.class.getName();
 	}
 }

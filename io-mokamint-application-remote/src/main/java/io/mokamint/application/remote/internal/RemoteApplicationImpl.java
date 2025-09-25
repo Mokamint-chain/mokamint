@@ -18,7 +18,7 @@ package io.mokamint.application.remote.internal;
 
 import static io.mokamint.application.service.api.ApplicationService.ABORT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
-import static io.mokamint.application.service.api.ApplicationService.CHECK_PROLOG_EXTRA_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.CHECK_DEADLINE_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
@@ -55,8 +55,8 @@ import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
-import io.mokamint.application.messages.CheckPrologExtraMessages;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckDeadlineMessages;
+import io.mokamint.application.messages.CheckDeadlineResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
@@ -83,8 +83,8 @@ import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.api.CheckDeadlineMessage;
+import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
@@ -145,7 +145,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 
 		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(CHECK_PROLOG_EXTRA_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
+		addSession(CHECK_DEADLINE_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
 		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
 		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
@@ -168,7 +168,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	@Override
 	protected void notifyResult(RpcMessage message) {
 		switch (message) {
-		case CheckPrologExtraResultMessage cperm -> onCheckPrologExtraResult(cperm);
+		case CheckDeadlineResultMessage cperm -> onCheckDeadlineResult(cperm);
 		case CheckTransactionResultMessage ctrm -> onCheckTransactionResult(ctrm);
 		case GetBalanceResultMessage gbrm -> onGetBalanceResult(gbrm);
 		case GetInfoResultMessage girm -> onGetInfoResult(girm);
@@ -243,35 +243,35 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException, TimeoutException, InterruptedException {
+	public boolean checkDeadline(Deadline deadline) throws ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
-		sendCheckPrologExtra(extra, id);
-		return waitForResult(id, CheckPrologExtraResultMessage.class);
+		sendCheckDeadline(deadline, id);
+		return waitForResult(id, CheckDeadlineResultMessage.class);
 	}
 
 	/**
-	 * Sends a {@link CheckPrologExtraMessage} to the application service.
+	 * Sends a {@link CheckDeadlineMessage} to the application service.
 	 * 
-	 * @param extra the extra bytes in the message
+	 * @param deadline the deadline in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendCheckPrologExtra(byte[] extra, String id) {
-		sendObjectAsync(CHECK_PROLOG_EXTRA_ENDPOINT, CheckPrologExtraMessages.of(extra, id));
+	protected void sendCheckDeadline(Deadline deadline, String id) {
+		sendObjectAsync(CHECK_DEADLINE_ENDPOINT, CheckDeadlineMessages.of(deadline, id));
 	}
 
 	/**
-	 * Hook called when a {@link CheckPrologExtraResultMessage} has been received.
+	 * Hook called when a {@link CheckDeadlineResultMessage} has been received.
 	 * 
 	 * @param message the message
 	 */
-	protected void onCheckPrologExtraResult(CheckPrologExtraResultMessage message) {}
+	protected void onCheckDeadlineResult(CheckDeadlineResultMessage message) {}
 
 	private class CheckPrologExtraEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException {
-			return deployAt(uri, CheckPrologExtraResultMessages.Decoder.class, CheckPrologExtraMessages.Encoder.class);
+			return deployAt(uri, CheckDeadlineResultMessages.Decoder.class, CheckDeadlineMessages.Encoder.class);
 		}
 	}
 

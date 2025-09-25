@@ -51,7 +51,7 @@ import io.mokamint.application.api.UnknownGroupIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
+import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
 import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
@@ -86,12 +86,24 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a checkPrologExtra() request reaches the service, it sends back the result of the check")
-	public void serviceCheckPrologExtraWorks() throws Exception {
+	@DisplayName("if a checkDeadline() request reaches the service, it sends back the result of the check")
+	public void serviceCheckDeadlineWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		byte[] extra = { 13, 1, 19, 73 };
-		when(app.checkPrologExtra(eq(extra))).thenReturn(true);
+		var hashingForDeadlines = HashingAlgorithms.shabal256();
+		var hashingForGenerations = HashingAlgorithms.sha256();
+		var generationSignature = new byte[hashingForGenerations.length()];
+		for (int pos = 0; pos < generationSignature.length; pos++)
+			generationSignature[pos] = (byte) (42 + pos);
+		var value = new byte[hashingForDeadlines.length()];
+		for (int pos = 0; pos < value.length; pos++)
+			value[pos] = (byte) pos;
+		var ed25519 = SignatureAlgorithms.ed25519();
+		var plotKeyPair = ed25519.getKeyPair();
+		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
+		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations), plotKeyPair.getPrivate());
+
+		when(app.checkDeadline(eq(deadline))).thenReturn(true);
 
 		class MyTestClient extends RemoteApplicationImpl {
 
@@ -100,18 +112,18 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onCheckPrologExtraResult(CheckPrologExtraResultMessage message) {
+			protected void onCheckDeadlineResult(CheckDeadlineResultMessage message) {
 				if (ID.equals(message.getId()) && message.get())
 					semaphore.release();
 			}
 
-			private void sendCheckPrologExtra() {
-				sendCheckPrologExtra(extra, ID);
+			private void sendCheckDeadline() {
+				sendCheckDeadline(deadline, ID);
 			}
 		}
 
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendCheckPrologExtra();
+			client.sendCheckDeadline();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

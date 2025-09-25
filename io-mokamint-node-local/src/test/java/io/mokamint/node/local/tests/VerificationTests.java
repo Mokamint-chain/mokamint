@@ -130,7 +130,7 @@ public class VerificationTests extends AbstractLoggedTests {
 		var application = mock(Application.class);
 		var info = Infos.of("name", "description");
 
-		when(application.checkPrologExtra(any())).thenReturn(true);
+		when(application.checkDeadline(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
 		when(application.getInitialStateId()).thenReturn(stateId);
 		doNothing().when(application).deliverTransaction(anyInt(), any());
@@ -671,10 +671,10 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an added non-genesis block has a wrong deadline's prolog extra, verification rejects it")
-	public void deadlineInvalidPrologExtraGetsRejected(@TempDir Path dir) throws Exception {
+	@DisplayName("if an added non-genesis block has a wrong deadline, according to the application, then verification rejects it")
+	public void deadlineInvalidForTheApplicationGetsRejected(@TempDir Path dir) throws Exception {
 		var application = mockApplication();
-		when(application.checkPrologExtra(any())).thenReturn(false);
+		when(application.checkDeadline(any())).thenReturn(false);
 
 		try (var node = new TestNode(dir, application)) {
 			var blockchain = node.getBlockchain();
@@ -690,7 +690,7 @@ public class VerificationTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(genesis));
 			VerificationException e = assertThrows(VerificationException.class, () -> blockchain.add(expected));
-			assertTrue(e.getMessage().startsWith("Invalid deadline prolog's extra"));
+			assertTrue(e.getMessage().startsWith("The application rejected the deadline"));
 			assertBlockchainIsJustGenesis(blockchain, genesis);
 		}
 	}

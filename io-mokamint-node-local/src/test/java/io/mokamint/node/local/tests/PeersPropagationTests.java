@@ -71,7 +71,7 @@ public class PeersPropagationTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
-		when(app.checkPrologExtra(any())).thenReturn(true);
+		when(app.checkDeadline(any())).thenReturn(true);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 		var info = Infos.of("name", "description");
 		when(app.getInfo()).thenReturn(info);

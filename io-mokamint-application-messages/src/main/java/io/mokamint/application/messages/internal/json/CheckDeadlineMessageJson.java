@@ -16,35 +16,37 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.json;
 
-import io.hotmoka.crypto.Hex;
+import java.security.NoSuchAlgorithmException;
+
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
-import io.mokamint.application.messages.internal.CheckPrologExtraMessageImpl;
+import io.mokamint.application.messages.api.CheckDeadlineMessage;
+import io.mokamint.application.messages.internal.CheckDeadlineMessageImpl;
+import io.mokamint.nonce.Deadlines;
 
 /**
- * The JSON representation of an {@link CheckPrologExtraMessage}.
+ * The JSON representation of an {@link CheckDeadlineMessage}.
  */
-public abstract class CheckPrologExtraMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraMessage> {
-	private final String extra;
+public abstract class CheckDeadlineMessageJson extends AbstractRpcMessageJsonRepresentation<CheckDeadlineMessage> {
+	private final Deadlines.Json deadline;
 
-	protected CheckPrologExtraMessageJson(CheckPrologExtraMessage message) {
+	protected CheckDeadlineMessageJson(CheckDeadlineMessage message) {
 		super(message);
 
-		this.extra = Hex.toHexString(message.getExtra());
+		this.deadline = new Deadlines.Json(message.getDeadline());
 	}
 
-	public String getExtra() {
-		return extra;
+	public Deadlines.Json getDeadline() {
+		return deadline;
 	}
 
 	@Override
-	public CheckPrologExtraMessage unmap() throws InconsistentJsonException {
-		return new CheckPrologExtraMessageImpl(this);
+	public CheckDeadlineMessage unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
+		return new CheckDeadlineMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraMessage.class.getName();
+		return CheckDeadlineMessage.class.getName();
 	}
 }

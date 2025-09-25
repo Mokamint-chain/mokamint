@@ -20,13 +20,13 @@ import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
-import io.mokamint.application.messages.internal.json.CheckPrologExtraResultMessageJson;
+import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
+import io.mokamint.application.messages.internal.json.CheckDeadlineResultMessageJson;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link Application#checkPrologExtra(byte[])} method.
+ * Implementation of the network message corresponding to the result of the {@link Application#checkDeadline(byte[])} method.
  */
-public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implements CheckPrologExtraResultMessage {
+public class CheckDeadlineResultMessageImpl extends AbstractRpcMessage implements CheckDeadlineResultMessage {
 
 	/**
 	 * The result of the call.
@@ -39,7 +39,7 @@ public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implem
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public CheckPrologExtraResultMessageImpl(boolean result, String id) {
+	public CheckDeadlineResultMessageImpl(boolean result, String id) {
 		this(result, id, IllegalArgumentException::new);
 	}
 
@@ -49,7 +49,7 @@ public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implem
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public CheckPrologExtraResultMessageImpl(CheckPrologExtraResultMessageJson json) throws InconsistentJsonException {
+	public CheckDeadlineResultMessageImpl(CheckDeadlineResultMessageJson json) throws InconsistentJsonException {
 		this(json.getResult(), json.getId(), InconsistentJsonException::new);
 	}
 
@@ -62,7 +62,7 @@ public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implem
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> CheckPrologExtraResultMessageImpl(boolean result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> CheckDeadlineResultMessageImpl(boolean result, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 
 		this.result = result;
@@ -70,12 +70,12 @@ public class CheckPrologExtraResultMessageImpl extends AbstractRpcMessage implem
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckPrologExtraResultMessage cperm && super.equals(other) && result == cperm.get().booleanValue();
+		return other instanceof CheckDeadlineResultMessage cperm && super.equals(other) && result == cperm.get().booleanValue();
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return CheckDeadlineResultMessage.class.getName();
 	}
 
 	@Override

@@ -235,8 +235,8 @@ public class BlockVerification {
 				throw new VerificationException("Deadline prolog's signature algorithm for deadlines mismatch");
 
 			try {
-				if (!node.getApplication().checkPrologExtra(prolog.getExtra()))
-					throw new VerificationException("Invalid deadline prolog's extra");
+				if (!node.getApplication().checkDeadline(deadline))
+					throw new VerificationException("The application rejected the deadline");
 			}
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);

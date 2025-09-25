@@ -784,8 +784,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			throw new IllegalDeadlineException("Wrong deadlines' signature algorithm in deadline");
 		else {
 			try {
-				if (!app.checkPrologExtra(prolog.getExtra()))
-					throw new IllegalDeadlineException("Invalid extra data in deadline");
+				if (!app.checkDeadline(deadline))
+					throw new IllegalDeadlineException("The application rejected the deadline");
 			}
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);

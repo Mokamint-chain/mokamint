@@ -18,16 +18,16 @@ package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckPrologExtraResultMessage;
-import io.mokamint.application.messages.internal.CheckPrologExtraResultMessageImpl;
+import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
+import io.mokamint.application.messages.internal.CheckDeadlineResultMessageImpl;
 
 /**
- * The JSON representation of a {@link CheckPrologExtraResultMessage}.
+ * The JSON representation of a {@link CheckDeadlineResultMessage}.
  */
-public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckPrologExtraResultMessage> {
+public abstract class CheckDeadlineResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckDeadlineResultMessage> {
 	private final boolean result;
 
-	protected CheckPrologExtraResultMessageJson(CheckPrologExtraResultMessage message) {
+	protected CheckDeadlineResultMessageJson(CheckDeadlineResultMessage message) {
 		super(message);
 
 		this.result = message.get();
@@ -38,12 +38,12 @@ public abstract class CheckPrologExtraResultMessageJson extends AbstractRpcMessa
 	}
 
 	@Override
-	public CheckPrologExtraResultMessage unmap() throws InconsistentJsonException {
-		return new CheckPrologExtraResultMessageImpl(this);
+	public CheckDeadlineResultMessage unmap() throws InconsistentJsonException {
+		return new CheckDeadlineResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckPrologExtraResultMessage.class.getName();
+		return CheckDeadlineResultMessage.class.getName();
 	}
 }

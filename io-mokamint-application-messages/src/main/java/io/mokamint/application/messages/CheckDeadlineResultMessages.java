@@ -18,32 +18,32 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
-import io.mokamint.application.messages.internal.CheckPrologExtraMessageImpl;
-import io.mokamint.application.messages.internal.json.CheckPrologExtraMessageJson;
+import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
+import io.mokamint.application.messages.internal.CheckDeadlineResultMessageImpl;
+import io.mokamint.application.messages.internal.json.CheckDeadlineResultMessageJson;
 
 /**
- * A provider of {@link CheckPrologExtraMessage}.
+ * A provider of {@link CheckDeadlineResultMessage}.
  */
-public abstract class CheckPrologExtraMessages {
+public abstract class CheckDeadlineResultMessages {
 
-	private CheckPrologExtraMessages() {}
+	private CheckDeadlineResultMessages() {}
 
 	/**
-	 * Yields a {@link CheckPrologExtraMessage}.
+	 * Yields a {@link CheckDeadlineResultMessage}.
 	 * 
-	 * @param extra the extra bytes to check
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static CheckPrologExtraMessage of(byte[] extra, String id) {
-		return new CheckPrologExtraMessageImpl(extra, id);
+	public static CheckDeadlineResultMessage of(boolean result, String id) {
+		return new CheckDeadlineResultMessageImpl(result, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<CheckPrologExtraMessage, Json> {
+	public static class Encoder extends MappedEncoder<CheckDeadlineResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +56,7 @@ public abstract class CheckPrologExtraMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<CheckPrologExtraMessage, Json> {
+	public static class Decoder extends MappedDecoder<CheckDeadlineResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +69,14 @@ public abstract class CheckPrologExtraMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends CheckPrologExtraMessageJson {
+    public static class Json extends CheckDeadlineResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(CheckPrologExtraMessage message) {
+    	public Json(CheckDeadlineResultMessage message) {
     		super(message);
     	}
     }

@@ -19,11 +19,12 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.application.api.Application;
+import io.mokamint.nonce.api.Deadline;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#checkPrologExtra(byte[])} method.
+ * {@link Application#checkDeadline(Deadline)} method.
  */
 @Immutable
-public interface CheckPrologExtraResultMessage extends ResultMessage<Boolean> {
+public interface CheckDeadlineResultMessage extends ResultMessage<Boolean> {
 }

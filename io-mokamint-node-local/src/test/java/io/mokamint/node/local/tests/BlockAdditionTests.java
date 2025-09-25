@@ -125,7 +125,7 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 		plot3 = Plots.create(plotDir.resolve("plot3.plot"), PROLOG, 15000L, 256L, hashing, __ -> {});
 
 		application = mock(Application.class);
-		when(application.checkPrologExtra(any())).thenReturn(true);
+		when(application.checkDeadline(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateId()).thenReturn(stateHash);

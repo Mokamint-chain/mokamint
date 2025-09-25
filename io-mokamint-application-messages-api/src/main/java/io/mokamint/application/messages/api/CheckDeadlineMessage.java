@@ -19,17 +19,18 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
+import io.mokamint.nonce.api.Deadline;
 
 /**
- * The network message corresponding to the {@link Application#checkPrologExtra(byte[])} method.
+ * The network message corresponding to the {@link Application#checkDeadline(Deadline)} method.
  */
 @Immutable
-public interface CheckPrologExtraMessage extends RpcMessage {
+public interface CheckDeadlineMessage extends RpcMessage {
 
 	/**
-	 * Yields the extra, application-specific bytes of the prolog.
+	 * Yields the deadline to check.
 	 * 
-	 * @return the extra bytes
+	 * @return the deadline to check
 	 */
-	byte[] getExtra();
+	Deadline getDeadline();
 }

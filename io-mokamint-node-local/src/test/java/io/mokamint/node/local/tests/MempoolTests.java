@@ -122,7 +122,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		plot2 = Plots.create(plotDir.resolve("plot2.plot"), PROLOG, 10000L, 100L, hashing, __ -> {});
 
 		application = mock(Application.class);
-		when(application.checkPrologExtra(any())).thenReturn(true);
+		when(application.checkDeadline(any())).thenReturn(true);
 		doNothing().when(application).checkTransaction(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateId()).thenReturn(stateHash);

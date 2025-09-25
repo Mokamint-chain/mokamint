@@ -59,7 +59,7 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException {
+	public boolean checkDeadline(Deadline deadline) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
 			return true;
 		}

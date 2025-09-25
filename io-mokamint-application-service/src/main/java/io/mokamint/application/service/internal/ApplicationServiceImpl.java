@@ -35,8 +35,8 @@ import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
-import io.mokamint.application.messages.CheckPrologExtraMessages;
-import io.mokamint.application.messages.CheckPrologExtraResultMessages;
+import io.mokamint.application.messages.CheckDeadlineMessages;
+import io.mokamint.application.messages.CheckDeadlineResultMessages;
 import io.mokamint.application.messages.CheckTransactionMessages;
 import io.mokamint.application.messages.CheckTransactionResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
@@ -61,7 +61,7 @@ import io.mokamint.application.messages.PublishMessages;
 import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
-import io.mokamint.application.messages.api.CheckPrologExtraMessage;
+import io.mokamint.application.messages.api.CheckDeadlineMessage;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
@@ -116,7 +116,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
 		startContainer("", port,
-				CheckPrologExtraEndpoint.config(this), CheckTransactionEndpoint.config(this),
+				CheckDeadlineEndpoint.config(this), CheckTransactionEndpoint.config(this),
 				GetInfoEndpoint.config(this), GetBalanceEndpoint.config(this),
 				GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
@@ -144,7 +144,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 
 		try {
 			switch (message) {
-			case CheckPrologExtraMessage cpem -> sendObjectAsync(session, CheckPrologExtraResultMessages.of(application.checkPrologExtra(cpem.getExtra()), id));
+			case CheckDeadlineMessage cdm -> sendObjectAsync(session, CheckDeadlineResultMessages.of(application.checkDeadline(cdm.getDeadline()), id));
 			case CheckTransactionMessage ctm -> {
 				application.checkTransaction(ctm.getTransaction());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(id));
@@ -223,21 +223,21 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		}
 	}
 
-	protected void onCheckPrologExtra(CheckPrologExtraMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + CHECK_PROLOG_EXTRA_ENDPOINT + " request");
+	protected void onCheckDeadline(CheckDeadlineMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CHECK_DEADLINE_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
-	public static class CheckPrologExtraEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+	public static class CheckDeadlineEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (CheckPrologExtraMessage message) -> server.onCheckPrologExtra(message, session));
+			addMessageHandler(session, (CheckDeadlineMessage message) -> server.onCheckDeadline(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, CheckPrologExtraEndpoint.class, CHECK_PROLOG_EXTRA_ENDPOINT, CheckPrologExtraMessages.Decoder.class, CheckPrologExtraResultMessages.Encoder.class);
+			return simpleConfig(server, CheckDeadlineEndpoint.class, CHECK_DEADLINE_ENDPOINT, CheckDeadlineMessages.Decoder.class, CheckDeadlineResultMessages.Encoder.class);
 		}
 	}
 

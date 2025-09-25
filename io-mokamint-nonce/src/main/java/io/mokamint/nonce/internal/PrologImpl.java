@@ -312,6 +312,11 @@ public final class PrologImpl extends AbstractMarshallable implements Prolog {
 	}
 
 	@Override
+	public boolean isExtraEmpty() {
+		return extra.length == 0;
+	}
+
+	@Override
 	public String toString() {
 		// we avoid printing values whose length is potentially unbound, to avoid log injection problems
 		String chainIdTrimmed = chainId;

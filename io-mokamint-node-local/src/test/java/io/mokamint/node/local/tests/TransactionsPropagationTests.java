@@ -67,7 +67,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	@BeforeAll
 	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
-		when(app.checkPrologExtra(any())).thenReturn(true);
+		when(app.checkDeadline(any())).thenReturn(true);
 		doNothing().when(app).checkTransaction(any());
 		when(app.getPriority(any())).thenReturn(42L);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();

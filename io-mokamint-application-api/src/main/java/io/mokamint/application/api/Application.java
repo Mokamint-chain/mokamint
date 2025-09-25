@@ -114,21 +114,21 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
-	 * Checks if the given extra data from the prolog of a deadline is considered
-	 * valid by this application. This method is called whenever a node
-	 * receives a new deadline from one of its miners.
-	 * The application can decide to accept or reject the deadline, on the
-	 * basis of its prolog's extra bytes. This allows applications to require a specific
-	 * structure for the prologs of the valid deadlines. If this is not relevant for an
-	 * application, it can just require this array to be any array or force it to be empty.
+	 * Performs application-specific checks on the given deadline.
+	 * This method is called whenever a node receives a new deadline from one of its miners.
+	 * The application can decide to accept or reject the deadline. Most applications
+	 * do not require any extra constraint on the deadlines and will just
+	 * require extra data to be empty in the deadline. Other applications might require a specific
+	 * structure of this extra data of the deadline, for instance if they require deadlines
+	 * to be signed by the miner.
 	 * 
-	 * @param extra the extra, application-specific bytes of the prolog
-	 * @return true if and only if {@code extra} is valid according to this application
+	 * @param deadline the deadline to check
+	 * @return true if and only if {@code deadline} is valid according to this application
 	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 */
-	boolean checkPrologExtra(byte[] extra) throws ClosedApplicationException, TimeoutException, InterruptedException;
+	boolean checkDeadline(Deadline deadline) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
 	 * Checks if the given transaction is valid according to this application.
