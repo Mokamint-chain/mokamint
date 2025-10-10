@@ -65,11 +65,6 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private final Optional<Miner> miner;
 
 	/**
-	 * The session used to receive challenges and send back deadlines to the remote miner.
-	 */
-	private final Session session;
-
-	/**
 	 * The prefix used in the log messages;
 	 */
 	private final String logPrefix;
@@ -93,7 +88,6 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		this.logPrefix = "miner service working for " + uri + ": ";
 
 		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
-		this.session = getSession(MINING_ENDPOINT);
 		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
 		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
 
@@ -205,14 +199,15 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	 * The endpoint calls this when a new deadline request arrives.
 	 * It forwards the request to the miner.
 	 * 
+	 * @param session the session to use to send the deadline back
 	 * @param challenge the challenge of the requested deadline
 	 */
-	private void requestDeadline(Challenge challenge) {
+	private void requestDeadline(Session session, Challenge challenge) {
 		try {
 			ensureIsOpen(ClosedMinerException::new);
 			LOGGER.info(logPrefix + "received challenge: " + challenge);
 			if (miner.isPresent())
-				miner.get().requestDeadline(challenge, this::onDeadlineComputed);
+				miner.get().requestDeadline(challenge, deadline -> onDeadlineComputed(session, deadline));
 		}
 		catch (ClosedMinerException e) {
 			LOGGER.warning(logPrefix + "ignoring challenge: " + challenge + " since this miner service is already closed: " + e.getMessage());
@@ -222,25 +217,22 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	/**
 	 * Called by {@link #miner} when it finds a deadline. It forwards it to the remote miner.
 	 * 
+	 * @param session the session to use to send the deadline back to the requester
 	 * @param deadline the deadline that the miner has just computed
 	 */
-	private void onDeadlineComputed(Deadline deadline) {
-		var session = this.session;
-
+	private void onDeadlineComputed(Session session, Deadline deadline) {
 		// the session might be null if the construction of the service has not been completed yet,
 		// but the first requests have already arrived to the mining endpoint
-		if (session != null) {
-			try {
-				ensureIsOpen(ClosedMinerException::new);
-				LOGGER.info(logPrefix + "sending " + deadline);
-				sendObjectAsync(session, deadline, IOException::new);
-			}
-			catch (IOException e) {
-				LOGGER.warning(logPrefix + "cannot send the deadline to the session: " + e.getMessage());
-			}
-			catch (ClosedMinerException e) {
-				LOGGER.warning(logPrefix + "ignoring deadline " + deadline + " since this miner service is already closed: " + e.getMessage());
-			}
+		try {
+			ensureIsOpen(ClosedMinerException::new);
+			LOGGER.info(logPrefix + "sending " + deadline);
+			sendObjectAsync(session, deadline, IOException::new);
+		}
+		catch (IOException e) {
+			LOGGER.warning(logPrefix + "cannot send the deadline to the session: " + e.getMessage());
+		}
+		catch (ClosedMinerException e) {
+			LOGGER.warning(logPrefix + "ignoring deadline " + deadline + " since this miner service is already closed: " + e.getMessage());
 		}
 	}
 
@@ -253,7 +245,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
-			addMessageHandler(session, MinerServiceImpl.this::requestDeadline);
+			addMessageHandler(session, (Challenge challenge) -> requestDeadline(session, challenge));
 		}
 	}
 }
