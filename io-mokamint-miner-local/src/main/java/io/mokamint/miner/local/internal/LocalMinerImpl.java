@@ -83,7 +83,7 @@ public class LocalMinerImpl implements LocalMiner {
 	 * @param name the name of the specification of the miner
 	 * @param description the description of the specification of the miner
 	 * @param balanceProvider the provider of the balance of the public keys
-	 * @param plotsAndKeyPairs the plot files used for mining; this cannot be empty
+	 * @param plots the plot files used for mining; this cannot be empty
 	 */
 	public LocalMinerImpl(String name, String description, BalanceProvider balanceProvider, Plot... plots) {
 		this.balanceProvider = balanceProvider;
