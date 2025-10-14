@@ -33,7 +33,7 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.service.MinerServices;
+import io.mokamint.miner.service.ReconnectingMinerServices;
 import io.mokamint.miner.service.api.MinerService;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
@@ -107,18 +107,19 @@ public class Start extends AbstractCommand {
 		private void startMiningService(Miner miner) throws CommandException {
 			System.out.print("Connecting to " + uri + "... ");
 		
-			try (var service = MinerServices.of(miner, uri, 30_000)) {
+			try (var service = ReconnectingMinerServices.of(miner, uri, 30_000, this::onConnectionFailed)) {
 				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
 				System.out.println("Service terminated: " + service.waitUntilClosed());
-			}
-			catch (FailedDeploymentException e) {
-				throw new CommandException("Failed to deploy the miner. Is " + uri + " up and reachable?", e);
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw new CommandException("Interrupted!", e);
 			}
+		}
+
+		private void onConnectionFailed(FailedDeploymentException e) {
+			System.out.println(Ansi.AUTO.string("@|red Failed to deploy the miner. Is " + uri + " up and reachable?|@"));
 		}
 
 		private void closeServiceIfKeyPressed(MinerService service) {
