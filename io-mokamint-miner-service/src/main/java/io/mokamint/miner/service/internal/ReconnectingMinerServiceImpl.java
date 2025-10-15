@@ -22,48 +22,116 @@ import java.security.PublicKey;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hotmoka.closeables.AbstractAutoCloseableWithOnCloseHandlers;
+import io.hotmoka.closeables.AbstractAutoCloseableWithLockAndOnCloseHandlers;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.service.api.MinerService;
-import io.mokamint.miner.service.api.ReconnectingMinerService;
 import io.mokamint.nonce.api.Challenge;
+import io.mokamint.nonce.api.Deadline;
 
-public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithOnCloseHandlers implements ReconnectingMinerService {
+/**
+ * Implementation of a client that connects to a remote miner.
+ * It is an adapter of a miner into a web service client.
+ * It tries to keep the connection active, by keeping an internal service
+ * that gets recreated whenever its connection seems lost.
+ */
+public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedMinerException> implements MinerService {
+	
+	/**
+	 * The adapted miner. This might be missing, in which case the service is just a proxy for calling the
+	 * methods of the remote miner, but won't provide any deadline to that remote.
+	 */
 	private final Optional<Miner> miner;
+
+	/**
+	 * The websockets URI of the remote miner.
+	 */
 	private final URI uri;
+
+	/**
+	 * The time (in milliseconds) allowed for a call to the remote miner;
+	 * beyond that threshold, a timeout exception is thrown.
+	 */
 	private final int timeout;
-	private final Consumer<FailedDeploymentException> onConnectionFailed;
-	private volatile Reconnector reconnector;
-	private volatile boolean isOpen;
-	private final static long RETRY_INTERVAL = 180_000L;
+
+	/**
+	 * A thread that tries to keep the connection active.
+	 */
+	private final Reconnector reconnector;
+
+	/**
+	 * Used to wait until this service gets closed.
+	 */
+	private final CountDownLatch closedLatch = new CountDownLatch(1);
+
+	/**
+	 * The time, in milliseconds, between a failed connection attempt and the subsequent one.
+	 */
+	private final int retryInterval;
+
+	/**
+	 * The time after which a silent connection is considered as inactive.
+	 */
+	// TODO: this should be derived from the mining specification of the remote miner in the future
+	private final static long INACTIVITY_THRESHOLD = 180_000L;
+
+	/**
+	 * The prefix used in the log messages;
+	 */
+	private final String logPrefix;
+
 	private final static Logger LOGGER = Logger.getLogger(ReconnectingMinerServiceImpl.class.getName());
 
-	public ReconnectingMinerServiceImpl(Optional<Miner> miner, URI uri, int timeout, Consumer<FailedDeploymentException> onConnectionFailed) {
+	/**
+	 * Creates a miner service by adapting the given miner.
+	 * 
+	 * @param miner the adapted miner; if this is missing, the service won't provide deadlines but
+	 *              will anyway connect to the remote miner
+	 * @param uri the websockets URI of the remote miner. For instance: {@code ws://my.site.org:8025}
+	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
+	 *                beyond that threshold, a timeout exception is thrown
+	 * @param retryInterval the time. in milliseconds, between a failed connection attempt and the subsequent one
+	 */
+	public ReconnectingMinerServiceImpl(Optional<Miner> miner, URI uri, int timeout, int retryInterval) {
+		super(ClosedMinerException::new);
+
 		this.miner = miner;
 		this.uri = uri;
 		this.timeout = timeout;
-		this.onConnectionFailed = onConnectionFailed;
-
-		open();
+		this.retryInterval = retryInterval;
+		this.logPrefix = "reconnecting miner service working for " + uri + ": ";
+		this.reconnector = new Reconnector();
+		reconnector.start();
 	}
 
+	/**
+	 * A thread that checks if the connection has been silent for too long:
+	 * after that threshold, it tries to reconnect to the remote miner.
+	 */
 	private class Reconnector extends Thread {
+
+		/**
+		 * The last service that has been connected: this is missing at the beginning.
+		 */
 		private volatile MinerService service;
+
+		/**
+		 * The last moment when {@code service} has shown activity> milliseconds from Unix epoch.
+		 */
 		private final AtomicLong lastContactTime = new AtomicLong(0L);
 
 		/**
-		 * Used to wait until the remote gets closed.
+		 * True if and only if the service seems currently connected.
 		 */
-		private final CountDownLatch latch = new CountDownLatch(1);
+		private volatile AtomicBoolean connected = new AtomicBoolean(false);
 
 		@Override
 		public void run() {
@@ -71,38 +139,64 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithOnClo
 				while (true) {
 					long millisecondsSinceLastContact;
 
+					// this thread sleeps as long as the connected service seems active;
+					// note that lastContactTime gets updated at each activity sign from the service
 					do {
 						millisecondsSinceLastContact = System.currentTimeMillis() - lastContactTime.get();
-						if (millisecondsSinceLastContact < RETRY_INTERVAL)
-							Thread.sleep(RETRY_INTERVAL - millisecondsSinceLastContact);
+						if (millisecondsSinceLastContact < INACTIVITY_THRESHOLD)
+							Thread.sleep(INACTIVITY_THRESHOLD - millisecondsSinceLastContact);
 					}
-					while (millisecondsSinceLastContact < RETRY_INTERVAL);
+					while (millisecondsSinceLastContact < INACTIVITY_THRESHOLD);
 
+					// the service seems inactive (or it has not been created up to now): we try to recreate it
 					try {
-						var oldService = service;
+						if (connected.getAndSet(false))
+							onDisconnected();
 
+						var oldService = service;
 						if (oldService == null)
-							LOGGER.info("trying to connect to " + uri);
+							LOGGER.info(logPrefix + "trying to connect to " + uri);
 						else
-							LOGGER.info("trying to reconnect to " + uri);
+							LOGGER.info(logPrefix + "trying to reconnect to " + uri);
 
 						service = new MinerServiceImpl(miner, uri, timeout) {
 
 							@Override
 							protected void onDeadlineRequested(Challenge challenge) {
-								lastContactTime.set(System.currentTimeMillis());
+								super.onDeadlineRequested(challenge);
+
+								serviceIsAlive();
+								ReconnectingMinerServiceImpl.this.onDeadlineRequested(challenge);
 							};
+
+							@Override
+							protected void onDeadlineComputed(Deadline deadline) {
+								super.onDeadlineComputed(deadline);
+
+								ReconnectingMinerServiceImpl.this.onDeadlineComputed(deadline);
+							}
 						};
 
-						lastContactTime.set(System.currentTimeMillis());
+						// a successful reconnection is a sign of activity by the service
+						serviceIsAlive();
 
+						// we close the previous instance of the service, if any
 						if (oldService != null)
 							oldService.close();
 					}
 					catch (FailedDeploymentException e) {
-						LOGGER.warning("failed connection attempt to " + uri + ": " + e.getMessage());
-						onConnectionFailed.accept(e);
-						Thread.sleep(RETRY_INTERVAL);
+						// the glassfish websocket library catches the InterruptedException without
+						// even setting the interruption flag! As a result, an early interruption becomes
+						// a FailedDeploymentException and we check, below, if this seems actually due to
+						// the service being closed already
+						if (closedLatch.getCount() == 0L)
+							return;
+
+						LOGGER.warning(logPrefix + "failed connection attempt to " + uri + ": " + e.getMessage());
+						onConnectionFailed(e);
+						// we wait before trying to reconnect again, to avoid quick continuous reconnection attempts
+						LOGGER.warning(logPrefix + "reconnection will be attempted after " + retryInterval + "ms from now");
+						Thread.sleep(retryInterval);
 					}
 				}
 			}
@@ -113,20 +207,25 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithOnClo
 				LOGGER.log(Level.SEVERE, "unexpected exception", e);
 			}
 			finally {
-				try {
-					if (service != null)
-						service.close();
-				}
-				finally {
-					latch.countDown();
-				}
+				if (service != null)
+					service.close();
 			}
+		}
+
+		/**
+		 * Whenever the service gives a sign of activity, this method updates the moment of the last activity.
+		 */				
+		private void serviceIsAlive() {
+			lastContactTime.set(System.currentTimeMillis());
+
+			if (!connected.getAndSet(true))
+				onConnected();
 		}
 	}
 
 	@Override
 	public String waitUntilClosed() throws InterruptedException {
-		reconnector.latch.await();
+		closedLatch.await();
 
 		// this service can only be closed by calling its close() method, there is
 		// no abnormal way of being closed
@@ -135,85 +234,115 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithOnClo
 
 	@Override
 	public MiningSpecification getMiningSpecification() throws ClosedMinerException, TimeoutException, InterruptedException {
-		if (!isOpen)
-			throw new ClosedMinerException();
+		try (var scope = mkScope()) {
+			var service = reconnector.service;
+			if (service != null) {
+				try {
+					return service.getMiningSpecification();
+				}
+				catch (ClosedMinerException e) {
+					// the internal service is currently closed, we wait a bit, maybe it will be open later
+				}
+			}
 
-		var service = reconnector.service;
-		if (service != null) {
-			try {
-				return service.getMiningSpecification();
+			Thread.sleep(timeout);
+
+			service = reconnector.service;
+			if (service != null) {
+				try {
+					return service.getMiningSpecification();
+				}
+				catch (ClosedMinerException e) {
+					// the internal service is still closed: time out
+				}
 			}
-			catch (ClosedMinerException e) {
-			}
+
+			throw new TimeoutException("Miner service time-out");
 		}
-
-		Thread.sleep(timeout);
-
-		if (!isOpen)
-			throw new ClosedMinerException();
-
-		service = reconnector.service;
-		if (service != null) {
-			try {
-				return service.getMiningSpecification();
-			}
-			catch (ClosedMinerException e) {
-			}
-		}
-
-		throw new TimeoutException("Miner service time-out");
 	}
 
 	@Override
 	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedMinerException, TimeoutException, InterruptedException {
-		if (!isOpen)
-			throw new ClosedMinerException();
+		try (var scope = mkScope()) {
+			var service = reconnector.service;
+			if (service != null) {
+				try {
+					return service.getBalance(signature, publicKey);
+				}
+				catch (ClosedMinerException e) {
+					// the internal service is currently closed, we wait a bit, maybe it will be open later
+				}
+			}
 
-		var service = reconnector.service;
-		if (service != null) {
-			try {
-				return service.getBalance(signature, publicKey);
+			Thread.sleep(timeout);
+
+			service = reconnector.service;
+			if (service != null) {
+				try {
+					return service.getBalance(signature, publicKey);
+				}
+				catch (ClosedMinerException e) {
+					// the internal service is still closed: time out
+				}
 			}
-			catch (ClosedMinerException e) {
-			}
+
+			throw new TimeoutException("Miner service time-out");
 		}
-
-		Thread.sleep(timeout);
-
-		if (!isOpen)
-			throw new ClosedMinerException();
-
-		service = reconnector.service;
-		if (service != null) {
-			try {
-				return service.getBalance(signature, publicKey);
-			}
-			catch (ClosedMinerException e) {
-			}
-		}
-
-		throw new TimeoutException("Miner service time-out");
 	}
 
-	public void open() {
-		if (!isOpen) {
-			this.reconnector = new Reconnector();
-			reconnector.start();
-			isOpen = true;
-		}
+	/**
+	 * Called when the connection to {@code uri} has been accomplished.
+	 */
+	protected void onConnected() {
+	}
+
+	/**
+	 * Called when the connection to {@code uri} seems lost.
+	 */
+	protected void onDisconnected() {
+	}
+
+	/**
+	 * Called when a connection attempt to {@code uri} fails.
+	 * 
+	 * @param cause the cause of the failed connection
+	 */
+	protected void onConnectionFailed(FailedDeploymentException cause) {
+	}
+
+	/**
+	 * Called when a challenge arrives, requesting this service to provide the corresponding deadline.
+	 * 
+	 * @param challenge the challenge that has arrived
+	 */
+	protected void onDeadlineRequested(Challenge challenge) {
+	}
+
+	/**
+	 * Called when {@code miner} has computed a deadline for a challenge.
+	 * 
+	 * @param deadline the deadline that has been computed
+	 */
+	protected void onDeadlineComputed(Deadline deadline) {
 	}
 
 	@Override
 	public void close() {
-		if (isOpen) {
-			isOpen = false;
-
-			try {
-				reconnector.interrupt();
+		try {
+			if (stopNewCalls()) {
+				try {
+					reconnector.interrupt();
+				}
+				finally {
+					callCloseHandlers();
+				}
 			}
-			finally {
-				callCloseHandlers();
-			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		finally {
+			closedLatch.countDown();
 		}
 	}
 }

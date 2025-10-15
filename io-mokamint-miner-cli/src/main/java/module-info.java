@@ -31,4 +31,5 @@ module io.mokamint.miner.cli {
 
     requires com.google.gson;
 	requires java.logging;
+	requires io.mokamint.nonce.api;
 }

@@ -33,8 +33,9 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.local.LocalMiners;
-import io.mokamint.miner.service.ReconnectingMinerServices;
+import io.mokamint.miner.service.AbstractReconnectingMinerService;
 import io.mokamint.miner.service.api.MinerService;
+import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import picocli.CommandLine.Command;
@@ -53,6 +54,9 @@ public class Start extends AbstractCommand {
 	@Option(names = "--uri", description = "the URI of the remote mining endpoint", defaultValue = "ws://localhost:8025")
 	private URI uri;
 
+	@Option(names = "--retry-interval", description = "the time in milliseconds, between a failed connection attempt and the subsequent one", defaultValue = "30000")
+	private int retryInterval;
+
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
@@ -64,6 +68,9 @@ public class Start extends AbstractCommand {
 		private final List<Plot> plots = new ArrayList<>();
 
 		private Run() throws CommandException {
+			if (retryInterval < 0)
+				throw new CommandException("The retry interval cannot be negative");
+
 			loadPlotsAndStartMiningService(0);
 		}
 
@@ -105,10 +112,31 @@ public class Start extends AbstractCommand {
 		}
 
 		private void startMiningService(Miner miner) throws CommandException {
-			System.out.print("Connecting to " + uri + "... ");
-		
-			try (var service = ReconnectingMinerServices.of(miner, uri, 30_000, this::onConnectionFailed)) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+			try (var service = new AbstractReconnectingMinerService(Optional.of(miner), uri, 30_000, retryInterval) {
+				
+				private long deadlineCounter;
+
+				@Override
+				protected void onConnected() {
+					System.out.println(Ansi.AUTO.string("Connected to " + uri + "."));
+				}
+
+				@Override
+				protected void onDisconnected() {
+					System.out.println(Ansi.AUTO.string("@|red The connection to " + uri + " seems lost: trying to reconnect.|@"));
+				}
+
+				@Override
+				protected void onConnectionFailed(FailedDeploymentException e) {
+					System.out.println(Ansi.AUTO.string("@|red Failed to connect to " + uri + ". Is it up and reachable? I will retry in " + retryInterval + "ms|@"));
+				}
+
+				@Override
+				protected void onDeadlineComputed(Deadline deadline) {
+					System.out.println(Ansi.AUTO.string("Computed deadline #" + ++deadlineCounter + "."));
+				};
+			})
+			{
 				new Thread(() -> closeServiceIfKeyPressed(service)).start();
 				System.out.println("Service terminated: " + service.waitUntilClosed());
 			}
@@ -118,13 +146,9 @@ public class Start extends AbstractCommand {
 			}
 		}
 
-		private void onConnectionFailed(FailedDeploymentException e) {
-			System.out.println(Ansi.AUTO.string("@|red Failed to deploy the miner. Is " + uri + " up and reachable?|@"));
-		}
-
 		private void closeServiceIfKeyPressed(MinerService service) {
 			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
-				System.out.print(Ansi.AUTO.string("@|green Press ENTER to stop the miner: |@"));
+				System.out.println(Ansi.AUTO.string("@|green Press ENTER to stop the miner.|@"));
 				reader.readLine();
 			}
 			catch (IOException e) {
