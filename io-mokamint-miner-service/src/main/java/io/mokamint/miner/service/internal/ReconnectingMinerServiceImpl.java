@@ -34,6 +34,7 @@ import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
 import io.mokamint.miner.service.api.MinerService;
+import io.mokamint.miner.service.api.ReconnectingMinerService;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.Deadline;
 
@@ -43,7 +44,7 @@ import io.mokamint.nonce.api.Deadline;
  * It tries to keep the connection active, by keeping an internal service
  * that gets recreated whenever its connection seems lost.
  */
-public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedMinerException> implements MinerService {
+public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockAndOnCloseHandlers<ClosedMinerException> implements ReconnectingMinerService {
 	
 	/**
 	 * The adapted miner. This might be missing, in which case the service is just a proxy for calling the
@@ -131,7 +132,7 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 		/**
 		 * True if and only if the service seems currently connected.
 		 */
-		private volatile AtomicBoolean connected = new AtomicBoolean(false);
+		private volatile AtomicBoolean isConnected = new AtomicBoolean(false);
 
 		@Override
 		public void run() {
@@ -150,7 +151,7 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 
 					// the service seems inactive (or it has not been created up to now): we try to recreate it
 					try {
-						if (connected.getAndSet(false))
+						if (isConnected.getAndSet(false))
 							onDisconnected();
 
 						var oldService = service;
@@ -218,7 +219,7 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 		private void serviceIsAlive() {
 			lastContactTime.set(System.currentTimeMillis());
 
-			if (!connected.getAndSet(true))
+			if (!isConnected.getAndSet(true))
 				onConnected();
 		}
 	}
@@ -288,6 +289,11 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 
 			throw new TimeoutException("Miner service time-out");
 		}
+	}
+
+	@Override
+	public boolean isConnected() {
+		return reconnector.isConnected.get();
 	}
 
 	/**
