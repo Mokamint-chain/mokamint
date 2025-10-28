@@ -245,10 +245,12 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 					// the internal service is currently closed, we wait a bit, maybe it will be open later
 				}
 			}
+		}
 
-			Thread.sleep(timeout);
+		Thread.sleep(timeout);
 
-			service = reconnector.service;
+		try (var scope = mkScope()) {
+			var service = reconnector.service;
 			if (service != null) {
 				try {
 					return service.getMiningSpecification();
@@ -274,10 +276,12 @@ public class ReconnectingMinerServiceImpl extends AbstractAutoCloseableWithLockA
 					// the internal service is currently closed, we wait a bit, maybe it will be open later
 				}
 			}
+		}
 
-			Thread.sleep(timeout);
+		Thread.sleep(timeout);
 
-			service = reconnector.service;
+		try (var scope = mkScope()) {
+			var service = reconnector.service;
 			if (service != null) {
 				try {
 					return service.getBalance(signature, publicKey);
