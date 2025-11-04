@@ -4,7 +4,7 @@
 #   docker buildx build --platform linux/arm64 -t mokamint/mokamint-arm64:latest -f src/main/docker/mokamint-arm64 .
 #   add --push to push to DockerHub
 
-FROM arm64v8/openjdk:21-jdk-slim
+FROM arm64v8/eclipse-temurin:21
 LABEL "maintainer"="fausto.spoto@mokamint.io"
 
 USER root
