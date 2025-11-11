@@ -26,6 +26,8 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.crypto.cli.converters.HashingOptionConverter;
+import io.hotmoka.crypto.cli.converters.SignatureOptionConverter;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;

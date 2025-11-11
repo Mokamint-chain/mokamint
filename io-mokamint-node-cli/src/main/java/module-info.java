@@ -29,9 +29,12 @@ module io.mokamint.node.cli {
     opens io.mokamint.node.cli.internal.config to info.picocli;
     opens io.mokamint.node.cli.internal.chain to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.tasks to info.picocli, com.google.gson;
-    opens io.mokamint.node.cli.internal.keys to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.transactions to info.picocli, com.google.gson;
 
+    // for parsing JSON through gson (remove previous opens for com.google.cson as well)
+    //opens io.mokamint.node.cli.internal.json to com.google.gson;
+
+    requires transitive io.mokamint.node.cli.api;
     requires io.mokamint.node;
     requires io.mokamint.node.local;
 	requires io.mokamint.application.api;
@@ -44,9 +47,12 @@ module io.mokamint.node.cli {
 	requires io.mokamint.application.remote;
 	requires io.mokamint.node.service;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.crypto.cli;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.websockets.client.api;
 	requires com.google.gson;
+    // this makes sun.misc.Unsafe accessible, so that Gson can instantiate classes without the no-args constructor
+ 	requires jdk.unsupported;
 	requires java.logging;
 }

@@ -32,6 +32,7 @@ import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
+import io.hotmoka.crypto.cli.converters.SignatureOptionConverter;
 import io.mokamint.miner.api.ClosedMinerException;
 import io.mokamint.miner.service.MinerServices;
 import io.mokamint.miner.service.api.MinerService;

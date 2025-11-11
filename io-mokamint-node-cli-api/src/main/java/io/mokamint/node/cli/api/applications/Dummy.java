@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements a command-line tool for working with Mokamint plot files.
- */
-module io.mokamint.plotter.cli {
-	exports io.mokamint.plotter.cli;
-    opens io.mokamint.plotter.cli.internal to info.picocli; // for injecting CLI options
+package io.mokamint.node.cli.api.applications;
 
-	requires io.mokamint.plotter;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.cli;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.crypto.cli;
-	requires jakarta.websocket.client;
+/**
+ * TODO: Temporary placeholder for compilation. Remove later.
+ */
+public interface Dummy {
 }

@@ -5,7 +5,7 @@
   <name>io-mokamint-node-cli</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements a command-line tool for controlling Mokamint nodes.</description>
+  <description>This module implements the command-line tool for Mokamint nodes.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -14,6 +14,11 @@
   </parent>
 
   <dependencies>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-cli-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
   	<dependency>
       <groupId>io.mokamint</groupId>
       <artifactId>io-mokamint-node-local</artifactId>
@@ -77,6 +82,11 @@
     <dependency>
       <groupId>io.hotmoka.crypto</groupId>
       <artifactId>io-hotmoka-crypto</artifactId>
+      <version>${io.hotmoka.crypto.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka.crypto</groupId>
+      <artifactId>io-hotmoka-crypto-cli</artifactId>
       <version>${io.hotmoka.crypto.version}</version>
     </dependency>
 

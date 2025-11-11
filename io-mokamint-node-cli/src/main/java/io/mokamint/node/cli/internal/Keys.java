@@ -16,16 +16,20 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal;
 
-import io.mokamint.node.cli.internal.keys.Create;
-import io.mokamint.node.cli.internal.keys.Show;
+import io.hotmoka.crypto.cli.keys.Create;
+import io.hotmoka.crypto.cli.keys.Export;
+import io.hotmoka.crypto.cli.keys.Import;
+import io.hotmoka.crypto.cli.keys.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
 @Command(name = "keys",
-	description = "Manage the cryptographical keys of a node.",
+	description = "Manage cryptographical keys.",
 	subcommands = {
 		Create.class,
+		Export.class,
 		HelpCommand.class,
+		Import.class,
 		Show.class
 	})
 public class Keys {
