@@ -82,7 +82,7 @@
         <version>3.3.0</version>
         <configuration>
           <outputDirectory>
-            ${project.basedir}/modules/explicit
+            ${project.basedir}/modules/explicit-or-automatic
           </outputDirectory>
         </configuration>
       </plugin>
@@ -105,63 +105,20 @@
             <configuration>
               <outputDirectory>${project.basedir}/modules/unnamed</outputDirectory>
               <includeArtifactIds>
-                annotations,
-                commons-compress,
-                kotlin-loggin,
-                kotlin-stdlib,
-                kotlin-stdlib-common,
-                slf4j-api,
-                slf4j-nop,
-                xodus-compress,
-                xodus-environment,
-                xodus-openAPI,
-                xodus-utils
+                none
               </includeArtifactIds>
             </configuration>
           </execution>
           <execution>
-            <id>copy-automatic-modules</id>
+            <id>copy-explicit-or-automatic-modules</id>
             <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.basedir}/modules/automatic</outputDirectory>
-              <includeArtifactIds>
-                io-hotmoka-xodus,
-                grizzly-framework,
-                grizzly-http,
-                grizzly-http-server
-              </includeArtifactIds>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-explicit-modules</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.basedir}/modules/explicit</outputDirectory>
+              <outputDirectory>${project.basedir}/modules/explicit-or-automatic</outputDirectory>
               <excludeArtifactIds>
-				<!-- we exclude all automatic modules -->
-				io-hotmoka-xodus,
-                grizzly-framework,
-                grizzly-http,
-                grizzly-http-server,
-                
                 <!-- we exclude all unnamed modules -->
-                annotations,
-                commons-compress,
-                kotlin-loggin,
-                kotlin-stdlib,
-                kotlin-stdlib-common,
-                slf4j-api,
-                slf4j-nop,
-                xodus-compress,
-                xodus-environment,
-                xodus-openAPI,
-                xodus-utils
               </excludeArtifactIds>
             </configuration>
           </execution>
