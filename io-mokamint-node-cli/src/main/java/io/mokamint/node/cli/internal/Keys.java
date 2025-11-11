@@ -24,7 +24,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
 @Command(name = "keys",
-	description = "Manage cryptographical keys.",
+	description = "Manage cryptographic keys.",
 	subcommands = {
 		Create.class,
 		Export.class,

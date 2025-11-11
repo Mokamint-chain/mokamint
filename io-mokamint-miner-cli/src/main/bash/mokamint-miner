@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# this script runs the mokamint-node command-line tool of Mokamint
+# this script runs the mokamint-miner command-line tool of Mokamint
 
 # let us determine the directory where this script is defined
 # see https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
@@ -13,4 +13,4 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-java --add-modules org.glassfish.tyrus.container.grizzly.server,org.glassfish.tyrus.container.grizzly.client --module-path $DIR/modules/explicit:$DIR/modules/automatic --class-path $DIR"/modules/unnamed/*" --module io.mokamint.node.cli/io.mokamint.node.cli.MokamintNode "$@"
+java --add-modules org.glassfish.tyrus.container.grizzly.server --module-path $DIR/../../../modules/explicit:$DIR/../../../modules/automatic --class-path $DIR"/../../../modules/unnamed/*" --module io.mokamint.miner.cli/io.mokamint.miner.cli.MokamintMiner "$@"

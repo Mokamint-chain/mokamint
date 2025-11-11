@@ -35,7 +35,7 @@ import picocli.CommandLine.Command;
 @Command(
 	name = "mokamint-plotter",
 	header = "This is the command-line tool for creating Mokamint plots.",
-	footer = "Copyright (c) 2023 Fausto Spoto (fausto.spoto@hotmoka.io)",
+	footer = "Copyright (c) 2023 Fausto Spoto (fausto.spoto@mokamint.io)",
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Create.class,
