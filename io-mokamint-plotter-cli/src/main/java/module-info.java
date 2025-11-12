@@ -21,10 +21,18 @@ module io.mokamint.plotter.cli {
 	exports io.mokamint.plotter.cli;
     opens io.mokamint.plotter.cli.internal to info.picocli; // for injecting CLI options
 
+    // for parsing JSON through gson
+    opens io.mokamint.plotter.cli.internal.json to com.google.gson;
+
+    requires transitive io.mokamint.plotter.cli.api;
 	requires io.mokamint.plotter;
 	requires io.mokamint.nonce;
+	requires io.hotmoka.annotations;
+	requires io.hotmoka.exceptions;
 	requires io.hotmoka.cli;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.crypto.cli;
+	requires io.hotmoka.websockets.beans;
+	requires com.google.gson;
 	requires jakarta.websocket.client;
 }

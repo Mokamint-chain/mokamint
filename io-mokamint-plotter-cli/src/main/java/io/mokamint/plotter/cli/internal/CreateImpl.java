@@ -21,25 +21,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.spec.InvalidKeySpecException;
 
-import io.hotmoka.cli.AbstractCommand;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.cli.AbstractCommandWithJsonOutput;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base58;
 import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.crypto.cli.converters.HashingOptionConverter;
 import io.hotmoka.crypto.cli.converters.SignatureOptionConverter;
+import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.Prologs;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
-import picocli.CommandLine.Command;
+import io.mokamint.plotter.cli.CreateOutputs;
+import io.mokamint.plotter.cli.api.CreateOutput;
+import io.mokamint.plotter.cli.internal.json.CreateOutputJson;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "create",
-	description = "Create a new plot file.",
-	showDefaultValues = true)
-public class Create extends AbstractCommand {
+public class CreateImpl extends AbstractCommandWithJsonOutput {
 
 	@Parameters(index = "0", description = "the path of the new plot file")
 	private Path path;
@@ -92,14 +93,16 @@ public class Create extends AbstractCommand {
 			throw new CommandException("Cannot access the plot file!", e);
 		}
 
-		System.out.println();
+		report(new Output(), CreateOutputs.Encoder::new);
 	}
 
 	private void onNewPercent(int percent) {
-		if (percent % 5 == 0)
-			System.out.print(Ansi.AUTO.string("@|bold,red " + percent + "%|@ "));
-		else
-			System.out.print(percent + "% ");
+		if (!json()) { // we only report the feedback if JSON output is not required
+			if (percent % 5 == 0)
+				System.out.print(Ansi.AUTO.string("@|bold,red " + percent + "%|@ "));
+			else
+				System.out.print(percent + "% ");
+		}
 	}
 
 	private Prolog computeProlog() throws InvalidKeySpecException, CommandException {
@@ -113,5 +116,28 @@ public class Create extends AbstractCommand {
 
 	private byte[] bytesFromBase58(String base58) throws CommandException {
 		return Base58.fromBase58String(base58, s -> new CommandException("The string " + base58 + " is not in Base58 format!"));
+	}
+
+	/**
+	 * The output of this command.
+	 */
+	@Immutable
+	public static class Output implements CreateOutput {
+
+		/**
+		 * Builds the output of the command from its JSON representation.
+		 * 
+		 * @param json the JSON representation
+		 * @throws InconsistentJsonException if {@code json} is inconsistent
+		 */
+		public Output(CreateOutputJson json) throws InconsistentJsonException {
+		}
+
+		private Output() {}
+
+		@Override
+		public String toString() {
+			return "\n"; // this command does not print anything, currently
+		}
 	}
 }

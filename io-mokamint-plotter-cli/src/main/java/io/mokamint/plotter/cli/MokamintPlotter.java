@@ -16,13 +16,14 @@ limitations under the License.
 
 package io.mokamint.plotter.cli;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 
-import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.hotmoka.cli.AbstractCLI;
+import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.mokamint.plotter.cli.MokamintPlotter.POMVersionProvider;
-import io.mokamint.plotter.cli.internal.Create;
-import io.mokamint.plotter.cli.internal.Show;
+import io.mokamint.plotter.cli.internal.Keys;
 import picocli.CommandLine.Command;
 
 /**
@@ -39,6 +40,7 @@ import picocli.CommandLine.Command;
 	versionProvider = POMVersionProvider.class,
 	subcommands = {
 		Create.class,
+		Keys.class,
 		Show.class
 	}
 )
@@ -53,6 +55,96 @@ public class MokamintPlotter extends AbstractCLI {
 	 */
 	public static void main(String[] args) {
 		main(MokamintPlotter::new, args);
+	}
+
+	/**
+	 * Runs the {@code create} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String create(String args) throws IOException {
+		return run("create " + args);
+	}
+
+	/**
+	 * Runs the {@code show} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String show(String args) throws IOException {
+		return run("show " + args);
+	}
+
+	/**
+	 * Runs the {@code keys create} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String keysCreate(String args) throws IOException {
+		return run("keys create " + args);
+	}
+
+	/**
+	 * Runs the {@code keys show} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String keysShow(String args) throws IOException {
+		return run("keys show " + args);
+	}
+
+	/**
+	 * Runs the {@code keys export} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String keysExport(String args) throws IOException {
+		return run("keys export " + args);
+	}
+
+	/**
+	 * Runs the {@code keys import} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String keysImport(String args) throws IOException {
+		return run("keys import " + args);
+	}
+
+	/**
+	 * Runs the given command-line with the crypto tool, inside a sand-box where the
+	 * standard output is redirected into the resulting string. It performs as calling "crypto command".
+	 * 
+	 * @param command the command to run with crypto
+	 * @return what the moka tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	private static String run(String command) throws IOException {
+		var originalOut = System.out;
+		var originalErr = System.err;
+	
+		try (var baos = new ByteArrayOutputStream(); var out = new PrintStream(baos)) {
+			System.setOut(out);
+			System.setErr(out);
+			main(MokamintPlotter::new, command.split(" "));
+			return new String(baos.toByteArray());
+		}
+		finally {
+			System.setOut(originalOut);
+			System.setErr(originalErr);
+		}
 	}
 
 	static {

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,16 +15,12 @@ limitations under the License.
 */
 
 /**
- * This module implements the plots of a Mokamint blockchain.
+ * This module defines the API of the command-line tool for Mokamint nodes.
  */
-module io.mokamint.plotter {
-	exports io.mokamint.plotter;
+module io.mokamint.plotter.cli.api {
+	exports io.mokamint.plotter.cli.api;
 
 	requires transitive io.mokamint.plotter.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.exceptions;
 	requires io.hotmoka.annotations;
-	requires io.hotmoka.marshalling;
-	requires java.logging;
+	requires transitive io.hotmoka.crypto.api;
 }

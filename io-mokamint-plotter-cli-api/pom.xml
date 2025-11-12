@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>io-mokamint-plotter</artifactId>
-  <name>io-mokamint-plotter</name>
+  <artifactId>io-mokamint-plotter-cli-api</artifactId>
+  <name>io-mokamint-plotter-cli-api</name>
   <packaging>jar</packaging>
   <version>${mokamint.version}</version>
-  <description>This module implements the plots of a Mokamint blockchain.</description>
+  <description>This module defines the API of the command-line tool for Mokamint plots.</description>
 
   <parent>
     <groupId>io.mokamint</groupId>
@@ -15,19 +15,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.hotmoka.crypto</groupId>
-      <artifactId>io-hotmoka-crypto</artifactId>
-      <version>${io.hotmoka.crypto.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.exceptions</groupId>
-      <artifactId>io-hotmoka-exceptions</artifactId>
-      <version>${io.hotmoka.exceptions.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.hotmoka.marshalling</groupId>
-      <artifactId>io-hotmoka-marshalling</artifactId>
-      <version>${io.hotmoka.marshalling.version}</version>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-plotter-api</artifactId>
+      <version>${mokamint.version}</version>
     </dependency>
     <dependency>
       <groupId>io.hotmoka.annotations</groupId>
@@ -35,14 +25,9 @@
       <version>${io.hotmoka.annotations.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-nonce</artifactId>
-      <version>${mokamint.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.mokamint</groupId>
-      <artifactId>io-mokamint-plotter-api</artifactId>
-      <version>${mokamint.version}</version>
+      <groupId>io.hotmoka.crypto</groupId>
+      <artifactId>io-hotmoka-crypto-api</artifactId>
+      <version>${io.hotmoka.crypto.version}</version>
     </dependency>
   </dependencies>
 

@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -49,7 +48,6 @@ import io.hotmoka.exceptions.Objects;
 import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.exceptions.UncheckFunction;
 import io.hotmoka.marshalling.UnmarshallingContexts;
-import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Nonces;
 import io.mokamint.nonce.Prologs;
@@ -60,7 +58,6 @@ import io.mokamint.plotter.PlotSizes;
 import io.mokamint.plotter.api.IncompatibleChallengeException;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.api.PlotSize;
-import io.mokamint.plotter.internal.json.PlotJson;
 
 /**
  * An implementation of a plot file. There are two ways of creating this implementation:
@@ -164,26 +161,6 @@ public class PlotImpl implements Plot {
 	 */
 	public PlotImpl(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		this(path, prolog, start, length, hashing, onNewPercent, IllegalArgumentException::new);
-	}
-
-	/**
-	 * Creates a plot from the given json description.
-	 * 
-	 * @param json the json description
-	 * @throws InconsistentJsonException if {@code json} is inconsistent
-	 * @throws NoSuchAlgorithmException if {@code json} refers to a non-available hashing algorithm
-	 * @throws IOException if the plot file cannot be written into a temporary file
-	 */
-	public PlotImpl(PlotJson json) throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
-		this(
-			Files.createTempFile("tmp", ".plot"),
-			Objects.requireNonNull(json.getProlog(), "prolog cannot be null", InconsistentJsonException::new).unmap(),
-			json.getStart(),
-			json.getLength(),
-			HashingAlgorithms.of(Objects.requireNonNull(json.getHashing(), "hashing cannot be null", InconsistentJsonException::new)),
-			__ -> {},
-			InconsistentJsonException::new
-		);
 	}
 
 	/**

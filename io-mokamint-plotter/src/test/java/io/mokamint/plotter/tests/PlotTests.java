@@ -16,7 +16,6 @@ limitations under the License.
 
 package io.mokamint.plotter.tests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -34,22 +33,6 @@ import io.mokamint.nonce.api.Deadline;
 import io.mokamint.plotter.Plots;
 
 public class PlotTests extends AbstractLoggedTests {
-
-	@Test
-	@DisplayName("plots are correctly encoded into Json and decoded from Json")
-	public void encodeDecodeWorksForPlot(@TempDir Path dir) throws Exception {
-		var ed25519 = SignatureAlgorithms.ed25519();
-		var plotKeyPair = ed25519.getKeyPair();
-		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
-		long start = 65536L, length = 2L;
-		var hashing = HashingAlgorithms.shabal256();
-
-		try (var plot1 = Plots.create(dir.resolve("pippo.plot"), prolog, start, length, hashing, __ -> {})) {
-			String encoded = new Plots.Encoder().encode(plot1);
-			var plot2 = new Plots.Decoder().decode(encoded);
-			assertEquals(plot1, plot2);
-		}
-	}
 
 	@Test
 	@DisplayName("the best deadline of a plot respects the challenge and is valid")

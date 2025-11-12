@@ -22,12 +22,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.IntConsumer;
 
 import io.hotmoka.crypto.api.HashingAlgorithm;
-import io.hotmoka.websockets.beans.MappedDecoder;
-import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.internal.PlotImpl;
-import io.mokamint.plotter.internal.json.PlotJson;
 
 /**
  * Provider of plot files for Mokamint.
@@ -66,45 +63,4 @@ public abstract class Plots {
 	public static Plot create(Path path, Prolog prolog, long start, long length, HashingAlgorithm hashing, IntConsumer onNewPercent) throws IOException {
 		return new PlotImpl(path, prolog, start, length, hashing, onNewPercent);
 	}
-
-	/**
-	 * Gson encoder.
-	 */
-	public static class Encoder extends MappedEncoder<Plot, Json> {
-
-		/**
-		 * Creates a new encoder.
-		 */
-		public Encoder() {
-			super(Json::new);
-		}
-	}
-
-	/**
-	 * Gson decoder.
-	 */
-	public static class Decoder extends MappedDecoder<Plot, Json> {
-
-		/**
-		 * Creates a new decoder.
-		 */
-		public Decoder() {
-			super(Json.class);
-		}
-	}
-
-    /**
-     * Json representation.
-     */
-    public static class Json extends PlotJson {
-
-    	/**
-    	 * Creates the Json representation for the given plot.
-    	 * 
-    	 * @param plot the plot
-    	 */
-    	public Json(Plot plot) {
-    		super(plot);
-    	}
-    }
 }

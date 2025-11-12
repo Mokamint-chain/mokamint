@@ -25,9 +25,9 @@ import picocli.CommandLine.HelpCommand;
 @Command(name = "transactions",
 	description = "Operate on the transactions of a node.",
 	subcommands = {
-		HelpCommand.class,
 		Add.class,
 		Find.class,
+		HelpCommand.class,
 		Show.class
 	})
 public class Transactions {

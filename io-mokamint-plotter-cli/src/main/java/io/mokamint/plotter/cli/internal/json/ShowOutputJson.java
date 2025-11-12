@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,31 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.internal.json;
+package io.mokamint.plotter.cli.internal.json;
 
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.nonce.Prologs;
-import io.mokamint.plotter.api.Plot;
-import io.mokamint.plotter.internal.PlotImpl;
+import io.mokamint.plotter.cli.api.ShowOutput;
+import io.mokamint.plotter.cli.internal.ShowImpl;
 
 /**
- * The JSON representation of a {@link Plot}.
+ * The JSON representation of the output of the {@code mokamint-plotter create} command.
  */
-public abstract class PlotJson implements JsonRepresentation<Plot> {
+public abstract class ShowOutputJson implements JsonRepresentation<ShowOutput> {
 	private final Prologs.Json prolog;
 	private final long start;
 	private final long length;
 	private final String hashing;
 
-	protected PlotJson(Plot plot) {
-		this.prolog = new Prologs.Json(plot.getProlog());
-		this.start = plot.getStart();
-		this.length = plot.getLength();
-		this.hashing = plot.getHashing().getName();
+	protected ShowOutputJson(ShowOutput output) {
+		this.prolog = new Prologs.Json(output.getProlog());
+		this.start = output.getStart();
+		this.length = output.getLength();
+		this.hashing = output.getHashing().getName();
+	}
+
+	@Override
+	public ShowOutput unmap() throws InconsistentJsonException, NoSuchAlgorithmException {
+		return new ShowImpl.Output(this);
 	}
 
 	public Prologs.Json getProlog() {
@@ -55,10 +59,5 @@ public abstract class PlotJson implements JsonRepresentation<Plot> {
 
 	public String getHashing() {
 		return hashing;
-	}
-
-	@Override
-	public Plot unmap() throws InconsistentJsonException, NoSuchAlgorithmException, IOException {
-		return new PlotImpl(this);
 	}
 }

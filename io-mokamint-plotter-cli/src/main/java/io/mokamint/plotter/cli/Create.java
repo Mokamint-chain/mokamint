@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements the plots of a Mokamint blockchain.
- */
-module io.mokamint.plotter {
-	exports io.mokamint.plotter;
+package io.mokamint.plotter.cli;
 
-	requires transitive io.mokamint.plotter.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.marshalling;
-	requires java.logging;
+import io.mokamint.plotter.cli.internal.CreateImpl;
+import picocli.CommandLine.Command;
+
+/**
+ * A command that creates a plot file.
+ */
+@Command(name = "create", description = "Create a new plot file.", showDefaultValues = true)
+public class Create extends CreateImpl {
+
+	/**
+	 * Builds the command.
+	 */
+	public Create() {}
 }

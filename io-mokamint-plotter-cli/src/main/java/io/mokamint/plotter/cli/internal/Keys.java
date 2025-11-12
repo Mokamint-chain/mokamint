@@ -14,17 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements the plots of a Mokamint blockchain.
- */
-module io.mokamint.plotter {
-	exports io.mokamint.plotter;
+package io.mokamint.plotter.cli.internal;
 
-	requires transitive io.mokamint.plotter.api;
-	requires io.mokamint.nonce;
-	requires io.hotmoka.crypto;
-	requires io.hotmoka.exceptions;
-	requires io.hotmoka.annotations;
-	requires io.hotmoka.marshalling;
-	requires java.logging;
+import io.hotmoka.crypto.cli.keys.Create;
+import io.hotmoka.crypto.cli.keys.Export;
+import io.hotmoka.crypto.cli.keys.Import;
+import io.hotmoka.crypto.cli.keys.Show;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
+
+@Command(name = "keys",
+	description = "Manage cryptographic keys.",
+	subcommands = {
+		Create.class,
+		Export.class,
+		HelpCommand.class,
+		Import.class,
+		Show.class
+	})
+public class Keys {
 }
