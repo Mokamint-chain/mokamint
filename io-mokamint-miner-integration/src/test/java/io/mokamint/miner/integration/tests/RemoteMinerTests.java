@@ -60,7 +60,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 		class MinerServiceTest extends MinerServiceImpl {
 
-			public MinerServiceTest() throws FailedDeploymentException {
+			public MinerServiceTest() throws FailedDeploymentException, InterruptedException {
 				super(Optional.of(miner), URI, 30_000);
 			}
 
@@ -93,7 +93,7 @@ public class RemoteMinerTests extends AbstractLoggedTests {
 
 		class MinerServiceTest extends MinerServiceImpl {
 
-			public MinerServiceTest() throws FailedDeploymentException {
+			public MinerServiceTest() throws FailedDeploymentException, InterruptedException {
 				super(Optional.of(miner), URI, 30_000);
 			}
 

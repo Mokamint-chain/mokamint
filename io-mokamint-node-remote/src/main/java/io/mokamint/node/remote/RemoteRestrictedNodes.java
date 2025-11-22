@@ -38,8 +38,9 @@ public abstract class RemoteRestrictedNodes {
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the new remote node
 	 * @throws FailedDeploymentException if the remote node could not be created
+	 * @throws InterruptedException if the deployment of the remote has been interrupted
 	 */
-	public static RemoteRestrictedNode of(URI uri, int timeout) throws FailedDeploymentException {
+	public static RemoteRestrictedNode of(URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		return new RemoteRestrictedNodeImpl(uri, timeout);
 	}
 }

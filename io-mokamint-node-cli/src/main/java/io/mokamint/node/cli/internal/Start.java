@@ -308,7 +308,7 @@ public class Start extends AbstractCommand {
 				Files.createDirectories(dir);
 		}
 
-		private Application mkApplication() throws CommandException {
+		private Application mkApplication() throws CommandException, InterruptedException {
 			Application app;
 
 			if (application != null) {

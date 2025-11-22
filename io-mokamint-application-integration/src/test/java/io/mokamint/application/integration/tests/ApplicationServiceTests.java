@@ -107,7 +107,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -138,7 +138,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -170,7 +170,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -201,7 +201,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -234,7 +234,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -265,7 +265,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -297,7 +297,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -329,7 +329,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -361,7 +361,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -392,7 +392,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -437,7 +437,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -471,7 +471,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -503,7 +503,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -536,7 +536,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -569,7 +569,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -613,7 +613,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -657,7 +657,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -688,7 +688,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -720,7 +720,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -751,7 +751,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -783,7 +783,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 	
@@ -814,7 +814,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 
@@ -873,7 +873,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteApplicationImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, TIME_OUT);
 			}
 

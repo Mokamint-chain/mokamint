@@ -71,7 +71,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, 2000);
 			}
 
@@ -108,7 +108,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, 2000);
 			}
 
@@ -180,7 +180,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, 2000);
 			}
 
@@ -216,7 +216,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyTestClient extends RemoteRestrictedNodeImpl {
 
-			public MyTestClient() throws FailedDeploymentException {
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
 				super(URI, 2000);
 			}
 
@@ -240,7 +240,7 @@ public class RestrictedNodeServiceTests extends AbstractLoggedTests {
 		
 		class MyRemoteRestrictedNode extends RemoteRestrictedNodeImpl {
 
-			private MyRemoteRestrictedNode() throws FailedDeploymentException {
+			private MyRemoteRestrictedNode() throws FailedDeploymentException, InterruptedException {
 				super(java.net.URI.create("ws://localhost:8031"), 2000);
 			}
 

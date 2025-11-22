@@ -40,8 +40,9 @@ public final class MinerServices {
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the miner service
 	 * @throws FailedDeploymentException if the service cannot be deployed
+	 * @throws InterruptedException if the deployment of the service has been interrupted
 	 */
-	public static MinerService of(Miner miner, URI uri, int timeout) throws FailedDeploymentException {
+	public static MinerService of(Miner miner, URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		return new MinerServiceImpl(Optional.of(miner), uri, timeout);
 	}
 
@@ -54,8 +55,9 @@ public final class MinerServices {
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the miner service
 	 * @throws FailedDeploymentException if the service cannot be deployed
+	 * @throws InterruptedException if the deployment of the service has been interrupted
 	 */
-	public static MinerService of(URI uri, int timeout) throws FailedDeploymentException {
+	public static MinerService of(URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		return new MinerServiceImpl(Optional.empty(), uri, timeout);
 	}
 }

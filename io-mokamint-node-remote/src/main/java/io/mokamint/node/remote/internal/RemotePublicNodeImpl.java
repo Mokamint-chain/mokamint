@@ -567,7 +567,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetPeerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
 	}
@@ -575,7 +575,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMinerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
 	}
@@ -583,7 +583,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTaskInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
 	}
@@ -591,7 +591,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 	}
@@ -599,7 +599,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockDescriptionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
 	}
@@ -607,7 +607,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetConfigEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 	}
@@ -615,7 +615,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 	}
@@ -623,7 +623,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
 	}
@@ -631,7 +631,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 	}
@@ -639,7 +639,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTransactionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetTransactionResultMessages.Decoder.class, GetTransactionMessages.Encoder.class);
 		}
 	}
@@ -647,7 +647,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTransactionRepresentationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetTransactionRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetTransactionRepresentationMessages.Encoder.class);
 		}
 	}
@@ -655,7 +655,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTransactionAddressEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetTransactionAddressResultMessages.Decoder.class, GetTransactionAddressMessages.Encoder.class);
 		}
 	}
@@ -663,7 +663,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMempoolInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
 		}
 	}
@@ -671,7 +671,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMempoolPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
 		}
 	}
@@ -679,7 +679,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class AddTransactionEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, AddTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddTransactionMessages.Encoder.class);
 		}
 	}
@@ -692,7 +692,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
 		}
 	}
@@ -705,7 +705,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
 		}
 	}
@@ -718,7 +718,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperTransactionMessages.Decoder.class, WhisperTransactionMessages.Encoder.class);
 		}
 	}

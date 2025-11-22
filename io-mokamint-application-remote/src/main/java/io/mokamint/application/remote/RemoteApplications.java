@@ -37,8 +37,9 @@ public abstract class RemoteApplications {
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @return the remote application
 	 * @throws FailedDeploymentException if the remote application could not be deployed
+	 * @throws InterruptedException if the deployment of the remote has been interrupted
 	 */
-	public static RemoteApplication of(URI uri, int timeout) throws FailedDeploymentException {
+	public static RemoteApplication of(URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		return new RemoteApplicationImpl(uri, timeout);
 	}
 }

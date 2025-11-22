@@ -80,8 +80,9 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	 * @param timeout the time (in milliseconds) allowed for a call to the remote miner;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws FailedDeploymentException if the service cannot be deployed
+	 * @throws InterruptedException if the deployment of the service has been interrupted
 	 */
-	public MinerServiceImpl(Optional<Miner> miner, URI uri, int timeout) throws FailedDeploymentException {
+	public MinerServiceImpl(Optional<Miner> miner, URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		super(timeout);
 
 		this.miner = miner;
@@ -176,7 +177,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class GetMiningSpecificationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
 		}
 	}
@@ -184,7 +185,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class GetBalanceEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);		
 		}
 	}
@@ -258,7 +259,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class MiningEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 

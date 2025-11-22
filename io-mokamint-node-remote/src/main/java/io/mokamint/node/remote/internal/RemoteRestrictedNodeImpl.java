@@ -76,8 +76,9 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	 * @param timeout the time (in milliseconds) allowed for a call to the network service;
 	 *                beyond that threshold, a timeout exception is thrown
 	 * @throws FailedDeploymentException if the remote node could not be created
+	 * @throws InterruptedException if the deployment of the remote has been interrupted
 	 */
-	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws FailedDeploymentException {
+	public RemoteRestrictedNodeImpl(URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
 		super(timeout);
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
@@ -163,7 +164,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class AddPeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 	}
@@ -179,7 +180,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class RemovePeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, RemovePeerResultMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 	}
@@ -195,7 +196,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class OpenMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
 		}
 	}
@@ -211,7 +212,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class RemoveMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException {
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
 		}
 	}

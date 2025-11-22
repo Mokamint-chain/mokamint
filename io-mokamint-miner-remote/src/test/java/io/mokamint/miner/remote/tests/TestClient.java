@@ -46,7 +46,7 @@ public class TestClient extends AbstractWebSocketClient {
 	private final Consumer<Challenge> onChallengeReceived;
 	private final Session session;
 
-	public TestClient(URI uri, Consumer<Challenge> onChallengeReceived) throws FailedDeploymentException {
+	public TestClient(URI uri, Consumer<Challenge> onChallengeReceived) throws FailedDeploymentException, InterruptedException {
 		this.onChallengeReceived = onChallengeReceived;
 		this.session = new MiningEndpoint().deployAt(uri);
 
@@ -66,7 +66,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 	private class MiningEndpoint extends AbstractClientEndpoint<TestClient> {
 
-		private Session deployAt(URI uri) throws FailedDeploymentException {
+		private Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri.resolve(MINING_ENDPOINT), Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
@@ -78,7 +78,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 	private class GetMiningSpecificationEndpoint extends AbstractClientEndpoint<TestClient> {
 
-		private Session deployAt(URI uri) throws FailedDeploymentException {
+		private Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri.resolve(GET_MINING_SPECIFICATION_ENDPOINT), GetMiningSpecificationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);
 		}
 
@@ -88,7 +88,7 @@ public class TestClient extends AbstractWebSocketClient {
 
 	private class GetBalanceEndpoint extends AbstractClientEndpoint<TestClient> {
 
-		private Session deployAt(URI uri) throws FailedDeploymentException {
+		private Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri.resolve(GET_BALANCE_ENDPOINT), GetBalanceResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetBalanceMessages.Encoder.class);
 		}
 
