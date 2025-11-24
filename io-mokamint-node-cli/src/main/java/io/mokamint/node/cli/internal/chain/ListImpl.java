@@ -34,13 +34,11 @@ import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "ls", description = "List the blocks in the chain of a node.")
-public class List extends AbstractPublicRpcCommand {
+public class ListImpl extends AbstractPublicRpcCommand {
 
 	@Parameters(description = "the number of blocks that must be listed", defaultValue = "100")
 	private int count;
@@ -48,7 +46,7 @@ public class List extends AbstractPublicRpcCommand {
 	@Option(names = "from", description = "the height of the first block that must be reported (-1 to list the topmost count blocks)", defaultValue = "-1")
 	private long from;
 
-	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(ListImpl.class.getName());
 
 	/**
 	 * The formatter used to print the creation time of the blocks.

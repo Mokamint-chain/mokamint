@@ -19,6 +19,7 @@ limitations under the License.
  */
 module io.mokamint.node.cli {
 	exports io.mokamint.node.cli;
+	exports io.mokamint.node.cli.chain;
 
 	// needed to inject CLI options or JSON serialization
 	opens io.mokamint.node.cli.internal to info.picocli;
@@ -28,11 +29,9 @@ module io.mokamint.node.cli {
     opens io.mokamint.node.cli.internal.peers to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.config to info.picocli;
     opens io.mokamint.node.cli.internal.chain to info.picocli, com.google.gson;
+    opens io.mokamint.node.cli.internal.chain.json to com.google.gson;
     opens io.mokamint.node.cli.internal.tasks to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.transactions to info.picocli, com.google.gson;
-
-    // for parsing JSON through gson (remove previous opens for com.google.cson as well)
-    //opens io.mokamint.node.cli.internal.json to com.google.gson;
 
     requires transitive io.mokamint.node.cli.api;
     requires io.mokamint.node;
@@ -51,6 +50,7 @@ module io.mokamint.node.cli {
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.websockets.client.api;
+	requires io.hotmoka.annotations;
 	requires com.google.gson;
     // this makes sun.misc.Unsafe accessible, so that Gson can instantiate classes without the no-args constructor
  	requires jdk.unsupported;

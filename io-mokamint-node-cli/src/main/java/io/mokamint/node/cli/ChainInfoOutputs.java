@@ -14,20 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.plotter.cli;
+package io.mokamint.node.cli;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.plotter.cli.api.ChainInfoOutput;
-import io.mokamint.plotter.cli.internal.json.ShowOutputJson;
+import io.mokamint.node.cli.api.chain.ChainInfoOutput;
+import io.mokamint.node.cli.internal.chain.json.ChainInfoOutputJson;
 import jakarta.websocket.DecodeException;
 
 /**
- * Providers of outputs for the {@code mokamint-plotter show} command.
+ * Providers of outputs for the {@code mokamint-node chain info} command.
  */
-public abstract class ShowOutputs {
+public abstract class ChainInfoOutputs {
 
-	private ShowOutputs() {}
+	private ChainInfoOutputs() {}
 
 	/**
 	 * Yields the output of the command from its JSON representation.
@@ -43,7 +43,7 @@ public abstract class ShowOutputs {
 	/**
 	 * JSON representation.
 	 */
-	public static class Json extends ShowOutputJson {
+	public static class Json extends ChainInfoOutputJson {
 	
 		/**
 		 * Creates the JSON representation for the given output.

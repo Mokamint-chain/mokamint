@@ -16,14 +16,14 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal;
 
-import io.mokamint.node.cli.internal.chain.Info;
-import io.mokamint.node.cli.internal.chain.List;
-import io.mokamint.node.cli.internal.chain.Show;
+import io.mokamint.node.cli.chain.Info;
+import io.mokamint.node.cli.chain.List;
+import io.mokamint.node.cli.chain.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
 @Command(name = "chain",
-	description = "Display the chain of a node.",
+	description = "Manage the chain of a node.",
 	subcommands = {
 		HelpCommand.class,
 		Info.class,

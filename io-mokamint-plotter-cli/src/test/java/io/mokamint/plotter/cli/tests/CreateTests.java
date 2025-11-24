@@ -30,7 +30,7 @@ import io.hotmoka.crypto.cli.keys.KeysShowOutputs;
 import io.hotmoka.testing.AbstractLoggedTests;
 import io.mokamint.plotter.cli.MokamintPlotter;
 import io.mokamint.plotter.cli.ShowOutputs;
-import io.mokamint.plotter.cli.api.ShowOutput;
+import io.mokamint.plotter.cli.api.ChainInfoOutput;
 
 /**
  * Tests for the {@code mokamint-plotter create} command.
@@ -58,7 +58,7 @@ public class CreateTests extends AbstractLoggedTests {
 		MokamintPlotter.create(plotFile + " " + expectedStart + " " + expectedLength + " " + expectedChainId + " " + expectedPublicKeyNodeBase58 + " " + expectedPublicKeyDeadlinesBase58
 			+ " --signature-of-node " + expectedSignatureOfNode + " --signature-of-plot " + expectedSignatureOfPlot + " --hashing " + expectedHashing + " --json");
 
-		ShowOutput actual = ShowOutputs.from(MokamintPlotter.show(plotFile + " --json"));
+		ChainInfoOutput actual = ShowOutputs.from(MokamintPlotter.show(plotFile + " --json"));
 		var prolog = actual.getProlog();
 		assertEquals(expectedPublicKeyNodeBase58, prolog.getPublicKeyForSigningBlocksBase58());
 		assertEquals(expectedPublicKeyDeadlinesBase58, prolog.getPublicKeyForSigningDeadlinesBase58());

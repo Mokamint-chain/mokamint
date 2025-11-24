@@ -36,11 +36,9 @@ import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "show", description = "Show the blocks of the chain of a node.")
-public class Show extends AbstractPublicRpcCommand {
+public class ShowImpl extends AbstractPublicRpcCommand {
 
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private BlockIdentifier blockIdentifier;

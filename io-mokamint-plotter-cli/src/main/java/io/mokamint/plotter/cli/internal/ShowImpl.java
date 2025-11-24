@@ -32,7 +32,7 @@ import io.mokamint.nonce.api.Prolog;
 import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 import io.mokamint.plotter.cli.ShowOutputs;
-import io.mokamint.plotter.cli.api.ShowOutput;
+import io.mokamint.plotter.cli.api.ChainInfoOutput;
 import io.mokamint.plotter.cli.internal.json.ShowOutputJson;
 import picocli.CommandLine.Parameters;
 
@@ -58,7 +58,7 @@ public class ShowImpl extends AbstractCommandWithJsonOutput {
 	 * The output of this command.
 	 */
 	@Immutable
-	public static class Output implements ShowOutput {
+	public static class Output implements ChainInfoOutput {
 		private final Prolog prolog;
 		private final long start;
 		private final long length;

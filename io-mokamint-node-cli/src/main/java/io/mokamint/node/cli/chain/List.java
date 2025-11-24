@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module defines the API of the command-line tool for Mokamint nodes.
- */
-module io.mokamint.node.cli.api {
-	exports io.mokamint.node.cli.api.chain;
+package io.mokamint.node.cli.chain;
 
-	requires io.hotmoka.annotations;
-	requires transitive io.mokamint.node.api;
-	requires transitive io.hotmoka.crypto.api;
+import io.mokamint.node.cli.internal.chain.ListImpl;
+import picocli.CommandLine.Command;
+
+@Command(name = "ls", description = "List the blocks in the chain of a node.")
+public class List extends ListImpl {
 }

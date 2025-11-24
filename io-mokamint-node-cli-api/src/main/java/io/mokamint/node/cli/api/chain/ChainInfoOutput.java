@@ -14,10 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.api.applications;
+package io.mokamint.node.cli.api.chain;
+
+import io.hotmoka.annotations.Immutable;
+import io.mokamint.node.api.ChainInfo;
 
 /**
- * TODO: Temporary placeholder for compilation. Remove later.
+ * The output of the {@code mokamint-node chain info} command.
  */
-public interface Dummy {
+@Immutable
+public interface ChainInfoOutput {
+
+	/**
+	 * Yields the chain information in this output.
+	 * 
+	 * @return the chain information
+	 */
+	ChainInfo getChainInfo();
 }

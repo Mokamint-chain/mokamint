@@ -15,6 +15,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-node-api</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.hotmoka.annotations</groupId>
       <artifactId>io-hotmoka-annotations</artifactId>
       <version>${io.hotmoka.annotations.version}</version>

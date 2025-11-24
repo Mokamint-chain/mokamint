@@ -17,11 +17,9 @@ limitations under the License.
 package io.mokamint.node.cli.internal;
 
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import io.hotmoka.cli.AbstractRpcCommand;
+import io.hotmoka.cli.AbstractRpcCommandWithJsonOutput;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.ClosedNodeException;
@@ -33,16 +31,10 @@ import picocli.CommandLine.Option;
  * Shared code among the commands that connect to a remote and perform Rpc calls
  * to the public API of the remote.
  */
-public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<RemotePublicNode> {
+public abstract class AbstractPublicRpcCommand extends AbstractRpcCommandWithJsonOutput<RemotePublicNode> {
 
 	@Option(names = { "--uri", "--public-uri" }, description = "the network URI where the public API of the service is published", defaultValue = "ws://localhost:8030")
 	private URI publicUri;
-
-	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")
-	private Path redirection; // TODO: this is currently ignored in most commands
-
-	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
-	private boolean json;
 
 	protected AbstractPublicRpcCommand() {}
 
@@ -53,25 +45,6 @@ public abstract class AbstractPublicRpcCommand extends AbstractRpcCommand<Remote
 	 */
 	protected final URI publicUri() {
 		return publicUri;
-	}
-
-	/**
-	 * Determines if the output is required in JSON format.
-	 * 
-	 * @return true if and only if that condition holds
-	 */
-	protected final boolean json() {
-		return json;
-	}
-
-	/**
-	 * Yields the path where the output must be redirected.
-	 * If missing, the output must be printed to the standard output.
-	 * 
-	 * @return the path, if any
-	 */
-	protected final Optional<Path> redirection() {
-		return Optional.ofNullable(redirection);
 	}
 
 	/**

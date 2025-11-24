@@ -24,7 +24,7 @@ import io.mokamint.nonce.api.Prolog;
  * The output of the {@code mokamint-plotter show} command.
  */
 @Immutable
-public interface ShowOutput {
+public interface ChainInfoOutput {
 
 	/**
 	 * Yields the prolog of the plot file to show.
