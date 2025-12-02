@@ -19,6 +19,14 @@ package io.mokamint.node.cli.chain;
 import io.mokamint.node.cli.internal.chain.ShowImpl;
 import picocli.CommandLine.Command;
 
+/**
+ * A command that shows the blocks of the chain of a node.
+ */
 @Command(name = "show", description = "Show the blocks of the chain of a node.")
 public class Show extends ShowImpl {
+
+	/**
+	 * Creates the command.
+	 */
+	public Show() {}
 }

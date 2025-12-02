@@ -78,6 +78,7 @@ import io.mokamint.node.api.TransactionAddress;
 import io.mokamint.node.api.TransactionRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeException;
+import io.mokamint.node.local.SynchronizationException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -615,8 +616,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ClosedDatabaseException if the database is already closed
 	 * @throws ClosedNodeException if the node is already closed
+	 * @throws SynchronizationException if synchronization fails
 	 */
-	public void synchronize() throws InterruptedException, ClosedNodeException, ClosedDatabaseException {
+	public void synchronize() throws InterruptedException, ClosedNodeException, ClosedDatabaseException, SynchronizationException {
 		try {
 			new Synchronization(node, executors);
 		}

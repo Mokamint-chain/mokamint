@@ -30,6 +30,6 @@ public class PeerTimeoutException extends TimeoutException {
 	 * @param cause the cause of the exception
 	 */
 	public PeerTimeoutException(TimeoutException cause) {
-		super(cause.getMessage());
+		super(cause.getMessage() != null ? cause.getMessage() : "the connection to the peer timed out");
 	}
 }

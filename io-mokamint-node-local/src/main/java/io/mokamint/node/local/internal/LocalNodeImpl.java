@@ -89,6 +89,7 @@ import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeException;
+import io.mokamint.node.local.SynchronizationException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
@@ -222,6 +223,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * The mining specification of every miner that works with this node.
 	 */
 	private final MiningSpecification miningSpecification;
+
+	/**
+	 * An exception thrown if the last synchronization could not be completed.
+	 */
+	private volatile SynchronizationException synchronizationException;
 
 	private final static Logger LOGGER = Logger.getLogger(LocalNodeImpl.class.getName());
 
@@ -850,6 +856,15 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
+	 * Yields the exception that explains why the last synchronization failed.
+	 * 
+	 * @return the exception, if any
+	 */
+	protected Optional<SynchronizationException> getLastSynchronizationException() {
+		return Optional.ofNullable(synchronizationException);
+	}
+
+	/**
 	 * Whispers a peer, but does not add it to this node.
 	 * 
 	 * @param peer the peer to whisper
@@ -1182,6 +1197,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			}
 			catch (ClosedDatabaseException e) {
 				LOGGER.warning("sync: stop synchronizing since the database has been closed: " + e.getMessage());
+			}
+			catch (SynchronizationException e) {
+				synchronizationException = e;
+				LOGGER.warning("sync: synchronization could not be completed: " + e.getMessage());
 			}
 		}
 	}

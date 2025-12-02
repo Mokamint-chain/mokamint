@@ -19,6 +19,14 @@ package io.mokamint.node.cli.chain;
 import io.mokamint.node.cli.internal.chain.InfoImpl;
 import picocli.CommandLine.Command;
 
+/**
+ * A command that shows information about the chain of a node.
+ */
 @Command(name = "info", description = "Show information about the chain of a node.")
 public class Info extends InfoImpl {
+
+	/**
+	 * Creates the command.
+	 */
+	public Info() {}
 }

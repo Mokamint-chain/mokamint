@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2025 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.chain;
-
-import io.mokamint.node.cli.internal.chain.ListImpl;
-import picocli.CommandLine.Command;
+package io.mokamint.node.local;
 
 /**
- * A command that lists the blocks in the chain of a node.
+ * An exception thrown if the synchronization of a blockchain failed.
  */
-@Command(name = "ls", description = "List the blocks in the chain of a node.")
-public class List extends ListImpl {
+@SuppressWarnings("serial")
+public class SynchronizationException extends Exception {
 
 	/**
-	 * Creates the command.
+	 * Creates the exception.
+	 * 
+	 * @param message the message
 	 */
-	public List() {}
+	public SynchronizationException(String message) {
+		super(message);
+	}
 }

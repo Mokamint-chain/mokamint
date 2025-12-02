@@ -448,7 +448,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		private long peerInitialPoints = 1000L;
 		private int peerMaxTimeDifference = 15000;
 		private long peerPunishmentForUnreachable = 1L;
-		private int peerTimeout = 10000;
+		private int peerTimeout = 30000;
 		private int peerPingInterval = 120_000;
 		private int serviceBroadcastInterval = 240_000;
 		private int synchronizationInterval = 300_000;

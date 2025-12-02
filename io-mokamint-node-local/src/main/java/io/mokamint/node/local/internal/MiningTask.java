@@ -127,6 +127,10 @@ public class MiningTask implements Task {
 			LOGGER.warning("mining: cannot mine since synchronization is in progress, will retry later");
 			suspendUntilSomethingChanges();
 		}
+		else if (node.getLastSynchronizationException().isPresent()) {
+			LOGGER.warning("mining: cannot mine since synchronization failed: " + node.getLastSynchronizationException().get().getMessage());
+			suspendUntilSomethingChanges();
+		}
 		else {
 			try {
 				// object construction must be separated from its execution, since this allows
