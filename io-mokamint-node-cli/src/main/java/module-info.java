@@ -35,6 +35,7 @@ module io.mokamint.node.cli {
 
     requires transitive io.mokamint.node.cli.api;
     requires io.mokamint.node;
+    requires io.mokamint.constants;
     requires io.mokamint.node.local;
 	requires io.mokamint.application.api;
 	requires io.mokamint.miner.local;

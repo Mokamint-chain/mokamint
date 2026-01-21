@@ -24,6 +24,7 @@ module io.mokamint.miner.cli {
     requires io.mokamint.miner.local;
     requires io.mokamint.miner.service;
     requires io.mokamint.plotter;
+    requires io.mokamint.constants;
     requires io.hotmoka.cli;
     requires io.hotmoka.crypto;
     requires io.hotmoka.crypto.cli;

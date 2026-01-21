@@ -24,6 +24,7 @@ module io.mokamint.application.cli {
     requires io.mokamint.application;
     requires io.mokamint.application.remote;
     requires io.mokamint.application.service;
+    requires io.mokamint.constants;
     requires io.hotmoka.cli;
     requires io.hotmoka.websockets.client.api;
     requires jakarta.websocket.client;

@@ -16,13 +16,12 @@ limitations under the License.
 
 package io.mokamint.application.cli;
 
-import java.io.IOException;
-
 import io.hotmoka.cli.AbstractCLI;
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
 import io.mokamint.application.cli.internal.Info;
 import io.mokamint.application.cli.internal.List;
 import io.mokamint.application.cli.internal.Start;
+import io.mokamint.constants.Constants;
 import picocli.CommandLine.Command;
 
 /**
@@ -71,8 +70,8 @@ public class MokamintApplication extends AbstractCLI {
 		public POMVersionProvider() {}
 
 		@Override
-		public String[] getVersion() throws IOException {
-			return getVersion(() -> MokamintApplication.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		public String[] getVersion() {
+			return new String[] { Constants.MOKAMINT_VERSION };
 		}
 	}
 }

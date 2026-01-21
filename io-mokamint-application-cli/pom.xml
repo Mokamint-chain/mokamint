@@ -29,6 +29,11 @@
       <artifactId>io-mokamint-application-remote</artifactId>
       <version>${mokamint.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-constants</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
 	<dependency>
       <groupId>io.hotmoka.cli</groupId>
       <artifactId>io-hotmoka-cli</artifactId>
@@ -66,22 +71,6 @@
             </fileset>
           </filesets>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <version>1.1.0</version>
-        <executions>
-          <execution>
-            <phase>initialize</phase>
-            <goals>
-              <goal>write-project-properties</goal>
-            </goals>
-            <configuration>
-              <outputFile>${project.build.outputDirectory}/maven.properties</outputFile>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

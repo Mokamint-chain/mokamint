@@ -34,6 +34,7 @@ public abstract class PlotSizes {
 	 * @param prolog generic data that identifies, for instance, the creator of the plot
 	 * @param length the number of nonces of the plot file
 	 * @param hashing the hashing algorithm to use for creating the nonces of the plot file
+	 * @return the calculation of the size of the plot
 	 */
 	public static PlotSize of(Prolog prolog, long length, HashingAlgorithm hashing) {
 		return new PlotSizeImpl(prolog, length, hashing);

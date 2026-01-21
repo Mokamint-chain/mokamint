@@ -22,6 +22,7 @@ import java.io.PrintStream;
 
 import io.hotmoka.cli.AbstractCLI;
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
+import io.mokamint.constants.Constants;
 import io.mokamint.node.cli.MokamintNode.POMVersionProvider;
 import io.mokamint.node.cli.internal.Applications;
 import io.mokamint.node.cli.internal.Chain;
@@ -132,7 +133,7 @@ public class MokamintNode extends AbstractCLI {
 
 	/**
 	 * Runs the given command-line with the crypto tool, inside a sand-box where the
-	 * standard output is redirected into the resulting string. It performs as calling "crypto command".
+	 * standard output is redirected into the resulting string. It performs as calling "mokamint-node command".
 	 * 
 	 * @param command the command to run with crypto
 	 * @return what the moka tool has written into the standard output
@@ -170,8 +171,8 @@ public class MokamintNode extends AbstractCLI {
 		public POMVersionProvider() {}
 
 		@Override
-		public String[] getVersion() throws IOException {
-			return getVersion(() -> MokamintNode.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		public String[] getVersion() {
+			return new String[] { Constants.MOKAMINT_VERSION };
 		}
 	}
 }

@@ -27,6 +27,7 @@ module io.mokamint.plotter.cli {
     requires transitive io.mokamint.plotter.cli.api;
 	requires io.mokamint.plotter;
 	requires io.mokamint.nonce;
+	requires io.mokamint.constants;
 	requires io.hotmoka.annotations;
 	requires io.hotmoka.exceptions;
 	requires io.hotmoka.cli;

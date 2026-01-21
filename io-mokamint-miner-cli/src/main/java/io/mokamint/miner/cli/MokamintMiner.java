@@ -22,6 +22,7 @@ import java.io.PrintStream;
 
 import io.hotmoka.cli.AbstractCLI;
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
+import io.mokamint.constants.Constants;
 import io.mokamint.miner.cli.MokamintMiner.POMVersionProvider;
 import io.mokamint.miner.cli.internal.Balance;
 import io.mokamint.miner.cli.internal.Info;
@@ -145,8 +146,8 @@ public class MokamintMiner extends AbstractCLI {
 		public POMVersionProvider() {}
 
 		@Override
-		public String[] getVersion() throws IOException {
-			return getVersion(() -> MokamintMiner.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		public String[] getVersion() {
+			return new String[] { Constants.MOKAMINT_VERSION };
 		}
 	}
 }

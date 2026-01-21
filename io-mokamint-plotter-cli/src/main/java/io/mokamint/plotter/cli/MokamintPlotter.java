@@ -22,6 +22,7 @@ import java.io.PrintStream;
 
 import io.hotmoka.cli.AbstractCLI;
 import io.hotmoka.cli.AbstractPropertyFileVersionProvider;
+import io.mokamint.constants.Constants;
 import io.mokamint.plotter.cli.MokamintPlotter.POMVersionProvider;
 import io.mokamint.plotter.cli.internal.Keys;
 import picocli.CommandLine.Command;
@@ -163,8 +164,8 @@ public class MokamintPlotter extends AbstractCLI {
 		public POMVersionProvider() {}
 
 		@Override
-		public String[] getVersion() throws IOException {
-			return getVersion(() -> MokamintPlotter.class.getModule().getResourceAsStream("maven.properties"), "mokamint.version");
+		public String[] getVersion() {
+			return new String[] { Constants.MOKAMINT_VERSION };
 		}
 	}
 }
