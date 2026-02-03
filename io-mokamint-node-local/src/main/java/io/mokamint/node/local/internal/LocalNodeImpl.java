@@ -858,7 +858,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Yields the exception that explains why the last synchronization failed.
 	 * 
-	 * @return the exception, if any
+	 * @return the exception, if any; this is empty if the last synchronization succeeded
 	 */
 	protected Optional<SynchronizationException> getLastSynchronizationException() {
 		return Optional.ofNullable(synchronizationException);
@@ -1191,6 +1191,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		if (isSynchronizing.getAndSet(true) == false) { // we avoid to synchronize if synchronization is already in process
 			try {
 				blockchain.synchronize();
+				synchronizationException = null; // yes, we did it!
 			}
 			catch (ClosedNodeException e) {
 				LOGGER.warning("sync: stop synchronizing since the node has been closed: " + e.getMessage());
