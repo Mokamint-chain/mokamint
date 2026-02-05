@@ -30,6 +30,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import io.hotmoka.annotations.GuardedBy;
@@ -154,10 +155,10 @@ public class Synchronization {
 	 * @throws SynchronizationException if the synchronization fails
 	 */
 	public Synchronization(LocalNodeImpl node, ExecutorService executors) throws InterruptedException, ClosedNodeException, ClosedDatabaseException, SynchronizationException {
-		LOGGER.info("sync: synchronization starts");
+		this.peers = node.getPeers();
+		LOGGER.info("sync: starting synchronization from " + peers.get().count() + " peers");
 		this.node = node;
 		this.config = node.getConfig();
-		this.peers = node.getPeers();
 		this.synchronizationGroupSize = config.getSynchronizationGroupSize();
 		this.blockchain = node.getBlockchain();
 		this.executors = executors;

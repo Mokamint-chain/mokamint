@@ -291,7 +291,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			this.peers = new PeersSet(this);
 			this.uuid = getInfo().getUUID();
 		}
-		catch (ClosedNodeException e) { // the node cannot be already closed
+		catch (ClosedNodeException e) { // the node itself cannot be already closed
 			throw new LocalNodeException("The node has been unexpectedly closed", e);
 		}
 
@@ -300,6 +300,15 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 
 		if (init)
 			initialize();
+
+		try {
+			// we force a connection to the peers of our peers, in order to synchronize with as many peers as possible later
+			if (config.getPeerPingInterval() >= 0)
+				peers.pingAllAndReconnect();
+		}
+		catch (ClosedNodeException | ClosedDatabaseException e) { // the node itself cannot be already closed
+			throw new LocalNodeException("The node has been unexpectedly closed", e);
+		}
 
 		scheduleTasks();
 	}
