@@ -24,6 +24,4 @@ module io.mokamint.application.empty {
     requires io.mokamint.application;
     requires transitive io.mokamint.nonce.api;
     requires transitive io.mokamint.node.api;
-    requires transitive io.hotmoka.closeables.api;
-	requires java.logging;
 }

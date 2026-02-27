@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.hotmoka.closeables.api.OnCloseHandler;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.ClosedApplicationException;
@@ -128,13 +127,5 @@ public class EmptyApplication extends AbstractApplication {
 	@Override
 	public void publish(Block block) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
-	}
-
-	@Override
-	public void addOnCloseHandler(OnCloseHandler handler) {
-	}
-
-	@Override
-	public void removeOnCloseHandler(OnCloseHandler handler) {
 	}
 }

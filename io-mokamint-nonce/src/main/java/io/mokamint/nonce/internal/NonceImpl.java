@@ -87,6 +87,7 @@ public final class NonceImpl implements Nonce {
 	public byte[] getValueFor(Challenge challenge) {
 		byte[] generationSignature = challenge.getGenerationSignature();
 		int scoopNumber = challenge.getScoopNumber();
+		// TODO: why not using the quicker hashingForGeneration below?
 		return hasher.hash(extractScoopAndConcat(scoopNumber, generationSignature));
 	}
 

@@ -42,7 +42,7 @@ import io.mokamint.nonce.api.Deadline;
  * by calling the API of its application as follows:
  * 
  * <ul>
- * <li> <code>groupId = beginBlock(height, initialStateId, when);</code>
+ * <li> <code>groupId = beginBlock(height, when, initialStateId);</code>
  * <li> for each transaction <code>tx</code> in the block, do:
  * <ul>
  * <li> <code>checkTransaction(tx);</code>
