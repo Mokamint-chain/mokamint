@@ -47,7 +47,7 @@ import io.hotmoka.websockets.beans.api.ExceptionMessage;
 import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
+import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
@@ -68,9 +68,9 @@ import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.Requests;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -133,8 +133,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceCheckTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doNothing().when(app).checkTransaction(eq(transaction));
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
+		doNothing().when(app).checkRequest(eq(transaction));
 
 		class MyTestClient extends RemoteApplicationImpl {
 
@@ -164,9 +164,9 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceCheckTransactionRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
-		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).checkTransaction(eq(transaction));
+		doThrow(new RequestRejectedException(exceptionMessage)).when(app).checkRequest(eq(transaction));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -176,12 +176,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && RequestRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
-			private void sendCheckTransaction(Transaction transaction) {
-				sendCheckTransaction(transaction, ID);
+			private void sendCheckTransaction(Request request) {
+				sendCheckTransaction(request, ID);
 			}
 		}
 	
@@ -260,7 +260,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceGetPriorityWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		when(app.getPriority(eq(transaction))).thenReturn(42L);
 
 		class MyTestClient extends RemoteApplicationImpl {
@@ -291,9 +291,9 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceGetPriorityRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		String exceptionMessage = "rejected";
-		when(app.getPriority(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
+		when(app.getPriority(eq(transaction))).thenThrow(new RequestRejectedException(exceptionMessage));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -303,12 +303,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && RequestRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
-			private void sendGetPriority(Transaction transaction) {
-				sendGetPriority(transaction, ID);
+			private void sendGetPriority(Request request) {
+				sendGetPriority(request, ID);
 			}
 		}
 	
@@ -323,7 +323,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceGetRepresentationWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var representation = "this is the wonderful representation";
 		when(app.getRepresentation(eq(transaction))).thenReturn(representation);
 
@@ -355,9 +355,9 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceGetRepresentationRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		String exceptionMessage = "rejected";
-		when(app.getRepresentation(eq(transaction))).thenThrow(new TransactionRejectedException(exceptionMessage));
+		when(app.getRepresentation(eq(transaction))).thenThrow(new RequestRejectedException(exceptionMessage));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -367,12 +367,12 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && RequestRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
-			private void sendGetRepresentation(Transaction transaction) {
-				sendGetRepresentation(transaction, ID);
+			private void sendGetRepresentation(Request request) {
+				sendGetRepresentation(request, ID);
 			}
 		}
 	
@@ -497,9 +497,9 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceDeliverTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var groupId = 13;
-		doNothing().when(app).deliverTransaction(groupId, transaction);
+		doNothing().when(app).executeTransaction(groupId, transaction);
 
 		class MyTestClient extends RemoteApplicationImpl {
 
@@ -529,10 +529,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var groupId = 13;
 		var exceptionMessage = "unknown group id";
-		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
+		doThrow(new UnknownScopeIdException(exceptionMessage)).when(app).executeTransaction(groupId, transaction);
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -542,7 +542,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && UnknownScopeIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -562,10 +562,10 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
-		var transaction = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var groupId = 13;
 		var exceptionMessage = "rejected";
-		doThrow(new TransactionRejectedException(exceptionMessage)).when(app).deliverTransaction(groupId, transaction);
+		doThrow(new RequestRejectedException(exceptionMessage)).when(app).executeTransaction(groupId, transaction);
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -575,7 +575,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && RequestRejectedException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -653,7 +653,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var prolog = Prologs.of("octopus", ed25519, ed25519.getKeyPair().getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
 		var exceptionMessage = "unknown group id";
-		when(app.endBlock(groupId, deadline)).thenThrow(new UnknownGroupIdException(exceptionMessage));
+		when(app.endBlock(groupId, deadline)).thenThrow(new UnknownScopeIdException(exceptionMessage));
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -663,7 +663,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && UnknownScopeIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -716,7 +716,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var app = mkApplication();
 		var groupId = 13;
 		String exceptionMessage = "unknown group id";
-		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).commitBlock(groupId);
+		doThrow(new UnknownScopeIdException(exceptionMessage)).when(app).commitBlock(groupId);
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -726,7 +726,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && UnknownScopeIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -779,7 +779,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		var app = mkApplication();
 		var groupId = 13;
 		String exceptionMessage = "unknown group id";
-		doThrow(new UnknownGroupIdException(exceptionMessage)).when(app).abortBlock(groupId);
+		doThrow(new UnknownScopeIdException(exceptionMessage)).when(app).abortBlock(groupId);
 	
 		class MyTestClient extends RemoteApplicationImpl {
 	
@@ -789,7 +789,7 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (ID.equals(message.getId()) && UnknownGroupIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+				if (ID.equals(message.getId()) && UnknownScopeIdException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
 					semaphore.release();
 			}
 	
@@ -860,9 +860,9 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 		random.nextBytes(bytes2);
 		var bytes3 = new byte[113];
 		random.nextBytes(bytes3);
-		var transaction1 = Transactions.of(bytes1);
-		var transaction2 = Transactions.of(bytes2);
-		var transaction3 = Transactions.of(bytes3);
+		var transaction1 = Requests.of(bytes1);
+		var transaction2 = Requests.of(bytes2);
+		var transaction3 = Requests.of(bytes3);
 		var stateId = new byte[87];
 		random.nextBytes(stateId);
 		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());

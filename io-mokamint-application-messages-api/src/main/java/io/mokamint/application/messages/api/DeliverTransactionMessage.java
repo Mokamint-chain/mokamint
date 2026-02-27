@@ -19,25 +19,25 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * The network message corresponding to the {@link Application#deliverTransaction(int, Transaction)} method.
+ * The network message corresponding to the {@link Application#executeTransaction(int, Request)} method.
  */
 @Immutable
 public interface DeliverTransactionMessage extends RpcMessage {
 
 	/**
-	 * Yields the transaction in the message.
+	 * Yields the request in the message.
 	 * 
-	 * @return the transaction
+	 * @return the request
 	 */
-	Transaction getTransaction();
+	Request getRequest();
 
 	/**
-	 * Yields the transaction group identifier in the message.
+	 * Yields the execution scope identifier in the message.
 	 * 
-	 * @return the transaction group identifier
+	 * @return the execution scope identifier
 	 */
 	int getGroupId();
 }

@@ -67,14 +67,14 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ConsensusConfig;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.Whisperer;
 import io.mokamint.node.messages.AddTransactionResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
@@ -437,9 +437,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
+		var transaction3 = Requests.of(new byte[] {});
 		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3),
 			new byte[0], nodeKeyPair.getPrivate());
@@ -675,8 +675,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("add(Transaction) works")
 	public void addTransactionWorks() throws Exception {
-		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var transaction2 = new AtomicReference<Transaction>();
+		var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var transaction2 = new AtomicReference<Request>();
 
 		class MyServer extends PublicTestServer {
 
@@ -699,7 +699,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@DisplayName("add(Transaction) works in case of TransactionRejectedException")
 	public void addTransactionWorksInCaseOfTransactionRejectedException() throws Exception {
 		var exceptionMessage = "exception message";
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Requests.of(new byte[] { 1, 2, 3, 4 });
 
 		class MyServer extends PublicTestServer {
 
@@ -707,12 +707,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 
 			@Override
 			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
+				sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TransactionRejectedException.class, () -> remote.add(transaction));
+			var exception = assertThrows(RequestRejectedException.class, () -> remote.add(transaction));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -808,9 +808,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
+		var transaction3 = Requests.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
 			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
 		var semaphore = new Semaphore(0);
@@ -836,7 +836,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getTransaction() works if the transaction exists")
 	public void getTransactionWorksIfTransactionExists() throws Exception {
-		var tx1 = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var tx1 = Requests.of(new byte[] { 13, 1, 19, 73 });
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -936,12 +936,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, ExceptionMessages.of(new TransactionRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(TransactionRejectedException.class, () -> remote.getTransactionRepresentation(hash));
+			var exception = assertThrows(RequestRejectedException.class, () -> remote.getTransactionRepresentation(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

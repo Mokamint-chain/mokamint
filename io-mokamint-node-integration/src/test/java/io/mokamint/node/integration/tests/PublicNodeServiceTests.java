@@ -65,7 +65,7 @@ import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
 import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -83,9 +83,9 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.internal.RemotePublicNodeImpl;
@@ -263,9 +263,9 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations));
-		var transaction1 = Transactions.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Transactions.of(new byte[] {});
+		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
+		var transaction3 = Requests.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, sha256()),
 			Stream.of(transaction1, transaction2, transaction3),
 			new byte[0], nodeKeyPair.getPrivate());
@@ -538,7 +538,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
 	public void serviceAddTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var transaction = Transactions.of(new byte[] { 1, 2, 3, 4 });
+		var transaction = Requests.of(new byte[] { 1, 2, 3, 4 });
 		
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -775,7 +775,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionResult(Optional<Transaction> received) {
+			protected void onGetTransactionResult(Optional<Request> received) {
 				if (received.isEmpty())
 					semaphore.release();
 			}
@@ -799,7 +799,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
 	public void serviceGetTransactionNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var tx = Requests.of(new byte[] { 13, 1, 19, 73 });
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
@@ -808,7 +808,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionResult(Optional<Transaction> received) {
+			protected void onGetTransactionResult(Optional<Request> received) {
 				if (tx.equals(received.get()))
 					semaphore.release();
 			}
@@ -918,7 +918,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 			@Override
 			protected void onException(ExceptionMessage message) {
-				if (TransactionRejectedException.class.isAssignableFrom(message.getExceptionClass()))
+				if (RequestRejectedException.class.isAssignableFrom(message.getExceptionClass()))
 					semaphore.release();
 			}
 	
@@ -929,7 +929,7 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionRepresentation(hash)).thenThrow(TransactionRejectedException.class);
+		when(node.getTransactionRepresentation(hash)).thenThrow(RequestRejectedException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
 			client.sendGetTransactionRepresentation(hash);

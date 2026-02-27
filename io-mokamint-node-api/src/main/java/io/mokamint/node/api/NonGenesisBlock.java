@@ -41,7 +41,7 @@ public interface NonGenesisBlock extends Block {
 	 * 
 	 * @return the transactions
 	 */
-	Stream<Transaction> getTransactions();
+	Stream<Request> getTransactions();
 
 	/**
 	 * Yields the number of transactions inside this block.
@@ -57,5 +57,5 @@ public interface NonGenesisBlock extends Block {
 	 * @return the transaction
 	 * @throws IndexOutOfBoundsException if there is no transaction with that progressive index
 	 */
-	Transaction getTransaction(int progressive);
+	Request getTransaction(int progressive);
 }

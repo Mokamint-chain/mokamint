@@ -18,7 +18,7 @@ package io.mokamint.application.service.api;
 
 import io.hotmoka.websockets.server.api.WebSocketServer;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -42,17 +42,17 @@ public interface ApplicationService extends WebSocketServer {
 	String CHECK_DEADLINE_ENDPOINT = "/check_deadline";
 
 	/**
-	 * The network endpoint path where {@link Application#checkTransaction(Transaction)} is published.
+	 * The network endpoint path where {@link Application#checkRequest(Request)} is published.
 	 */
 	String CHECK_TRANSACTION_ENDPOINT = "/check_transaction";
 
 	/**
-	 * The network endpoint path where {@link Application#getPriority(Transaction)} is published.
+	 * The network endpoint path where {@link Application#getPriority(Request)} is published.
 	 */
 	String GET_PRIORITY_ENDPOINT = "/get_priority";
 
 	/**
-	 * The network endpoint path where {@link Application#getRepresentation(Transaction)} is published.
+	 * The network endpoint path where {@link Application#getRepresentation(Request)} is published.
 	 */
 	String GET_REPRESENTATION_ENDPOINT = "/get_representation";
 
@@ -67,7 +67,7 @@ public interface ApplicationService extends WebSocketServer {
 	String BEGIN_BLOCK_ENDPOINT = "/begin_block";
 
 	/**
-	 * The network endpoint path where {@link Application#deliverTransaction(int, Transaction)} is published.
+	 * The network endpoint path where {@link Application#executeTransaction(int, Request)} is published.
 	 */
 	String DELIVER_TRANSACTION_ENDPOINT = "/deliver_transaction";
 

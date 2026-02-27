@@ -18,7 +18,7 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.internal.WhisperTransactionMessageImpl;
 import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
@@ -37,7 +37,7 @@ public final class WhisperTransactionMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static WhisperTransactionMessage of(Transaction transaction, String id) {
+	public static WhisperTransactionMessage of(Request transaction, String id) {
 		return new WhisperTransactionMessageImpl(transaction, id);
 	}
 

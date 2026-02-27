@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.api;
+package io.mokamint.node.api;
 
 /**
- * An exception stating that a transaction group identifier is unknown to the application.
+ * An exception stating that a request added to a Mokamint node has been rejected.
  */
 @SuppressWarnings("serial")
-public class UnknownGroupIdException extends Exception {
+public class RequestRejectedException extends Exception {
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public UnknownGroupIdException(String message) {
+	public RequestRejectedException(String message) {
 		super(message);
+	}
+
+	/**
+	 * Creates a new exception with the given message and cause.
+	 * 
+	 * @param message the message
+	 * @param cause the cause
+	 */
+	public RequestRejectedException(String message, Throwable cause) {
+		super(message, cause);
 	}
 }

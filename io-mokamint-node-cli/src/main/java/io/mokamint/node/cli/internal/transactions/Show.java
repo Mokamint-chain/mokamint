@@ -23,8 +23,8 @@ import com.google.gson.Gson;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
@@ -69,12 +69,12 @@ public class Show extends AbstractPublicRpcCommand {
 		try {
 			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
-		catch (TransactionRejectedException e) {
+		catch (RequestRejectedException e) {
 			throw new CommandException("The transaction exists in blockchain but cannot be transformed into its textual representation", e);
 		}
 	}
 
-	private Transaction getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
+	private Request getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		return remote.getTransaction(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 

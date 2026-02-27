@@ -19,34 +19,34 @@ package io.mokamint.node;
 import java.io.IOException;
 
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.internal.TransactionImpl;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.internal.RequestImpl;
 
 /**
- * Providers of transaction objects.
+ * Providers of request objects.
  */
-public abstract class Transactions {
+public abstract class Requests {
 
-	private Transactions() {}
+	private Requests() {}
 
 	/**
-	 * Yields a new transaction object.
+	 * Yields a new request object.
 	 * 
-	 * @param bytes the bytes of the transaction
-	 * @return the transaction object
+	 * @param bytes the bytes of the request
+	 * @return the request object
 	 */
-	public static Transaction of(byte[] bytes) {
-		return new TransactionImpl(bytes);
+	public static Request of(byte[] bytes) {
+		return new RequestImpl(bytes);
 	}
 
 	/**
-	 * Unmarshals a transaction from the given context.
+	 * Unmarshals a request from the given context.
 	 * 
 	 * @param context the context
-	 * @return the transaction
-	 * @throws IOException if the transaction cannot be unmarshalled
+	 * @return the request
+	 * @throws IOException if the request cannot be unmarshalled
 	 */
-	public static Transaction from(UnmarshallingContext context) throws IOException {
-		return new TransactionImpl(context);
+	public static Request from(UnmarshallingContext context) throws IOException {
+		return new RequestImpl(context);
 	}
 }

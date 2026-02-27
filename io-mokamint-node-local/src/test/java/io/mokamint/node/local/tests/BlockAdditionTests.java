@@ -120,10 +120,10 @@ public class BlockAdditionTests extends AbstractLoggedTests {
 
 		application = mock(Application.class);
 		when(application.checkDeadline(any())).thenReturn(true);
-		doNothing().when(application).checkTransaction(any());
+		doNothing().when(application).checkRequest(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateId()).thenReturn(stateHash);
-		doNothing().when(application).deliverTransaction(anyInt(), any());
+		doNothing().when(application).executeTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 		var info = Infos.of("name", "description");
 		when(application.getInfo()).thenReturn(info);

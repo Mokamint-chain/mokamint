@@ -22,18 +22,18 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.internal.json.AddTransactionMessageJson;
 
 /**
  * Implementation of the network message corresponding to
- * the {@link PublicNode#post(io.mokamint.node.api.Transaction)} method of a node.
+ * the {@link PublicNode#post(io.mokamint.node.api.Request)} method of a node.
  */
 public class AddTransactionMessageImpl extends AbstractRpcMessage implements AddTransactionMessage {
-	private final Transaction transaction;
+	private final Request transaction;
 
 	/**
 	 * Creates the message.
@@ -41,7 +41,7 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	 * @param transaction the {@code transaction} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public AddTransactionMessageImpl(Transaction transaction, String id) {
+	public AddTransactionMessageImpl(Request transaction, String id) {
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
@@ -61,7 +61,7 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 			throw new InconsistentJsonException("transaction cannot be null");
 
 		try {
-			this.transaction = Transactions.of(Base64.fromBase64String(transactionBase64));
+			this.transaction = Requests.of(Base64.fromBase64String(transactionBase64));
 		}
 		catch (Base64ConversionException e) {
 			throw new InconsistentJsonException(e);
@@ -69,7 +69,7 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	}
 
 	@Override
-	public Transaction getTransaction() {
+	public Request getTransaction() {
 		return transaction;
 	}
 

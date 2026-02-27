@@ -42,8 +42,8 @@ import io.mokamint.node.api.MempoolEntry;
 import io.mokamint.node.api.MempoolInfo;
 import io.mokamint.node.api.MempoolPortion;
 import io.mokamint.node.api.PortionRejectedException;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
@@ -77,7 +77,7 @@ public class Mempool {
 	/**
 	 * The hasher of the transactions.
 	 */
-	private final Hasher<Transaction> hasher;
+	private final Hasher<Request> hasher;
 
 	/**
 	 * The base block of the mempool: the transactions inside {@link #mempool}
@@ -106,7 +106,7 @@ public class Mempool {
 		this.config = node.getConfig();
 		this.blockchain = node.getBlockchain();
 		this.app = node.getApplication();
-		this.hasher = node.getConfigInternal().getHashingForTransactions().getHasher(io.mokamint.node.api.Transaction::toByteArray);
+		this.hasher = node.getConfigInternal().getHashingForTransactions().getHasher(io.mokamint.node.api.Request::toByteArray);
 		this.base = Optional.empty();
 		this.mempool = new TreeSet<>(Comparator.reverseOrder()); // decreasing priority
 	}
@@ -152,7 +152,7 @@ public class Mempool {
 	 * 
 	 * @param transaction the transaction to add
 	 * @return the transaction entry added to the mempool
-	 * @throws TransactionRejectedException if the transaction has been rejected; this happens,
+	 * @throws RequestRejectedException if the transaction has been rejected; this happens,
 	 *                                      for instance, if the application considers the
 	 *                                      transaction as invalid or if its priority cannot be computed
 	 *                                      or if the transaction is already contained in the blockchain or mempool
@@ -161,13 +161,13 @@ public class Mempool {
 	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public TransactionEntry add(Transaction transaction) throws TransactionRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
+	public TransactionEntry add(Request transaction) throws RequestRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
 		int size = transaction.getNumberOfBytes();
 		if (size > config.getMaxTransactionSize())
-			throw new TransactionRejectedException("The transaction is " + size + " bytes long, against a maximum of " + config.getMaxTransactionSize());
+			throw new RequestRejectedException("The transaction is " + size + " bytes long, against a maximum of " + config.getMaxTransactionSize());
 
 		try {
-			app.checkTransaction(transaction);
+			app.checkRequest(transaction);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
@@ -181,14 +181,14 @@ public class Mempool {
 		synchronized (mempool) {
 			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
 				// the transaction was already in blockchain
-				throw new TransactionRejectedException("Repeated transaction " + entry);
+				throw new RequestRejectedException("Repeated transaction " + entry);
 			else if (mempool.contains(entry))
 				// the transaction was already in the mempool
-				throw new TransactionRejectedException("Repeated transaction " + entry);
+				throw new RequestRejectedException("Repeated transaction " + entry);
 			else if ((txSize = transaction.size()) > maxBlockSize)
-				throw new TransactionRejectedException("Cannot add transaction " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
+				throw new RequestRejectedException("Cannot add transaction " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
 			else if (mempool.size() >= maxSize)
-				throw new TransactionRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
+				throw new RequestRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
 			else
 				mempool.add(entry);
 		}
@@ -199,7 +199,7 @@ public class Mempool {
 		return entry;
 	}
 
-	public TransactionEntry mkTransactionEntry(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
+	public TransactionEntry mkTransactionEntry(Request transaction) throws RequestRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
 		long priority;
 
 		try {
@@ -283,11 +283,11 @@ public class Mempool {
 	 * An entry in the mempool. It contains the transaction itself, its priority and its hash.
 	 */
 	public final static class TransactionEntry implements Comparable<TransactionEntry> {
-		private final Transaction transaction;
+		private final Request transaction;
 		private final long priority;
 		private final byte[] hash;
 	
-		private TransactionEntry(Transaction transaction, long priority, byte[] hash) {
+		private TransactionEntry(Request transaction, long priority, byte[] hash) {
 			this.transaction = transaction;
 			this.priority = priority;
 			this.hash = hash;
@@ -298,7 +298,7 @@ public class Mempool {
 		 * 
 		 * @return the transaction
 		 */
-		public Transaction getTransaction() {
+		public Request getTransaction() {
 			return transaction;
 		}
 	

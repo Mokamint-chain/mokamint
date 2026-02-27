@@ -75,7 +75,7 @@ import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.SynchronizationException;
@@ -394,7 +394,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the transaction, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<io.mokamint.node.api.Transaction> getTransaction(byte[] hash) throws ClosedDatabaseException {
+	public Optional<io.mokamint.node.api.Request> getTransaction(byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			return environment.computeInReadonlyTransaction(txn -> getTransaction(txn, hash));
 		}
@@ -1175,7 +1175,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
 		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
-			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Transaction[]::new))
+			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Request[]::new))
 				toRemove.add(intoTransactionEntry(transaction));
 		}
 
@@ -1186,11 +1186,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @return the resulting transaction entry
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
-		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Transaction transaction) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Request transaction) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			try {
 				return mempool.mkTransactionEntry(transaction);
 			}
-			catch (TransactionRejectedException e) {
+			catch (RequestRejectedException e) {
 				// the transactions in the database are not rejected, hence the application is misbehaving here
 				throw new MisbehavingApplicationException(e);
 			}
@@ -1536,7 +1536,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction, if any
 	 */
-	private Optional<io.mokamint.node.api.Transaction> getTransaction(Transaction txn, byte[] hash) {
+	private Optional<io.mokamint.node.api.Request> getTransaction(Transaction txn, byte[] hash) {
 		try {
 			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 			if (txBI == null)

@@ -22,11 +22,11 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckTransactionResultMessage;
 import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * Implementation of the network message corresponding to the result of the
- * {@link Application#checkTransaction(Transaction)} method.
+ * {@link Application#checkRequest(Request)} method.
  */
 public class CheckTransactionResultMessageImpl extends AbstractVoidResultMessage implements CheckTransactionResultMessage {
 

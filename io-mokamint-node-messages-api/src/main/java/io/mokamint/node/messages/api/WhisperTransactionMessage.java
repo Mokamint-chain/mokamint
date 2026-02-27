@@ -18,12 +18,12 @@ package io.mokamint.node.messages.api;
 
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.api.WhisperMessage;
 
 /**
  * The network message sent to whisper a transaction between whisperers.
  */
 @Immutable
-public interface WhisperTransactionMessage extends RpcMessage, WhisperMessage<Transaction> {
+public interface WhisperTransactionMessage extends RpcMessage, WhisperMessage<Request> {
 }

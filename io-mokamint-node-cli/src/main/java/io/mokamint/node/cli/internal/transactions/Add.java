@@ -22,11 +22,11 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.mokamint.node.MempoolEntries;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -56,7 +56,7 @@ public class Add extends AbstractPublicRpcCommand {
 
 	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
-			return remote.add(Transactions.of(Base64.fromBase64String(tx)));
+			return remote.add(Requests.of(Base64.fromBase64String(tx)));
 		}
 		catch (ApplicationTimeoutException e) {
 			throw new CommandException("The application of the node timed out", e);
@@ -64,7 +64,7 @@ public class Add extends AbstractPublicRpcCommand {
 		catch (Base64ConversionException e) {
 			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
 		}
-		catch (TransactionRejectedException e) {
+		catch (RequestRejectedException e) {
 			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);
 		}
 	}

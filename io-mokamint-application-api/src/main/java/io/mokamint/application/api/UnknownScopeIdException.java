@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,30 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.api;
+package io.mokamint.application.api;
 
 /**
- * An exception stating that a transaction added to a Mokamint node has been rejected.
+ * An exception stating that a requests execution scope identifier is unknown to the application.
  */
 @SuppressWarnings("serial")
-public class TransactionRejectedException extends Exception {
+public class UnknownScopeIdException extends Exception {
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public TransactionRejectedException(String message) {
+	public UnknownScopeIdException(String message) {
 		super(message);
-	}
-
-	/**
-	 * Creates a new exception with the given message and cause.
-	 * 
-	 * @param message the message
-	 * @param cause the cause
-	 */
-	public TransactionRejectedException(String message, Throwable cause) {
-		super(message, cause);
 	}
 }

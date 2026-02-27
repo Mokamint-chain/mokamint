@@ -23,9 +23,9 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
 
@@ -33,7 +33,7 @@ import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransaction(byte[])} method.
  */
 public class GetTransactionResultMessageImpl extends AbstractRpcMessage implements GetTransactionResultMessage {
-	private final Optional<Transaction> transaction;
+	private final Optional<Request> transaction;
 
 	/**
 	 * Creates the message.
@@ -41,7 +41,7 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param transaction the transaction in the message, if any
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionResultMessageImpl(Optional<Transaction> transaction, String id) {
+	public GetTransactionResultMessageImpl(Optional<Request> transaction, String id) {
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
@@ -61,7 +61,7 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 			this.transaction = Optional.empty();
 		else {
 			try {
-				this.transaction = Optional.of(Transactions.of(Base64.fromBase64String(maybeTransactionBase64.get())));
+				this.transaction = Optional.of(Requests.of(Base64.fromBase64String(maybeTransactionBase64.get())));
 			}
 			catch (Base64ConversionException e) {
 				throw new InconsistentJsonException(e);
@@ -70,7 +70,7 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	}
 
 	@Override
-	public Optional<Transaction> get() {
+	public Optional<Request> get() {
 		return transaction;
 	}
 

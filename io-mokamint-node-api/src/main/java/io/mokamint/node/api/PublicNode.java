@@ -139,13 +139,13 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param transaction the transaction
 	 * @return the mempool entry holding the transaction
-	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid
+	 * @throws RequestRejectedException if {@code transaction} has been rejected, for instance because it is invalid
 	 * @throws ApplicationTimeoutException if the application connected to this node timed out during the analysis of {@code transaction}
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolEntry add(Request transaction) throws RequestRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a transaction already in blockchain.
@@ -156,7 +156,7 @@ public interface PublicNode extends Node, Whisperer {
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<Request> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields a string representation of a transaction already in blockchain, that can be used to print
@@ -164,14 +164,14 @@ public interface PublicNode extends Node, Whisperer {
 	 * 
 	 * @param hash the hash of the transaction
 	 * @return the representation of the transaction, if the latter exists in blockchain
-	 * @throws TransactionRejectedException if {@code transaction} has been rejected, for instance because it is invalid; this
+	 * @throws RequestRejectedException if {@code transaction} has been rejected, for instance because it is invalid; this
 	 *                                      should never occur if the application guarantees that transactions that passed
 	 *                                      the {@code checkTransaction} test should have a valid representation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<String> getTransactionRepresentation(byte[] hash) throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields the address of a transaction already in blockchain.

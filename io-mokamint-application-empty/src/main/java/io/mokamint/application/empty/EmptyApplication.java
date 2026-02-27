@@ -28,7 +28,7 @@ import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -65,12 +65,12 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction) throws ClosedApplicationException {
+	public void checkRequest(Request request) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public long getPriority(Transaction transaction) throws ClosedApplicationException {
+	public long getPriority(Request request) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
 			return 0L;
 		}
@@ -91,29 +91,29 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) throws ClosedApplicationException {
+	public void executeTransaction(int scopeId, Request request) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException {
+	public byte[] endBlock(int scopeId, Deadline deadline) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
 			return STATE_ID;
 		}
 	}
 
 	@Override
-	public void commitBlock(int groupId) throws ClosedApplicationException {
+	public void commitBlock(int scopeId) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public void abortBlock(int groupId) throws ClosedApplicationException {
+	public void abortBlock(int scopeId) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
 
 	@Override
-	public String getRepresentation(Transaction transaction) throws ClosedApplicationException {
+	public String getRepresentation(Request request) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
 			return "[]";
 		}

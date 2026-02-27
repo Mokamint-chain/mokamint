@@ -29,7 +29,7 @@ import io.hotmoka.websockets.server.AbstractRPCWebSocketServer;
 import io.hotmoka.websockets.server.AbstractServerEndpoint;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
+import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
@@ -74,7 +74,7 @@ import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.PublishMessage;
 import io.mokamint.application.service.api.ApplicationService;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -146,7 +146,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			switch (message) {
 			case CheckDeadlineMessage cdm -> sendObjectAsync(session, CheckDeadlineResultMessages.of(application.checkDeadline(cdm.getDeadline()), id));
 			case CheckTransactionMessage ctm -> {
-				application.checkTransaction(ctm.getTransaction());
+				application.checkRequest(ctm.getRequest());
 				sendObjectAsync(session, CheckTransactionResultMessages.of(id));
 			}
 			case GetInfoMessage gim -> sendObjectAsync(session, GetInfoResultMessages.of(application.getInfo(), id));
@@ -156,7 +156,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			case GetInitialStateIdMessage gism -> sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), id));
 			case BeginBlockMessage bbm -> sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(bbm.getHeight(), bbm.getWhen(), bbm.getStateId()), id));
 			case DeliverTransactionMessage dtm -> {
-				application.deliverTransaction(dtm.getGroupId(), dtm.getTransaction());
+				application.executeTransaction(dtm.getGroupId(), dtm.getRequest());
 				sendObjectAsync(session, DeliverTransactionResultMessages.of(id));
 			}
 			case EndBlockMessage ebm -> sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(ebm.getGroupId(), ebm.getDeadline()), id));
@@ -179,7 +179,7 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
 		}
-		catch (TransactionRejectedException | UnknownStateException | UnknownGroupIdException e) {
+		catch (RequestRejectedException | UnknownStateException | UnknownScopeIdException e) {
 			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
 		catch (ClosedApplicationException e) {

@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.internal.GetRepresentationMessageImpl;
 import io.mokamint.application.messages.internal.json.GetRepresentationMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * A provider of {@link GetRepresentationMessage}.
@@ -33,12 +33,12 @@ public abstract class GetRepresentationMessages {
 	/**
 	 * Yields a {@link GetRepresentationMessage}.
 	 * 
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetRepresentationMessage of(Transaction transaction, String id) {
-		return new GetRepresentationMessageImpl(transaction, id);
+	public static GetRepresentationMessage of(Request request, String id) {
+		return new GetRepresentationMessageImpl(request, id);
 	}
 
 	/**

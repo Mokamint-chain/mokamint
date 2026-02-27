@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.internal.GetPriorityMessageImpl;
 import io.mokamint.application.messages.internal.json.GetPriorityMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * A provider of {@link GetPriorityMessage}.
@@ -33,12 +33,12 @@ public abstract class GetPriorityMessages {
 	/**
 	 * Yields a {@link GetPriorityMessage}.
 	 * 
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetPriorityMessage of(Transaction transaction, String id) {
-		return new GetPriorityMessageImpl(transaction, id);
+	public static GetPriorityMessage of(Request request, String id) {
+		return new GetPriorityMessageImpl(request, id);
 	}
 
 	/**

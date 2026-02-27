@@ -22,10 +22,10 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.internal.json.GetPriorityResultMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link Application#getPriority(Transaction)} method.
+ * Implementation of the network message corresponding to the result of the {@link Application#getPriority(Request)} method.
  */
 public class GetPriorityResultMessageImpl extends AbstractRpcMessage implements GetPriorityResultMessage {
 

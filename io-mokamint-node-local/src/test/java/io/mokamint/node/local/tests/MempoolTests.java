@@ -51,11 +51,11 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -117,10 +117,10 @@ public class MempoolTests extends AbstractLoggedTests {
 
 		application = mock(Application.class);
 		when(application.checkDeadline(any())).thenReturn(true);
-		doNothing().when(application).checkTransaction(any());
+		doNothing().when(application).checkRequest(any());
 		when(application.getPriority(any())).thenReturn(13L);
 		when(application.getInitialStateId()).thenReturn(stateHash);
-		doNothing().when(application).deliverTransaction(anyInt(), any());
+		doNothing().when(application).executeTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateHash);
 		var info = Infos.of("name", "description");
 		when(application.getInfo()).thenReturn(info);
@@ -183,9 +183,9 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(genesis));
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
 
 			assertFalse(blockchain.add(block));
@@ -206,9 +206,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction3));
 			node.add(transaction2);
 
@@ -233,9 +233,9 @@ public class MempoolTests extends AbstractLoggedTests {
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
 			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
 
 			var block1 = computeNextBlock(genesis, plot1);
@@ -271,10 +271,10 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
+			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
 			var entry0 = node.add(transaction0);
 			var entry1 = node.add(transaction1);
 			var entry2 = node.add(transaction2);
@@ -366,10 +366,10 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Transactions.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Transactions.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Transactions.of(new byte[] { 3, 2, 3, 4 });
+			var transaction0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
+			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
 			var entry0 = node.add(transaction0);
 			var entry1 = node.add(transaction1);
 			var entry2 = node.add(transaction2);
@@ -433,7 +433,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		return computeNextBlock(previous, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> transactions) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
 		return computeNextBlock(previous, transactions, plot1);
 	}
 
@@ -441,7 +441,7 @@ public class MempoolTests extends AbstractLoggedTests {
 		return computeNextBlock(previous, Stream.empty(), plot);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Transaction> transactions, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> transactions, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
 		var challenge = previous.getDescription().getNextChallenge();
 		var deadline = plot.getSmallestDeadline(challenge);
 		var description = previous.getNextBlockDescription(deadline);

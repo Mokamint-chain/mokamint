@@ -19,11 +19,11 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#getPriority(Transaction)} method.
+ * {@link Application#getPriority(Request)} method.
  */
 @Immutable
 public interface GetPriorityResultMessage extends ResultMessage<Long> {

@@ -25,7 +25,7 @@ import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.internal.AbstractBlock;
 
 /**
@@ -39,7 +39,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
-		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Transaction::toBase64String).toArray(String[]::new) : null;
+		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Request::toBase64String).toArray(String[]::new) : null;
 		this.stateId = Hex.toHexString(block.getStateId());
 		this.signature = Hex.toHexString(block.getSignature());
 	}

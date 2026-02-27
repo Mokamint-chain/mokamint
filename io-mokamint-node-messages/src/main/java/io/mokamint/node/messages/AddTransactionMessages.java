@@ -18,7 +18,7 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.AddTransactionMessage;
 import io.mokamint.node.messages.internal.AddTransactionMessageImpl;
 import io.mokamint.node.messages.internal.json.AddTransactionMessageJson;
@@ -37,7 +37,7 @@ public final class AddTransactionMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddTransactionMessage of(Transaction transaction, String id) {
+	public static AddTransactionMessage of(Request transaction, String id) {
 		return new AddTransactionMessageImpl(transaction, id);
 	}
 

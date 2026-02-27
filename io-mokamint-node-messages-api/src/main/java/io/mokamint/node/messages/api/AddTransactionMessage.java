@@ -19,10 +19,10 @@ package io.mokamint.node.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * The network message corresponding to the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method.
+ * The network message corresponding to the {@link PublicNode#add(io.mokamint.node.api.Request)} method.
  */
 @Immutable
 public interface AddTransactionMessage extends RpcMessage {
@@ -32,5 +32,5 @@ public interface AddTransactionMessage extends RpcMessage {
 	 * 
 	 * @return the parameter
 	 */
-	Transaction getTransaction();
+	Request getTransaction();
 }

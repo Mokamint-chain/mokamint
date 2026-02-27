@@ -62,7 +62,7 @@ import io.mokamint.application.messages.PublishMessages;
 import io.mokamint.application.messages.PublishResultMessages;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.nonce.Challenges;
 import io.mokamint.nonce.Deadlines;
 import io.mokamint.nonce.Prologs;
@@ -102,7 +102,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("checkTransaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForCheckTransaction() throws Exception {
-		var checkTransactionMessage1 = CheckTransactionMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+		var checkTransactionMessage1 = CheckTransactionMessages.of(Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
 		String encoded = new CheckTransactionMessages.Encoder().encode(checkTransactionMessage1);
 		var checkTransactionMessage2 = new CheckTransactionMessages.Decoder().decode(encoded);
 		assertEquals(checkTransactionMessage1, checkTransactionMessage2);
@@ -120,7 +120,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("deliverTransaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeliverTransaction() throws Exception {
-		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
 		String encoded = new DeliverTransactionMessages.Encoder().encode(deliverTransactionMessage1);
 		var deliverTransactionMessage2 = new DeliverTransactionMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionMessage1, deliverTransactionMessage2);
@@ -156,7 +156,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getPriority messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetPriority() throws Exception {
-		var getPriorityMessage1 = GetPriorityMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+		var getPriorityMessage1 = GetPriorityMessages.of(Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
 		String encoded = new GetPriorityMessages.Encoder().encode(getPriorityMessage1);
 		var getPriorityMessage2 = new GetPriorityMessages.Decoder().decode(encoded);
 		assertEquals(getPriorityMessage1, getPriorityMessage2);
@@ -174,7 +174,7 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getRepresentation messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForGetRepresentation() throws Exception {
-		var getRepresentationMessage1 = GetRepresentationMessages.of(Transactions.of(new byte[] { 13, 1, 19, 73 }), "id");
+		var getRepresentationMessage1 = GetRepresentationMessages.of(Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
 		String encoded = new GetRepresentationMessages.Encoder().encode(getRepresentationMessage1);
 		var getRepresentationMessage2 = new GetRepresentationMessages.Decoder().decode(encoded);
 		assertEquals(getRepresentationMessage1, getRepresentationMessage2);
@@ -334,9 +334,9 @@ public class MessagesTests extends AbstractLoggedTests {
 		random.nextBytes(bytes2);
 		var bytes3 = new byte[113];
 		random.nextBytes(bytes3);
-		var transaction1 = Transactions.of(bytes1);
-		var transaction2 = Transactions.of(bytes2);
-		var transaction3 = Transactions.of(bytes3);
+		var transaction1 = Requests.of(bytes1);
+		var transaction2 = Requests.of(bytes2);
+		var transaction3 = Requests.of(bytes3);
 		var stateId = new byte[87];
 		random.nextBytes(stateId);
 		var block = Blocks.of(description, Stream.of(transaction1, transaction2, transaction3), stateId, keysBlock.getPrivate());

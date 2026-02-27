@@ -81,9 +81,9 @@ import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
@@ -512,7 +512,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ClosedNodeException, ApplicationTimeoutException, InterruptedException {
+	public MempoolEntry add(Request transaction) throws RequestRejectedException, ClosedNodeException, ApplicationTimeoutException, InterruptedException {
 		TransactionEntry result;
 
 		try {
@@ -546,7 +546,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws ClosedNodeException {
+	public Optional<Request> getTransaction(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			try {
 				return blockchain.getTransaction(hash);
@@ -558,9 +558,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RequestRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
-			Optional<Transaction> maybeTransaction = blockchain.getTransaction(hash);
+			Optional<Request> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
 				return Optional.empty();
 			else
@@ -901,7 +901,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param transaction the transaction to whisper
 	 */
-	private void whisperWithoutAddition(Transaction transaction) {
+	private void whisperWithoutAddition(Request transaction) {
 		if (alreadyWhispered.add(transaction)) {
 			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
 			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(config.getHashingForTransactions()), false));
@@ -968,7 +968,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param transaction the added transaction
 	 */
-	protected void onAdded(Transaction transaction) {}
+	protected void onAdded(Request transaction) {}
 
 	/**
 	 * Called when no deadline has been found.
@@ -1066,7 +1066,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * 
 	 * @param transaction the whispered transaction
 	 */
-	protected void onWhispered(Transaction transaction) {}
+	protected void onWhispered(Request transaction) {}
 
 	/**
 	 * An adapter of a task into a runnable with logs.
@@ -1314,7 +1314,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				catch (ApplicationTimeoutException | ClosedApplicationException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " could not be added because the application is not responding: " + e.getMessage());
 				}
-				catch (TransactionRejectedException e) {
+				catch (RequestRejectedException e) {
 					LOGGER.warning("node " + uuid + ": whispered " + whisperedInfo.description + " has been rejected: " + e.getMessage());
 				}
 			}

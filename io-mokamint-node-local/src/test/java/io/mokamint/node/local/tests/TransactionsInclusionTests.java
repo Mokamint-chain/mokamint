@@ -54,7 +54,7 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.Peers;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
@@ -63,8 +63,8 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.LocalNodeException;
@@ -90,8 +90,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		app = mock(Application.class);
 		when(app.checkDeadline(any())).thenReturn(true);
 		when(app.getInitialStateId()).thenReturn(new byte[] { 1, 2, 3 });
-		doNothing().when(app).checkTransaction(any());
-		doNothing().when(app).deliverTransaction(anyInt(), any());
+		doNothing().when(app).checkRequest(any());
+		doNothing().when(app).executeTransaction(anyInt(), any());
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 13, 17, 42 });
 		var info = Infos.of("name", "description");
 		when(app.getInfo()).thenReturn(info);
@@ -138,13 +138,13 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 	@Timeout(20)
 	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
 	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws Exception {
-		var allTransactions = new HashSet<Transaction>();
+		var allTransactions = new HashSet<Request>();
 		var random = new Random();
 		while (allTransactions.size() < 100) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Transactions.of(bytes);
+			var tx = Requests.of(bytes);
 			allTransactions.add(tx);
 		}
 		var allIncluded = new Semaphore(0);
@@ -189,7 +189,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		class Run {
 			class TestNode extends NodeWithLocalMiner {
 				private Semaphore seenAll;
-				private Set<Transaction> added;
+				private Set<Request> added;
 
 				protected synchronized Semaphore getSeenAll() {
 					if (seenAll == null)
@@ -198,7 +198,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					return seenAll;
 				}
 
-				private synchronized Set<Transaction> getAdded() {
+				private synchronized Set<Request> getAdded() {
 					if (added == null)
 						added = new HashSet<>();
 
@@ -230,7 +230,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 			private final PublicNodeService[] services;
 			private final Random random = new Random();
 			
-			private Run() throws InterruptedException, TimeoutException, FailedDeploymentException, ClosedPeerException, PeerRejectedException, ClosedNodeException, TransactionRejectedException, ApplicationTimeoutException {
+			private Run() throws InterruptedException, TimeoutException, FailedDeploymentException, ClosedPeerException, PeerRejectedException, ClosedNodeException, RequestRejectedException, ApplicationTimeoutException {
 				this.services = new PublicNodeService[NUM_NODES];
 
 				try {
@@ -278,8 +278,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						service.close();
 			}
 
-			private void addTransactions() throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException, ApplicationTimeoutException {
-				for (Transaction tx: allTransactions) {
+			private void addTransactions() throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException, ApplicationTimeoutException {
+				for (Request tx: allTransactions) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
 					Thread.sleep(50);
 				}
@@ -320,14 +320,14 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		new Run();
 	}
 
-	private Set<Transaction> mkTransactions() {
-		var allTransactions = new HashSet<Transaction>();
+	private Set<Request> mkTransactions() {
+		var allTransactions = new HashSet<Request>();
 		var random = new Random();
 		while (allTransactions.size() < 200) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Transactions.of(bytes);
+			var tx = Requests.of(bytes);
 			allTransactions.add(tx);
 		}
 

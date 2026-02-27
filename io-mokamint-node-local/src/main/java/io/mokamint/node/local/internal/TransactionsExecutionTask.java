@@ -30,15 +30,15 @@ import java.util.logging.Logger;
 
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
+import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.nonce.api.Deadline;
@@ -71,20 +71,20 @@ public class TransactionsExecutionTask implements Task {
 	 * The source of transactions to execute. It is guaranteed that these transactions
 	 * are different from those contained in the blockchain from {@link #previous}
 	 * towards the genesis block. It is guaranteed also that these transactions pass
-	 * the {@link Application#checkTransaction(Transaction)} test.
+	 * the {@link Application#checkRequest(Request)} test.
 	 */
 	private final Source source;
 
 	/**
 	 * The transactions that have been successfully executed up to now, in order of execution.
 	 */
-	private final List<Transaction> successfullyDeliveredTransactions = new ArrayList<>();
+	private final List<Request> successfullyDeliveredTransactions = new ArrayList<>();
 
 	/**
 	 * The transactions that have been executed with this executor but whose delivery failed
-	 * with a {@link TransactionRejectedException}.
+	 * with a {@link RequestRejectedException}.
 	 */
-	private final Set<Transaction> rejectedTransactions = new HashSet<>();
+	private final Set<Request> rejectedTransactions = new HashSet<>();
 
 	/**
 	 * The maximal size allowed for the transactions' table of a block. This task
@@ -207,7 +207,7 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (UnknownGroupIdException e) {
+		catch (UnknownScopeIdException e) {
 			throw new MisbehavingApplicationException(e);
 		}
 
@@ -232,7 +232,7 @@ public class TransactionsExecutionTask implements Task {
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
-		catch (UnknownGroupIdException e) {
+		catch (UnknownScopeIdException e) {
 			throw new MisbehavingApplicationException(e);
 		}
 	}
@@ -257,7 +257,7 @@ public class TransactionsExecutionTask implements Task {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (UnknownGroupIdException e) {
+			catch (UnknownScopeIdException e) {
 				throw new MisbehavingApplicationException(e);
 			}
 		}
@@ -282,9 +282,9 @@ public class TransactionsExecutionTask implements Task {
 				// leave the transactions list aligned with the state of the application
 				synchronized (stopLock) {
 					try {
-						app.deliverTransaction(id, tx);
+						app.executeTransaction(id, tx);
 					}
-					catch (TransactionRejectedException e) {
+					catch (RequestRejectedException e) {
 						// if tx is rejected, then it is just ignored
 						LOGGER.warning("mining: delivery of transaction " + next + " rejected: " + e.getMessage());
 						// we also remove the transaction from the mempool of the node
@@ -292,7 +292,7 @@ public class TransactionsExecutionTask implements Task {
 						rejectedTransactions.add(tx);
 						return sizeUpToNow;
 					}
-					catch (UnknownGroupIdException e) {
+					catch (UnknownScopeIdException e) {
 						throw new MisbehavingApplicationException(e);
 					}
 					catch (TimeoutException e) {

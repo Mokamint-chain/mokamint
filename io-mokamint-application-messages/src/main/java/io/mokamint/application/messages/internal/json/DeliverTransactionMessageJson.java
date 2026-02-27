@@ -31,7 +31,7 @@ public abstract class DeliverTransactionMessageJson extends AbstractRpcMessageJs
 	protected DeliverTransactionMessageJson(DeliverTransactionMessage message) {
 		super(message);
 
-		this.transaction = message.getTransaction().toBase64String();
+		this.transaction = message.getRequest().toBase64String();
 		this.groupId = message.getGroupId();
 	}
 

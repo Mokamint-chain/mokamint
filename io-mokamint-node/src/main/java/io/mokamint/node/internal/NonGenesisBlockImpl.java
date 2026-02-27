@@ -30,10 +30,10 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.internal.json.BlockJson;
 
 /**
@@ -45,7 +45,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	/**
 	 * The transactions inside this block.
 	 */
-	private final Transaction[] transactions;
+	private final Request[] transactions;
 
 	/**
 	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
@@ -58,8 +58,8 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		this(description, transactions.map(Objects::requireNonNull).toArray(Transaction[]::new), stateId, privateKey);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Request> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		this(description, transactions.map(Objects::requireNonNull).toArray(Request[]::new), stateId, privateKey);
 	}
 
 	/**
@@ -73,7 +73,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Transaction[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Request[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
 	
 		this.transactions = transactions;
@@ -96,13 +96,13 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 
 		var txsAsArray = txs.toArray(String[]::new);
 
-		this.transactions = new Transaction[txsAsArray.length];
+		this.transactions = new Request[txsAsArray.length];
 		for (int pos = 0; pos < txsAsArray.length; pos++) {
 			String txBase64 = txsAsArray[pos];
 			if (txBase64 == null)
 				throw new InconsistentJsonException("transactions cannot hold a null element");
 
-			transactions[pos] = Transactions.of(Base64.fromBase64String(txBase64, InconsistentJsonException::new));
+			transactions[pos] = Requests.of(Base64.fromBase64String(txBase64, InconsistentJsonException::new));
 		}
 		
 		try {
@@ -124,7 +124,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
-		this.transactions = context.readLengthAndArray(Transactions::from, Transaction[]::new);;
+		this.transactions = context.readLengthAndArray(Requests::from, Request[]::new);;
 
 		try {
 			ensureTransactionsAreNotRepeated();
@@ -135,7 +135,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	private void ensureTransactionsAreNotRepeated() throws IllegalArgumentException {
-		var transactions = Stream.of(this.transactions).sorted().toArray(Transaction[]::new);
+		var transactions = Stream.of(this.transactions).sorted().toArray(Request[]::new);
 		for (int pos = 0; pos < transactions.length - 1; pos++)
 			if (transactions[pos].equals(transactions[pos + 1]))
 				throw new IllegalArgumentException("Repeated transaction");
@@ -148,7 +148,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public Stream<Transaction> getTransactions() {
+	public Stream<Request> getTransactions() {
 		return Stream.of(transactions);
 	}
 
@@ -158,7 +158,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public Transaction getTransaction(int progressive) {
+	public Request getTransaction(int progressive) {
 		if (progressive < 0 || progressive >= transactions.length)
 			throw new IndexOutOfBoundsException(progressive);
 
@@ -168,7 +168,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock ongb && super.equals(other)
-			&& Arrays.equals(transactions, other instanceof NonGenesisBlockImpl ongbi ? ongbi.transactions : ongb.getTransactions().toArray(Transaction[]::new)); // optimization
+			&& Arrays.equals(transactions, other instanceof NonGenesisBlockImpl ongbi ? ongbi.transactions : ongb.getTransactions().toArray(Request[]::new)); // optimization
 	}
 
 	@Override
@@ -218,7 +218,7 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @return the marshalled bytes
 	 */
-	private byte[] toByteArrayWithoutSignature(Transaction[] transactions) {
+	private byte[] toByteArrayWithoutSignature(Request[] transactions) {
 		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
 			super.intoWithoutSignature(context);
 			context.writeLengthAndArray(transactions);

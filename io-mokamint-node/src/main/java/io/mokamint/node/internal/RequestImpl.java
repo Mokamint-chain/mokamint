@@ -28,36 +28,36 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
 import io.hotmoka.marshalling.api.MarshallingContext;
 import io.hotmoka.marshalling.api.UnmarshallingContext;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * An implementation of a transaction.
+ * An implementation of a request.
  */
 @Immutable
-public class TransactionImpl extends AbstractMarshallable implements Transaction {
+public class RequestImpl extends AbstractMarshallable implements Request {
 
 	/**
-	 * The bytes of the transaction.
+	 * The bytes of the request.
 	 */
 	private final byte[] bytes;
 
 	/**
-	 * Creates a transaction with the given bytes.
+	 * Creates a request with the given bytes.
 	 * 
 	 * @param bytes the bytes
 	 */
-	public TransactionImpl(byte[] bytes) {
+	public RequestImpl(byte[] bytes) {
 		this.bytes = Objects.requireNonNull(bytes).clone();
 	}
 
 	/**
-	 * Creates a new transaction, unmarshalled from the given context.
+	 * Creates a new request, unmarshalled from the given context.
 	 * 
 	 * @param context the context
-	 * @throws IOException if the transaction cannot be unmarshalled
+	 * @throws IOException if the request cannot be unmarshalled
 	 */
-	public TransactionImpl(UnmarshallingContext context) throws IOException {
-		this(context.readLengthAndBytes("Transaction length mismatch"));
+	public RequestImpl(UnmarshallingContext context) throws IOException {
+		this(context.readLengthAndBytes("Request length mismatch"));
 	}
 
 	@Override
@@ -87,10 +87,10 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof TransactionImpl ti)
+		if (other instanceof RequestImpl ti)
 			return Arrays.equals(bytes, ti.bytes); // optimization, to avoid cloning
 		else
-			return other instanceof Transaction t && Arrays.equals(bytes, t.getBytes());
+			return other instanceof Request t && Arrays.equals(bytes, t.getBytes());
 	}
 
 	@Override
@@ -109,8 +109,8 @@ public class TransactionImpl extends AbstractMarshallable implements Transaction
 	}
 
 	@Override
-	public int compareTo(Transaction other) {
-		if (other instanceof TransactionImpl ti)
+	public int compareTo(Request other) {
+		if (other instanceof RequestImpl ti)
 			return Arrays.compare(bytes, ti.bytes); // optimization, to avoid cloning
 		else
 			return Arrays.compare(bytes, other.getBytes());

@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.DeliverTransactionMessage;
 import io.mokamint.application.messages.internal.DeliverTransactionMessageImpl;
 import io.mokamint.application.messages.internal.json.DeliverTransactionMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * A provider of {@link DeliverTransactionMessage}.
@@ -34,12 +34,12 @@ public abstract class DeliverTransactionMessages {
 	 * Yields a {@link DeliverTransactionMessage}.
 	 * 
 	 * @param groupId the identifier of the group of transactions in the message
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static DeliverTransactionMessage of(int groupId, Transaction transaction, String id) {
-		return new DeliverTransactionMessageImpl(groupId, transaction, id);
+	public static DeliverTransactionMessage of(int groupId, Request request, String id) {
+		return new DeliverTransactionMessageImpl(groupId, request, id);
 	}
 
 	/**

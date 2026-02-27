@@ -24,23 +24,23 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.internal.json.CheckTransactionMessageJson;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.Requests;
+import io.mokamint.node.api.Request;
 
 /**
- * Implementation of the network message corresponding to {@link Application#checkTransaction(Transaction)}.
+ * Implementation of the network message corresponding to {@link Application#checkRequest(Request)}.
  */
 public class CheckTransactionMessageImpl extends AbstractRpcMessage implements CheckTransactionMessage {
-	private final Transaction transaction;
+	private final Request request;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 */
-	public CheckTransactionMessageImpl(Transaction transaction, String id) {
-		this(transaction, id, IllegalArgumentException::new);
+	public CheckTransactionMessageImpl(Request request, String id) {
+		this(request, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -51,7 +51,7 @@ public class CheckTransactionMessageImpl extends AbstractRpcMessage implements C
 	 */
 	public CheckTransactionMessageImpl(CheckTransactionMessageJson json) throws InconsistentJsonException {
 		this(
-			Transactions.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "transaction cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
+			Requests.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "request cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
 			json.getId(),
 			InconsistentJsonException::new
 		);
@@ -61,25 +61,25 @@ public class CheckTransactionMessageImpl extends AbstractRpcMessage implements C
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param <E> the exception to throw if some argument is illegal
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> CheckTransactionMessageImpl(Transaction transaction, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> CheckTransactionMessageImpl(Request request, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 
-		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null", onIllegalArgs);
+		this.request = Objects.requireNonNull(request, "transaction cannot be null", onIllegalArgs);
 	}
 
 	@Override
-	public Transaction getTransaction() {
-		return transaction;
+	public Request getRequest() {
+		return request;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckTransactionMessage ctm && super.equals(other) && transaction.equals(ctm.getTransaction());
+		return other instanceof CheckTransactionMessage ctm && super.equals(other) && request.equals(ctm.getRequest());
 	}
 
 	@Override

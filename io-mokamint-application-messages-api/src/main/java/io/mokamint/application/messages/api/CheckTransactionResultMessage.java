@@ -19,11 +19,11 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.VoidResultMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#checkTransaction(Transaction)} method.
+ * {@link Application#checkRequest(Request)} method.
  */
 @Immutable
 public interface CheckTransactionResultMessage extends VoidResultMessage {

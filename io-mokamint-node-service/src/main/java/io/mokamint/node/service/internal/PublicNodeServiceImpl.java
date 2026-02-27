@@ -43,7 +43,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
@@ -271,7 +271,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
 			}
 		}
-		catch (TransactionRejectedException | ApplicationTimeoutException | PortionRejectedException e) {
+		catch (RequestRejectedException | ApplicationTimeoutException | PortionRejectedException e) {
 			sendObjectAsync(session, ExceptionMessages.of(e, id));
 		}
 		catch (ClosedNodeException e) {

@@ -28,14 +28,14 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
 import io.mokamint.application.api.ClosedApplicationException;
-import io.mokamint.application.api.UnknownGroupIdException;
+import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.nonce.api.ChallengeMatchException;
@@ -343,7 +343,7 @@ public class BlockVerification {
 
 	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
-			if (block.getTransactions().mapToLong(Transaction::size).sum() > config.getMaxBlockSize())
+			if (block.getTransactions().mapToLong(Request::size).sum() > config.getMaxBlockSize())
 				throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
 	}
 
@@ -355,7 +355,7 @@ public class BlockVerification {
 	 */
 	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
-			for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+			for (var tx: block.getTransactions().toArray(Request[]::new)) {
 				byte[] txHash = tx.getHash(config.getHashingForTransactions());
 				if (node.getBlockchain().getTransactionAddress(txn, previous, txHash).isPresent())
 					throw new VerificationException("Repeated transaction " + tx.getHexHash(config.getHashingForTransactions()));
@@ -396,18 +396,18 @@ public class BlockVerification {
 				boolean success = false;
 
 				try {
-					for (var tx: block.getTransactions().toArray(Transaction[]::new)) {
+					for (var tx: block.getTransactions().toArray(Request[]::new)) {
 						try {
-							app.checkTransaction(tx);
+							app.checkRequest(tx);
 						}
-						catch (TransactionRejectedException e) {
+						catch (RequestRejectedException e) {
 							throw new VerificationException("Failed check of transaction " + tx.getHexHash(config.getHashingForTransactions()) + ": " + e.getMessage());
 						}
 
 						try {
-							app.deliverTransaction(id, tx);
+							app.executeTransaction(id, tx);
 						}
-						catch (TransactionRejectedException e) {
+						catch (RequestRejectedException e) {
 							throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(config.getHashingForTransactions()) + ": " + e.getMessage());
 						}
 					}
@@ -429,7 +429,7 @@ public class BlockVerification {
 			catch (TimeoutException e) {
 				throw new ApplicationTimeoutException(e);
 			}
-			catch (UnknownGroupIdException e) {
+			catch (UnknownScopeIdException e) {
 				// the application of the node is only accessible through package-protected method
 				// getApplication() and we only commit/abort a group id if we previously started one
 				// with beginBlock(). This means that this exception is either a bug in the application

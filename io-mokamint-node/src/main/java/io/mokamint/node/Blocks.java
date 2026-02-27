@@ -30,7 +30,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.NonGenesisBlockDescription;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.internal.AbstractBlock;
 import io.mokamint.node.internal.GenesisBlockImpl;
 import io.mokamint.node.internal.NonGenesisBlockImpl;
@@ -57,7 +57,7 @@ public abstract class Blocks {
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Transaction> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Request> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
 		return new NonGenesisBlockImpl(description, transactions, stateId, privateKey);
 	}
 

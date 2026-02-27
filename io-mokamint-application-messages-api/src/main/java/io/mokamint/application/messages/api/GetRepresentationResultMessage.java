@@ -19,11 +19,11 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * The network message corresponding to the result of the
- * {@link Application#getRepresentation(Transaction)} method.
+ * {@link Application#getRepresentation(Request)} method.
  */
 @Immutable
 public interface GetRepresentationResultMessage extends ResultMessage<String> {

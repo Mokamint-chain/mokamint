@@ -21,35 +21,35 @@ import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.hotmoka.marshalling.api.Marshallable;
 
 /**
- * A transaction of the Mokamint blockchain. Transactions are ordered
+ * A request to execute a transaction on a Mokamint blockchain. Requests are ordered
  * by increasing bytes, lexicographically.
  */
 @Immutable
-public interface Transaction extends Marshallable, Whisperable, Comparable<Transaction> {
+public interface Request extends Marshallable, Whisperable, Comparable<Request> {
 
 	/**
-	 * Yields the bytes of the transaction. The meaning of these bytes is application-dependent.
+	 * Yields the bytes of the request. The meaning of these bytes is application-dependent.
 	 * 
-	 * @return the bytes of the transaction
+	 * @return the bytes of the request
 	 */
 	byte[] getBytes();
 
 	/**
-	 * Yields the number of bytes of this transaction.
+	 * Yields the number of bytes of this request.
 	 * 
-	 * @return the number of bytes of this transaction
+	 * @return the number of bytes of this request
 	 */
 	int getNumberOfBytes();
 
 	/**
-	 * Yields the bytes of this transaction, Base64-encoded.
+	 * Yields the bytes of this request, Base64-encoded.
 	 * 
 	 * @return the Based64-encoded bytes
 	 */
 	String toBase64String();
 
 	/**
-	 * Yields the hexadecimal hash of this transaction, by using the given hashing algorithm.
+	 * Yields the hexadecimal hash of this request, by using the given hashing algorithm.
 	 * 
 	 * @param hashing the hashing algorithm
 	 * @return the hash, as a string
@@ -57,7 +57,7 @@ public interface Transaction extends Marshallable, Whisperable, Comparable<Trans
 	String getHexHash(HashingAlgorithm hashing);
 
 	/**
-	 * Yields the hash of this transaction, by using the given hashing algorithm.
+	 * Yields the hash of this request, by using the given hashing algorithm.
 	 * 
 	 * @param hashing the hashing algorithm
 	 * @return the hash

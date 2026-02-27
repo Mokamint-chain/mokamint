@@ -19,10 +19,10 @@ package io.mokamint.application.messages.api;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.application.api.Application;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * The network message corresponding to the {@link Application#getRepresentation(Transaction)} method.
+ * The network message corresponding to the {@link Application#getRepresentation(Request)} method.
  */
 @Immutable
 public interface GetRepresentationMessage extends RpcMessage {
@@ -32,5 +32,5 @@ public interface GetRepresentationMessage extends RpcMessage {
 	 * 
 	 * @return the transaction
 	 */
-	Transaction getTransaction();
+	Request getTransaction();
 }

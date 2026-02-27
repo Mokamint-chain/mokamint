@@ -52,12 +52,12 @@ import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.PortionRejectedException;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -125,9 +125,9 @@ public class VerificationTests extends AbstractLoggedTests {
 		var info = Infos.of("name", "description");
 
 		when(application.checkDeadline(any())).thenReturn(true);
-		doNothing().when(application).checkTransaction(any());
+		doNothing().when(application).checkRequest(any());
 		when(application.getInitialStateId()).thenReturn(stateId);
-		doNothing().when(application).deliverTransaction(anyInt(), any());
+		doNothing().when(application).executeTransaction(anyInt(), any());
 		when(application.endBlock(anyInt(), any())).thenReturn(stateId);
 		when(application.getInfo()).thenReturn(info);
 
@@ -330,9 +330,9 @@ public class VerificationTests extends AbstractLoggedTests {
 		var genesis = Blocks.genesis(description, stateId, nodePrivateKey);
 		var deadline = plot.getSmallestDeadline(description.getNextChallenge());
 		var expected = genesis.getNextBlockDescription(deadline);
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Requests.of(new byte[] { 13, 1, 19, 73 });
+		var tx3 = Requests.of(new byte[] { 4, 50 });
 		// we place transaction tx2 twice
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> Blocks.of(expected, Stream.of(tx1, tx2, tx3, tx2), stateId, nodePrivateKey));
 		assertTrue(e.getMessage().startsWith("Repeated transaction"));
@@ -366,9 +366,9 @@ public class VerificationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if an added non-genesis block contains a transaction already in blockchain, verification rejects it")
 	public void transactionAlreadyInBlockchainGetsRejected(@TempDir Path dir) throws Exception {
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Requests.of(new byte[] { 13, 1, 19, 73 });
+		var tx3 = Requests.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
@@ -393,9 +393,9 @@ public class VerificationTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("if the transactions table of an added non-genesis block is too big, verification rejects it")
 	public void transactionsTooBigForNonGenesisGetsRejected(@TempDir Path dir) throws Exception {
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Requests.of(new byte[] { 13, 1, 19, 73 });
+		var tx3 = Requests.of(new byte[] { 4, 50 });
 		var config = mkConfig(dir).toBuilder().setMaxBlockSize(6).build();
 
 		try (var node = new TestNode(config)) {
@@ -417,10 +417,10 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
 	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).checkTransaction(eq(tx2));
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Requests.of(new byte[] { 13, 1, 19, 73 });
+		doThrow(new RequestRejectedException("tx2 rejected")).when(app).checkRequest(eq(tx2));
+		var tx3 = Requests.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
@@ -446,10 +446,10 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
 	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
-		var tx1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var tx2 = Transactions.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new TransactionRejectedException("tx2 rejected")).when(app).deliverTransaction(anyInt(), eq(tx2));
-		var tx3 = Transactions.of(new byte[] { 4, 50 });
+		var tx1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var tx2 = Requests.of(new byte[] { 13, 1, 19, 73 });
+		doThrow(new RequestRejectedException("tx2 rejected")).when(app).executeTransaction(anyInt(), eq(tx2));
+		var tx3 = Requests.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
 			var blockchain = node.getBlockchain();
@@ -475,7 +475,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
 	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
-		var tx = Transactions.of(new byte[] { 13, 1, 19, 73 });
+		var tx = Requests.of(new byte[] { 13, 1, 19, 73 });
 		when(app.endBlock(anyInt(), any())).thenReturn(new byte[] { 42, 17, 13 });
 
 		try (var node = new TestNode(dir, app)) {

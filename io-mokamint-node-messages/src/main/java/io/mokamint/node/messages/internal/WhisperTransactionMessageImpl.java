@@ -22,8 +22,8 @@ import io.hotmoka.crypto.Base64;
 import io.hotmoka.crypto.Base64ConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.Transactions;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.Requests;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.WhisperTransactionMessage;
 import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
 
@@ -35,7 +35,7 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 	/**
 	 * The whispered transaction.
 	 */
-	private final Transaction transaction;
+	private final Request transaction;
 
 	/**
 	 * Creates the message.
@@ -43,7 +43,7 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 	 * @param transaction the whispered transaction
 	 * @param id the identifier of the message
 	 */
-	public WhisperTransactionMessageImpl(Transaction transaction, String id) {
+	public WhisperTransactionMessageImpl(Request transaction, String id) {
 		super(id);
 
 		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
@@ -63,7 +63,7 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 			throw new InconsistentJsonException("transaction cannot be null");
 
 		try {
-			this.transaction = Transactions.of(Base64.fromBase64String(transactionBase64));
+			this.transaction = Requests.of(Base64.fromBase64String(transactionBase64));
 		}
 		catch (Base64ConversionException e) {
 			throw new InconsistentJsonException(e);
@@ -71,7 +71,7 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 	}
 
 	@Override
-	public Transaction getWhispered() {
+	public Request getWhispered() {
 		return transaction;
 	}
 

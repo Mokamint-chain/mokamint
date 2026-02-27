@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
 
@@ -33,7 +33,7 @@ public abstract class GetTransactionResultMessageJson extends AbstractRpcMessage
 	protected GetTransactionResultMessageJson(GetTransactionResultMessage message) {
 		super(message);
 
-		this.transaction = message.get().map(Transaction::toBase64String).orElse(null);
+		this.transaction = message.get().map(Request::toBase64String).orElse(null);
 	}
 
 	public Optional<String> getTransaction() {

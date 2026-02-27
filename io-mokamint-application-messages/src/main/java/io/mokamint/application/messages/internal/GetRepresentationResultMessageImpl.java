@@ -23,10 +23,10 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.internal.json.GetRepresentationResultMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link Application#getRepresentation(Transaction)} method.
+ * Implementation of the network message corresponding to the result of the {@link Application#getRepresentation(Request)} method.
  */
 public class GetRepresentationResultMessageImpl extends AbstractRpcMessage implements GetRepresentationResultMessage {
 

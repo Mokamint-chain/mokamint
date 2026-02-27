@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.GetTransactionResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
 import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
@@ -39,7 +39,7 @@ public final class GetTransactionResultMessages {
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionResultMessage of(Optional<Transaction> transaction, String id) {
+	public static GetTransactionResultMessage of(Optional<Request> transaction, String id) {
 		return new GetTransactionResultMessageImpl(transaction, id);
 	}
 

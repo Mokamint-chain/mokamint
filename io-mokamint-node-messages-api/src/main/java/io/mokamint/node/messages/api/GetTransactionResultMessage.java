@@ -21,11 +21,11 @@ import java.util.Optional;
 import io.hotmoka.annotations.Immutable;
 import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * The network message corresponding to the result of the {@link PublicNode#getTransaction(byte[])} method.
  */
 @Immutable
-public interface GetTransactionResultMessage extends ResultMessage<Optional<Transaction>> {
+public interface GetTransactionResultMessage extends ResultMessage<Optional<Request>> {
 }

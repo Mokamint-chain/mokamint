@@ -49,7 +49,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.hotmoka.websockets.client.AbstractRemote;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Info;
-import io.mokamint.application.api.UnknownGroupIdException;
+import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockMessages;
 import io.mokamint.application.messages.AbortBlockResultMessages;
@@ -109,8 +109,8 @@ import io.mokamint.application.messages.api.PublishMessage;
 import io.mokamint.application.messages.api.PublishResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.Block;
-import io.mokamint.node.api.Transaction;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.nonce.api.Deadline;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Session;
@@ -277,11 +277,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void checkTransaction(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
+	public void checkRequest(Request transaction) throws RequestRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
-		waitForResult(id, CheckTransactionResultMessage.class, TransactionRejectedException.class);
+		waitForResult(id, CheckTransactionResultMessage.class, RequestRejectedException.class);
 	}
 
 	/**
@@ -290,7 +290,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendCheckTransaction(Transaction transaction, String id) {
+	protected void sendCheckTransaction(Request transaction, String id) {
 		sendObjectAsync(CHECK_TRANSACTION_ENDPOINT, CheckTransactionMessages.of(transaction, id));
 	}
 
@@ -310,11 +310,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public long getPriority(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
+	public long getPriority(Request transaction) throws RequestRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetPriority(transaction, id);
-		return waitForResult(id, GetPriorityResultMessage.class, TransactionRejectedException.class);
+		return waitForResult(id, GetPriorityResultMessage.class, RequestRejectedException.class);
 	}
 
 	/**
@@ -323,7 +323,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendGetPriority(Transaction transaction, String id) {
+	protected void sendGetPriority(Request transaction, String id) {
 		sendObjectAsync(GET_PRIORITY_ENDPOINT, GetPriorityMessages.of(transaction, id));
 	}
 
@@ -343,11 +343,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public String getRepresentation(Transaction transaction) throws TransactionRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
+	public String getRepresentation(Request transaction) throws RequestRejectedException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendGetRepresentation(transaction, id);
-		return waitForResult(id, GetRepresentationResultMessage.class, TransactionRejectedException.class);
+		return waitForResult(id, GetRepresentationResultMessage.class, RequestRejectedException.class);
 	}
 
 	/**
@@ -356,7 +356,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendGetRepresentation(Transaction transaction, String id) {
+	protected void sendGetRepresentation(Request transaction, String id) {
 		sendObjectAsync(GET_REPRESENTATION_ENDPOINT, GetRepresentationMessages.of(transaction, id));
 	}
 
@@ -444,11 +444,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void deliverTransaction(int groupId, Transaction transaction) throws TransactionRejectedException, UnknownGroupIdException, ClosedApplicationException, TimeoutException, InterruptedException {
+	public void executeTransaction(int groupId, Request transaction) throws RequestRejectedException, UnknownScopeIdException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendDeliverTransaction(groupId, transaction, id);
-		waitForResult(id, DeliverTransactionResultMessage.class, TransactionRejectedException.class, UnknownGroupIdException.class);
+		waitForResult(id, DeliverTransactionResultMessage.class, RequestRejectedException.class, UnknownScopeIdException.class);
 	}
 
 	/**
@@ -458,7 +458,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendDeliverTransaction(int groupId, Transaction transaction, String id) {
+	protected void sendDeliverTransaction(int groupId, Request transaction, String id) {
 		sendObjectAsync(DELIVER_TRANSACTION_ENDPOINT, DeliverTransactionMessages.of(groupId, transaction, id));
 	}
 
@@ -478,11 +478,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+	public byte[] endBlock(int groupId, Deadline deadline) throws ClosedApplicationException, UnknownScopeIdException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendEndBlock(groupId, deadline, id);
-		return waitForResult(id, EndBlockResultMessage.class, UnknownGroupIdException.class);
+		return waitForResult(id, EndBlockResultMessage.class, UnknownScopeIdException.class);
 	}
 
 	/**
@@ -512,11 +512,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void commitBlock(int groupId) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+	public void commitBlock(int groupId) throws ClosedApplicationException, UnknownScopeIdException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCommitBlock(groupId, id);
-		waitForResult(id, CommitBlockResultMessage.class, UnknownGroupIdException.class);
+		waitForResult(id, CommitBlockResultMessage.class, UnknownScopeIdException.class);
 	}
 
 	/**
@@ -545,11 +545,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
-	public void abortBlock(int groupId) throws ClosedApplicationException, UnknownGroupIdException, TimeoutException, InterruptedException {
+	public void abortBlock(int groupId) throws ClosedApplicationException, UnknownScopeIdException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendAbortBlock(groupId, id);
-		waitForResult(id, AbortBlockResultMessage.class, UnknownGroupIdException.class);
+		waitForResult(id, AbortBlockResultMessage.class, UnknownScopeIdException.class);
 	}
 
 	/**

@@ -73,9 +73,9 @@ import io.mokamint.node.api.Peer;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.api.TransactionRejectedException;
+import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
@@ -470,14 +470,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public MempoolEntry add(Transaction transaction) throws TransactionRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException {
+	public MempoolEntry add(Request transaction) throws RequestRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendAddTransaction(transaction, id);
-		return waitForResult(id, AddTransactionResultMessage.class, TransactionRejectedException.class, ApplicationTimeoutException.class);
+		return waitForResult(id, AddTransactionResultMessage.class, RequestRejectedException.class, ApplicationTimeoutException.class);
 	}
 
-	protected void sendAddTransaction(Transaction transaction, String id) {
+	protected void sendAddTransaction(Request transaction, String id) {
 		sendObjectAsync(ADD_TRANSACTION_ENDPOINT, AddTransactionMessages.of(transaction, id));
 	}
 
@@ -506,7 +506,7 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<Transaction> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<Request> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransaction(hash, id);
@@ -518,11 +518,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws TransactionRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
+	public Optional<String> getTransactionRepresentation(byte[] hash) throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException {
 		ensureIsOpen(ClosedNodeException::new);
 		var id = nextId();
 		sendGetTransactionRepresentation(hash, id);
-		return waitForResult(id, GetTransactionRepresentationResultMessage.class, TransactionRejectedException.class);
+		return waitForResult(id, GetTransactionRepresentationResultMessage.class, RequestRejectedException.class);
 	}
 
 	protected void sendGetTransactionRepresentation(byte[] hash, String id) {
@@ -555,14 +555,14 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	protected void onGetInfoResult(NodeInfo info) {}
 	protected void onGetMempoolInfoResult(MempoolInfo info) {}
 	protected void onGetMempoolPortionResult(MempoolPortion chain) {}
-	protected void onGetTransactionResult(Optional<Transaction> transaction) {}
+	protected void onGetTransactionResult(Optional<Request> transaction) {}
 	protected void onGetTransactionRepresentationResult(Optional<String> representation) {}
 	protected void onGetTransactionAddressResult(Optional<TransactionAddress> address) {}
 	protected void onAddTransactionResult(MempoolEntry info) {}
 	protected void onException(ExceptionMessage message) {}
 	protected void onWhispered(Peer peer) {}
 	protected void onWhispered(Block block) {}
-	protected void onWhispered(Transaction transaction) {}
+	protected void onWhispered(Request transaction) {}
 
 	private class GetPeerInfosEndpoint extends Endpoint {
 

@@ -40,10 +40,10 @@ import io.mokamint.application.Infos;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.node.Peers;
-import io.mokamint.node.Transactions;
+import io.mokamint.node.Requests;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Peer;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.local.AbstractLocalNode;
 import io.mokamint.node.local.LocalNodeConfigBuilders;
 import io.mokamint.node.local.api.LocalNodeConfig;
@@ -68,7 +68,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	public static void beforeAll() throws Exception {
 		app = mock(Application.class);
 		when(app.checkDeadline(any())).thenReturn(true);
-		doNothing().when(app).checkTransaction(any());
+		doNothing().when(app).checkRequest(any());
 		when(app.getPriority(any())).thenReturn(42L);
 		nodeKey = SignatureAlgorithms.ed25519().getKeyPair();
 		var info = Infos.of("name", "description");
@@ -88,14 +88,14 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var peersSemaphore = new Semaphore(0);
 		var transactionsSemaphore = new Semaphore(0);
-		var transaction1 = Transactions.of(new byte[] { 1, 2, 3, 4 });
-		var transaction2 = Transactions.of(new byte[] { 5, 6, 7, 8, 9 });
+		var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var transaction2 = Requests.of(new byte[] { 5, 6, 7, 8, 9 });
 
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expectedPeer;
-			private final Transaction expectedTransaction;
+			private final Request expectedTransaction;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Transaction expectedTransaction) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Request expectedTransaction) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;
@@ -110,7 +110,7 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAdded(Transaction transaction) {
+			protected void onAdded(Request transaction) {
 				super.onAdded(transaction);
 				if (expectedTransaction.equals(transaction))
 					transactionsSemaphore.release();

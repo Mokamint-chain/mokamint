@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.application.messages.api.CheckTransactionMessage;
 import io.mokamint.application.messages.internal.CheckTransactionMessageImpl;
 import io.mokamint.application.messages.internal.json.CheckTransactionMessageJson;
-import io.mokamint.node.api.Transaction;
+import io.mokamint.node.api.Request;
 
 /**
  * A provider of {@link CheckTransactionMessage}.
@@ -33,12 +33,12 @@ public abstract class CheckTransactionMessages {
 	/**
 	 * Yields a {@link CheckTransactionMessage}.
 	 * 
-	 * @param transaction the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static CheckTransactionMessage of(Transaction transaction, String id) {
-		return new CheckTransactionMessageImpl(transaction, id);
+	public static CheckTransactionMessage of(Request request, String id) {
+		return new CheckTransactionMessageImpl(request, id);
 	}
 
 	/**
