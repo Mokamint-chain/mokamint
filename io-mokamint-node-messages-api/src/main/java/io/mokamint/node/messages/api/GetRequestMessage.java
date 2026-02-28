@@ -24,7 +24,7 @@ import io.mokamint.node.api.PublicNode;
  * The network message corresponding to the {@link PublicNode#getRequest(byte[])} method.
  */
 @Immutable
-public interface GetTransactionMessage extends RpcMessage {
+public interface GetRequestMessage extends RpcMessage {
 
 	/**
 	 * Yields the {@code hash} parameter of the method.

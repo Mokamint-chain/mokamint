@@ -24,17 +24,17 @@ import io.mokamint.node.messages.internal.WhisperTransactionMessageImpl;
 /**
  * The JSON representation of an {@link WhisperRequestMessage}.
  */
-public abstract class WhisperTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperRequestMessage> {
-	private final String transaction;
+public abstract class WhisperRequestMessageJson extends AbstractRpcMessageJsonRepresentation<WhisperRequestMessage> {
+	private final String request;
 
-	protected WhisperTransactionMessageJson(WhisperRequestMessage message) {
+	protected WhisperRequestMessageJson(WhisperRequestMessage message) {
 		super(message);
 
-		this.transaction = message.getWhispered().toBase64String();
+		this.request = message.getWhispered().toBase64String();
 	}
 
-	public String getTransaction() {
-		return transaction;
+	public String getRequest() {
+		return request;
 	}
 
 	@Override

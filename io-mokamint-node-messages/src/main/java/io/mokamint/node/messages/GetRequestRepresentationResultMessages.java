@@ -21,8 +21,8 @@ import java.util.Optional;
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.messages.api.GetRequestRepresentationResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionRepresentationResultMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionRepresentationResultMessageJson;
+import io.mokamint.node.messages.internal.GetRequestRepresentationResultMessageImpl;
+import io.mokamint.node.messages.internal.json.GetRequestRepresentationResultMessageJson;
 
 /**
  * A provider of {@link GetRequestRepresentationResultMessage}.
@@ -34,12 +34,12 @@ public final class GetRequestRepresentationResultMessages {
 	/**
 	 * Yields a {@link GetRequestRepresentationResultMessage}.
 	 * 
-	 * @param representation the representation of the transaction in the result, if any
+	 * @param representation the representation of the request in the result, if any
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
 	public static GetRequestRepresentationResultMessage of(Optional<String> representation, String id) {
-		return new GetTransactionRepresentationResultMessageImpl(representation, id);
+		return new GetRequestRepresentationResultMessageImpl(representation, id);
 	}
 
 	/**
@@ -71,7 +71,7 @@ public final class GetRequestRepresentationResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionRepresentationResultMessageJson {
+    public static class Json extends GetRequestRepresentationResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.

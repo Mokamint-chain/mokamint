@@ -21,10 +21,10 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@link PublicNode#getRequestAddress(byte[])} method.
+ * The network message corresponding to the {@link PublicNode#getRequestRepresentation(byte[])} method.
  */
 @Immutable
-public interface GetTransactionAddressMessage extends RpcMessage {
+public interface GetRequestRepresentationMessage extends RpcMessage {
 
 	/**
 	 * Yields the {@code hash} parameter of the method.

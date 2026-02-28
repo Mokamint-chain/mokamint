@@ -50,9 +50,9 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.service.PublicNodeServices;
 
 /**
- * Tests about the propagation of the transactions in a network of nodes.
+ * Tests about the propagation of the requests in a network of nodes.
  */
-public class TransactionsPropagationTests extends AbstractLoggedTests {
+public class RequestsPropagationTests extends AbstractLoggedTests {
 
 	/**
 	 * The application of the node used for testing.
@@ -76,8 +76,8 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a peer adds another peer, then transactions flow from one to the other")
-	public void ifPeerAddsPeerThenTransactionsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
+	@DisplayName("if a peer adds another peer, then requests flow from one to the other")
+	public void ifPeerAddsPeerThenRequestsFlowBetweenThem(@TempDir Path chain1, @TempDir Path chain2) throws Exception {
 		var port1 = 8032;
 		var port2 = 8034;
 		var uri1 = URI.create("ws://localhost:" + port1);
@@ -87,19 +87,19 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 		var config1 = LocalNodeConfigBuilders.defaults().setDir(chain1).build();
 		var config2 = LocalNodeConfigBuilders.defaults().setDir(chain2).build();
 		var peersSemaphore = new Semaphore(0);
-		var transactionsSemaphore = new Semaphore(0);
-		var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-		var transaction2 = Requests.of(new byte[] { 5, 6, 7, 8, 9 });
+		var requestsSemaphore = new Semaphore(0);
+		var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var req2 = Requests.of(new byte[] { 5, 6, 7, 8, 9 });
 
 		class MyLocalNode extends AbstractLocalNode {
 			private final Peer expectedPeer;
-			private final Request expectedTransaction;
+			private final Request expectedRequest;
 
-			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Request expectedTransaction) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
+			private MyLocalNode(LocalNodeConfig config, Peer expectedPeer, Request expectedRequest) throws InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
 				super(config, nodeKey, app, false);
 				
 				this.expectedPeer = expectedPeer;
-				this.expectedTransaction = expectedTransaction;
+				this.expectedRequest = expectedRequest;
 			}
 
 			@Override
@@ -110,14 +110,14 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAdded(Request transaction) {
-				super.onAdded(transaction);
-				if (expectedTransaction.equals(transaction))
-					transactionsSemaphore.release();
+			protected void onAdded(Request request) {
+				super.onAdded(request);
+				if (expectedRequest.equals(request))
+					requestsSemaphore.release();
 			}
 		}
 
-		try (var node1 = new MyLocalNode(config1, peer2, transaction2); var node2 = new MyLocalNode(config2, peer1, transaction1);
+		try (var node1 = new MyLocalNode(config1, peer2, req2); var node2 = new MyLocalNode(config2, peer1, req1);
 			 var service1 = PublicNodeServices.open(node1, port1, 100, 1000, Optional.of(uri1));
 			 var service2 = PublicNodeServices.open(node2, port2, 100, 1000, Optional.of(uri2))) {
 
@@ -126,14 +126,14 @@ public class TransactionsPropagationTests extends AbstractLoggedTests {
 			// we wait until the two peers know each other
 			assertTrue(peersSemaphore.tryAcquire(2, 4, TimeUnit.SECONDS));
 
-			// we send a first transaction to peer1
-			node1.add(transaction1);
+			// we send a first request to peer1
+			node1.add(req1);
 
-			// we send the second transaction to peer2
-			node2.add(transaction2);
+			// we send the second request to peer2
+			node2.add(req2);
 
-			// we wait until both transactions are propagated to the other peer
-			assertTrue(transactionsSemaphore.tryAcquire(2, 3, TimeUnit.SECONDS));
+			// we wait until both requests are propagated to the other peer
+			assertTrue(requestsSemaphore.tryAcquire(2, 3, TimeUnit.SECONDS));
 		}
 	}
 }

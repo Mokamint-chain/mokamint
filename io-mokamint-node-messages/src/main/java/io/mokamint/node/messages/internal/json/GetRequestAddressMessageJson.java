@@ -19,16 +19,16 @@ package io.mokamint.node.messages.internal.json;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.messages.api.GetTransactionAddressMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
+import io.mokamint.node.messages.api.GetRequestAddressMessage;
+import io.mokamint.node.messages.internal.GetRequestAddressMessageImpl;
 
 /**
- * The JSON representation of a {@link GetTransactionAddressMessage}.
+ * The JSON representation of a {@link GetRequestAddressMessage}.
  */
-public abstract class GetTransactionAddressMessageJson extends AbstractRpcMessageJsonRepresentation<GetTransactionAddressMessage> {
+public abstract class GetRequestAddressMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestAddressMessage> {
 	private final String hash;
 
-	protected GetTransactionAddressMessageJson(GetTransactionAddressMessage message) {
+	protected GetRequestAddressMessageJson(GetRequestAddressMessage message) {
 		super(message);
 
 		this.hash = Hex.toHexString(message.getHash());
@@ -39,12 +39,12 @@ public abstract class GetTransactionAddressMessageJson extends AbstractRpcMessag
 	}
 
 	@Override
-	public GetTransactionAddressMessage unmap() throws InconsistentJsonException {
-		return new GetTransactionAddressMessageImpl(this);
+	public GetRequestAddressMessage unmap() throws InconsistentJsonException {
+		return new GetRequestAddressMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionAddressMessage.class.getName();
+		return GetRequestAddressMessage.class.getName();
 	}
 }

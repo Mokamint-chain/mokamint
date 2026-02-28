@@ -105,9 +105,9 @@ import io.mokamint.node.messages.api.GetMempoolPortionMessage;
 import io.mokamint.node.messages.api.GetMinerInfosMessage;
 import io.mokamint.node.messages.api.GetPeerInfosMessage;
 import io.mokamint.node.messages.api.GetTaskInfosMessage;
-import io.mokamint.node.messages.api.GetTransactionAddressMessage;
-import io.mokamint.node.messages.api.GetTransactionMessage;
-import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
+import io.mokamint.node.messages.api.GetRequestAddressMessage;
+import io.mokamint.node.messages.api.GetRequestMessage;
+import io.mokamint.node.messages.api.GetRequestRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -844,7 +844,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+			protected void onGetTransaction(GetRequestMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestResultMessages.of(Optional.of(tx1), message.getId()), RuntimeException::new);
 			}
@@ -866,7 +866,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransaction(GetTransactionMessage message, Session session) {
+			protected void onGetTransaction(GetRequestMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
@@ -889,7 +889,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.of(representation1), message.getId()), RuntimeException::new);
 			}
@@ -911,7 +911,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
@@ -934,7 +934,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
+			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
@@ -957,7 +957,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+			protected void onGetTransactionAddress(GetRequestAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.of(address1), message.getId()), RuntimeException::new);
 			}
@@ -979,7 +979,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
+			protected void onGetTransactionAddress(GetRequestAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}

@@ -23,21 +23,21 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.messages.api.GetRequestRepresentationResultMessage;
-import io.mokamint.node.messages.internal.json.GetTransactionRepresentationResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetRequestRepresentationResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequestRepresentation(byte[])} method.
  */
-public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMessage implements GetRequestRepresentationResultMessage {
+public class GetRequestRepresentationResultMessageImpl extends AbstractRpcMessage implements GetRequestRepresentationResultMessage {
 	private final Optional<String> representation;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param representation the representation of the transaction in the message, if any
+	 * @param representation the representation of the request in the message, if any
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionRepresentationResultMessageImpl(Optional<String> representation, String id) {
+	public GetRequestRepresentationResultMessageImpl(Optional<String> representation, String id) {
 		super(id);
 
 		this.representation = Objects.requireNonNull(representation, "representation cannot be null");
@@ -49,7 +49,7 @@ public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMe
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetTransactionRepresentationResultMessageImpl(GetTransactionRepresentationResultMessageJson json) {
+	public GetRequestRepresentationResultMessageImpl(GetRequestRepresentationResultMessageJson json) {
 		super(json.getId());
 
 		this.representation = json.getRepresentation();

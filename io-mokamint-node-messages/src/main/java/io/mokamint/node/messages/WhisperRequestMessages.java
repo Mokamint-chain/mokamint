@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.WhisperRequestMessage;
 import io.mokamint.node.messages.internal.WhisperTransactionMessageImpl;
-import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperRequestMessageJson;
 
 /**
  * A provider of {@link WhisperRequestMessage}.
@@ -33,12 +33,12 @@ public final class WhisperRequestMessages {
 	/**
 	 * Yields a {@link WhisperRequestMessage}.
 	 * 
-	 * @param transaction the whispered transaction
+	 * @param request the whispered request
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static WhisperRequestMessage of(Request transaction, String id) {
-		return new WhisperTransactionMessageImpl(transaction, id);
+	public static WhisperRequestMessage of(Request request, String id) {
+		return new WhisperTransactionMessageImpl(request, id);
 	}
 
 	/**
@@ -70,7 +70,7 @@ public final class WhisperRequestMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends WhisperTransactionMessageJson {
+    public static class Json extends WhisperRequestMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.

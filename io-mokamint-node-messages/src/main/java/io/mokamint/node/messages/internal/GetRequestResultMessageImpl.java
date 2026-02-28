@@ -27,24 +27,24 @@ import io.mokamint.node.Requests;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.GetRequestResultMessage;
-import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetRequestResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequest(byte[])} method.
  */
-public class GetTransactionResultMessageImpl extends AbstractRpcMessage implements GetRequestResultMessage {
-	private final Optional<Request> transaction;
+public class GetRequestResultMessageImpl extends AbstractRpcMessage implements GetRequestResultMessage {
+	private final Optional<Request> request;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param transaction the transaction in the message, if any
+	 * @param transaction the request in the message, if any
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionResultMessageImpl(Optional<Request> transaction, String id) {
+	public GetRequestResultMessageImpl(Optional<Request> transaction, String id) {
 		super(id);
 
-		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
+		this.request = Objects.requireNonNull(transaction, "request cannot be null");
 	}
 
 	/**
@@ -53,15 +53,15 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public GetTransactionResultMessageImpl(GetTransactionResultMessageJson json) throws InconsistentJsonException {
+	public GetRequestResultMessageImpl(GetRequestResultMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
-		var maybeTransactionBase64 = json.getTransaction();
+		var maybeTransactionBase64 = json.getRequest();
 		if (maybeTransactionBase64.isEmpty())
-			this.transaction = Optional.empty();
+			this.request = Optional.empty();
 		else {
 			try {
-				this.transaction = Optional.of(Requests.of(Base64.fromBase64String(maybeTransactionBase64.get())));
+				this.request = Optional.of(Requests.of(Base64.fromBase64String(maybeTransactionBase64.get())));
 			}
 			catch (Base64ConversionException e) {
 				throw new InconsistentJsonException(e);
@@ -71,12 +71,12 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 
 	@Override
 	public Optional<Request> get() {
-		return transaction;
+		return request;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetRequestResultMessage gtrm && super.equals(other) && Objects.equals(transaction, gtrm.get());
+		return other instanceof GetRequestResultMessage gtrm && super.equals(other) && Objects.equals(request, gtrm.get());
 	}
 
 	@Override

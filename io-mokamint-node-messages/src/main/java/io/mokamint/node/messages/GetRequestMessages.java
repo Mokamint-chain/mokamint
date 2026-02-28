@@ -18,32 +18,32 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.api.GetTransactionMessage;
-import io.mokamint.node.messages.internal.GetTransactionMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionMessageJson;
+import io.mokamint.node.messages.api.GetRequestMessage;
+import io.mokamint.node.messages.internal.GetRequestMessageImpl;
+import io.mokamint.node.messages.internal.json.GetRequestMessageJson;
 
 /**
- * A provider of {@link GetTransactionMessage}.
+ * A provider of {@link GetRequestMessage}.
  */
 public final class GetRequestMessages {
 
 	private GetRequestMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionMessage}.
+	 * Yields a {@link GetRequestMessage}.
 	 * 
 	 * @param hash the {@code hash} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionMessage of(byte[] hash, String id) {
-		return new GetTransactionMessageImpl(hash, id);
+	public static GetRequestMessage of(byte[] hash, String id) {
+		return new GetRequestMessageImpl(hash, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetRequestMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +56,7 @@ public final class GetRequestMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetRequestMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +69,14 @@ public final class GetRequestMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionMessageJson {
+    public static class Json extends GetRequestMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionMessage message) {
+    	public Json(GetRequestMessage message) {
     		super(message);
     	}
     }

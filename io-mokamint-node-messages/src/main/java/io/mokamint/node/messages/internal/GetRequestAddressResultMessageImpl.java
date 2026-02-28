@@ -24,21 +24,21 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.messages.api.GetRequestAddressResultMessage;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressResultMessageJson;
+import io.mokamint.node.messages.internal.json.GetRequestAddressResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequestAddress(byte[])} method.
  */
-public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage implements GetRequestAddressResultMessage {
+public class GetRequestAddressResultMessageImpl extends AbstractRpcMessage implements GetRequestAddressResultMessage {
 	private final Optional<RequestAddress> address;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param address the address of the transaction in the message, if any
+	 * @param address the address of the request in the message, if any
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionAddressResultMessageImpl(Optional<RequestAddress> address, String id) {
+	public GetRequestAddressResultMessageImpl(Optional<RequestAddress> address, String id) {
 		super(id);
 
 		this.address = Objects.requireNonNull(address, "address cannot be null");
@@ -51,7 +51,7 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetTransactionAddressResultMessageImpl(GetTransactionAddressResultMessageJson json) throws InconsistentJsonException {
+	public GetRequestAddressResultMessageImpl(GetRequestAddressResultMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
 		var address = json.getAddress();

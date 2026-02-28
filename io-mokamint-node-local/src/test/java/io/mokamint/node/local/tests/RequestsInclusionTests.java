@@ -76,9 +76,9 @@ import io.mokamint.plotter.Plots;
 import io.mokamint.plotter.api.Plot;
 
 /**
- * Tests about the inclusion of transactions in blockchain.
+ * Tests about the inclusion of requests in blockchain.
  */
-public class TransactionsInclusionTests extends AbstractLoggedTests {
+public class RequestsInclusionTests extends AbstractLoggedTests {
 
 	/**
 	 * The application of the node used for testing.
@@ -136,16 +136,16 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 	@Test
 	@Timeout(20)
-	@DisplayName("transactions added to the mempool get eventually added to the blockchain")
-	public void transactionsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws Exception {
-		var allTransactions = new HashSet<Request>();
+	@DisplayName("requests added to the mempool get eventually added to the blockchain")
+	public void requestsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws Exception {
+		var allRequests = new HashSet<Request>();
 		var random = new Random();
-		while (allTransactions.size() < 100) {
+		while (allRequests.size() < 100) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
 			var tx = Requests.of(bytes);
-			allTransactions.add(tx);
+			allRequests.add(tx);
 		}
 		var allIncluded = new Semaphore(0);
 		var config = mkConfig(chain);
@@ -161,17 +161,17 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				super.onAdded(block);
 
 				if (block instanceof NonGenesisBlock ngb) {
-					ngb.getRequests().forEach(allTransactions::remove);
-					if (allTransactions.isEmpty())
+					ngb.getRequests().forEach(allRequests::remove);
+					if (allRequests.isEmpty())
 						allIncluded.release();
 				}
 			}
 		}
 
-		var copy = new ArrayList<>(allTransactions);
+		var copy = new ArrayList<>(allRequests);
 		try (var miningNode = new TestNode(config, true)) {
 			for (var tx: copy) {
-				miningNode.add(tx); // allTransactions has no repetitions => no rejection
+				miningNode.add(tx); // allRequests has no repetitions => no rejection
 				Thread.sleep(10);
 			}
 
@@ -181,9 +181,9 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 	@Test
 	@Timeout(200)
-	@DisplayName("transactions added to a network get eventually added to the blockchain")
-	public void transactionsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws Exception {
-		var allTransactions = mkTransactions();
+	@DisplayName("requests added to a network get eventually added to the blockchain")
+	public void requestsAddedToNetworkEventuallyReachBlockchain(@TempDir Path dir) throws Exception {
+		var allRequests = mkRequests();
 		final int NUM_NODES = 4;
 
 		class Run {
@@ -217,8 +217,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						synchronized (this) {
 							ngb.getRequests().forEach(getAdded()::add);
 
-							synchronized (allTransactions) {
-								if (getAdded().equals(allTransactions))
+							synchronized (allRequests) {
+								if (getAdded().equals(allRequests))
 									getSeenAll().release();
 							}
 						}
@@ -238,10 +238,10 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 					this.nodes = openNodes(dir);
 					System.out.println("addPeers");
 					addPeers();
-					System.out.println("addTransactions");
-					addTransactions();
-					System.out.println("waitUntilAllNodesHaveSeenAllTransactions");
-					waitUntilAllNodesHaveSeenAllTransactions();
+					System.out.println("addRequests");
+					addRequests();
+					System.out.println("waitUntilAllNodesHaveSeenAllRequests");
+					waitUntilAllNodesHaveSeenAllRequests();
 					for (var node: nodes)
 						System.out.println(Arrays.toString(node.getPeerInfos().map(PeerInfo::getPeer).toArray()));
 					closeNodes();
@@ -254,7 +254,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				}
 			}
 
-			private void waitUntilAllNodesHaveSeenAllTransactions() throws InterruptedException {
+			private void waitUntilAllNodesHaveSeenAllRequests() throws InterruptedException {
 				for (TestNode node: nodes)
 					node.getSeenAll().acquire();
 			}
@@ -278,8 +278,8 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 						service.close();
 			}
 
-			private void addTransactions() throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException, ApplicationTimeoutException {
-				for (Request tx: allTransactions) {
+			private void addRequests() throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException, ApplicationTimeoutException {
+				for (Request tx: allRequests) {
 					nodes[random.nextInt(NUM_NODES)].add(tx);
 					Thread.sleep(50);
 				}
@@ -320,17 +320,16 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 		new Run();
 	}
 
-	private Set<Request> mkTransactions() {
-		var allTransactions = new HashSet<Request>();
+	private Set<Request> mkRequests() {
+		var allRequests = new HashSet<Request>();
 		var random = new Random();
-		while (allTransactions.size() < 200) {
+		while (allRequests.size() < 200) {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Requests.of(bytes);
-			allTransactions.add(tx);
+			allRequests.add(Requests.of(bytes));
 		}
 
-		return allTransactions;
+		return allRequests;
 	}
 }

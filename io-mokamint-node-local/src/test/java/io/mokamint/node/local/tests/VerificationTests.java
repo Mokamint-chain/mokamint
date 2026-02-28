@@ -414,12 +414,12 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a block contains a transaction that does not pass the application check, verification rejects it")
-	public void transactionNotCheckedGetsRejected(@TempDir Path dir) throws Exception {
+	@DisplayName("if a block contains a request that does not pass the application check, verification rejects it")
+	public void requestNotCheckedGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
 		var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
 		var req2 = Requests.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new RequestRejectedException("tx2 rejected")).when(app).checkRequest(eq(req2));
+		doThrow(new RequestRejectedException("req2 rejected")).when(app).checkRequest(eq(req2));
 		var req3 = Requests.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -443,12 +443,12 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a block contains a transaction that does not pass the delivery check, verification rejects it")
-	public void transactionNotDeliveredGetsRejected(@TempDir Path dir) throws Exception {
+	@DisplayName("if a block contains a request that does not pass the execution check, verification rejects it")
+	public void requestNotExecutedGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
 		var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
 		var req2 = Requests.of(new byte[] { 13, 1, 19, 73 });
-		doThrow(new RequestRejectedException("tx2 rejected")).when(app).executeTransaction(anyInt(), eq(req2));
+		doThrow(new RequestRejectedException("req2 rejected")).when(app).executeTransaction(anyInt(), eq(req2));
 		var req3 = Requests.of(new byte[] { 4, 50 });
 
 		try (var node = new TestNode(dir, app)) {
@@ -472,7 +472,7 @@ public class VerificationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of its transactions, verification rejects it")
+	@DisplayName("if a block contains a final state hash that does not match that resulting at the end of the execution of its requests, verification rejects it")
 	public void finalStateMismatchGetsRejected(@TempDir Path dir) throws Exception {
 		var app = mockApplication();
 		var req = Requests.of(new byte[] { 13, 1, 19, 73 });

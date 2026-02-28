@@ -25,7 +25,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Requests;
 import io.mokamint.node.api.Request;
 import io.mokamint.node.messages.api.WhisperRequestMessage;
-import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
+import io.mokamint.node.messages.internal.json.WhisperRequestMessageJson;
 
 /**
  * Implementation of the network message sent to whisper a transaction between whisperers.
@@ -55,10 +55,10 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public WhisperTransactionMessageImpl(WhisperTransactionMessageJson json) throws InconsistentJsonException {
+	public WhisperTransactionMessageImpl(WhisperRequestMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
-		var transactionBase64 = json.getTransaction();
+		var transactionBase64 = json.getRequest();
 		if (transactionBase64 == null)
 			throw new InconsistentJsonException("transaction cannot be null");
 

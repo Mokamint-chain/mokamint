@@ -20,15 +20,15 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.mokamint.node.messages.api.GetRequestRepresentationResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionRepresentationResultMessageImpl;
+import io.mokamint.node.messages.internal.GetRequestRepresentationResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetRequestRepresentationResultMessage}.
  */
-public abstract class GetTransactionRepresentationResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestRepresentationResultMessage> {
+public abstract class GetRequestRepresentationResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestRepresentationResultMessage> {
 	private final String representation;
 
-	protected GetTransactionRepresentationResultMessageJson(GetRequestRepresentationResultMessage message) {
+	protected GetRequestRepresentationResultMessageJson(GetRequestRepresentationResultMessage message) {
 		super(message);
 
 		this.representation = message.get().orElse(null);
@@ -40,7 +40,7 @@ public abstract class GetTransactionRepresentationResultMessageJson extends Abst
 
 	@Override
 	public GetRequestRepresentationResultMessage unmap() {
-		return new GetTransactionRepresentationResultMessageImpl(this);
+		return new GetRequestRepresentationResultMessageImpl(this);
 	}
 
 	@Override

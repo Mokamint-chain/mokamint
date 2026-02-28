@@ -183,10 +183,10 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(genesis));
 
-			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
-			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
+			var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var req2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var req3 = Requests.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(req1), node.add(req2), node.add(req3));
 
 			assertFalse(blockchain.add(block));
 
@@ -198,21 +198,21 @@ public class MempoolTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a block is added to the head of the chain, its transactions are removed from the mempool")
-	public void transactionsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws Exception {
+	@DisplayName("if a block is added to the head of the chain, its requests are removed from the mempool")
+	public void requestsInNonGenesisRemovedAfterAddition(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForRequests(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
-			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
-			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction3));
-			node.add(transaction2);
+			var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var req2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var req3 = Requests.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(req1), node.add(req3));
+			node.add(req2);
 
-			var block = computeNextBlock(genesis, Stream.of(transaction2));
+			var block = computeNextBlock(genesis, Stream.of(req2));
 
 			assertTrue(blockchain.add(genesis));
 			assertTrue(blockchain.add(block));
@@ -233,18 +233,18 @@ public class MempoolTests extends AbstractLoggedTests {
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForRequests(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
 
-			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
-			var expectedEntries = Set.of(node.add(transaction1), node.add(transaction2), node.add(transaction3));
+			var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var req2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var req3 = Requests.of(new byte[] { 3, 2, 3, 4 });
+			var expectedEntries = Set.of(node.add(req1), node.add(req2), node.add(req3));
 
 			var block1 = computeNextBlock(genesis, plot1);
-			var added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), plot2);
+			var added = computeNextBlock(genesis, Stream.of(req1, req2, req3), plot2);
 			if (block1.getDescription().getPower().compareTo(added.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
-				// note: the transactions in the block to not contribute to the deadline and hence to the power
+				// note: the requests in the block to not contribute to the deadline and hence to the power
 				block1 = computeNextBlock(genesis, plot2);
-				added = computeNextBlock(genesis, Stream.of(transaction1, transaction2, transaction3), plot1);
+				added = computeNextBlock(genesis, Stream.of(req1, req2, req3), plot1);
 			}
 
 			var block2 = computeNextBlock(block1);
@@ -271,30 +271,30 @@ public class MempoolTests extends AbstractLoggedTests {
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForRequests(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
-			var entry0 = node.add(transaction0);
-			var entry1 = node.add(transaction1);
-			var entry2 = node.add(transaction2);
-			var entry3 = node.add(transaction3);
+			var req0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
+			var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var req2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var req3 = Requests.of(new byte[] { 3, 2, 3, 4 });
+			var entry0 = node.add(req0);
+			var entry1 = node.add(req1);
+			var entry2 = node.add(req2);
+			var entry3 = node.add(req3);
 
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
-			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), plot1);
-			var block1 = computeNextBlock(blockBase, Stream.of(transaction2), plot1);
-			var block0 = computeNextBlock(blockBase, Stream.of(transaction1), plot2);
+			var blockBase = computeNextBlock(genesis, Stream.of(req0), plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(req2), plot1);
+			var block0 = computeNextBlock(blockBase, Stream.of(req1), plot2);
 			if (block1.getDescription().getPower().compareTo(block0.getDescription().getPower()) < 0) {
 				// we invert the blocks, so that block1 has always at least the power of added
-				// note: the transactions in the block to not contribute to the deadline and hence to the power
-				block1 = computeNextBlock(blockBase, Stream.of(transaction2), plot2);
-				block0 = computeNextBlock(blockBase, Stream.of(transaction1), plot1);
+				// note: the requests in the block to not contribute to the deadline and hence to the power
+				block1 = computeNextBlock(blockBase, Stream.of(req2), plot2);
+				block0 = computeNextBlock(blockBase, Stream.of(req1), plot1);
 			}
 
 			var block2 = computeNextBlock(block1);
-			var block3 = computeNextBlock(block2, Stream.of(transaction3));
+			var block3 = computeNextBlock(block2, Stream.of(req3));
 
-			// at this stage, the mempool contains all four transactions
+			// at this stage, the mempool contains all four requests
 			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(4, actualEntries.size());
@@ -303,7 +303,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			
 			assertTrue(blockchain.add(genesis));
 
-			// at this stage, the mempool contains all four transactions
+			// at this stage, the mempool contains all four requests
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(4, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
@@ -311,7 +311,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(blockBase));
 
-			// now, the mempool contains only three transactions, since transaction0 is in blockBase
+			// now, the mempool contains only three requests, since req0 is in blockBase
 			expectedEntries = Set.of(entry1, entry2, entry3);
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(3, actualEntries.size());
@@ -320,7 +320,7 @@ public class MempoolTests extends AbstractLoggedTests {
 
 			assertTrue(blockchain.add(block0));
 
-			// at this stage, the mempool does not contain transaction1 anymore
+			// at this stage, the mempool does not contain req1 anymore
 			expectedEntries = Set.of(entry2, entry3);
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(2, actualEntries.size());
@@ -330,13 +330,13 @@ public class MempoolTests extends AbstractLoggedTests {
 			// we add an orphan block3 (no previous in database)
 			assertFalse(blockchain.add(block3));
 
-			// block3 contains transaction3 but it is not removed from the mempool
+			// block3 contains req3 but it is not removed from the mempool
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(2, actualEntries.size());
 			assertEquals(expectedEntries, actualEntries);
 			assertEquals(2, node.getMempoolInfo().getSize());
 
-			// we add another orphan block2 (no previous in database) without transactions
+			// we add another orphan block2 (no previous in database) without requests
 			assertFalse(blockchain.add(block2));
 
 			// the mempool did not change
@@ -349,7 +349,7 @@ public class MempoolTests extends AbstractLoggedTests {
 			assertTrue(blockchain.add(block1));
 
 			// the more powerful chain is the current chain now:
-			// transaction1 ends back into the mempool, while transaction2 and transaction3 gets removed from the mempool
+			// req1 ends back into the mempool, while req2 and req3 gets removed from the mempool
 			expectedEntries = Set.of(entry1);
 			actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(1, actualEntries.size());
@@ -359,29 +359,29 @@ public class MempoolTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if the more powerful chain is added with genesis at the root, then all its transactions are removed from the mempool")
-	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllTransactionsRemovedFromMempool(@TempDir Path dir) throws Exception {
+	@DisplayName("if the more powerful chain is added with genesis at the root, then all its requests are removed from the mempool")
+	public void ifMorePowerfulChainAddedWithGenesisAtTheRootThenAllRequestsRemovedFromMempool(@TempDir Path dir) throws Exception {
 		try (var node = new TestNode(dir)) {
 			var blockchain = node.getBlockchain();
 			var config = node.getConfig();
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")), config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForRequests(), config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), nodeKeys.getPublic());
 
-			var transaction0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
-			var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-			var transaction2 = Requests.of(new byte[] { 2, 2, 3, 4 });
-			var transaction3 = Requests.of(new byte[] { 3, 2, 3, 4 });
-			var entry0 = node.add(transaction0);
-			var entry1 = node.add(transaction1);
-			var entry2 = node.add(transaction2);
-			var entry3 = node.add(transaction3);
+			var req0 = Requests.of(new byte[] { 1 , 56, 17, 90, 110, 1, 28 });
+			var req1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+			var req2 = Requests.of(new byte[] { 2, 2, 3, 4 });
+			var req3 = Requests.of(new byte[] { 3, 2, 3, 4 });
+			var entry0 = node.add(req0);
+			var entry1 = node.add(req1);
+			var entry2 = node.add(req2);
+			var entry3 = node.add(req3);
 
 			var genesis = Blocks.genesis(description, stateHash, nodeKeys.getPrivate());
-			var blockBase = computeNextBlock(genesis, Stream.of(transaction0), plot1);
-			var block1 = computeNextBlock(blockBase, Stream.of(transaction1));
-			var block2 = computeNextBlock(block1, Stream.of(transaction2));
-			var block3 = computeNextBlock(block2, Stream.of(transaction3));
+			var blockBase = computeNextBlock(genesis, Stream.of(req0), plot1);
+			var block1 = computeNextBlock(blockBase, Stream.of(req1));
+			var block2 = computeNextBlock(block1, Stream.of(req2));
+			var block3 = computeNextBlock(block2, Stream.of(req3));
 
-			// at this stage, the mempool contains all four transactions
+			// at this stage, the mempool contains all four requests
 			var expectedEntries = Set.of(entry0, entry1, entry2, entry3);
 			var actualEntries = node.getMempoolPortion(0, 10).getEntries().collect(Collectors.toSet());
 			assertEquals(4, actualEntries.size());
@@ -433,18 +433,18 @@ public class MempoolTests extends AbstractLoggedTests {
 		return computeNextBlock(previous, plot1);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> transactions) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
-		return computeNextBlock(previous, transactions, plot1);
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> requests) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
+		return computeNextBlock(previous, requests, plot1);
 	}
 
 	private NonGenesisBlock computeNextBlock(Block previous, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
 		return computeNextBlock(previous, Stream.empty(), plot);
 	}
 
-	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> transactions, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
+	private NonGenesisBlock computeNextBlock(Block previous, Stream<Request> requests, Plot plot) throws IOException, InvalidKeyException, SignatureException, InterruptedException, IncompatibleChallengeException {
 		var challenge = previous.getDescription().getNextChallenge();
 		var deadline = plot.getSmallestDeadline(challenge);
 		var description = previous.getNextBlockDescription(deadline);
-		return Blocks.of(description, transactions, stateHash, privateKey);
+		return Blocks.of(description, requests, stateHash, privateKey);
 	}
 }

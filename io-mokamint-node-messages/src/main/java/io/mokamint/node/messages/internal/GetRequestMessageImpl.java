@@ -24,13 +24,13 @@ import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetTransactionMessage;
-import io.mokamint.node.messages.internal.json.GetTransactionMessageJson;
+import io.mokamint.node.messages.api.GetRequestMessage;
+import io.mokamint.node.messages.internal.json.GetRequestMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getRequest(byte[])} method of a node.
  */
-public class GetTransactionMessageImpl extends AbstractRpcMessage implements GetTransactionMessage {
+public class GetRequestMessageImpl extends AbstractRpcMessage implements GetRequestMessage {
 	private final byte[] hash;
 
 	/**
@@ -39,7 +39,7 @@ public class GetTransactionMessageImpl extends AbstractRpcMessage implements Get
 	 * @param hash the {@code hash} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionMessageImpl(byte[] hash, String id) {
+	public GetRequestMessageImpl(byte[] hash, String id) {
 		super(id);
 
 		this.hash = Objects.requireNonNull(hash, "hash cannot be null");
@@ -51,7 +51,7 @@ public class GetTransactionMessageImpl extends AbstractRpcMessage implements Get
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetTransactionMessageImpl(GetTransactionMessageJson json) throws InconsistentJsonException {
+	public GetRequestMessageImpl(GetRequestMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
 		var hash = json.getHash();
@@ -73,14 +73,14 @@ public class GetTransactionMessageImpl extends AbstractRpcMessage implements Get
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof GetTransactionMessageImpl gtmi) // optimization
+		if (other instanceof GetRequestMessageImpl gtmi) // optimization
 			return super.equals(other) && Arrays.equals(hash, gtmi.hash);
 		else
-			return other instanceof GetTransactionMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
+			return other instanceof GetRequestMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionMessage.class.getName();
+		return GetRequestMessage.class.getName();
 	}
 }

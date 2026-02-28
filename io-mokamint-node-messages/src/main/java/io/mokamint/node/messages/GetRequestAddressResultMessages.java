@@ -22,8 +22,8 @@ import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
 import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.messages.api.GetRequestAddressResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressResultMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressResultMessageJson;
+import io.mokamint.node.messages.internal.GetRequestAddressResultMessageImpl;
+import io.mokamint.node.messages.internal.json.GetRequestAddressResultMessageJson;
 
 /**
  * A provider of {@link GetRequestAddressResultMessage}.
@@ -35,12 +35,12 @@ public final class GetRequestAddressResultMessages {
 	/**
 	 * Yields a {@link GetRequestAddressResultMessage}.
 	 * 
-	 * @param address the address of the transaction in the result, if any
+	 * @param address the address of the request in the result, if any
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
 	public static GetRequestAddressResultMessage of(Optional<RequestAddress> address, String id) {
-		return new GetTransactionAddressResultMessageImpl(address, id);
+		return new GetRequestAddressResultMessageImpl(address, id);
 	}
 
 	/**
@@ -72,7 +72,7 @@ public final class GetRequestAddressResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionAddressResultMessageJson {
+    public static class Json extends GetRequestAddressResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.

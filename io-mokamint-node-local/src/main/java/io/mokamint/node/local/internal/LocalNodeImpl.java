@@ -964,11 +964,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Called when a transaction has been added to the mempool.
+	 * Called when a request has been added to the mempool.
 	 * 
-	 * @param transaction the added transaction
+	 * @param request the added request
 	 */
-	protected void onAdded(Request transaction) {}
+	protected void onAdded(Request request) {}
 
 	/**
 	 * Called when no deadline has been found.

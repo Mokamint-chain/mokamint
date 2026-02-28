@@ -22,7 +22,7 @@ import io.mokamint.node.api.Request;
 import io.mokamint.node.api.WhisperMessage;
 
 /**
- * The network message sent to whisper a transaction between whisperers.
+ * The network message sent to whisper a request between whisperers.
  */
 @Immutable
 public interface WhisperRequestMessage extends RpcMessage, WhisperMessage<Request> {

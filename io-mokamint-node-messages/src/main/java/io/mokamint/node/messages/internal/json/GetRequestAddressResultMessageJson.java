@@ -22,15 +22,15 @@ import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.messages.api.GetRequestAddressResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressResultMessageImpl;
+import io.mokamint.node.messages.internal.GetRequestAddressResultMessageImpl;
 
 /**
  * The JSON representation of a {@link GetRequestAddressResultMessage}.
  */
-public abstract class GetTransactionAddressResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestAddressResultMessage> {
+public abstract class GetRequestAddressResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestAddressResultMessage> {
 	private final RequestAddresses.Json address;
 
-	protected GetTransactionAddressResultMessageJson(GetRequestAddressResultMessage message) {
+	protected GetRequestAddressResultMessageJson(GetRequestAddressResultMessage message) {
 		super(message);
 
 		this.address = message.get().map(RequestAddresses.Json::new).orElse(null);
@@ -42,7 +42,7 @@ public abstract class GetTransactionAddressResultMessageJson extends AbstractRpc
 
 	@Override
 	public GetRequestAddressResultMessage unmap() throws InconsistentJsonException {
-		return new GetTransactionAddressResultMessageImpl(this);
+		return new GetRequestAddressResultMessageImpl(this);
 	}
 
 	@Override

@@ -24,13 +24,13 @@ import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetTransactionAddressMessage;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressMessageJson;
+import io.mokamint.node.messages.api.GetRequestAddressMessage;
+import io.mokamint.node.messages.internal.json.GetRequestAddressMessageJson;
 
 /**
  * Implementation of the network message corresponding to the {@link PublicNode#getRequestAddress(byte[])} method of a node.
  */
-public class GetTransactionAddressMessageImpl extends AbstractRpcMessage implements GetTransactionAddressMessage {
+public class GetRequestAddressMessageImpl extends AbstractRpcMessage implements GetRequestAddressMessage {
 	private final byte[] hash;
 
 	/**
@@ -39,7 +39,7 @@ public class GetTransactionAddressMessageImpl extends AbstractRpcMessage impleme
 	 * @param hash the {@code hash} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionAddressMessageImpl(byte[] hash, String id) {
+	public GetRequestAddressMessageImpl(byte[] hash, String id) {
 		super(id);
 
 		this.hash = Objects.requireNonNull(hash, "hash cannot be null");
@@ -51,7 +51,7 @@ public class GetTransactionAddressMessageImpl extends AbstractRpcMessage impleme
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public GetTransactionAddressMessageImpl(GetTransactionAddressMessageJson json) throws InconsistentJsonException {
+	public GetRequestAddressMessageImpl(GetRequestAddressMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
 		var hash = json.getHash();
@@ -73,14 +73,14 @@ public class GetTransactionAddressMessageImpl extends AbstractRpcMessage impleme
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof GetTransactionAddressMessageImpl gtami) // optimization
+		if (other instanceof GetRequestAddressMessageImpl gtami) // optimization
 			return super.equals(other) && Arrays.equals(hash, gtami.hash);
 		else
-			return other instanceof GetTransactionAddressMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
+			return other instanceof GetRequestAddressMessage gtrm && super.equals(other) && Arrays.equals(hash, gtrm.getHash());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionAddressMessage.class.getName();
+		return GetRequestAddressMessage.class.getName();
 	}
 }

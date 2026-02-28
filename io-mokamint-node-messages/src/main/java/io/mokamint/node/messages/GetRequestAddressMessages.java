@@ -18,32 +18,32 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.api.GetTransactionAddressMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressMessageJson;
+import io.mokamint.node.messages.api.GetRequestAddressMessage;
+import io.mokamint.node.messages.internal.GetRequestAddressMessageImpl;
+import io.mokamint.node.messages.internal.json.GetRequestAddressMessageJson;
 
 /**
- * A provider of {@link GetTransactionAddressMessage}.
+ * A provider of {@link GetRequestAddressMessage}.
  */
 public final class GetRequestAddressMessages {
 
 	private GetRequestAddressMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionAddressMessage}.
+	 * Yields a {@link GetRequestAddressMessage}.
 	 * 
 	 * @param hash the {@code hash} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionAddressMessage of(byte[] hash, String id) {
-		return new GetTransactionAddressMessageImpl(hash, id);
+	public static GetRequestAddressMessage of(byte[] hash, String id) {
+		return new GetRequestAddressMessageImpl(hash, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionAddressMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetRequestAddressMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +56,7 @@ public final class GetRequestAddressMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionAddressMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetRequestAddressMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +69,14 @@ public final class GetRequestAddressMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionAddressMessageJson {
+    public static class Json extends GetRequestAddressMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionAddressMessage message) {
+    	public Json(GetRequestAddressMessage message) {
     		super(message);
     	}
     }
