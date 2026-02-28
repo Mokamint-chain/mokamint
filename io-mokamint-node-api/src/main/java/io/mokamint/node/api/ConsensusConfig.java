@@ -94,18 +94,18 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	int getTargetBlockCreationTime();
 
 	/**
-	 * Yields the maximal size of a block's transactions table.
+	 * Yields the maximal size of a block's requests table.
 	 * 
 	 * @return the maximal size (in bytes)
 	 */
 	int getMaxBlockSize();
 
 	/**
-	 * Yields the maximal size of a transaction.
+	 * Yields the maximal size of a request.
 	 * 
 	 * @return the maximal size (in bytes)
 	 */
-	int getMaxTransactionSize();
+	int getMaxRequestSize();
 
 	/**
 	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.

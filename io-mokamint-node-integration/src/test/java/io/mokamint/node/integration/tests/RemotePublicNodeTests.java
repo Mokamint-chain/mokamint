@@ -683,7 +683,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 
 			@Override
-			protected void onAddTransaction(AddRequestMessage message, Session session) {
+			protected void onAddRequest(AddRequestMessage message, Session session) {
 				request2.set(message.getRequest());
 				sendObjectAsync(session, AddRequestResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()), RuntimeException::new);
 			}
@@ -696,23 +696,23 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Transaction) works in case of TransactionRejectedException")
-	public void addTransactionWorksInCaseOfTransactionRejectedException() throws Exception {
+	@DisplayName("add(Request) works in case of RequestRejectedException")
+	public void addRequestWorksInCaseOfRequestRejectedException() throws Exception {
 		var exceptionMessage = "exception message";
-		var transaction = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var request = Requests.of(new byte[] { 1, 2, 3, 4 });
 
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 
 			@Override
-			protected void onAddTransaction(AddRequestMessage message, Session session) {
+			protected void onAddRequest(AddRequestMessage message, Session session) {
 				sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RequestRejectedException.class, () -> remote.add(transaction));
+			var exception = assertThrows(RequestRejectedException.class, () -> remote.add(request));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -808,11 +808,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
-		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Requests.of(new byte[] {});
+		var req1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var req2 = Requests.of(new byte[] { 5, 6, 7 });
+		var req3 = Requests.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
-			Stream.of(transaction1, transaction2, transaction3), new byte[0], nodeKeyPair.getPrivate());
+			Stream.of(req1, req2, req3), new byte[0], nodeKeyPair.getPrivate());
 		var semaphore = new Semaphore(0);
 
 		var whisperer = mock(Whisperer.class);
@@ -834,9 +834,9 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransaction() works if the transaction exists")
-	public void getTransactionWorksIfTransactionExists() throws Exception {
-		var tx1 = Requests.of(new byte[] { 13, 1, 19, 73 });
+	@DisplayName("getRequest() works if the request exists")
+	public void getRequestWorksIfRequestExists() throws Exception {
+		var req1 = Requests.of(new byte[] { 13, 1, 19, 73 });
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -844,21 +844,21 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransaction(GetRequestMessage message, Session session) {
+			protected void onGetRequest(GetRequestMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetRequestResultMessages.of(Optional.of(tx1), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestResultMessages.of(Optional.of(req1), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var tx2 = remote.getRequest(hash);
-			assertEquals(tx1, tx2.get());
+			var req2 = remote.getRequest(hash);
+			assertEquals(req1, req2.get());
 		}
 	}
 
 	@Test
-	@DisplayName("getTransaction() works if the transaction is missing")
-	public void getTransactionWorksIfTransactionMissing() throws Exception {
+	@DisplayName("getRequest() works if the request is missing")
+	public void getRequestWorksIfRequestMissing() throws Exception {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -866,7 +866,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransaction(GetRequestMessage message, Session session) {
+			protected void onGetRequest(GetRequestMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
@@ -879,8 +879,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionRepresentation() works if the transaction exists")
-	public void getTransactionRepresentationWorksIfTransactionExists() throws Exception {
+	@DisplayName("getRequestRepresentation() works if the request exists")
+	public void getRequestRepresentationWorksIfRequestExists() throws Exception {
 		var representation1 = "hello";
 		byte[] hash = { 67, 56, 43 };
 	
@@ -889,7 +889,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
+			protected void onGetRequestRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.of(representation1), message.getId()), RuntimeException::new);
 			}
@@ -902,8 +902,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionRepresentation() works if the transaction is missing")
-	public void getTransactionRepresentationWorksIfTransactionMissing() throws Exception {
+	@DisplayName("getRequestRepresentation() works if the request is missing")
+	public void getRequestRepresentationWorksIfRequestMissing() throws Exception {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -911,7 +911,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
+			protected void onGetRequestRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
@@ -924,8 +924,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionRepresentation() works if it throws TransactionRejectedException")
-	public void getTransactionRepresentationWorksInCaseOfTransactionRejectedException() throws Exception {
+	@DisplayName("getRequestRepresentation() works if it throws RequestRejectedException")
+	public void getRequestRepresentationWorksInCaseOfRequestRejectedException() throws Exception {
 		byte[] hash = { 67, 56, 43 };
 		var exceptionMessage = "rejected";
 	
@@ -934,7 +934,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
+			protected void onGetRequestRepresentation(GetRequestRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
@@ -947,8 +947,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionAddress() works if the transaction exists")
-	public void getTransactionAddressWorksIfTransactionExists() throws Exception {
+	@DisplayName("getRequestAddress() works if the request exists")
+	public void getRequestAddressWorksIfRequestExists() throws Exception {
 		var address1 = RequestAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 		byte[] hash = { 67, 56, 43 };
 	
@@ -957,7 +957,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionAddress(GetRequestAddressMessage message, Session session) {
+			protected void onGetRequestAddress(GetRequestAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.of(address1), message.getId()), RuntimeException::new);
 			}
@@ -970,8 +970,8 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("getTransactionAddress() works if the transaction is missing")
-	public void getTransactionAddressWorksIfTransactionMissing() throws Exception {
+	@DisplayName("getRequestAddress() works if the request is missing")
+	public void getRequestAddressWorksIfRequestMissing() throws Exception {
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -979,7 +979,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 	
 			@Override
-			protected void onGetTransactionAddress(GetRequestAddressMessage message, Session session) {
+			protected void onGetRequestAddress(GetRequestAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
 					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}

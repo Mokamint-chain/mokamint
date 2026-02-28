@@ -92,7 +92,7 @@ import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.SynchronizationException;
 import io.mokamint.node.local.api.LocalNode;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.RequestEntry;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.messages.WhisperRequestMessages;
@@ -210,9 +210,9 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	private final BlockingQueue<WhisperedInfo<WhisperBlockMessage>> whisperedBlocksQueue = new ArrayBlockingQueue<>(1000);
 	
 	/**
-	 * The queue of the whispered transactions to process.
+	 * The queue of the whispered requests to process.
 	 */
-	private final BlockingQueue<WhisperedInfo<WhisperRequestMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
+	private final BlockingQueue<WhisperedInfo<WhisperRequestMessage>> whisperedRequestsQueue = new ArrayBlockingQueue<>(1000);
 
 	/**
 	 * The queue of blocks to publish.
@@ -367,7 +367,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			schedulePeriodicSynchronization();
 			schedule(this::processWhisperedPeers, () -> "peers whispering process");
 			schedule(this::processWhisperedBlocks, () -> "blocks whispering process");
-			schedule(this::processWhisperedTransactions, () -> "transactions whispering process");
+			schedule(this::processWhisperedRequests, () -> "requests whispering process");
 			schedule(this::publisher, () -> "blocks publishing process");
 			schedulePeriodicPingToAllPeersAndReconnection();
 			schedulePeriodicWhisperingOfAllServices();
@@ -425,7 +425,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			else if (message instanceof WhisperBlockMessage wbm && alreadyWhispered.add(message.getWhispered()))
 				whisperedBlocksQueue.offer(new WhisperedInfo<>(wbm, seen, description, true));
 			else if (message instanceof WhisperRequestMessage wtm && alreadyWhispered.add(message.getWhispered()))
-				whisperedTransactionsQueue.offer(new WhisperedInfo<>(wtm, seen, description, true));
+				whisperedRequestsQueue.offer(new WhisperedInfo<>(wtm, seen, description, true));
 	}
 
 	@Override
@@ -512,12 +512,12 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public MempoolEntry add(Request transaction) throws RequestRejectedException, ClosedNodeException, ApplicationTimeoutException, InterruptedException {
-		TransactionEntry result;
+	public MempoolEntry add(Request request) throws RequestRejectedException, ClosedNodeException, ApplicationTimeoutException, InterruptedException {
+		RequestEntry result;
 
 		try {
 			try (var scope = mkScope()) {
-				result = mempool.add(transaction);
+				result = mempool.add(request);
 			}
 
 			miningTask.add(result);
@@ -526,7 +526,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			throw new ClosedNodeException(e);
 		}
 
-		whisperWithoutAddition(transaction);
+		whisperWithoutAddition(request);
 
 		return result.toMempoolEntry();
 	}
@@ -549,7 +549,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public Optional<Request> getRequest(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			try {
-				return blockchain.getTransaction(hash);
+				return blockchain.getRequest(hash);
 			}
 			catch (ClosedDatabaseException e) {
 				throw new ClosedNodeException(e);
@@ -560,11 +560,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	@Override
 	public Optional<String> getRequestRepresentation(byte[] hash) throws RequestRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
-			Optional<Request> maybeTransaction = blockchain.getTransaction(hash);
-			if (maybeTransaction.isEmpty())
+			Optional<Request> maybeRequest = blockchain.getRequest(hash);
+			if (maybeRequest.isEmpty())
 				return Optional.empty();
 			else
-				return Optional.of(app.getRepresentation(maybeTransaction.get()));
+				return Optional.of(app.getRepresentation(maybeRequest.get()));
 		}
 		catch (ClosedDatabaseException | ClosedApplicationException e) {
 			// the database is encapsulated inside this node: if it is closed, then it is because close() has
@@ -578,7 +578,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	public Optional<RequestAddress> getRequestAddress(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			try {
-				return blockchain.getTransactionAddress(hash);
+				return blockchain.getRequestAddress(hash);
 			}
 			catch (ClosedDatabaseException e) {
 				throw new ClosedNodeException(e);
@@ -702,8 +702,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		return config;
 	}
 
-	protected void remove(TransactionEntry transactionEntry) {
-		mempool.remove(transactionEntry);
+	protected void remove(RequestEntry requestEntry) {
+		mempool.remove(requestEntry);
 	}
 
 	/**
@@ -808,8 +808,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Rebases the mempool of this node so that it is relative to the given {@code block}.
 	 * This means that a common ancestor is found, between the current mempool base and {@code block}.
-	 * All transactions from the current mempool base to the ancestor are added to the mempool
-	 * and all transactions from the ancestor to {@code block} are removed from the mempool.
+	 * All requests from the current mempool base to the ancestor are added to the mempool
+	 * and all requests from the ancestor to {@code block} are removed from the mempool.
 	 * This method is typically called when the head of the blockchain is updated, so that the
 	 * mempool can be updated as well.
 	 * 
@@ -824,7 +824,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Performs an action for each transaction from the mempool, rebased at the given {@code block} (see
+	 * Performs an action for each request from the mempool, rebased at the given {@code block} (see
 	 * {@link #rebaseMempoolAt(Block)}. The mempool of this node is not modified.
 	 * 
 	 * @param block the block
@@ -834,10 +834,10 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	protected void forEachMempoolTransactionAt(Block block, Consumer<TransactionEntry> action) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+	protected void forEachMempoolRequestAt(Block block, Consumer<RequestEntry> action) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		var result = new Mempool(mempool); // clone the mempool
 		result.rebaseAt(block); // rebase the clone
-		result.forEachTransaction(action); // process the resulting transactions
+		result.forEachRequest(action); // process the resulting requests
 	}
 
 	/**
@@ -897,14 +897,14 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	/**
-	 * Whispers a transaction, but does not add it to this node.
+	 * Whispers a request, but does not add it to this node.
 	 * 
-	 * @param transaction the transaction to whisper
+	 * @param request the request to whisper
 	 */
-	private void whisperWithoutAddition(Request transaction) {
-		if (alreadyWhispered.add(transaction)) {
-			var whisperTransactionMessage = WhisperRequestMessages.of(transaction, UUID.randomUUID().toString());
-			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(config.getHashingForRequests()), false));
+	private void whisperWithoutAddition(Request request) {
+		if (alreadyWhispered.add(request)) {
+			var whisperRequestMessage = WhisperRequestMessages.of(request, UUID.randomUUID().toString());
+			whisperedRequestsQueue.offer(new WhisperedInfo<>(whisperRequestMessage, isThis, "request " + request.getHexHash(config.getHashingForRequests()), false));
 		}
 	}
 
@@ -1062,11 +1062,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	protected void onWhispered(Block block) {}
 
 	/**
-	 * Called when a transaction has been whispered to our peers.
+	 * Called when a request has been whispered to our peers.
 	 * 
-	 * @param transaction the whispered transaction
+	 * @param request the whispered request
 	 */
-	protected void onWhispered(Request transaction) {}
+	protected void onWhispered(Request request) {}
 
 	/**
 	 * An adapter of a task into a runnable with logs.
@@ -1301,11 +1301,11 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * Processes the whispered objects received by this node, until interrupted.
 	 */
-	private void processWhisperedTransactions() throws InterruptedException, ClosedDatabaseException {
+	private void processWhisperedRequests() throws InterruptedException, ClosedDatabaseException {
 		while (!Thread.currentThread().isInterrupted()) {
-			var whisperedInfo = whisperedTransactionsQueue.take();
-			var whisperedTransactionMessage = whisperedInfo.message;
-			var tx = whisperedTransactionMessage.getWhispered();
+			var whisperedInfo = whisperedRequestsQueue.take();
+			var whisperedRequestMessage = whisperedInfo.message;
+			var tx = whisperedRequestMessage.getWhispered();
 
 			if (whisperedInfo.add) {
 				try {
@@ -1320,8 +1320,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 			}
 
 			Predicate<Whisperer> newSeen = whisperedInfo.seen.or(isThis);
-			peers.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description);
-			boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedTransactionMessage, newSeen, whisperedInfo.description));
+			peers.whisper(whisperedRequestMessage, newSeen, whisperedInfo.description);
+			boundWhisperers.forEach(whisperer -> whisperer.whisper(whisperedRequestMessage, newSeen, whisperedInfo.description));
 			onWhispered(tx);
 		}
 	}

@@ -40,61 +40,61 @@ import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.Request;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.RequestEntry;
 import io.mokamint.nonce.api.Deadline;
 
 /**
- * A task that executes transactions taken from a queue.
+ * A task that executes requests taken from a queue.
  * It works while a block mining task waits for a deadline.
- * Once that deadline expires, all transactions executed up to the moment
+ * Once that deadline expires, all requests executed up to the moment
  * get added to the freshly mined block.
  */
-public class TransactionsExecutionTask implements Task {
+public class RequestExecutionTask implements Task {
 
 	/**
-	 * The node for which transactions are being executed.
+	 * The node for which requests are being executed.
 	 */
 	private final LocalNodeImpl node;
 
 	/**
-	 * The block over which the transactions are being executed.
+	 * The block over which the requests are being executed.
 	 * That is, the initial state of the execution is the final state after this block.
 	 */
 	private final Block previous;
 
 	/**
-	 * The application running in the node executing the transactions.
+	 * The application running in the node executing the requests.
 	 */
 	private final Application app;
 
 	/**
-	 * The source of transactions to execute. It is guaranteed that these transactions
+	 * The source of the requests to execute. It is guaranteed that these requests
 	 * are different from those contained in the blockchain from {@link #previous}
-	 * towards the genesis block. It is guaranteed also that these transactions pass
+	 * towards the genesis block. It is guaranteed also that these requests pass
 	 * the {@link Application#checkRequest(Request)} test.
 	 */
 	private final Source source;
 
 	/**
-	 * The transactions that have been successfully executed up to now, in order of execution.
+	 * The requests that have been successfully executed up to now, in order of execution.
 	 */
-	private final List<Request> successfullyDeliveredTransactions = new ArrayList<>();
+	private final List<Request> successfullyExecutedRequests = new ArrayList<>();
 
 	/**
-	 * The transactions that have been executed with this executor but whose delivery failed
+	 * The requests that have been executed with this executor but whose execution failed
 	 * with a {@link RequestRejectedException}.
 	 */
-	private final Set<Request> rejectedTransactions = new HashSet<>();
+	private final Set<Request> rejectedRequests = new HashSet<>();
 
 	/**
-	 * The maximal size allowed for the transactions' table of a block. This task
-	 * ensures that the {@link #successfullyDeliveredTransactions} have a cumulative size that is never
+	 * The maximal size allowed for the requests' table of a block. This task
+	 * ensures that the {@link #successfullyExecutedRequests} have a cumulative size that is never
 	 * larger than this constant.
 	 */
 	private final long maxSize;
 
 	/**
-	 * The {@link #app} identifier of the transactions' execution performed by this task.
+	 * The {@link #app} identifier of the requests' execution performed by this task.
 	 */
 	private final int id;
 
@@ -104,29 +104,29 @@ public class TransactionsExecutionTask implements Task {
 
 	private volatile Future<?> future;
 
-	private final static Logger LOGGER = Logger.getLogger(TransactionsExecutionTask.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(RequestExecutionTask.class.getName());
 
 	 /**
-	  * A source of transactions to execute.
+	  * A source of requests to execute.
 	  */
 	public interface Source {
 	
 		/**
-		 * Takes a transaction to execute. It blocks to wait for new transactions
+		 * Takes a request to execute. It blocks to wait for new requests
 		 * if this source is currently empty.
 		 * 
-		 * @return the transaction entry read from this source
+		 * @return the request entry read from this source
 		 * @throws InterruptedException if the current thread is interrupted while blocked
-		 *                              waiting for a new transaction to arrive
+		 *                              waiting for a new request to arrive
 		 */
-		TransactionEntry take() throws InterruptedException;
+		RequestEntry take() throws InterruptedException;
 	}
 
 	/**
-	 * Creates a transaction execution task.
+	 * Creates a request execution task.
 	 * 
 	 * @param node the node the task is working for
-	 * @param source the source of the transactions to execute
+	 * @param source the source of the requests to execute
 	 * @param previous the block over which the execution is performed
 	 * @param creationTimeOfPrevious the creation time of {@code previous}
 	 * @throws InterruptedException if the current thread gets interrupted
@@ -135,7 +135,7 @@ public class TransactionsExecutionTask implements Task {
 	 * @throws ClosedApplicationException  if the application is already closed
 	 * @throws UnknownStateException if the state at the end of {@code previous} is not available
 	 */
-	public TransactionsExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, ClosedNodeException, UnknownStateException, ClosedApplicationException {
+	public RequestExecutionTask(LocalNodeImpl node, Source source, Block previous, LocalDateTime creationTimeOfPrevious) throws InterruptedException, ApplicationTimeoutException, ClosedNodeException, UnknownStateException, ClosedApplicationException {
 		this.node = node;
 		this.previous = previous;
 		this.maxSize = node.getConfig().getMaxBlockSize();
@@ -151,7 +151,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	public void start() throws TaskRejectedExecutionException {
-		future = node.submit(this, () -> "transactions execution over block " + previous.getHexHash());
+		future = node.submit(this, () -> "requests execution over block " + previous.getHexHash());
 	}
 
 	public void stop() {
@@ -167,27 +167,27 @@ public class TransactionsExecutionTask implements Task {
 		try {
 			// infinite loop: this task is expected to be interrupted by the mining task that has spawned it
 			while (true)
-				sizeUpToNow = processNextTransaction(source.take(), sizeUpToNow);
+				sizeUpToNow = processNextRequest(source.take(), sizeUpToNow);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			// no warning log: interruption is the standard way of terminating this task
 		}
 		catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
-			LOGGER.warning("mining: transactions execution stops here because of an application problem: " + e.getMessage());
+			LOGGER.warning("mining: requests execution stops here because of an application problem: " + e.getMessage());
 		}
 		finally {
 			// this allows to commit or abort the execution in the database of the application
-			// (if any) and to access the set of processed transactions
+			// (if any) and to access the set of processed requests
 			done.countDown();
 		}
 	}
 
 	/**
-	 * Waits for this task to terminate and yields the block including the transactions processed by this task,
+	 * Waits for this task to terminate and yields the block including the requests processed by this task,
 	 * on top of {@link #previous}, once the mining task has found a deadline.
 	 * 
-	 * @param deadline the deadline found by the mining task during the execution of the transactions
+	 * @param deadline the deadline found by the mining task during the execution of the requests
 	 * @return the block
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
@@ -211,12 +211,12 @@ public class TransactionsExecutionTask implements Task {
 			throw new MisbehavingApplicationException(e);
 		}
 
-		return Blocks.of(previous.getNextBlockDescription(deadline), successfullyDeliveredTransactions.stream(), finalStateId, node.getKeys().getPrivate());
+		return Blocks.of(previous.getNextBlockDescription(deadline), successfullyExecutedRequests.stream(), finalStateId, node.getKeys().getPrivate());
 	}
 
 	/**
 	 * Waits for this task to terminate and commits the final state of the execution
-	 * of its processed transactions, in the database of the application (if any).
+	 * of its processed requests, in the database of the application (if any).
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application of the Mokamint node is unresponsive
@@ -238,7 +238,7 @@ public class TransactionsExecutionTask implements Task {
 	}
 
 	/**
-	 * Waits for this task to terminate and aborts the execution of its processed transactions,
+	 * Waits for this task to terminate and aborts the execution of its processed requests,
 	 * so that it does not modify the database of the application (if any).
 	 * 
 	 * @throws InterruptedException if the current thread gets interrupted
@@ -263,33 +263,33 @@ public class TransactionsExecutionTask implements Task {
 		}
 	}
 
-	private long processNextTransaction(TransactionEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+	private long processNextRequest(RequestEntry next, long sizeUpToNow) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		if (Thread.currentThread().isInterrupted())
 			throw new InterruptedException("Interrupted");
 
-		var tx = next.getTransaction();
+		var tx = next.getRequest();
 
-		// the following might actually occur if a transaction arrives during the execution of this task
+		// the following might actually occur if a request arrives during the execution of this task
 		// and it was already processed with this task
-		if (!successfullyDeliveredTransactions.contains(tx) && !rejectedTransactions.contains(tx)) {
+		if (!successfullyExecutedRequests.contains(tx) && !rejectedRequests.contains(tx)) {
 			int txSize = tx.size();
 
-			// if the following condition does not hold, the transaction is not included in the block that we are mining
+			// if the following condition does not hold, the request is not included in the block that we are mining
 			// and disappears from the mempool of this object; this does not mean that it is lost, since
 			// it remains in the mempool of the node and will have a chance to be selected later at the next block(s)
 			if (sizeUpToNow + txSize <= maxSize) {
 				// synchronization guarantees that requests to stop the execution
-				// leave the transactions list aligned with the state of the application
+				// leave the requests list aligned with the state of the application
 				synchronized (stopLock) {
 					try {
 						app.executeTransaction(id, tx);
 					}
 					catch (RequestRejectedException e) {
 						// if tx is rejected, then it is just ignored
-						LOGGER.warning("mining: delivery of transaction " + next + " rejected: " + e.getMessage());
-						// we also remove the transaction from the mempool of the node
+						LOGGER.warning("mining: execution of request " + next + " rejected: " + e.getMessage());
+						// we also remove the request from the mempool of the node
 						node.remove(next);
-						rejectedTransactions.add(tx);
+						rejectedRequests.add(tx);
 						return sizeUpToNow;
 					}
 					catch (UnknownScopeIdException e) {
@@ -299,7 +299,7 @@ public class TransactionsExecutionTask implements Task {
 						throw new ApplicationTimeoutException(e);
 					}
 
-					successfullyDeliveredTransactions.add(tx);
+					successfullyExecutedRequests.add(tx);
 				}
 
 				return sizeUpToNow + txSize;

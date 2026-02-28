@@ -95,7 +95,7 @@ public class PeersDatabase extends AbstractAutoCloseableWithLock<ClosedDatabaseE
 		try {
 			if (stopNewCalls()) {
 				try {
-					environment.close(); // the lock guarantees that there are no unfinished transactions at this moment
+					environment.close(); // the lock guarantees that there are no unfinished database transactions at this moment
 					LOGGER.info("db: closed the peers database");
 				}
 				catch (ExodusException e) {

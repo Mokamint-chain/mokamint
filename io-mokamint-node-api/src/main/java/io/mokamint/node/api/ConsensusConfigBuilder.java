@@ -67,7 +67,7 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	 * @param hashingForTransactions the hashing algorithm
 	 * @return this builder
 	 */
-	B setHashingForTransactions(HashingAlgorithm hashingForTransactions);
+	B setHashingForRequests(HashingAlgorithm hashingForTransactions);
 
 	/**
 	 * Sets the signature algorithm that the nodes use to sign the blocks.
@@ -110,7 +110,7 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	 * @param maxTransactionSize the maximal size, in bytes
 	 * @return this builder
 	 */
-	B setMaxTransactionSize(int maxTransactionSize);
+	B setMaxRequestSize(int maxTransactionSize);
 
 	/**
 	 * Sets the rapidity of changes of acceleration.

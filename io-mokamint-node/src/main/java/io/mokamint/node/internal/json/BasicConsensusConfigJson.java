@@ -67,7 +67,7 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		return hashingForBlocks;
 	}
 
-	public String getHashingForTransactions() {
+	public String getHashingForRequests() {
 		return hashingForTransactions;
 	}
 

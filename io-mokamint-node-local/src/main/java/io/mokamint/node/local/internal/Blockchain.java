@@ -74,6 +74,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.PortionRejectedException;
+import io.mokamint.node.api.Request;
 import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
@@ -81,7 +82,7 @@ import io.mokamint.node.local.LocalNodeException;
 import io.mokamint.node.local.SynchronizationException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.BlockVerification.Mode;
-import io.mokamint.node.local.internal.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.RequestEntry;
 
 /**
  * The blockchain is a database where the blocks are persisted. Blocks are rooted at a genesis block
@@ -121,12 +122,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	private final Store storeOfChain;
 
 	/**
-	 * The Xodus store that holds the position of the transactions in the current best chain.
-	 * It maps the hash of each transaction in the chain to a pair consisting
-	 * of the height of the block in the current chain where the transaction is contained
-	 * and of the progressive number inside the table of transactions in that block.
+	 * The Xodus store that holds the position of the requests in the current best chain.
+	 * It maps the hash of each request in the chain to a pair consisting
+	 * of the height of the block in the current chain where the request is contained
+	 * and of the progressive number inside the table of requests in that block.
 	 */
-	private final Store storeOfTransactions;
+	private final Store storeOfRequests;
 
 	/**
 	 * The maximal time (in milliseconds) that history can be changed before being considered as definitely frozen;
@@ -209,7 +210,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		this.storeOfBlocks = openStore("blocks");
 		this.storeOfForwards = openStore("forwards");
 		this.storeOfChain = openStore("chain");
-		this.storeOfTransactions = openStore("transactions");
+		this.storeOfRequests = openStore("requests");
 		this.genesisHashCache = Optional.empty();
 		this.genesisCache = Optional.empty();
 	}
@@ -219,7 +220,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		try {
 			if (stopNewCalls()) {
 				try {
-					environment.close(); // stopNewCalls() guarantees that there are no unfinished transactions at this moment
+					environment.close(); // stopNewCalls() guarantees that there are no unfinished database transactions at this moment
 					LOGGER.info("blockchain: closed the blocks database");
 				}
 				catch (ExodusException e) {
@@ -325,8 +326,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history.
-	 * Transactions delivered before that time have stores that can be considered as frozen.
+	 * Yields the limit time used to deliver the requests in the non-frozen part of the history.
+	 * Requests delivered before that time have stores that can be considered as frozen.
 	 * 
 	 * @return the limit time; this is empty if the database is empty
 	 * @throws ClosedDatabaseException if the database is already closed
@@ -388,15 +389,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this blockchain.
+	 * Yields the request with the given hash, if it is contained in some block of the best chain of this blockchain.
 	 * 
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction, if any
+	 * @param hash the hash of the request to search
+	 * @return the request, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<io.mokamint.node.api.Request> getTransaction(byte[] hash) throws ClosedDatabaseException {
+	public Optional<Request> getRequest(byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return environment.computeInReadonlyTransaction(txn -> getTransaction(txn, hash));
+			return environment.computeInReadonlyTransaction(txn -> getRequest(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new LocalNodeException(e);
@@ -404,16 +405,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the address of the transaction with the given hash, if it is contained in some block
+	 * Yields the address of the request with the given hash, if it is contained in some block
 	 * of the best chain of this blockchain.
 	 * 
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction address, if any
+	 * @param hash the hash of the request to search
+	 * @return the request address, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<RequestAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException {
+	public Optional<RequestAddress> getRequestAddress(byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return environment.computeInReadonlyTransaction(txn -> getTransactionAddress(txn, hash));
+			return environment.computeInReadonlyTransaction(txn -> getRequestAddress(txn, hash));
 		}
 		catch (ExodusException e) {
 			throw new LocalNodeException(e);
@@ -421,15 +422,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the address of the transaction with the given hash, if it is contained in the
+	 * Yields the address of the request with the given hash, if it is contained in the
 	 * chain from the given {@code block} towards the genesis block.
 	 * 
 	 * @param block the block
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction address, if any
+	 * @param hash the hash of the request to search
+	 * @return the request address, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<RequestAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException {
+	public Optional<RequestAddress> getRequestAddress(Block block, byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			return environment.computeInReadonlyTransaction(txn -> getRequestAddress(txn, block, hash));
 		}
@@ -723,8 +724,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private void updateMempool() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (!blocksAddedToTheCurrentBestChain.isEmpty())
 				// if the head has been improved, we update the mempool by removing
-				// the transactions that have been added in blockchain and potentially adding
-				// other transactions (if the history changed). Note that, in general, the mempool of
+				// the requests that have been added in blockchain and potentially adding
+				// other requests (if the history changed). Note that, in general, the mempool of
 				// the node might not always be aligned with the current head of the blockchain,
 				// since another task might execute this same update concurrently. This is not
 				// a problem, since this rebase is only an optimization, to keep the mempool small;
@@ -934,7 +935,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 						Block oldBlock = getBlock(txn, oldBytes)
 							.orElseThrow(() -> new LocalNodeException("The current best chain misses the block at height " + heightCopy  + " with hash " + Hex.toHexString(oldBytes)));
 		
-						removeReferencesToTransactionsInside(txn, oldBlock);
+						removeReferencesToRequestsInside(txn, oldBlock);
 					}
 		
 					blocksAddedToTheCurrentBestChain.addFirst(cursor);
@@ -958,7 +959,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				while (cursor instanceof NonGenesisBlock && !_new.equals(old));
 		
 				for (Block added: blocksAddedToTheCurrentBestChain)
-					addReferencesToTransactionsInside(added);
+					addReferencesToRequestsInside(added);
 		
 				var maybeStartOfNonFrozenPartHash = getStartOfNonFrozenPartHash(txn);
 				byte[] startOfNonFrozenPartHash;
@@ -1002,16 +1003,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
-		private void addReferencesToTransactionsInside(Block block) {
+		private void addReferencesToRequestsInside(Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
 				long height = ngb.getDescription().getHeight();
-				HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
+				HashingAlgorithm hashingForRequests = config.getHashingForRequests();
 				int count = ngb.getRequestsCount();
 				for (int pos = 0; pos < count; pos++) {
-					var ref = new TransactionRef(height, pos);
+					var ref = new RequestRef(height, pos);
 					
 					try {
-						storeOfTransactions.put(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForTransactions)), ByteIterable.fromBytes(ref.toByteArray()));
+						storeOfRequests.put(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForRequests)), ByteIterable.fromBytes(ref.toByteArray()));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1044,7 +1045,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		
 				while ((blockHeight = block.getDescription().getHeight()) > height) {
 					if (block instanceof NonGenesisBlock ngb) {
-						removeReferencesToTransactionsInside(txn, block);
+						removeReferencesToRequestsInside(txn, block);
 
 						try {
 							storeOfChain.delete(txn, ByteIterable.fromBytes(longToBytes(blockHeight)));
@@ -1063,14 +1064,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			}
 		}
 
-		private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
+		private void removeReferencesToRequestsInside(Transaction txn, Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
 				int count = ngb.getRequestsCount();
-				HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
+				HashingAlgorithm hashingForRequests = config.getHashingForRequests();
 
 				for (int pos = 0; pos < count; pos++) {
 					try {
-						storeOfTransactions.delete(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForTransactions)));
+						storeOfRequests.delete(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForRequests)));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1087,8 +1088,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private final Transaction txn;
 		private final Mempool mempool;
 		private final Block newBase;
-		private final Set<TransactionEntry> toRemove = new HashSet<>();
-		private final Set<TransactionEntry> toAdd = new HashSet<>();
+		private final Set<RequestEntry> toRemove = new HashSet<>();
+		private final Set<RequestEntry> toAdd = new HashSet<>();
 		private Block newBlock;
 		private Block oldBlock;
 
@@ -1103,18 +1104,18 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			this.oldBlock = mempool.getBase().orElse(null);
 
 			if (oldBlock == null)
-				markToRemoveAllTransactionsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
+				markToRemoveAllRequestsFromNewBaseToGenesis(); // if the base is empty, there is nothing to add and only to remove
 			else {
 				// first we move new and old bases to the same height
 				while (newBlock.getDescription().getHeight() > oldBlock.getDescription().getHeight())
-					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
+					markToRemoveAllRequestsInNewBlockAndMoveItBackwards();
 				while (newBlock.getDescription().getHeight() < oldBlock.getDescription().getHeight())
-					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+					markToAddAllRequestsInOldBlockAndMoveItBackwards();
 
 				// then we continue backwards, until they meet
 				while (!reachedSharedAncestor()) {
-					markToRemoveAllTransactionsInNewBlockAndMoveItBackwards();
-					markToAddAllTransactionsInOldBlockAndMoveItBackwards();
+					markToRemoveAllRequestsInNewBlockAndMoveItBackwards();
+					markToAddAllRequestsInOldBlockAndMoveItBackwards();
 				}
 			}
 		}
@@ -1132,66 +1133,66 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				return false;
 		}
 
-		private void markToRemoveAllTransactionsInNewBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private void markToRemoveAllRequestsInNewBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (newBlock instanceof NonGenesisBlock ngb) {
-				markAllTransactionsAsToRemove(ngb);
+				markAllRequestsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
 				throw new LocalNodeException("The database contains a genesis block " + newBlock.getHexHash() + " at height " + newBlock.getDescription().getHeight());
 		}
 
-		private void markToAddAllTransactionsInOldBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private void markToAddAllRequestsInOldBlockAndMoveItBackwards() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			if (oldBlock instanceof NonGenesisBlock ngb) {
-				markAllTransactionsAsToAdd(ngb);
+				markAllRequestsAsToAdd(ngb);
 				oldBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 			else
 				throw new LocalNodeException("The database contains a genesis block " + oldBlock.getHexHash() + " at height " + oldBlock.getDescription().getHeight());
 		}
 
-		private void markToRemoveAllTransactionsFromNewBaseToGenesis() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private void markToRemoveAllRequestsFromNewBaseToGenesis() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			while (newBlock instanceof NonGenesisBlock ngb) {
-				markAllTransactionsAsToRemove(ngb);
+				markAllRequestsAsToRemove(ngb);
 				newBlock = getBlock(ngb.getHashOfPreviousBlock());
 			}
 		}
 
 		/**
-		 * Adds the transaction entries to those that must be added to the mempool.
+		 * Adds the request entries to those that must be added to the mempool.
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
-		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private void markAllRequestsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			for (int pos = 0; pos < block.getRequestsCount(); pos++)
-				toAdd.add(intoTransactionEntry(block.getRequest(pos)));
+				toAdd.add(intoRequestEntry(block.getRequest(pos)));
 		}
 
 		/**
-		 * Adds the transactions from the given block to those that must be removed from the mempool.
+		 * Adds the requests from the given block to those that must be removed from the mempool.
 		 * 
 		 * @param block the block
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
-		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
-			for (var transaction: block.getRequests().toArray(io.mokamint.node.api.Request[]::new))
-				toRemove.add(intoTransactionEntry(transaction));
+		private void markAllRequestsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+			for (var request: block.getRequests().toArray(Request[]::new))
+				toRemove.add(intoRequestEntry(request));
 		}
 
 		/**
-		 * Expands the given transaction into a transaction entry, by filling its priority and hash.
+		 * Expands the given request into a request entry, by filling its priority and hash.
 		 * 
-		 * @param transaction the transaction
-		 * @return the resulting transaction entry
+		 * @param request the request
+		 * @return the resulting request entry
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
-		private TransactionEntry intoTransactionEntry(io.mokamint.node.api.Request transaction) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+		private RequestEntry intoRequestEntry(Request request) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 			try {
-				return mempool.mkTransactionEntry(transaction);
+				return mempool.mkRequestEntry(request);
 			}
 			catch (RequestRejectedException e) {
-				// the transactions in the database are not rejected, hence the application is misbehaving here
+				// the requests in the database are not rejected, hence the application is misbehaving here
 				throw new MisbehavingApplicationException(e);
 			}
 		}
@@ -1343,9 +1344,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the limit time used to deliver the transactions in the non-frozen part of the history,
+	 * Yields the limit time used to execute the requests in the non-frozen part of the history,
 	 * running inside a transaction.
-	 * Application transactions delivered before that time have stores that can be considered as frozen.
+	 * Application requests executed before that time have stores that can be considered as frozen.
 	 * 
 	 * @param txn the transaction
 	 * @return the limit time; this is empty if the blockchain is empty
@@ -1529,20 +1530,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the transaction with the given hash, if it is contained in some block of the best chain of this blockchain,
+	 * Yields the request with the given hash, if it is contained in some block of the best chain of this blockchain,
 	 * running inside a transaction.
 	 * 
 	 * @param txn the transaction
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction, if any
+	 * @param hash the hash of the request to search
+	 * @return the request, if any
 	 */
-	private Optional<io.mokamint.node.api.Request> getTransaction(Transaction txn, byte[] hash) {
+	private Optional<Request> getRequest(Transaction txn, byte[] hash) {
 		try {
-			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+			ByteIterable txBI = storeOfRequests.get(txn, fromBytes(hash));
 			if (txBI == null)
 				return Optional.empty();
 
-			var ref = TransactionRef.from(txBI);
+			var ref = RequestRef.from(txBI);
 			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
 			if (blockHash == null)
 				throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
@@ -1555,11 +1556,11 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					return Optional.of(ngb.getRequest(ref.progressive));
 				}
 				catch (IndexOutOfBoundsException e) {
-					throw new LocalNodeException("Transaction " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
+					throw new LocalNodeException("Request " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
 				}
 			}
 			else
-				throw new LocalNodeException("Transaction " + Hex.toHexString(hash) + " seems contained in a genesis block, which is impossible");
+				throw new LocalNodeException("Request " + Hex.toHexString(hash) + " seems contained in a genesis block, which is impossible");
 		}
 		catch (ExodusException | IOException e) {
 			throw new LocalNodeException(e);
@@ -1567,20 +1568,20 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the address of the transaction with the given hash, if it is contained in some block
+	 * Yields the address of the request with the given hash, if it is contained in some block
 	 * of the best chain of this database, running inside the given transaction.
 	 * 
 	 * @param txn the database transaction
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction address, if any
+	 * @param hash the hash of the request to search
+	 * @return the request address, if any
 	 */
-	private Optional<RequestAddress> getTransactionAddress(Transaction txn, byte[] hash) {
+	private Optional<RequestAddress> getRequestAddress(Transaction txn, byte[] hash) {
 		try {
-			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+			ByteIterable txBI = storeOfRequests.get(txn, fromBytes(hash));
 			if (txBI == null)
 				return Optional.empty();
 
-			var ref = TransactionRef.from(txBI);
+			var ref = RequestRef.from(txBI);
 			ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
 			if (blockHash == null)
 				throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
@@ -1593,13 +1594,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * Yields the address of the transaction with the given hash, if it is contained in the
+	 * Yields the address of the request with the given hash, if it is contained in the
 	 * chain from the given {@code block} towards the genesis block.
 	 * 
 	 * @param txn the database transaction
 	 * @param block the block
-	 * @param hash the hash of the transaction to search
-	 * @return the transaction address, if any
+	 * @param hash the hash of the request to search
+	 * @return the request address, if any
 	 */
 	Optional<RequestAddress> getRequestAddress(Transaction txn, Block block, byte[] hash) {
 		try {
@@ -1608,14 +1609,14 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			while (true) {
 				if (isContainedInTheBestChain(txn, block, hashOfBlock)) {
-					// since the block is inside the best chain, we can use the storeOfTransactions for it
-					ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
+					// since the block is inside the best chain, we can use the storeOfRequests for it
+					ByteIterable txBI = storeOfRequests.get(txn, fromBytes(hash));
 					if (txBI == null)
 						return Optional.empty();
 
-					var ref = TransactionRef.from(txBI);
+					var ref = RequestRef.from(txBI);
 					if (ref.height > block.getDescription().getHeight())
-						// the transaction is present above the block
+						// the request is present above the block
 						return Optional.empty();
 
 					ByteIterable blockHash = storeOfChain.get(txn, ByteIterable.fromBytes(longToBytes(ref.height)));
@@ -1625,12 +1626,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					return Optional.of(RequestAddresses.of(blockHash.getBytes(), ref.progressive));
 				}
 				else if (block instanceof NonGenesisBlock ngb) {
-					// we check if the transaction is inside the table of transactions of the block
+					// we check if the request is inside the table of requests of the block
 					int length = ngb.getRequestsCount();
-					HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
+					HashingAlgorithm hashingForRequests = config.getHashingForRequests();
 
 					for (int pos = 0; pos < length; pos++)
-						if (Arrays.equals(hash, ngb.getRequest(pos).getHash(hashingForTransactions)))
+						if (Arrays.equals(hash, ngb.getRequest(pos).getHash(hashingForRequests)))
 							return Optional.of(RequestAddresses.of(hashOfBlock, pos));
 
 					// otherwise we continue with the previous block, if any
@@ -1859,9 +1860,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 				if (storeOfForwards.get(txn, currentHashBI) != null)
 					storeOfForwards.delete(txn, currentHashBI);
 
-				// storeOfTransactions and storeOfChain refer to the current best chain, that
+				// storeOfRequests and storeOfChain refer to the current best chain, that
 				// is never garbage-collected; if that best chain changes, the BlockAdder will
-				// take care of updating storeOfTransactions and storeOfChain
+				// take care of updating storeOfRequests and storeOfChain
 			}
 			catch (ExodusException e) {
 				throw new LocalNodeException(e);
@@ -1958,21 +1959,21 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	}
 
 	/**
-	 * A marshallable reference to a transaction inside a block.
+	 * A marshallable reference to a request inside a block.
 	 */
-	private static class TransactionRef extends AbstractMarshallable {
+	private static class RequestRef extends AbstractMarshallable {
 
 		/**
-		 * The height of the block in the current chain, containing the transaction.
+		 * The height of the block in the current chain, containing the request.
 		 */
 		private final long height;
 
 		/**
-		 * The progressive number of the transaction inside the array of transactions inside the block.
+		 * The progressive number of the request inside the array of requests inside the block.
 		 */
 		private final int progressive;
 	
-		private TransactionRef(long height, int progressive) {
+		private RequestRef(long height, int progressive) {
 			this.height = height;
 			this.progressive = progressive;
 		}
@@ -1984,15 +1985,15 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		}
 	
 		/**
-		 * Unmarshals a reference to a transaction from the given byte iterable.
+		 * Unmarshals a reference to a request from the given byte iterable.
 		 * 
 		 * @param bi the byte iterable
-		 * @return the reference t a transaction
+		 * @return the reference to a request
 		 * @throws IOException if the reference cannot be unmarshalled
 		 */
-		private static TransactionRef from(ByteIterable bi) throws IOException {
+		private static RequestRef from(ByteIterable bi) throws IOException {
 			try (var bais = new ByteArrayInputStream(bi.getBytes()); var context = UnmarshallingContexts.of(bais)) {
-				return new TransactionRef(context.readCompactLong(), context.readCompactInt());
+				return new RequestRef(context.readCompactLong(), context.readCompactInt());
 			}
 		}
 

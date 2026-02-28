@@ -41,4 +41,5 @@ module io.mokamint.node.local {
 
 	requires static io.mokamint.nonce;
 	requires io.hotmoka.websockets.client.api;
+	requires io.mokamint.node.api;
 }

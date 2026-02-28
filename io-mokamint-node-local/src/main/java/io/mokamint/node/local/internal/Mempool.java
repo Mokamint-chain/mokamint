@@ -47,9 +47,9 @@ import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.api.LocalNodeConfig;
 
 /**
- * The mempool of a Mokamint node. It contains transactions that are available
+ * The mempool of a Mokamint node. It contains requests that are available
  * to be processed and eventually included in the new blocks mined for a blockchain.
- * Transactions are kept and processed in decreasing order of priority.
+ * Requests are kept and processed in decreasing order of priority.
  */
 @ThreadSafe
 public class Mempool {
@@ -75,23 +75,23 @@ public class Mempool {
 	private final Application app;
 
 	/**
-	 * The hasher of the transactions.
+	 * The hasher of the requests.
 	 */
 	private final Hasher<Request> hasher;
 
 	/**
-	 * The base block of the mempool: the transactions inside {@link #mempool}
-	 * have arrived after the creation of this block. If missing, the transactions
+	 * The base block of the mempool: the requests inside {@link #mempool}
+	 * have arrived after the creation of this block. If missing, the requests
 	 * have arrived after the creation of the blockchain itself.
 	 */
 	@GuardedBy("this.mempool")
 	private Optional<Block> base;
 
 	/**
-	 * The container of the transactions inside this mempool. They are kept ordered by decreasing priority.
+	 * The container of the requests inside this mempool. They are kept ordered by decreasing priority.
 	 */
 	@GuardedBy("itself")
-	private final SortedSet<TransactionEntry> mempool;
+	private final SortedSet<RequestEntry> mempool;
 
 	private final static Logger LOGGER = Logger.getLogger(Mempool.class.getName());
 
@@ -131,9 +131,9 @@ public class Mempool {
 
 	/**
 	 * Sets a new base for this mempool. Calling P the highest predecessor block of both
-	 * the current base and the {@code newBase}, this method will add all transactions
+	 * the current base and the {@code newBase}, this method will add all requests
 	 * in the blocks from the current base to P (excluded) back in this mempool and remove
-	 * all transactions in the blocks from P (excluded) to {@code newBase} in this mempool.
+	 * all requests in the blocks from P (excluded) to {@code newBase} in this mempool.
 	 * 
 	 * @param newBase the new base that must be set for this mempool
 	 * @throws InterruptedException if the current thread gets interrupted
@@ -148,82 +148,82 @@ public class Mempool {
 	}
 
 	/**
-	 * Adds the given transaction to this mempool, after checking its validity.
+	 * Adds the given request to this mempool, after checking its validity.
 	 * 
-	 * @param transaction the transaction to add
-	 * @return the transaction entry added to the mempool
-	 * @throws RequestRejectedException if the transaction has been rejected; this happens,
-	 *                                      for instance, if the application considers the
-	 *                                      transaction as invalid or if its priority cannot be computed
-	 *                                      or if the transaction is already contained in the blockchain or mempool
+	 * @param request the request to add
+	 * @return the request entry added to the mempool
+	 * @throws RequestRejectedException if the request has been rejected; this happens,
+	 *                                  for instance, if the application considers the
+	 *                                  request as invalid or if its priority cannot be computed
+	 *                                  or if the request is already contained in the blockchain or mempool
 	 * @throws InterruptedException if the current thread gets interrupted
 	 * @throws ApplicationTimeoutException if the application connected to the Mokamint node is unresponsive
 	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public TransactionEntry add(Request transaction) throws RequestRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
-		int size = transaction.getNumberOfBytes();
-		if (size > config.getMaxTransactionSize())
-			throw new RequestRejectedException("The transaction is " + size + " bytes long, against a maximum of " + config.getMaxTransactionSize());
+	public RequestEntry add(Request request) throws RequestRejectedException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, ClosedDatabaseException {
+		int size = request.getNumberOfBytes();
+		if (size > config.getMaxRequestSize())
+			throw new RequestRejectedException("The request is " + size + " bytes long, against a maximum of " + config.getMaxRequestSize());
 
 		try {
-			app.checkRequest(transaction);
+			app.checkRequest(request);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
 
-		var entry = mkTransactionEntry(transaction);
+		var entry = mkRequestEntry(request);
 		int maxSize = config.getMempoolSize();
 		int maxBlockSize = config.getMaxBlockSize();
 		int txSize;
 
 		synchronized (mempool) {
-			if (base.isPresent() && blockchain.getTransactionAddress(base.get(), entry.hash).isPresent())
-				// the transaction was already in blockchain
-				throw new RequestRejectedException("Repeated transaction " + entry);
+			if (base.isPresent() && blockchain.getRequestAddress(base.get(), entry.hash).isPresent())
+				// the request was already in blockchain
+				throw new RequestRejectedException("Repeated request " + entry);
 			else if (mempool.contains(entry))
-				// the transaction was already in the mempool
-				throw new RequestRejectedException("Repeated transaction " + entry);
-			else if ((txSize = transaction.size()) > maxBlockSize)
-				throw new RequestRejectedException("Cannot add transaction " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
+				// the request was already in the mempool
+				throw new RequestRejectedException("Repeated request " + entry);
+			else if ((txSize = request.size()) > maxBlockSize)
+				throw new RequestRejectedException("Cannot add request " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
 			else if (mempool.size() >= maxSize)
-				throw new RequestRejectedException("Cannot add transaction " + entry + ": all " + maxSize + " slots of the mempool are full");
+				throw new RequestRejectedException("Cannot add request " + entry + ": all " + maxSize + " slots of the mempool are full");
 			else
 				mempool.add(entry);
 		}
 
-		LOGGER.info("mempool: added transaction " + entry);
-		node.onAdded(transaction);
+		LOGGER.info("mempool: added request " + entry);
+		node.onAdded(request);
 
 		return entry;
 	}
 
-	public TransactionEntry mkTransactionEntry(Request transaction) throws RequestRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
+	public RequestEntry mkRequestEntry(Request request) throws RequestRejectedException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
 		long priority;
 
 		try {
-			priority = app.getPriority(transaction);
+			priority = app.getPriority(request);
 		}
 		catch (TimeoutException e) {
 			throw new ApplicationTimeoutException(e);
 		}
 
-		return new TransactionEntry(transaction,  priority, hasher.hash(transaction));
+		return new RequestEntry(request,  priority, hasher.hash(request));
 	}
 
-	public void remove(TransactionEntry entry) {
+	public void remove(RequestEntry entry) {
 		synchronized (mempool) {
 			mempool.remove(entry);
 		}
 	}
 
 	/**
-	 * Performs an action for each transaction in this mempool, in decreasing priority order.
+	 * Performs an action for each request in this mempool, in decreasing priority order.
 	 * 
 	 * @param the action
 	 */
-	public void forEachTransaction(Consumer<TransactionEntry> action) {
+	public void forEachRequest(Consumer<RequestEntry> action) {
 		synchronized (mempool) {
 			mempool.stream().forEachOrdered(action);
 		}
@@ -261,7 +261,7 @@ public class Mempool {
 			throw new PortionRejectedException("count cannot be larger than " + max);
 
 		synchronized (mempool) {
-			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(TransactionEntry::toMempoolEntry));
+			return MempoolPortions.of(mempool.stream().skip(start).limit(count).map(RequestEntry::toMempoolEntry));
 		}
 	}
 
@@ -271,7 +271,7 @@ public class Mempool {
 		}
 	}
 
-	void update(Block newBase, Stream<TransactionEntry> toAdd, Stream<TransactionEntry> toRemove) {
+	void update(Block newBase, Stream<RequestEntry> toAdd, Stream<RequestEntry> toRemove) {
 		synchronized (mempool) {
 			toAdd.forEach(mempool::add);
 			toRemove.forEach(mempool::remove);
@@ -280,30 +280,30 @@ public class Mempool {
 	}
 
 	/**
-	 * An entry in the mempool. It contains the transaction itself, its priority and its hash.
+	 * An entry in the mempool. It contains the request itself, its priority and its hash.
 	 */
-	public final static class TransactionEntry implements Comparable<TransactionEntry> {
-		private final Request transaction;
+	public final static class RequestEntry implements Comparable<RequestEntry> {
+		private final Request request;
 		private final long priority;
 		private final byte[] hash;
 	
-		private TransactionEntry(Request transaction, long priority, byte[] hash) {
-			this.transaction = transaction;
+		private RequestEntry(Request request, long priority, byte[] hash) {
+			this.request = request;
 			this.priority = priority;
 			this.hash = hash;
 		}
 
 		/**
-		 * Yields the transaction inside this entry.
+		 * Yields the request inside this entry.
 		 * 
-		 * @return the transaction
+		 * @return the request
 		 */
-		public Request getTransaction() {
-			return transaction;
+		public Request getRequest() {
+			return request;
 		}
 	
 		/**
-		 * Yields the hash of the transaction inside this entry.
+		 * Yields the hash of the request inside this entry.
 		 * 
 		 * @return the hash
 		 */
@@ -312,14 +312,14 @@ public class Mempool {
 		}
 	
 		@Override
-		public int compareTo(TransactionEntry other) {
+		public int compareTo(RequestEntry other) {
 			int diff = Long.compare(priority, other.priority);
 			return diff != 0 ? diff : Arrays.compare(hash, other.hash);
 		}
 	
 		@Override
 		public boolean equals(Object other) {
-			return other instanceof TransactionEntry te && Arrays.equals(hash, te.hash);
+			return other instanceof RequestEntry te && Arrays.equals(hash, te.hash);
 		}
 	
 		@Override

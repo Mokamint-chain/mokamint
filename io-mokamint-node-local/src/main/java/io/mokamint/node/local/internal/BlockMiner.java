@@ -44,7 +44,7 @@ import io.mokamint.node.api.Block;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.local.api.LocalNodeConfig;
-import io.mokamint.node.local.internal.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.RequestEntry;
 import io.mokamint.nonce.api.Challenge;
 import io.mokamint.nonce.api.ChallengeMatchException;
 import io.mokamint.nonce.api.Deadline;
@@ -76,9 +76,9 @@ public class BlockMiner {
 	private final MinersSet miners;
 
 	/**
-	 * The mempool used to fill the block with transactions.
+	 * The mempool used to fill the block with requests.
 	 */
-	private final PriorityBlockingQueue<TransactionEntry> mempool = new PriorityBlockingQueue<>(100, Comparator.reverseOrder());
+	private final PriorityBlockingQueue<RequestEntry> mempool = new PriorityBlockingQueue<>(100, Comparator.reverseOrder());
 
 	/**
 	 * The block over which mining is performed.
@@ -128,10 +128,10 @@ public class BlockMiner {
 	private final Set<Miner> minersThatDidNotAnswer = ConcurrentHashMap.newKeySet();
 
 	/**
-	 * The task that executes the transactions from the mempool, while waiting for the deadline to expire.
+	 * The task that executes the requests from the mempool, while waiting for the deadline to expire.
 	 * This is an infinite task, hence it must be cancelled explicitly when the deadline expires.
 	 */
-	private final TransactionsExecutionTask transactionExecutionTask;
+	private final RequestExecutionTask requestExecutionTask;
 
 	/**
 	 * True if and only if a new block has been asked to be committed to the application.
@@ -167,7 +167,7 @@ public class BlockMiner {
 		this.creationTimeOfPrevious = blockchain.creationTimeOf(previous).get(); // the genesis exists since the blockchain is assumed to be non-null
 		this.heightMessage = "mining: height " + (previous.getDescription().getHeight() + 1) + ": ";
 		this.challenge = previous.getDescription().getNextChallenge();
-		this.transactionExecutionTask = new TransactionsExecutionTask(node, mempool::take, previous, creationTimeOfPrevious);
+		this.requestExecutionTask = new RequestExecutionTask(node, mempool::take, previous, creationTimeOfPrevious);
 	}
 
 	/**
@@ -184,12 +184,12 @@ public class BlockMiner {
 	 */
 	public void mine() throws InterruptedException, TaskRejectedExecutionException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException, ClosedDatabaseException, InvalidKeyException, SignatureException {
 		LOGGER.info("mining: starting mining on top of block " + previous.getHexHash());
-		transactionExecutionTask.start();
+		requestExecutionTask.start();
 
 		try {
 			if (!interrupted) {
 				node.onMiningStarted(previous);
-				node.forEachMempoolTransactionAt(previous, mempool::add);
+				node.forEachMempoolRequestAt(previous, mempool::add);
 				requestDeadlineToEveryMiner();
 
 				if (!interrupted) {
@@ -216,13 +216,13 @@ public class BlockMiner {
 	}
 
 	/**
-	 * Adds the given transaction entry to the mempool of the mining task.
+	 * Adds the given request entry to the mempool of the mining task.
 	 * 
 	 * @param entry the entry to add
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void add(TransactionEntry entry) throws ClosedDatabaseException {
-		if (blockchain.getTransactionAddress(previous, entry.getHash()).isEmpty())
+	public void add(RequestEntry entry) throws ClosedDatabaseException {
+		if (blockchain.getRequestAddress(previous, entry.getHash()).isEmpty())
 			synchronized (mempool) {
 				if (!mempool.contains(entry) && mempool.size() < config.getMempoolSize())
 					mempool.offer(entry);
@@ -257,7 +257,7 @@ public class BlockMiner {
 	}
 
 	/**
-	 * Creates the new block, with the transactions that have been processed by the {@link #transactionExecutionTask}.
+	 * Creates the new block, with the requests that have been processed by the {@link #requestExecutionTask}.
 	 * 
 	 * @return the block
 	 * @throws SignatureException if the block could not be signed with the key of the node
@@ -265,9 +265,9 @@ public class BlockMiner {
 	 */
 	private NonGenesisBlock createNewBlock() throws InterruptedException, ApplicationTimeoutException, InvalidKeyException, SignatureException, MisbehavingApplicationException, ClosedApplicationException {
 		var deadline = currentDeadline.get(); // here, we know that a deadline has been computed
-		transactionExecutionTask.stop();
+		requestExecutionTask.stop();
 		this.done = true; // further deadlines that might arrive later from the miners are not useful anymore
-		return transactionExecutionTask.getBlock(deadline);
+		return requestExecutionTask.getBlock(deadline);
 	}
 
 	/**
@@ -283,7 +283,7 @@ public class BlockMiner {
 		// subsequently resolved, when a further block will expand either of the chains
 		if (blockchain.isBetterThanHead(block)) {
 			askedToCommit = true;
-			transactionExecutionTask.commitBlock();
+			requestExecutionTask.commitBlock();
 			node.onMined(block);
 			addToBlockchain(block);
 		}
@@ -298,11 +298,11 @@ public class BlockMiner {
 	 */
 	private void cleanUp() throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		done = true;
-		transactionExecutionTask.stop();
+		requestExecutionTask.stop();
 
 		try {
 			if (!askedToCommit)
-				transactionExecutionTask.abortBlock();
+				requestExecutionTask.abortBlock();
 
 			node.onMiningCompleted(previous);
 		}

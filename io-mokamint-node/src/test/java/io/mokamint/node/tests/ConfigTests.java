@@ -44,7 +44,7 @@ public class ConfigTests extends AbstractLoggedTests {
 			.setChainId("octopus")
 			.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 			.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
-			.setHashingForTransactions(HashingAlgorithms.shabal256())
+			.setHashingForRequests(HashingAlgorithms.shabal256())
 			.setMaxBlockSize(12345)
 			.build();
 		String encoded = new BasicConsensusConfigBuilders.Encoder().encode(config1);
@@ -59,7 +59,7 @@ public class ConfigTests extends AbstractLoggedTests {
 			.setChainId("octopus")
 			.setSignatureForBlocks(SignatureAlgorithms.ed25519())
 			.setSignatureForDeadlines(SignatureAlgorithms.sha256dsa())
-			.setHashingForTransactions(HashingAlgorithms.shabal256())
+			.setHashingForRequests(HashingAlgorithms.shabal256())
 			.setMaxBlockSize(12345)
 			.build();
 		String encoded = new BasicConsensusConfigBuilders.Encoder().encode(config);

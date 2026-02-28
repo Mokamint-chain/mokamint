@@ -26,7 +26,7 @@ import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.local.internal.LocalNodeImpl.Task;
-import io.mokamint.node.local.internal.Mempool.TransactionEntry;
+import io.mokamint.node.local.internal.Mempool.RequestEntry;
 
 /**
  * A task that mines blocks. It executes an internal thread that
@@ -101,13 +101,13 @@ public class MiningTask implements Task {
 	}
 
 	/**
-	 * Adds the given transaction to the mempool used by this task. This allows the task
-	 * to process transactions that arrive during the mining of a next block.
+	 * Adds the given request to the mempool used by this task. This allows the task
+	 * to process requests that arrive during the mining of a next block.
 	 * 
-	 * @param entry the transaction entry
+	 * @param entry the request entry
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public void add(TransactionEntry entry) throws ClosedDatabaseException {
+	public void add(RequestEntry entry) throws ClosedDatabaseException {
 		var blockMiner = this.blockMiner;
 		if (blockMiner != null)
 			blockMiner.add(entry);

@@ -117,9 +117,9 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	private final PublicNode node;
 
 	/**
-	 * The hasher for the transactions.
+	 * The hasher for the requests.
 	 */
-	private final HashingAlgorithm hashingForTransactions;
+	private final HashingAlgorithm hashingForRequests;
 
 	/**
 	 * The public URI of the machine where this service is running. If this is missing,
@@ -138,9 +138,9 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	private final Set<Session> whisperBlockSessions = ConcurrentHashMap.newKeySet();
 
 	/**
-	 * The sessions connected to the {@link WhisperTransactionEndpoint}.
+	 * The sessions connected to the {@link WhisperRequestEndpoint}.
 	 */
-	private final Set<Session> whisperTransactionSessions = ConcurrentHashMap.newKeySet();
+	private final Set<Session> whisperRequestSessions = ConcurrentHashMap.newKeySet();
 
 	/**
 	 * We need this intermediate definition since two instances of a method reference
@@ -202,7 +202,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
-			this.hashingForTransactions = node.getConfig().getHashingForRequests();
+			this.hashingForRequests = node.getConfig().getHashingForRequests();
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
@@ -225,10 +225,10 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 				GetInfoEndpoint.config(this), GetPeerInfosEndpoint.config(this), GetMinerInfosEndpoint.config(this),
 				GetTaskInfosEndpoint.config(this), GetBlockEndpoint.config(this), GetBlockDescriptionEndpoint.config(this),
 				GetConfigEndpoint.config(this), GetChainInfoEndpoint.config(this), GetChainPortionEndpoint.config(this),
-				GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetTransactionEndpoint.config(this),
-				GetTransactionRepresentationEndpoint.config(this), GetTransactionAddressEndpoint.config(this),
-				AddTransactionEndpoint.config(this),
-				WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperTransactionEndpoint.config(this));
+				GetMempoolInfoEndpoint.config(this), GetMempoolPortionEndpoint.config(this), GetRequestEndpoint.config(this),
+				GetRequestRepresentationEndpoint.config(this), GetRequestAddressEndpoint.config(this),
+				AddRequestEndpoint.config(this),
+				WhisperPeerEndpoint.config(this), WhisperBlockEndpoint.config(this), WhisperRequestEndpoint.config(this));
 
 		// if the node receives a whispering, it will be forwarded to this service as well
 		node.bindWhisperer(this);
@@ -307,7 +307,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		else if (message instanceof WhisperBlockMessage)
 			sessions = whisperBlockSessions;
 		else if (message instanceof WhisperRequestMessage)
-			sessions = whisperTransactionSessions;
+			sessions = whisperRequestSessions;
 		else {
 			LOGGER.severe("unexpected whispered message of class " + message.getClass().getName());
 			sessions = Collections.emptySet();
@@ -445,58 +445,58 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		}
 	}
 
-	protected void onGetTransaction(GetRequestMessage message, Session session) {
+	protected void onGetRequest(GetRequestMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_REQUEST_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
-	public static class GetTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class GetRequestEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (GetRequestMessage message) -> server.onGetTransaction(message, session));
+			addMessageHandler(session, (GetRequestMessage message) -> server.onGetRequest(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionEndpoint.class, GET_REQUEST_ENDPOINT, GetRequestMessages.Decoder.class, GetRequestResultMessages.Encoder.class);
+			return simpleConfig(server, GetRequestEndpoint.class, GET_REQUEST_ENDPOINT, GetRequestMessages.Decoder.class, GetRequestResultMessages.Encoder.class);
 		}
 	}
 
-	protected void onGetTransactionRepresentation(GetRequestRepresentationMessage message, Session session) {
+	protected void onGetRequestRepresentation(GetRequestRepresentationMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_REQUEST_REPRESENTATION_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
-	public static class GetTransactionRepresentationEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class GetRequestRepresentationEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (GetRequestRepresentationMessage message) -> server.onGetTransactionRepresentation(message, session));
+			addMessageHandler(session, (GetRequestRepresentationMessage message) -> server.onGetRequestRepresentation(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionRepresentationEndpoint.class, GET_REQUEST_REPRESENTATION_ENDPOINT,
+			return simpleConfig(server, GetRequestRepresentationEndpoint.class, GET_REQUEST_REPRESENTATION_ENDPOINT,
 				GetRequestRepresentationMessages.Decoder.class, GetRequestRepresentationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
-	protected void onGetTransactionAddress(GetRequestAddressMessage message, Session session) {
+	protected void onGetRequestAddress(GetRequestAddressMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + GET_REQUEST_ADDRESS_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
-	public static class GetTransactionAddressEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class GetRequestAddressEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (GetRequestAddressMessage message) -> server.onGetTransactionAddress(message, session));
+			addMessageHandler(session, (GetRequestAddressMessage message) -> server.onGetRequestAddress(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_REQUEST_ADDRESS_ENDPOINT, GetRequestAddressMessages.Decoder.class, GetRequestAddressResultMessages.Encoder.class);
+			return simpleConfig(server, GetRequestAddressEndpoint.class, GET_REQUEST_ADDRESS_ENDPOINT, GetRequestAddressMessages.Decoder.class, GetRequestAddressResultMessages.Encoder.class);
 		}
 	}
 
@@ -590,21 +590,21 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		}
 	}
 
-	protected void onAddTransaction(AddRequestMessage message, Session session) {
+	protected void onAddRequest(AddRequestMessage message, Session session) {
 		LOGGER.info(logPrefix + "received a " + ADD_REQUEST_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
-	public static class AddTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class AddRequestEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (AddRequestMessage message) -> server.onAddTransaction(message, session));
+			addMessageHandler(session, (AddRequestMessage message) -> server.onAddRequest(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, AddTransactionEndpoint.class, ADD_REQUEST_ENDPOINT,
+			return simpleConfig(server, AddRequestEndpoint.class, ADD_REQUEST_ENDPOINT,
 					AddRequestMessages.Decoder.class, AddRequestResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
@@ -685,23 +685,23 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		}
 	}
 
-	public static class WhisperTransactionEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
+	public static class WhisperRequestEndpoint extends AbstractServerEndpoint<PublicNodeServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperRequestMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hashingForTransactions)));
+			server.whisperRequestSessions.add(session);
+			addMessageHandler(session, (WhisperRequestMessage message) -> server.whisper(message, _whisperer -> false, session, "request " + message.getWhispered().getHexHash(server.hashingForRequests)));
 	    }
 
 		@SuppressWarnings("resource")
 		@Override
 		public void onClose(Session session, CloseReason closeReason) {
-			getServer().whisperTransactionSessions.remove(session);
+			getServer().whisperRequestSessions.remove(session);
 		}
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, WhisperTransactionEndpoint.class, WHISPER_REQUEST_ENDPOINT, WhisperRequestMessages.Encoder.class, WhisperRequestMessages.Decoder.class);
+			return simpleConfig(server, WhisperRequestEndpoint.class, WHISPER_REQUEST_ENDPOINT, WhisperRequestMessages.Encoder.class, WhisperRequestMessages.Decoder.class);
 		}
 	}
 }

@@ -144,7 +144,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 
 	/**
 	 * The size of the mempool of the node, that is, the area
-	 * of memory where incoming transactions are held before being verified and added to blocks.
+	 * of memory where incoming requests are held before being verified and added to blocks.
 	 */
 	public final int mempoolSize;
 
@@ -377,7 +377,7 @@ public class LocalNodeConfigImpl extends AbstractConsensusConfig<LocalNodeConfig
 		sb.append("# the size of the memory used to hold orphan nodes\n");
 		sb.append("orphans_memory_size = " + orphansMemorySize + "\n");
 		sb.append("\n");
-		sb.append("# the size of the memory used to hold incoming transactions before they get put into blocks\n");
+		sb.append("# the size of the memory used to hold incoming requests before they get put into blocks\n");
 		sb.append("mempool_size = " + mempoolSize + "\n");
 		sb.append("\n");
 		sb.append("# the size of the group of blocks whose hashes get downloaded in one shot during synchronization\n");

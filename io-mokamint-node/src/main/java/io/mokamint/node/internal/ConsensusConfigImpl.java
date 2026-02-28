@@ -68,10 +68,10 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final HashingAlgorithm hashingForBlocks;
 
 	/**
-	 * The hashing algorithm used for the identifying the transactions of
+	 * The hashing algorithm used for the identifying the requests of
 	 * the Mokamint blockchain. It defaults to {@code sha256}.
 	 */
-	public final HashingAlgorithm hashingForTransactions;
+	public final HashingAlgorithm hashingForRequests;
 
 	/**
 	 * The signature algorithm that nodes must use to sign the blocks.
@@ -92,14 +92,14 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final int targetBlockCreationTime;
 
 	/**
-	 * The maximal size of a block's transactions table, in bytes.
+	 * The maximal size of a block's requests table, in bytes.
 	 */
 	public final int maxBlockSize;
 
 	/**
-	 * The maximal size of a transactions, in bytes.
+	 * The maximal size of a request, in bytes.
 	 */
-	public final int maxTransactionSize;
+	public final int maxRequestSize;
 
 	/**
 	 * The rapidity of changes of the acceleration for block creation.
@@ -117,12 +117,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.hashingForDeadlines = builder.hashingForDeadlines;
 		this.hashingForGenerations = builder.hashingForGenerations;
 		this.hashingForBlocks = builder.hashingForBlocks;
-		this.hashingForTransactions = builder.hashingForTransactions;
+		this.hashingForRequests = builder.hashingForRequests;
 		this.signatureForBlocks = builder.signatureForBlocks;
 		this.signatureForDeadlines = builder.signatureForDeadlines;
 		this.targetBlockCreationTime = builder.targetBlockCreationTime;
 		this.maxBlockSize = builder.maxBlockSize;
-		this.maxTransactionSize = builder.maxTransactionSize;
+		this.maxRequestSize = builder.maxRequestSize;
 		this.oblivion = builder.oblivion;
 	}
 
@@ -131,7 +131,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return other instanceof ConsensusConfigImpl<?,?> otherConfig && getClass() == other.getClass() &&
 			chainId.equals(otherConfig.chainId) &&
 			maxBlockSize == otherConfig.maxBlockSize &&
-			maxTransactionSize == otherConfig.maxTransactionSize &&
+			maxRequestSize == otherConfig.maxRequestSize &&
 			oblivion == otherConfig.oblivion &&
 			targetBlockCreationTime == otherConfig.targetBlockCreationTime &&
 			hashingForDeadlines.equals(otherConfig.hashingForDeadlines) &&
@@ -143,7 +143,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(maxTransactionSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(maxRequestSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
 	}
 
 	@Override
@@ -173,8 +173,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("# the hashing algorithm used for the blocks of the blockchain\n");
 		sb.append("hashing_for_blocks = \"" + hashingForBlocks + "\"\n");
 		sb.append("\n");
-		sb.append("# the hashing algorithm used for the transactions of the blockchain\n");
-		sb.append("hashing_for_transactions = \"" + hashingForTransactions + "\"\n");
+		sb.append("# the hashing algorithm used for the requests of the blockchain\n");
+		sb.append("hashing_for_requests = \"" + hashingForRequests + "\"\n");
 		sb.append("\n");
 		sb.append("# the signature algorithm that nodes use to sign the blocks\n");
 		sb.append("signature_for_blocks = \"" + signatureForBlocks + "\"\n");
@@ -185,11 +185,11 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("# time, in milliseconds, aimed between the creation of a block and the creation of a next block\n");
 		sb.append("target_block_creation_time = " + targetBlockCreationTime + "\n");
 		sb.append("\n");
-		sb.append("# the maximal size, in bytes, of a block's transactions table\n");
+		sb.append("# the maximal size, in bytes, of a block's requests table\n");
 		sb.append("max_block_size = " + maxBlockSize + "\n");
 		sb.append("\n");
-		sb.append("# the maximal size, in bytes, of a transaction\n");
-		sb.append("max_transaction_size = " + maxTransactionSize + "\n");
+		sb.append("# the maximal size, in bytes, of a request\n");
+		sb.append("max_request_size = " + maxRequestSize + "\n");
 		sb.append("\n");
 		sb.append("# the rapidity of changes of the acceleration for the block creation time\n");
 		sb.append("# between 0 (no change) and 100,000 (maximally fast change)\n");
@@ -220,7 +220,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 
 	@Override
 	public HashingAlgorithm getHashingForRequests() {
-		return hashingForTransactions;
+		return hashingForRequests;
 	}
 
 	@Override
@@ -244,8 +244,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public int getMaxTransactionSize() {
-		return maxTransactionSize;
+	public int getMaxRequestSize() {
+		return maxRequestSize;
 	}
 
 	@Override
@@ -263,19 +263,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private HashingAlgorithm hashingForDeadlines;
 		private HashingAlgorithm hashingForGenerations;
 		private HashingAlgorithm hashingForBlocks;
-		private HashingAlgorithm hashingForTransactions;
+		private HashingAlgorithm hashingForRequests;
 		private SignatureAlgorithm signatureForBlocks;
 		private SignatureAlgorithm signatureForDeadlines;
 		private int targetBlockCreationTime = 4 * 60 * 1000; // 4 minutes
 		private int maxBlockSize = 1_000_000; // 1 megabyte
-		private int maxTransactionSize = 500_000; // 500K
+		private int maxRequestSize = 500_000; // 500K
 		private int oblivion = 20_000;
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
 			setHashingForGenerations(HashingAlgorithms.sha256());
 			setHashingForBlocks(HashingAlgorithms.sha256());
-			setHashingForTransactions(HashingAlgorithms.sha256());
+			setHashingForRequests(HashingAlgorithms.sha256());
 			setSignatureForBlocks(SignatureAlgorithms.ed25519());
 			setSignatureForDeadlines(SignatureAlgorithms.ed25519());
 		}
@@ -306,9 +306,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (hashingForBlocks != null)
 				setHashingForBlocks(hashingForBlocks);
 
-			var hashingForTransactions = toml.getString("hashing_for_transactions");
-			if (hashingForTransactions != null)
-				setHashingForTransactions(hashingForTransactions);
+			var hashingForRequests = toml.getString("hashing_for_requests");
+			if (hashingForRequests != null)
+				setHashingForRequests(hashingForRequests);
 
 			var signatureForBlocks = toml.getString("signature_for_blocks");
 			if (signatureForBlocks != null)
@@ -326,9 +326,9 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			if (maxBlockSize != null)
 				setMaxBlockSize(maxBlockSize);
 
-			var maxTransactionSize = toml.getLong("max_transaction_size");
-			if (maxTransactionSize != null)
-				setMaxTransactionSize(maxTransactionSize);
+			var maxRequestSize = toml.getLong("max_request_size");
+			if (maxRequestSize != null)
+				setMaxRequestSize(maxRequestSize);
 
 			var oblivion = toml.getLong("oblivion");
 			if (oblivion != null)
@@ -345,12 +345,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
 			this.hashingForBlocks = config.getHashingForBlocks();
-			this.hashingForTransactions = config.getHashingForRequests();
+			this.hashingForRequests = config.getHashingForRequests();
 			this.signatureForBlocks = config.getSignatureForBlocks();
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 			this.maxBlockSize = config.getMaxBlockSize();
-			this.maxTransactionSize = config.getMaxTransactionSize();
+			this.maxRequestSize = config.getMaxRequestSize();
 			this.oblivion = config.getOblivion();
 		}
 
@@ -369,7 +369,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				setHashingForDeadlines(json.getHashingForDeadlines());
 				setHashingForGenerations(json.getHashingForGenerations());
 				setHashingForBlocks(json.getHashingForBlocks());
-				setHashingForTransactions(json.getHashingForTransactions());
+				setHashingForRequests(json.getHashingForRequests());
 				setSignatureForBlocks(json.getSignatureForBlocks());
 				setSignatureForDeadlines(json.getSignatureForDeadlines());
 				setTargetBlockCreationTime(json.getTargetBlockCreationTime());
@@ -399,8 +399,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForBlocks = HashingAlgorithms.of(Objects.requireNonNull(hashingForBlocks, "hashingForBlocks cannot be null"));
 		}
 
-		private void setHashingForTransactions(String hashingForTransactions) throws NoSuchAlgorithmException {
-			this.hashingForTransactions = HashingAlgorithms.of(Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null"));
+		private void setHashingForRequests(String hashingForRequests) throws NoSuchAlgorithmException {
+			this.hashingForRequests = HashingAlgorithms.of(Objects.requireNonNull(hashingForRequests, "hashingForRequests cannot be null"));
 		}
 
 		private void setSignatureForBlocks(String signatureForBlocks) throws NoSuchAlgorithmException {
@@ -430,8 +430,8 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		}
 
 		@Override
-		public B setHashingForTransactions(HashingAlgorithm hashingForTransactions) {
-			this.hashingForTransactions = Objects.requireNonNull(hashingForTransactions, "hashingForTransactions cannot be null");
+		public B setHashingForRequests(HashingAlgorithm hashingForRequests) {
+			this.hashingForRequests = Objects.requireNonNull(hashingForRequests, "hashingForRequests cannot be null");
 			return getThis();
 		}
 
@@ -482,19 +482,19 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		}
 
 		@Override
-		public B setMaxTransactionSize(int maxTransactionSize) {
-			if (maxTransactionSize < 0)
-				throw new IllegalArgumentException("maxTransactionSize cannot be negative");
+		public B setMaxRequestSize(int maxRequestSize) {
+			if (maxRequestSize < 0)
+				throw new IllegalArgumentException("maxRequestSize cannot be negative");
 
-			this.maxTransactionSize = maxTransactionSize;
+			this.maxRequestSize = maxRequestSize;
 			return getThis();
 		}
 
-		private B setMaxTransactionSize(long maxTransactionSize) {
-			if (maxTransactionSize < 0 || maxTransactionSize > Integer.MAX_VALUE)
-				throw new IllegalArgumentException("maxTransactionSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
+		private B setMaxRequestSize(long maxRequestSize) {
+			if (maxRequestSize < 0 || maxRequestSize > Integer.MAX_VALUE)
+				throw new IllegalArgumentException("maxRequestSize must be between 0 and " + Integer.MAX_VALUE + " inclusive");
 
-			this.maxTransactionSize = (int) maxTransactionSize;
+			this.maxRequestSize = (int) maxRequestSize;
 			return getThis();
 		}
 
