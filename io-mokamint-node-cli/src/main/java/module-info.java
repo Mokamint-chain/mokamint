@@ -31,7 +31,7 @@ module io.mokamint.node.cli {
     opens io.mokamint.node.cli.internal.chain to info.picocli, com.google.gson;
     opens io.mokamint.node.cli.internal.chain.json to com.google.gson;
     opens io.mokamint.node.cli.internal.tasks to info.picocli, com.google.gson;
-    opens io.mokamint.node.cli.internal.transactions to info.picocli, com.google.gson;
+    opens io.mokamint.node.cli.internal.requests to info.picocli, com.google.gson;
 
     requires transitive io.mokamint.node.cli.api;
     requires io.mokamint.node;

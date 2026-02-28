@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.internal.transactions;
+package io.mokamint.node.cli.internal.requests;
 
 import java.util.concurrent.TimeoutException;
 
@@ -33,14 +33,14 @@ import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "add", description = "Add a transaction to the mempool of a node.")
+@Command(name = "add", description = "Add a request to the mempool of a node.")
 public class Add extends AbstractPublicRpcCommand {
 
-	@Parameters(description = "the Base64-encoded bytes of the transaction to add")
+	@Parameters(description = "the Base64-encoded bytes of the request to add")
 	private String tx;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
-		MempoolEntry info = addTransaction(remote);
+		MempoolEntry info = addRequest(remote);
 
 		if (json()) {
 			try {
@@ -54,7 +54,7 @@ public class Add extends AbstractPublicRpcCommand {
 			System.out.println(info);
 	}
 
-	private MempoolEntry addTransaction(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+	private MempoolEntry addRequest(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.add(Requests.of(Base64.fromBase64String(tx)));
 		}
@@ -62,10 +62,10 @@ public class Add extends AbstractPublicRpcCommand {
 			throw new CommandException("The application of the node timed out", e);
 		}
 		catch (Base64ConversionException e) {
-			throw new CommandException("Illegal Base64 encoding of the transaction!", e);
+			throw new CommandException("Illegal Base64 encoding of the request!", e);
 		}
 		catch (RequestRejectedException e) {
-			throw new CommandException("The transaction has been rejected: " + e.getMessage(), e);
+			throw new CommandException("The request has been rejected: " + e.getMessage(), e);
 		}
 	}
 

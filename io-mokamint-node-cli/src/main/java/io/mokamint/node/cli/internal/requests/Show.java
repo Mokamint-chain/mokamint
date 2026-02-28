@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.internal.transactions;
+package io.mokamint.node.cli.internal.requests;
 
 import java.util.concurrent.TimeoutException;
 
@@ -31,18 +31,18 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "show", description = "Show a transaction in the blockchain of a node.")
+@Command(name = "show", description = "Show a request in the blockchain of a node.")
 public class Show extends AbstractPublicRpcCommand {
 
-	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
+	@Parameters(index = "0", description = "the hexadecimal hash of the request")
 	private String hash;
 
-	@Option(names = "--representation", description = "report the representation of the transaction instead of its Base64-encoded bytes", defaultValue = "false")
+	@Option(names = "--representation", description = "report the representation of the request instead of its Base64-encoded bytes", defaultValue = "false")
     private boolean representation;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
 		if (representation) {
-			String representation = getTransactionRepresentation(remote);
+			String representation = getRequestRepresentation(remote);
 
 			if (json()) {
 				var answer = new RepresentationAnswer();
@@ -53,29 +53,29 @@ public class Show extends AbstractPublicRpcCommand {
 				System.out.println(representation);
 		}
 		else {
-			var transaction = getTransaction(remote);
+			var request = getRequest(remote);
 
 			if (json()) {
-				var answer = new TransactionAnswer();
-				answer.bytes = transaction.toBase64String();
+				var answer = new RequestAnswer();
+				answer.bytes = request.toBase64String();
 				System.out.println(new Gson().toJsonTree(answer));
 			}
 			else
-				System.out.println(transaction);
+				System.out.println(request);
 		}
 	}
 
-	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
+	private String getRequestRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		try {
-			return remote.getRequestRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+			return remote.getRequestRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any request with that hash!"));
 		}
 		catch (RequestRejectedException e) {
-			throw new CommandException("The transaction exists in blockchain but cannot be transformed into its textual representation", e);
+			throw new CommandException("The request exists in blockchain but cannot be transformed into its textual representation", e);
 		}
 	}
 
-	private Request getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
-		return remote.getRequest(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+	private Request getRequest(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
+		return remote.getRequest(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any request with that hash!"));
 	}
 
 	@Override
@@ -95,7 +95,7 @@ public class Show extends AbstractPublicRpcCommand {
 		private String representation;
 	}
 
-	private static class TransactionAnswer {
+	private static class RequestAnswer {
 		@SuppressWarnings("unused")
 		private String bytes;
 	}

@@ -16,19 +16,19 @@ limitations under the License.
 
 package io.mokamint.node.cli.internal;
 
-import io.mokamint.node.cli.internal.transactions.Add;
-import io.mokamint.node.cli.internal.transactions.Find;
-import io.mokamint.node.cli.internal.transactions.Show;
+import io.mokamint.node.cli.internal.requests.Add;
+import io.mokamint.node.cli.internal.requests.Find;
+import io.mokamint.node.cli.internal.requests.Show;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
-@Command(name = "transactions",
-	description = "Operate on the transactions of a node.",
+@Command(name = "requests",
+	description = "Operate on the requests in the blockchain of a node.",
 	subcommands = {
 		Add.class,
 		Find.class,
 		HelpCommand.class,
 		Show.class
 	})
-public class Transactions {
+public class Requests {
 }

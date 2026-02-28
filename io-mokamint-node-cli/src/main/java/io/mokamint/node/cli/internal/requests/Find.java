@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.internal.transactions;
+package io.mokamint.node.cli.internal.requests;
 
 import java.util.concurrent.TimeoutException;
 
@@ -29,14 +29,14 @@ import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "find", description = "Find a transaction in the blockchain of a node.")
+@Command(name = "find", description = "Find a request in the blockchain of a node.")
 public class Find extends AbstractPublicRpcCommand {
 
-	@Parameters(index = "0", description = "the hexadecimal hash of the transaction")
+	@Parameters(index = "0", description = "the hexadecimal hash of the request")
 	private String hash;
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
-		var address = getTransactionAddress(remote);
+		var address = getRequestAddress(remote);
 
 		if (json()) {
 			try {
@@ -50,8 +50,8 @@ public class Find extends AbstractPublicRpcCommand {
 			System.out.println(address);
 	}
 
-	private RequestAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
-		return remote.getRequestAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+	private RequestAddress getRequestAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+		return remote.getRequestAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any request with that hash!"));
 	}
 
 	@Override

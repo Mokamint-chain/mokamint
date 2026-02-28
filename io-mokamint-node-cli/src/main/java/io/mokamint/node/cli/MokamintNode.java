@@ -34,7 +34,7 @@ import io.mokamint.node.cli.internal.Miners;
 import io.mokamint.node.cli.internal.Peers;
 import io.mokamint.node.cli.internal.Start;
 import io.mokamint.node.cli.internal.Tasks;
-import io.mokamint.node.cli.internal.Transactions;
+import io.mokamint.node.cli.internal.Requests;
 import picocli.CommandLine.Command;
 
 /**
@@ -58,9 +58,9 @@ import picocli.CommandLine.Command;
 		Mempool.class,
 		Miners.class,
 		Peers.class,
+		Requests.class,
 		Start.class,
-		Tasks.class,
-		Transactions.class
+		Tasks.class
 	}
 )
 public class MokamintNode extends AbstractCLI {
