@@ -37,25 +37,25 @@ public interface NonGenesisBlock extends Block {
 	byte[] getHashOfPreviousBlock();
 
 	/**
-	 * Yields the transactions inside this block.
+	 * Yields the requests inside this block.
 	 * 
-	 * @return the transactions
+	 * @return the requests
 	 */
-	Stream<Request> getTransactions();
+	Stream<Request> getRequests();
 
 	/**
-	 * Yields the number of transactions inside this block.
+	 * Yields the number of requests inside this block.
 	 * 
-	 * @return the number of transactions
+	 * @return the number of requests
 	 */
-	int getTransactionsCount();
+	int getRequestsCount();
 
 	/**
-	 * Yields the {@code progressive}th transaction inside this block.
+	 * Yields the {@code progressive}th request inside this block.
 	 * 
-	 * @param progressive the index of the transaction
-	 * @return the transaction
-	 * @throws IndexOutOfBoundsException if there is no transaction with that progressive index
+	 * @param progressive the index of the request
+	 * @return the request
+	 * @throws IndexOutOfBoundsException if there is no request with that progressive index
 	 */
-	Request getTransaction(int progressive);
+	Request getRequest(int progressive);
 }

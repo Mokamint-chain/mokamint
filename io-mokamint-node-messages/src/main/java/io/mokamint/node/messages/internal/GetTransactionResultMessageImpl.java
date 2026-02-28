@@ -26,13 +26,13 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Requests;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.GetTransactionResultMessage;
+import io.mokamint.node.messages.api.GetRequestResultMessage;
 import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransaction(byte[])} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequest(byte[])} method.
  */
-public class GetTransactionResultMessageImpl extends AbstractRpcMessage implements GetTransactionResultMessage {
+public class GetTransactionResultMessageImpl extends AbstractRpcMessage implements GetRequestResultMessage {
 	private final Optional<Request> transaction;
 
 	/**
@@ -76,11 +76,11 @@ public class GetTransactionResultMessageImpl extends AbstractRpcMessage implemen
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetTransactionResultMessage gtrm && super.equals(other) && Objects.equals(transaction, gtrm.get());
+		return other instanceof GetRequestResultMessage gtrm && super.equals(other) && Objects.equals(transaction, gtrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionResultMessage.class.getName();
+		return GetRequestResultMessage.class.getName();
 	}
 }

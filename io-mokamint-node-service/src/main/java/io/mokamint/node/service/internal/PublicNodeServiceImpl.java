@@ -47,8 +47,8 @@ import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.messages.AddTransactionMessages;
-import io.mokamint.node.messages.AddTransactionResultMessages;
+import io.mokamint.node.messages.AddRequestMessages;
+import io.mokamint.node.messages.AddRequestResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockMessages;
@@ -71,16 +71,16 @@ import io.mokamint.node.messages.GetPeerInfosMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.GetTransactionAddressMessages;
-import io.mokamint.node.messages.GetTransactionAddressResultMessages;
-import io.mokamint.node.messages.GetTransactionMessages;
-import io.mokamint.node.messages.GetTransactionRepresentationMessages;
-import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
-import io.mokamint.node.messages.GetTransactionResultMessages;
+import io.mokamint.node.messages.GetRequestAddressMessages;
+import io.mokamint.node.messages.GetRequestAddressResultMessages;
+import io.mokamint.node.messages.GetRequestMessages;
+import io.mokamint.node.messages.GetRequestRepresentationMessages;
+import io.mokamint.node.messages.GetRequestRepresentationResultMessages;
+import io.mokamint.node.messages.GetRequestResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
-import io.mokamint.node.messages.WhisperTransactionMessages;
-import io.mokamint.node.messages.api.AddTransactionMessage;
+import io.mokamint.node.messages.WhisperRequestMessages;
+import io.mokamint.node.messages.api.AddRequestMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
@@ -97,7 +97,7 @@ import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
-import io.mokamint.node.messages.api.WhisperTransactionMessage;
+import io.mokamint.node.messages.api.WhisperRequestMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
@@ -202,7 +202,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
 
 		try {
-			this.hashingForTransactions = node.getConfig().getHashingForTransactions();
+			this.hashingForTransactions = node.getConfig().getHashingForRequests();
 		}
 		catch (ClosedNodeException e) {
 			throw new FailedDeploymentException(e);
@@ -257,15 +257,15 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 			case GetPeerInfosMessage gpim -> sendObjectAsync(session, GetPeerInfosResultMessages.of(node.getPeerInfos(), id));
 			case GetMinerInfosMessage gmim -> sendObjectAsync(session, GetMinerInfosResultMessages.of(node.getMinerInfos(), id));
 			case GetTaskInfosMessage gtim -> sendObjectAsync(session, GetTaskInfosResultMessages.of(node.getTaskInfos(), id));
-			case GetTransactionMessage gtm -> sendObjectAsync(session, GetTransactionResultMessages.of(node.getTransaction(gtm.getHash()), id));
-			case GetTransactionRepresentationMessage gtrm -> sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(node.getTransactionRepresentation(gtrm.getHash()), id));
-			case GetTransactionAddressMessage gtam -> sendObjectAsync(session, GetTransactionAddressResultMessages.of(node.getTransactionAddress(gtam.getHash()), id));
+			case GetTransactionMessage gtm -> sendObjectAsync(session, GetRequestResultMessages.of(node.getRequest(gtm.getHash()), id));
+			case GetTransactionRepresentationMessage gtrm -> sendObjectAsync(session, GetRequestRepresentationResultMessages.of(node.getRequestRepresentation(gtrm.getHash()), id));
+			case GetTransactionAddressMessage gtam -> sendObjectAsync(session, GetRequestAddressResultMessages.of(node.getRequestAddress(gtam.getHash()), id));
 			case GetBlockMessage gbm -> sendObjectAsync(session, GetBlockResultMessages.of(node.getBlock(gbm.getHash()), id));
 			case GetBlockDescriptionMessage gbdm -> sendObjectAsync(session, GetBlockDescriptionResultMessages.of(node.getBlockDescription(gbdm.getHash()), id));
 			case GetConfigMessage gcm -> sendObjectAsync(session, GetConfigResultMessages.of(node.getConfig(), id));
 			case GetChainInfoMessage gcim -> sendObjectAsync(session, GetChainInfoResultMessages.of(node.getChainInfo(), id));
 			case GetChainPortionMessage gcpm -> sendObjectAsync(session, GetChainPortionResultMessages.of(node.getChainPortion(gcpm.getStart(), gcpm.getCount()), id));
-			case AddTransactionMessage atm -> sendObjectAsync(session, AddTransactionResultMessages.of(node.add(atm.getTransaction()), id));
+			case AddRequestMessage atm -> sendObjectAsync(session, AddRequestResultMessages.of(node.add(atm.getRequest()), id));
 			case GetMempoolInfoMessage gmi -> sendObjectAsync(session, GetMempoolInfoResultMessages.of(node.getMempoolInfo(), id));
 			case GetMempoolPortionMessage gmpm -> sendObjectAsync(session, GetMempoolPortionResultMessages.of(node.getMempoolPortion(gmpm.getStart(), gmpm.getCount()), id));
 			default -> LOGGER.warning(logPrefix + "unexpected message of type " + message.getClass().getName());
@@ -306,7 +306,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 			sessions = whisperPeerSessions;
 		else if (message instanceof WhisperBlockMessage)
 			sessions = whisperBlockSessions;
-		else if (message instanceof WhisperTransactionMessage)
+		else if (message instanceof WhisperRequestMessage)
 			sessions = whisperTransactionSessions;
 		else {
 			LOGGER.severe("unexpected whispered message of class " + message.getClass().getName());
@@ -446,7 +446,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	}
 
 	protected void onGetTransaction(GetTransactionMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ENDPOINT + " request");
+		LOGGER.info(logPrefix + "received a " + GET_REQUEST_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
@@ -459,12 +459,12 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionEndpoint.class, GET_TRANSACTION_ENDPOINT, GetTransactionMessages.Decoder.class, GetTransactionResultMessages.Encoder.class);
+			return simpleConfig(server, GetTransactionEndpoint.class, GET_REQUEST_ENDPOINT, GetRequestMessages.Decoder.class, GetRequestResultMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_REPRESENTATION_ENDPOINT + " request");
+		LOGGER.info(logPrefix + "received a " + GET_REQUEST_REPRESENTATION_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
@@ -477,13 +477,13 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionRepresentationEndpoint.class, GET_TRANSACTION_REPRESENTATION_ENDPOINT,
-				GetTransactionRepresentationMessages.Decoder.class, GetTransactionRepresentationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, GetTransactionRepresentationEndpoint.class, GET_REQUEST_REPRESENTATION_ENDPOINT,
+				GetRequestRepresentationMessages.Decoder.class, GetRequestRepresentationResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
 	protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + GET_TRANSACTION_ADDRESS_ENDPOINT + " request");
+		LOGGER.info(logPrefix + "received a " + GET_REQUEST_ADDRESS_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	}
 
@@ -496,7 +496,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_TRANSACTION_ADDRESS_ENDPOINT, GetTransactionAddressMessages.Decoder.class, GetTransactionAddressResultMessages.Encoder.class);
+			return simpleConfig(server, GetTransactionAddressEndpoint.class, GET_REQUEST_ADDRESS_ENDPOINT, GetRequestAddressMessages.Decoder.class, GetRequestAddressResultMessages.Encoder.class);
 		}
 	}
 
@@ -590,8 +590,8 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		}
 	}
 
-	protected void onAddTransaction(AddTransactionMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + ADD_TRANSACTION_ENDPOINT + " request");
+	protected void onAddTransaction(AddRequestMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + ADD_REQUEST_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
@@ -600,12 +600,12 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (AddTransactionMessage message) -> server.onAddTransaction(message, session));
+			addMessageHandler(session, (AddRequestMessage message) -> server.onAddTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, AddTransactionEndpoint.class, ADD_TRANSACTION_ENDPOINT,
-					AddTransactionMessages.Decoder.class, AddTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, AddTransactionEndpoint.class, ADD_REQUEST_ENDPOINT,
+					AddRequestMessages.Decoder.class, AddRequestResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -691,7 +691,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
 			server.whisperTransactionSessions.add(session);
-			addMessageHandler(session, (WhisperTransactionMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hashingForTransactions)));
+			addMessageHandler(session, (WhisperRequestMessage message) -> server.whisper(message, _whisperer -> false, session, "transaction " + message.getWhispered().getHexHash(server.hashingForTransactions)));
 	    }
 
 		@SuppressWarnings("resource")
@@ -701,7 +701,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 		}
 
 		private static ServerEndpointConfig config(PublicNodeServiceImpl server) {
-			return simpleConfig(server, WhisperTransactionEndpoint.class, WHISPER_TRANSACTION_ENDPOINT, WhisperTransactionMessages.Encoder.class, WhisperTransactionMessages.Decoder.class);
+			return simpleConfig(server, WhisperTransactionEndpoint.class, WHISPER_REQUEST_ENDPOINT, WhisperRequestMessages.Encoder.class, WhisperRequestMessages.Decoder.class);
 		}
 	}
 }

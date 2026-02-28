@@ -20,9 +20,9 @@ import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.Hex;
-import io.mokamint.node.TransactionAddresses;
+import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
@@ -40,7 +40,7 @@ public class Find extends AbstractPublicRpcCommand {
 
 		if (json()) {
 			try {
-				System.out.println(new TransactionAddresses.Encoder().encode(address));
+				System.out.println(new RequestAddresses.Encoder().encode(address));
 			}
 			catch (EncodeException e) {
 				throw new CommandException("Cannot encode an address at \"" + publicUri() + "\" in JSON format!", e);
@@ -50,8 +50,8 @@ public class Find extends AbstractPublicRpcCommand {
 			System.out.println(address);
 	}
 
-	private TransactionAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
-		return remote.getTransactionAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+	private RequestAddress getTransactionAddress(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
+		return remote.getRequestAddress(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 
 	@Override

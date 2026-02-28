@@ -23,35 +23,35 @@ import io.hotmoka.annotations.Immutable;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.HexConversionException;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.internal.json.TransactionAddressJson;
+import io.mokamint.node.api.RequestAddress;
+import io.mokamint.node.internal.json.RequestAddressJson;
 
 /**
- * The implementation of the address of a transaction inside a blockchain
- * (block hash and position inside the table of the transactions of that block).
+ * The implementation of the address of a request inside a blockchain
+ * (block hash and position inside the table of the requests of that block).
  */
 @Immutable
-public class TransactionAddressImpl implements TransactionAddress {
+public class RequestAddressImpl implements RequestAddress {
 
 	/**
-	 * The hash of the block containing the transaction.
+	 * The hash of the block containing the request.
 	 */
 	private final byte[] blockHash;
 
 	/**
 	 * The progressive number of the transaction inside the table of the
-	 * transactions inside the block.
+	 * requests inside the block.
 	 */
 	private final int progressive;
 
 	/**
-	 * Creates a reference to a transaction inside a block.
+	 * Creates a reference to a request inside a block.
 	 * 
-	 * @param blockHash the hash of the block containing the transaction
-	 * @param progressive the progressive number of the transaction inside the table of the
-	 *                    transactions inside the block
+	 * @param blockHash the hash of the block containing the request
+	 * @param progressive the progressive number of the request inside the table of the
+	 *                    requests inside the block
 	 */
-	public TransactionAddressImpl(byte[] blockHash, int progressive) {
+	public RequestAddressImpl(byte[] blockHash, int progressive) {
 		if (progressive < 0)
 			throw new IllegalArgumentException("progressive cannot be negative");
 
@@ -60,12 +60,12 @@ public class TransactionAddressImpl implements TransactionAddress {
 	}
 
 	/**
-	 * Creates a reference to a transaction from the given JSON representation.
+	 * Creates a reference to a request from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public TransactionAddressImpl(TransactionAddressJson json) throws InconsistentJsonException {
+	public RequestAddressImpl(RequestAddressJson json) throws InconsistentJsonException {
 		int progressive = json.getProgressive();
 		if (progressive < 0)
 			throw new InconsistentJsonException("progressive cannot be negative");
@@ -96,9 +96,9 @@ public class TransactionAddressImpl implements TransactionAddress {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof TransactionAddress ta &&
+		return other instanceof RequestAddress ta &&
 			ta.getProgressive() == progressive &&
-			Arrays.equals(ta instanceof TransactionAddressImpl tai ? tai.blockHash : ta.getBlockHash(), blockHash); // optimization
+			Arrays.equals(ta instanceof RequestAddressImpl tai ? tai.blockHash : ta.getBlockHash(), blockHash); // optimization
 	}
 
 	@Override

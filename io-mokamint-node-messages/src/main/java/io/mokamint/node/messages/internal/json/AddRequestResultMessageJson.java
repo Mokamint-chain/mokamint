@@ -19,16 +19,16 @@ package io.mokamint.node.messages.internal.json;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.MempoolEntries;
-import io.mokamint.node.messages.api.AddTransactionResultMessage;
-import io.mokamint.node.messages.internal.AddTransactionResultMessageImpl;
+import io.mokamint.node.messages.api.AddRequestResultMessage;
+import io.mokamint.node.messages.internal.AddRequestResultMessageImpl;
 
 /**
- * The JSON representation of a {@link AddTransactionResultMessage}.
+ * The JSON representation of a {@link AddRequestResultMessage}.
  */
-public abstract class AddTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddTransactionResultMessage> {
+public abstract class AddRequestResultMessageJson extends AbstractRpcMessageJsonRepresentation<AddRequestResultMessage> {
 	private final MempoolEntries.Json result;
 
-	protected AddTransactionResultMessageJson(AddTransactionResultMessage message) {
+	protected AddRequestResultMessageJson(AddRequestResultMessage message) {
 		super(message);
 
 		this.result = new MempoolEntries.Json(message.get());
@@ -39,12 +39,12 @@ public abstract class AddTransactionResultMessageJson extends AbstractRpcMessage
 	}
 
 	@Override
-	public AddTransactionResultMessage unmap() throws InconsistentJsonException {
-		return new AddTransactionResultMessageImpl(this);
+	public AddRequestResultMessage unmap() throws InconsistentJsonException {
+		return new AddRequestResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return AddTransactionResultMessage.class.getName();
+		return AddRequestResultMessage.class.getName();
 	}
 }

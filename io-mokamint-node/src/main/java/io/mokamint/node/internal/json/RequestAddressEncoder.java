@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.internal.json;
 
-import java.util.Optional;
-
-import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.ResultMessage;
-import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionAddress;
+import io.hotmoka.websockets.beans.MappedEncoder;
+import io.mokamint.node.RequestAddresses;
+import io.mokamint.node.api.RequestAddress;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.
+ * An encoder for a {@link RequestAddress}.
  */
-@Immutable
-public interface GetTransactionAddressResultMessage extends ResultMessage<Optional<TransactionAddress>> {
+public class RequestAddressEncoder extends MappedEncoder<RequestAddress, RequestAddresses.Json> {
+
+	public RequestAddressEncoder() {
+		super(RequestAddresses.Json::new);
+	}
 }

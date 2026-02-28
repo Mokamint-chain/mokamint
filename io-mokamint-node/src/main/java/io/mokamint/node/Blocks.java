@@ -50,15 +50,15 @@ public abstract class Blocks {
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
-	 * @param transactions the transactions inside the block
+	 * @param requests the requests inside the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @return the non-genesis block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Request> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		return new NonGenesisBlockImpl(description, transactions, stateId, privateKey);
+	public static NonGenesisBlock of(NonGenesisBlockDescription description, Stream<Request> requests, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		return new NonGenesisBlockImpl(description, requests, stateId, privateKey);
 	}
 
 	/**

@@ -64,7 +64,7 @@ import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.ChainInfos;
 import io.mokamint.node.Memories;
-import io.mokamint.node.TransactionAddresses;
+import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.BlockDescription;
@@ -74,7 +74,7 @@ import io.mokamint.node.api.GenesisBlock;
 import io.mokamint.node.api.Memory;
 import io.mokamint.node.api.NonGenesisBlock;
 import io.mokamint.node.api.PortionRejectedException;
-import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.local.AlreadyInitializedException;
 import io.mokamint.node.local.LocalNodeException;
@@ -411,7 +411,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the transaction address, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException {
+	public Optional<RequestAddress> getTransactionAddress(byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
 			return environment.computeInReadonlyTransaction(txn -> getTransactionAddress(txn, hash));
 		}
@@ -429,9 +429,9 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @return the transaction address, if any
 	 * @throws ClosedDatabaseException if the database is already closed
 	 */
-	public Optional<TransactionAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException {
+	public Optional<RequestAddress> getTransactionAddress(Block block, byte[] hash) throws ClosedDatabaseException {
 		try (var scope = mkScope()) {
-			return environment.computeInReadonlyTransaction(txn -> getTransactionAddress(txn, block, hash));
+			return environment.computeInReadonlyTransaction(txn -> getRequestAddress(txn, block, hash));
 		}
 		catch (ExodusException e) {
 			throw new LocalNodeException(e);
@@ -551,7 +551,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		try {
 			var description = BlockDescriptions.genesis(LocalDateTime.now(ZoneId.of("UTC")),
-				config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForTransactions(),
+				config.getTargetBlockCreationTime(), config.getOblivion(), config.getHashingForBlocks(), config.getHashingForRequests(),
 				config.getHashingForDeadlines(), config.getHashingForGenerations(), config.getSignatureForBlocks(), keys.getPublic());
 
 			addVerified(Blocks.genesis(description, node.getApplication().getInitialStateId(), keys.getPrivate()));
@@ -1005,13 +1005,13 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		private void addReferencesToTransactionsInside(Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
 				long height = ngb.getDescription().getHeight();
-				HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
-				int count = ngb.getTransactionsCount();
+				HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
+				int count = ngb.getRequestsCount();
 				for (int pos = 0; pos < count; pos++) {
 					var ref = new TransactionRef(height, pos);
 					
 					try {
-						storeOfTransactions.put(txn, ByteIterable.fromBytes(ngb.getTransaction(pos).getHash(hashingForTransactions)), ByteIterable.fromBytes(ref.toByteArray()));
+						storeOfTransactions.put(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForTransactions)), ByteIterable.fromBytes(ref.toByteArray()));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1065,12 +1065,12 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 		private void removeReferencesToTransactionsInside(Transaction txn, Block block) {
 			if (block instanceof NonGenesisBlock ngb) {
-				int count = ngb.getTransactionsCount();
-				HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
+				int count = ngb.getRequestsCount();
+				HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
 
 				for (int pos = 0; pos < count; pos++) {
 					try {
-						storeOfTransactions.delete(txn, ByteIterable.fromBytes(ngb.getTransaction(pos).getHash(hashingForTransactions)));
+						storeOfTransactions.delete(txn, ByteIterable.fromBytes(ngb.getRequest(pos).getHash(hashingForTransactions)));
 					}
 					catch (ExodusException e) {
 						throw new LocalNodeException(e);
@@ -1164,8 +1164,8 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
 		private void markAllTransactionsAsToAdd(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
-			for (int pos = 0; pos < block.getTransactionsCount(); pos++)
-				toAdd.add(intoTransactionEntry(block.getTransaction(pos)));
+			for (int pos = 0; pos < block.getRequestsCount(); pos++)
+				toAdd.add(intoTransactionEntry(block.getRequest(pos)));
 		}
 
 		/**
@@ -1175,7 +1175,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 		 * @throws InterruptedException if the current thread was interrupted while waiting for an answer from the application
 		 */
 		private void markAllTransactionsAsToRemove(NonGenesisBlock block) throws InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
-			for (var transaction: block.getTransactions().toArray(io.mokamint.node.api.Request[]::new))
+			for (var transaction: block.getRequests().toArray(io.mokamint.node.api.Request[]::new))
 				toRemove.add(intoTransactionEntry(transaction));
 		}
 
@@ -1552,7 +1552,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 
 			if (block instanceof NonGenesisBlock ngb) {
 				try {
-					return Optional.of(ngb.getTransaction(ref.progressive));
+					return Optional.of(ngb.getRequest(ref.progressive));
 				}
 				catch (IndexOutOfBoundsException e) {
 					throw new LocalNodeException("Transaction " + Hex.toHexString(hash) + " has a progressive number outside the bounds for the block where it is contained");
@@ -1574,7 +1574,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 */
-	private Optional<TransactionAddress> getTransactionAddress(Transaction txn, byte[] hash) {
+	private Optional<RequestAddress> getTransactionAddress(Transaction txn, byte[] hash) {
 		try {
 			ByteIterable txBI = storeOfTransactions.get(txn, fromBytes(hash));
 			if (txBI == null)
@@ -1585,7 +1585,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			if (blockHash == null)
 				throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-			return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
+			return Optional.of(RequestAddresses.of(blockHash.getBytes(), ref.progressive));
 		}
 		catch (ExodusException | IOException e) {
 			throw new LocalNodeException(e);
@@ -1601,7 +1601,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 	 * @param hash the hash of the transaction to search
 	 * @return the transaction address, if any
 	 */
-	Optional<TransactionAddress> getTransactionAddress(Transaction txn, Block block, byte[] hash) {
+	Optional<RequestAddress> getRequestAddress(Transaction txn, Block block, byte[] hash) {
 		try {
 			byte[] hashOfBlock = block.getHash();
 			String initialHash = block.getHexHash();
@@ -1622,16 +1622,16 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 					if (blockHash == null)
 						throw new LocalNodeException("The hash of the block of the best chain at height " + ref.height + " is not in the database");
 
-					return Optional.of(TransactionAddresses.of(blockHash.getBytes(), ref.progressive));
+					return Optional.of(RequestAddresses.of(blockHash.getBytes(), ref.progressive));
 				}
 				else if (block instanceof NonGenesisBlock ngb) {
 					// we check if the transaction is inside the table of transactions of the block
-					int length = ngb.getTransactionsCount();
-					HashingAlgorithm hashingForTransactions = config.getHashingForTransactions();
+					int length = ngb.getRequestsCount();
+					HashingAlgorithm hashingForTransactions = config.getHashingForRequests();
 
 					for (int pos = 0; pos < length; pos++)
-						if (Arrays.equals(hash, ngb.getTransaction(pos).getHash(hashingForTransactions)))
-							return Optional.of(TransactionAddresses.of(hashOfBlock, pos));
+						if (Arrays.equals(hash, ngb.getRequest(pos).getHash(hashingForTransactions)))
+							return Optional.of(RequestAddresses.of(hashOfBlock, pos));
 
 					// otherwise we continue with the previous block, if any
 					byte[] hashOfPrevious = ngb.getHashOfPreviousBlock();

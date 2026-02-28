@@ -156,9 +156,9 @@ public class BlockVerification {
 		deadlineHasValidProlog();
 		deadlineIsValid();
 		blockMatchesItsExpectedDescription(block);
-		transactionsSizeIsNotTooBig(block);
-		transactionsAreNotAlreadyInBlockchain(block);
-		transactionsExecutionLeadsToFinalState(block);
+		requestsSizeIsNotTooBig(block);
+		requestsAreNotAlreadyInBlockchain(block);
+		requestsExecutionLeadsToFinalState(block);
 	}
 
 	/**
@@ -341,31 +341,31 @@ public class BlockVerification {
 		}
 	}
 
-	private void transactionsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
+	private void requestsSizeIsNotTooBig(NonGenesisBlock block) throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.ABSOLUTE)
-			if (block.getTransactions().mapToLong(Request::size).sum() > config.getMaxBlockSize())
-				throw new VerificationException("The table of transactions is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
+			if (block.getRequests().mapToLong(Request::size).sum() > config.getMaxBlockSize())
+				throw new VerificationException("The table of requests is too big (maximum is " + config.getMaxBlockSize() + " bytes)");
 	}
 
 	/**
-	 * Checks that the transactions in {@link #block} are not already contained in blockchain.
+	 * Checks that the requests in {@link #block} are not already contained in blockchain.
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
-	 * @throws VerificationException if some transaction is already contained in blockchain
+	 * @throws VerificationException if some request is already contained in blockchain
 	 */
-	private void transactionsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException {
+	private void requestsAreNotAlreadyInBlockchain(NonGenesisBlock block) throws VerificationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
-			for (var tx: block.getTransactions().toArray(Request[]::new)) {
-				byte[] txHash = tx.getHash(config.getHashingForTransactions());
-				if (node.getBlockchain().getTransactionAddress(txn, previous, txHash).isPresent())
-					throw new VerificationException("Repeated transaction " + tx.getHexHash(config.getHashingForTransactions()));
+			for (var req: block.getRequests().toArray(Request[]::new)) {
+				byte[] reqHash = req.getHash(config.getHashingForRequests());
+				if (node.getBlockchain().getRequestAddress(txn, previous, reqHash).isPresent())
+					throw new VerificationException("Repeated request " + req.getHexHash(config.getHashingForRequests()));
 			}
 		}
 	}
 
 	/**
-	 * Checks that the execution of the transactions inside {@link #block} is successful
-	 * (both check and delivery of transactions succeed) and leads to the final state
+	 * Checks that the execution of the requests inside {@link #block} is successful
+	 * (both check and execute of requests succeed) and leads to the final state
 	 * whose hash is in the {@link #block}.
 	 * 
 	 * @param block the same as the field {@link #block}, but cast into its actual type
@@ -375,7 +375,7 @@ public class BlockVerification {
 	 * @throws ClosedApplicationException if the application has been closed
 	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 */
-	private void transactionsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+	private void requestsExecutionLeadsToFinalState(NonGenesisBlock block) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		if (mode == Mode.COMPLETE || mode == Mode.RELATIVE) {
 			var app = node.getApplication();
 
@@ -396,19 +396,19 @@ public class BlockVerification {
 				boolean success = false;
 
 				try {
-					for (var tx: block.getTransactions().toArray(Request[]::new)) {
+					for (var request: block.getRequests().toArray(Request[]::new)) {
 						try {
-							app.checkRequest(tx);
+							app.checkRequest(request);
 						}
 						catch (RequestRejectedException e) {
-							throw new VerificationException("Failed check of transaction " + tx.getHexHash(config.getHashingForTransactions()) + ": " + e.getMessage());
+							throw new VerificationException("Failed check of request " + request.getHexHash(config.getHashingForRequests()) + ": " + e.getMessage());
 						}
 
 						try {
-							app.executeTransaction(id, tx);
+							app.executeTransaction(id, request);
 						}
 						catch (RequestRejectedException e) {
-							throw new VerificationException("Failed delivery of transaction " + tx.getHexHash(config.getHashingForTransactions()) + ": " + e.getMessage());
+							throw new VerificationException("Failed execution of request " + request.getHexHash(config.getHashingForRequests()) + ": " + e.getMessage());
 						}
 					}
 

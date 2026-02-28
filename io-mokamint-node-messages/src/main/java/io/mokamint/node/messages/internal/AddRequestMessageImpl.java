@@ -25,26 +25,26 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Requests;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.AddTransactionMessage;
-import io.mokamint.node.messages.internal.json.AddTransactionMessageJson;
+import io.mokamint.node.messages.api.AddRequestMessage;
+import io.mokamint.node.messages.internal.json.AddRequestMessageJson;
 
 /**
  * Implementation of the network message corresponding to
  * the {@link PublicNode#post(io.mokamint.node.api.Request)} method of a node.
  */
-public class AddTransactionMessageImpl extends AbstractRpcMessage implements AddTransactionMessage {
-	private final Request transaction;
+public class AddRequestMessageImpl extends AbstractRpcMessage implements AddRequestMessage {
+	private final Request request;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param transaction the {@code transaction} parameter of the method
+	 * @param request the {@code request} parameter of the method
 	 * @param id the identifier of the message
 	 */
-	public AddTransactionMessageImpl(Request transaction, String id) {
+	public AddRequestMessageImpl(Request request, String id) {
 		super(id);
 
-		this.transaction = Objects.requireNonNull(transaction, "transaction cannot be null");
+		this.request = Objects.requireNonNull(request, "request cannot be null");
 	}
 
 	/**
@@ -53,15 +53,15 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public AddTransactionMessageImpl(AddTransactionMessageJson json) throws InconsistentJsonException {
+	public AddRequestMessageImpl(AddRequestMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
-		var transactionBase64 = json.getTransaction();
-		if (transactionBase64 == null)
-			throw new InconsistentJsonException("transaction cannot be null");
+		var requestBase64 = json.getRequest();
+		if (requestBase64 == null)
+			throw new InconsistentJsonException("request cannot be null");
 
 		try {
-			this.transaction = Requests.of(Base64.fromBase64String(transactionBase64));
+			this.request = Requests.of(Base64.fromBase64String(requestBase64));
 		}
 		catch (Base64ConversionException e) {
 			throw new InconsistentJsonException(e);
@@ -69,17 +69,17 @@ public class AddTransactionMessageImpl extends AbstractRpcMessage implements Add
 	}
 
 	@Override
-	public Request getTransaction() {
-		return transaction;
+	public Request getRequest() {
+		return request;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddTransactionMessage ptm && super.equals(other) && transaction.equals(ptm.getTransaction());
+		return other instanceof AddRequestMessage ptm && super.equals(other) && request.equals(ptm.getRequest());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return AddTransactionMessage.class.getName();
+		return AddRequestMessage.class.getName();
 	}
 }

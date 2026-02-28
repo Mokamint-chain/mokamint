@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,33 +18,32 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.AddTransactionMessage;
-import io.mokamint.node.messages.internal.AddTransactionMessageImpl;
-import io.mokamint.node.messages.internal.json.AddTransactionMessageJson;
+import io.mokamint.node.messages.api.GetTransactionMessage;
+import io.mokamint.node.messages.internal.GetTransactionMessageImpl;
+import io.mokamint.node.messages.internal.json.GetTransactionMessageJson;
 
 /**
- * A provider of {@link AddTransactionMessage}.
+ * A provider of {@link GetTransactionMessage}.
  */
-public final class AddTransactionMessages {
+public final class GetRequestMessages {
 
-	private AddTransactionMessages() {}
+	private GetRequestMessages() {}
 
 	/**
-	 * Yields a {@link AddTransactionMessage}.
+	 * Yields a {@link GetTransactionMessage}.
 	 * 
-	 * @param transaction the {@code transaction} parameter of the message
+	 * @param hash the {@code hash} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static AddTransactionMessage of(Request transaction, String id) {
-		return new AddTransactionMessageImpl(transaction, id);
+	public static GetTransactionMessage of(byte[] hash, String id) {
+		return new GetTransactionMessageImpl(hash, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<AddTransactionMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetTransactionMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -57,7 +56,7 @@ public final class AddTransactionMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<AddTransactionMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetTransactionMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -70,14 +69,14 @@ public final class AddTransactionMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends AddTransactionMessageJson {
+    public static class Json extends GetTransactionMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(AddTransactionMessage message) {
+    	public Json(GetTransactionMessage message) {
     		super(message);
     	}
     }

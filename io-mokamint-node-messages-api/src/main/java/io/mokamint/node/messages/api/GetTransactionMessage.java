@@ -21,7 +21,7 @@ import io.hotmoka.websockets.beans.api.RpcMessage;
 import io.mokamint.node.api.PublicNode;
 
 /**
- * The network message corresponding to the {@link PublicNode#getTransaction(byte[])} method.
+ * The network message corresponding to the {@link PublicNode#getRequest(byte[])} method.
  */
 @Immutable
 public interface GetTransactionMessage extends RpcMessage {

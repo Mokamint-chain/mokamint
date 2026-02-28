@@ -115,7 +115,7 @@ public class List extends AbstractPublicRpcCommand {
 
 		private static Row mkHeader(RemotePublicNode remote) throws TimeoutException, InterruptedException, ClosedNodeException {
 			var config = remote.getConfig();
-			return new Row("", "tx hash (" + config.getHashingForTransactions() + ")", "priority");
+			return new Row("", "tx hash (" + config.getHashingForRequests() + ")", "priority");
 		}
 
 		private void add(int pos) {

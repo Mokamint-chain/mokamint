@@ -67,7 +67,7 @@ public class Show extends AbstractPublicRpcCommand {
 
 	private String getTransactionRepresentation(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		try {
-			return remote.getTransactionRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+			return remote.getRequestRepresentation(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 		}
 		catch (RequestRejectedException e) {
 			throw new CommandException("The transaction exists in blockchain but cannot be transformed into its textual representation", e);
@@ -75,7 +75,7 @@ public class Show extends AbstractPublicRpcCommand {
 	}
 
 	private Request getTransaction(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
-		return remote.getTransaction(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
+		return remote.getRequest(toBytes(hash)).orElseThrow(() -> new CommandException("The blockchain of the node does not contain any transaction with that hash!"));
 	}
 
 	@Override

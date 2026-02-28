@@ -134,55 +134,55 @@ public interface PublicNode extends Node, Whisperer {
 	Optional<BlockDescription> getBlockDescription(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Checks the validity of the given transaction and adds it to the mempool of this node.
-	 * The node will afterwards whisper the transaction to all its peers.
+	 * Checks the validity of the given request and adds it to the mempool of this node.
+	 * The node will afterwards whisper the request to all its peers.
 	 * 
-	 * @param transaction the transaction
-	 * @return the mempool entry holding the transaction
-	 * @throws RequestRejectedException if {@code transaction} has been rejected, for instance because it is invalid
-	 * @throws ApplicationTimeoutException if the application connected to this node timed out during the analysis of {@code transaction}
+	 * @param request the request
+	 * @return the mempool entry holding the request
+	 * @throws RequestRejectedException if {@code request} has been rejected, for instance because it is invalid
+	 * @throws ApplicationTimeoutException if the application connected to this node timed out during the analysis of {@code request}
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	MempoolEntry add(Request transaction) throws RequestRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException;
+	MempoolEntry add(Request request) throws RequestRejectedException, ApplicationTimeoutException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Yields a transaction already in blockchain.
+	 * Yields a request already in blockchain.
 	 * 
-	 * @param hash the hash of the transaction
-	 * @return the transaction, if the latter exists in blockchain
+	 * @param hash the hash of the request
+	 * @return the request, if the latter exists in blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<Request> getTransaction(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<Request> getRequest(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Yields a string representation of a transaction already in blockchain, that can be used to print
+	 * Yields a string representation of a request already in blockchain, that can be used to print
 	 * or process its structure. This can be everything, possibly but not necessarily JSON.
 	 * 
-	 * @param hash the hash of the transaction
-	 * @return the representation of the transaction, if the latter exists in blockchain
-	 * @throws RequestRejectedException if {@code transaction} has been rejected, for instance because it is invalid; this
-	 *                                      should never occur if the application guarantees that transactions that passed
-	 *                                      the {@code checkTransaction} test should have a valid representation
+	 * @param hash the hash of the request
+	 * @return the representation of the request, if the latter exists in blockchain
+	 * @throws RequestRejectedException if {@code request} has been rejected, for instance because it is invalid; this
+	 *                                  should never occur if the application guarantees that requests that passed
+	 *                                  the {@code Application#checkRequest} test should have a valid representation
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<String> getTransactionRepresentation(byte[] hash) throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<String> getRequestRepresentation(byte[] hash) throws RequestRejectedException, TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
-	 * Yields the address of a transaction already in blockchain.
+	 * Yields the address of a request already in blockchain.
 	 * 
-	 * @param hash the hash of the transaction
-	 * @return the transaction address, if the latter exists in the blockchain
+	 * @param hash the hash of the request
+	 * @return the request address, if the latter exists in the blockchain
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
 	 * @throws ClosedNodeException if the node has been already closed
 	 */
-	Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
+	Optional<RequestAddress> getRequestAddress(byte[] hash) throws TimeoutException, InterruptedException, ClosedNodeException;
 
 	/**
 	 * Yields information about the mempool of this node.

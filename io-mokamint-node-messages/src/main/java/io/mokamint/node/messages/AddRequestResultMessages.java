@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,32 +18,33 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.api.GetTransactionRepresentationMessage;
-import io.mokamint.node.messages.internal.GetTransactionRepresentationMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionRepresentationMessageJson;
+import io.mokamint.node.api.MempoolEntry;
+import io.mokamint.node.messages.api.AddRequestResultMessage;
+import io.mokamint.node.messages.internal.AddRequestResultMessageImpl;
+import io.mokamint.node.messages.internal.json.AddRequestResultMessageJson;
 
 /**
- * A provider of {@link GetTransactionRepresentationMessage}.
+ * A provider of {@link AddRequestResultMessage}.
  */
-public final class GetTransactionRepresentationMessages {
+public final class AddRequestResultMessages {
 
-	private GetTransactionRepresentationMessages() {}
+	private AddRequestResultMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionRepresentationMessage}.
+	 * Yields an {@link AddRequestResultMessage}.
 	 * 
-	 * @param hash the {@code hash} parameter of the message
+	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionRepresentationMessage of(byte[] hash, String id) {
-		return new GetTransactionRepresentationMessageImpl(hash, id);
+	public static AddRequestResultMessage of(MempoolEntry result, String id) {
+		return new AddRequestResultMessageImpl(result, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionRepresentationMessage, Json> {
+	public static class Encoder extends MappedEncoder<AddRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +57,7 @@ public final class GetTransactionRepresentationMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionRepresentationMessage, Json> {
+	public static class Decoder extends MappedDecoder<AddRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +70,14 @@ public final class GetTransactionRepresentationMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionRepresentationMessageJson {
+    public static class Json extends AddRequestResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionRepresentationMessage message) {
+    	public Json(AddRequestResultMessage message) {
     		super(message);
     	}
     }

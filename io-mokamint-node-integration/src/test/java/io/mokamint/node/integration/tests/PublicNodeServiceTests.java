@@ -64,7 +64,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.TransactionAddresses;
+import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.Requests;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.Block;
@@ -84,7 +84,7 @@ import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.messages.WhisperPeerMessages;
 import io.mokamint.node.remote.RemotePublicNodes;
@@ -263,11 +263,11 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 43L, value, Challenges.of(scoopNumber, generationSignature, shabal256, hashingForGenerations));
-		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Requests.of(new byte[] {});
+		var request1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var request2 = Requests.of(new byte[] { 5, 6, 7 });
+		var request3 = Requests.of(new byte[] {});
 		var block = Blocks.of(BlockDescriptions.of(13L, BigInteger.TEN, 134L, 11L, BigInteger.valueOf(123), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, sha256()),
-			Stream.of(transaction1, transaction2, transaction3),
+			Stream.of(request1, request2, request3),
 			new byte[0], nodeKeyPair.getPrivate());
 
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -535,10 +535,10 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if an add(Transaction) request reaches the service, it adds the transaction and sends back a result")
-	public void serviceAddTransactionWorks() throws Exception {
+	@DisplayName("if an add(Request) request reaches the service, it adds the request and sends back a result")
+	public void serviceAddRequestWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var transaction = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var request = Requests.of(new byte[] { 1, 2, 3, 4 });
 		
 		class MyTestClient extends RemotePublicNodeImpl {
 
@@ -547,20 +547,20 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onAddTransactionResult(MempoolEntry info) {
+			protected void onAddRequestResult(MempoolEntry info) {
 				semaphore.release();
 			}
 
-			private void addTransaction() {
-				sendAddTransaction(transaction, "id");
+			private void addRequest() {
+				sendAddRequest(request, "id");
 			}
 		}
 
 		var node = mkNode();
-		when(node.add(eq(transaction))).thenReturn(MempoolEntries.of(new byte[] { 1, 2, 3 }, 1000L));
+		when(node.add(eq(request))).thenReturn(MempoolEntries.of(new byte[] { 1, 2, 3 }, 1000L));
 
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.addTransaction();
+			client.addRequest();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
@@ -764,8 +764,8 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a getTransaction() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionEmptyWorks() throws Exception {
+	@DisplayName("if a getRequest() request reaches the service and there is no request with the requested hash, it sends back an empty optional")
+	public void serviceGetRequestEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -775,29 +775,29 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionResult(Optional<Request> received) {
+			protected void onGetRequestResult(Optional<Request> received) {
 				if (received.isEmpty())
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) {
-				sendGetTransaction(hash, "id");
+			private void sendGetRequest(byte[] hash) {
+				sendGetRequest(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransaction(hash)).thenReturn(Optional.empty());
+		when(node.getRequest(hash)).thenReturn(Optional.empty());
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransaction(hash);
+			client.sendGetRequest(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, it sends back that transaction")
-	public void serviceGetTransactionNonEmptyWorks() throws Exception {
+	@DisplayName("if a getRequest() request reaches the service and there is a request with the requested hash, it sends back that request")
+	public void serviceGetRequestNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var tx = Requests.of(new byte[] { 13, 1, 19, 73 });
 	
@@ -808,41 +808,41 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionResult(Optional<Request> received) {
+			protected void onGetRequestResult(Optional<Request> received) {
 				if (tx.equals(received.get()))
 					semaphore.release();
 			}
 	
-			private void sendGetTransaction(byte[] hash) {
-				sendGetTransaction(hash, "id");
+			private void sendGetRequest(byte[] hash) {
+				sendGetRequest(hash, "id");
 			}
 		}
 	
 		var hash = new byte[] { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransaction(hash)).thenReturn(Optional.of(tx));
+		when(node.getRequest(hash)).thenReturn(Optional.of(tx));
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransaction(hash);
+			client.sendGetRequest(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransaction() request reaches the service and there is a transaction with the requested hash, but the node is closed, it yields to timeout")
-	public void serviceGetTransactionClosedNodeExceptionWorks() throws Exception {
+	@DisplayName("if a getRequest() request reaches the service and there is a request with the requested hash, but the node is closed, it yields to timeout")
+	public void serviceGetRequestClosedNodeExceptionWorks() throws Exception {
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransaction(hash)).thenThrow(ClosedNodeException.class);
+		when(node.getRequest(hash)).thenThrow(ClosedNodeException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
-			assertThrows(TimeoutException.class, () -> client.getTransaction(hash));
+			assertThrows(TimeoutException.class, () -> client.getRequest(hash));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionRepresentationEmptyWorks() throws Exception {
+	@DisplayName("if a getRequestRepresentation() request reaches the service and there is no request with the requested hash, it sends back an empty optional")
+	public void serviceGetRequestRepresentationEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -852,29 +852,29 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionRepresentationResult(Optional<String> received) {
+			protected void onGetRequestRepresentationResult(Optional<String> received) {
 				if (received.isEmpty())
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) {
-				sendGetTransactionRepresentation(hash, "id");
+			private void sendGetRequestRepresentation(byte[] hash) {
+				sendGetRequestRepresentation(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.empty());
+		when(node.getRequestRepresentation(hash)).thenReturn(Optional.empty());
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionRepresentation(hash);
+			client.sendGetRequestRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, it sends back the representation of that transaction")
-	public void serviceGetTransactionRepresentationNonEmptyWorks() throws Exception {
+	@DisplayName("if a getRequestRepresentation() request reaches the service and there is a request with the requested hash, it sends back the representation of that request")
+	public void serviceGetRequestRepresentationNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var representation = "hello";
 	
@@ -885,29 +885,29 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionRepresentationResult(Optional<String> received) {
+			protected void onGetRequestRepresentationResult(Optional<String> received) {
 				if (representation.equals(received.get()))
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) {
-				sendGetTransactionRepresentation(hash, "id");
+			private void sendGetRequestRepresentation(byte[] hash) {
+				sendGetRequestRepresentation(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionRepresentation(hash)).thenReturn(Optional.of(representation));
+		when(node.getRequestRepresentation(hash)).thenReturn(Optional.of(representation));
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionRepresentation(hash);
+			client.sendGetRequestRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionRepresentation() request reaches the service and there is a transaction with the requested hash, but its representation cannot be computed, it sends back an exception")
-	public void serviceGetTransactionRepresentationRejectedTransactionWorks() throws Exception {
+	@DisplayName("if a getRequestRepresentation() request reaches the service and there is a request with the requested hash, but its request cannot be computed, it sends back an exception")
+	public void serviceGetRequestRepresentationRequestRejectedWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -922,24 +922,24 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionRepresentation(byte[] hash) {
-				sendGetTransactionRepresentation(hash, "id");
+			private void sendGetRequestRepresentation(byte[] hash) {
+				sendGetRequestRepresentation(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionRepresentation(hash)).thenThrow(RequestRejectedException.class);
+		when(node.getRequestRepresentation(hash)).thenThrow(RequestRejectedException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionRepresentation(hash);
+			client.sendGetRequestRepresentation(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionAddress() request reaches the service and there is no transaction with the requested hash, it sends back an empty optional")
-	public void serviceGetTransactionAddressEmptyWorks() throws Exception  {
+	@DisplayName("if a getRequestAddress() request reaches the service and there is no request with the requested hash, it sends back an empty optional")
+	public void serviceGetRequestAddressEmptyWorks() throws Exception  {
 		var semaphore = new Semaphore(0);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
@@ -949,31 +949,31 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionAddressResult(Optional<TransactionAddress> received) {
+			protected void onGetRequestAddressResult(Optional<RequestAddress> received) {
 				if (received.isEmpty())
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) {
-				sendGetTransactionAddress(hash, "id");
+			private void sendGetRequestAddress(byte[] hash) {
+				sendGetRequestAddress(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionAddress(hash)).thenReturn(Optional.empty());
+		when(node.getRequestAddress(hash)).thenReturn(Optional.empty());
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionAddress(hash);
+			client.sendGetRequestAddress(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionAddress() request reaches the service and there is a transaction with the requested hash, it sends back that transaction's address")
-	public void serviceGetTransactionAddressNonEmptyWorks() throws Exception {
+	@DisplayName("if a getRequestAddress() request reaches the service and there is a request with the requested hash, it sends back that request address")
+	public void serviceGetRequestAddressNonEmptyWorks() throws Exception {
 		var semaphore = new Semaphore(0);
-		var address = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
+		var address = RequestAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 	
 		class MyTestClient extends RemotePublicNodeImpl {
 	
@@ -982,35 +982,35 @@ public class PublicNodeServiceTests extends AbstractLoggedTests {
 			}
 	
 			@Override
-			protected void onGetTransactionAddressResult(Optional<TransactionAddress> received) {
+			protected void onGetRequestAddressResult(Optional<RequestAddress> received) {
 				if (address.equals(received.get()))
 					semaphore.release();
 			}
 	
-			private void sendGetTransactionAddress(byte[] hash) {
-				sendGetTransactionAddress(hash, "id");
+			private void sendGetRequestAddress(byte[] hash) {
+				sendGetRequestAddress(hash, "id");
 			}
 		}
 	
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionAddress(hash)).thenReturn(Optional.of(address));
+		when(node.getRequestAddress(hash)).thenReturn(Optional.of(address));
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = new MyTestClient()) {
-			client.sendGetTransactionAddress(hash);
+			client.sendGetRequestAddress(hash);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a getTransactionAddress() request reaches the service and the node misbehaves, it throws back an exception")
-	public void serviceGetTransactionAddressNodeExceptionWorks() throws Exception {
+	@DisplayName("if a getRequestAddress() request reaches the service and the node misbehaves, it throws back an exception")
+	public void serviceGetRequestAddressNodeExceptionWorks() throws Exception {
 		byte[] hash = { 34, 32, 76, 11 };
 		var node = mkNode();
-		when(node.getTransactionAddress(hash)).thenThrow(ClosedNodeException.class);
+		when(node.getRequestAddress(hash)).thenThrow(ClosedNodeException.class);
 	
 		try (var service = PublicNodeServices.open(node, PORT, 1800000, 1000, Optional.of(URI)); var client = RemotePublicNodes.of(URI, 2000, 240000, 1000)) {
-			assertThrows(TimeoutException.class, () -> client.getTransactionAddress(hash));
+			assertThrows(TimeoutException.class, () -> client.getRequestAddress(hash));
 		}
 	}
 }

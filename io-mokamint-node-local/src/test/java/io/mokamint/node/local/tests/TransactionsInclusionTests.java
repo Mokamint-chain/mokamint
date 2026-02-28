@@ -161,7 +161,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 				super.onAdded(block);
 
 				if (block instanceof NonGenesisBlock ngb) {
-					ngb.getTransactions().forEach(allTransactions::remove);
+					ngb.getRequests().forEach(allTransactions::remove);
 					if (allTransactions.isEmpty())
 						allIncluded.release();
 				}
@@ -215,7 +215,7 @@ public class TransactionsInclusionTests extends AbstractLoggedTests {
 
 					if (block instanceof NonGenesisBlock ngb) {
 						synchronized (this) {
-							ngb.getTransactions().forEach(getAdded()::add);
+							ngb.getRequests().forEach(getAdded()::add);
 
 							synchronized (allTransactions) {
 								if (getAdded().equals(allTransactions))

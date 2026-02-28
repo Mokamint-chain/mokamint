@@ -39,7 +39,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 
 	protected BlockJson(Block block) {
 		this.description = new BlockDescriptions.Json(block.getDescription());
-		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getTransactions().map(Request::toBase64String).toArray(String[]::new) : null;
+		this.transactions = block instanceof NonGenesisBlock ngb ? ngb.getRequests().map(Request::toBase64String).toArray(String[]::new) : null;
 		this.stateId = Hex.toHexString(block.getStateId());
 		this.signature = Hex.toHexString(block.getSignature());
 	}
@@ -56,7 +56,7 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		return signature;
 	}
 
-	public Stream<String> getTransactions() {
+	public Stream<String> getRequests() {
 		return transactions == null ? Stream.empty() : Stream.of(transactions);
 	}
 

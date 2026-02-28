@@ -219,7 +219,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	}
 
 	@Override
-	public HashingAlgorithm getHashingForTransactions() {
+	public HashingAlgorithm getHashingForRequests() {
 		return hashingForTransactions;
 	}
 
@@ -345,7 +345,7 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.hashingForDeadlines = config.getHashingForDeadlines();
 			this.hashingForGenerations = config.getHashingForGenerations();
 			this.hashingForBlocks = config.getHashingForBlocks();
-			this.hashingForTransactions = config.getHashingForTransactions();
+			this.hashingForTransactions = config.getHashingForRequests();
 			this.signatureForBlocks = config.getSignatureForBlocks();
 			this.signatureForDeadlines = config.getSignatureForDeadlines();
 			this.targetBlockCreationTime = config.getTargetBlockCreationTime();

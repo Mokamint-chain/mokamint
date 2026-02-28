@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.messages.api;
+package io.mokamint.node.internal.json;
 
-import java.util.Optional;
-
-import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.ResultMessage;
-import io.mokamint.node.api.PublicNode;
+import io.hotmoka.websockets.beans.MappedDecoder;
+import io.mokamint.node.RequestAddresses;
+import io.mokamint.node.api.RequestAddress;
 
 /**
- * The network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
+ * A decoder for {@link RequestAddress}.
  */
-@Immutable
-public interface GetTransactionRepresentationResultMessage extends ResultMessage<Optional<String>> {
+public class RequestAddressDecoder extends MappedDecoder<RequestAddress, RequestAddresses.Json> {
+
+	public RequestAddressDecoder() {
+		super(RequestAddresses.Json.class);
+	}
 }

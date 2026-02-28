@@ -62,12 +62,12 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	HashingAlgorithm getHashingForBlocks();
 
 	/**
-	 * Yields the hashing algorithm used for the identifying the transactions of
+	 * Yields the hashing algorithm used for the identifying the requests of
 	 * the Mokamint blockchain.
 	 * 
 	 * @return the hashing algorithm
 	 */
-	HashingAlgorithm getHashingForTransactions();
+	HashingAlgorithm getHashingForRequests();
 
 	/**
 	 * Yields the signature algorithm that nodes use to sign the blocks.

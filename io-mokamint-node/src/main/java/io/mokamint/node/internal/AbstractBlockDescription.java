@@ -116,7 +116,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.oblivion = config.getOblivion();
 		this.hashingForBlocks = config.getHashingForBlocks();
-		this.hashingForTransactions = config.getHashingForTransactions();
+		this.hashingForTransactions = config.getHashingForRequests();
 	}
 
 	/**
@@ -211,7 +211,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 	}
 
 	@Override
-	public final HashingAlgorithm getHashingForTransactions() {
+	public final HashingAlgorithm getHashingForRequests() {
 		return hashingForTransactions;
 	}
 
@@ -230,7 +230,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 			targetBlockCreationTime == abd.getTargetBlockCreationTime() &&
 			oblivion == abd.getOblivion() &&
 			hashingForBlocks.equals(abd.getHashingForBlocks()) &&
-			hashingForTransactions.equals(abd.getHashingForTransactions());
+			hashingForTransactions.equals(abd.getHashingForRequests());
 	}
 
 	@Override

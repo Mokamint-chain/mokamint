@@ -22,15 +22,15 @@ import java.util.Optional;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
+import io.mokamint.node.api.RequestAddress;
+import io.mokamint.node.messages.api.GetRequestAddressResultMessage;
 import io.mokamint.node.messages.internal.json.GetTransactionAddressResultMessageJson;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionAddress(byte[])} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequestAddress(byte[])} method.
  */
-public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage implements GetTransactionAddressResultMessage {
-	private final Optional<TransactionAddress> address;
+public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage implements GetRequestAddressResultMessage {
+	private final Optional<RequestAddress> address;
 
 	/**
 	 * Creates the message.
@@ -38,7 +38,7 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 	 * @param address the address of the transaction in the message, if any
 	 * @param id the identifier of the message
 	 */
-	public GetTransactionAddressResultMessageImpl(Optional<TransactionAddress> address, String id) {
+	public GetTransactionAddressResultMessageImpl(Optional<RequestAddress> address, String id) {
 		super(id);
 
 		this.address = Objects.requireNonNull(address, "address cannot be null");
@@ -59,17 +59,17 @@ public class GetTransactionAddressResultMessageImpl extends AbstractRpcMessage i
 	}
 
 	@Override
-	public Optional<TransactionAddress> get() {
+	public Optional<RequestAddress> get() {
 		return address;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetTransactionAddressResultMessage gtarm && super.equals(other) && address.equals(gtarm.get());
+		return other instanceof GetRequestAddressResultMessage gtarm && super.equals(other) && address.equals(gtarm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionAddressResultMessage.class.getName();
+		return GetRequestAddressResultMessage.class.getName();
 	}
 }

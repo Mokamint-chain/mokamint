@@ -19,17 +19,17 @@ package io.mokamint.node.internal.json;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
-import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.internal.TransactionAddressImpl;
+import io.mokamint.node.api.RequestAddress;
+import io.mokamint.node.internal.RequestAddressImpl;
 
 /**
- * The JSON representation of a {@link TransactionAddress}.
+ * The JSON representation of a {@link RequestAddress}.
  */
-public abstract class TransactionAddressJson implements JsonRepresentation<TransactionAddress> {
+public abstract class RequestAddressJson implements JsonRepresentation<RequestAddress> {
 	private final String blockHash;
 	private final int progressive;
 
-	protected TransactionAddressJson(TransactionAddress address) {
+	protected RequestAddressJson(RequestAddress address) {
 		this.blockHash = Hex.toHexString(address.getBlockHash());
 		this.progressive = address.getProgressive();
 	}
@@ -43,7 +43,7 @@ public abstract class TransactionAddressJson implements JsonRepresentation<Trans
 	}
 
 	@Override
-	public TransactionAddress unmap() throws InconsistentJsonException {
-		return new TransactionAddressImpl(this);
+	public RequestAddress unmap() throws InconsistentJsonException {
+		return new RequestAddressImpl(this);
 	}
 }

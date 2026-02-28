@@ -20,32 +20,33 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionRepresentationResultMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionRepresentationResultMessageJson;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.messages.api.GetRequestResultMessage;
+import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
+import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
 
 /**
- * A provider of {@link GetTransactionRepresentationResultMessage}.
+ * A provider of {@link GetRequestResultMessage}.
  */
-public final class GetTransactionRepresentationResultMessages {
+public final class GetRequestResultMessages {
 
-	private GetTransactionRepresentationResultMessages() {}
+	private GetRequestResultMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionRepresentationResultMessage}.
+	 * Yields a {@link GetRequestResultMessage}.
 	 * 
-	 * @param representation the representation of the transaction in the result, if any
+	 * @param transaction the transaction in the result, if any
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionRepresentationResultMessage of(Optional<String> representation, String id) {
-		return new GetTransactionRepresentationResultMessageImpl(representation, id);
+	public static GetRequestResultMessage of(Optional<Request> transaction, String id) {
+		return new GetTransactionResultMessageImpl(transaction, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionRepresentationResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -58,7 +59,7 @@ public final class GetTransactionRepresentationResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionRepresentationResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -71,14 +72,14 @@ public final class GetTransactionRepresentationResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionRepresentationResultMessageJson {
+    public static class Json extends GetTransactionResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionRepresentationResultMessage message) {
+    	public Json(GetRequestResultMessage message) {
     		super(message);
     	}
     }

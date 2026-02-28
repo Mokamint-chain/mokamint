@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.internal.json;
+package io.mokamint.node.messages.api;
 
-import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.PublicNode;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.ResultMessage;
+import io.mokamint.node.api.MempoolEntry;
 
 /**
- * An encoder for a {@link TransactionAddress}.
+ * The network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method of a node.
  */
-public class TransactionAddressEncoder extends MappedEncoder<TransactionAddress, TransactionAddresses.Json> {
-
-	public TransactionAddressEncoder() {
-		super(TransactionAddresses.Json::new);
-	}
+@Immutable
+public interface AddRequestResultMessage extends ResultMessage<MempoolEntry> {
 }

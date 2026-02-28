@@ -22,13 +22,13 @@ import java.util.Optional;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
+import io.mokamint.node.messages.api.GetRequestRepresentationResultMessage;
 import io.mokamint.node.messages.internal.json.GetTransactionRepresentationResultMessageJson;
 
 /**
- * Implementation of the network message corresponding to the result of the {@link PublicNode#getTransactionRepresentation(byte[])} method.
+ * Implementation of the network message corresponding to the result of the {@link PublicNode#getRequestRepresentation(byte[])} method.
  */
-public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMessage implements GetTransactionRepresentationResultMessage {
+public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMessage implements GetRequestRepresentationResultMessage {
 	private final Optional<String> representation;
 
 	/**
@@ -62,11 +62,11 @@ public class GetTransactionRepresentationResultMessageImpl extends AbstractRpcMe
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof GetTransactionRepresentationResultMessage gtrrm && super.equals(other) && Objects.equals(representation, gtrrm.get());
+		return other instanceof GetRequestRepresentationResultMessage gtrrm && super.equals(other) && Objects.equals(representation, gtrrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionRepresentationResultMessage.class.getName();
+		return GetRequestRepresentationResultMessage.class.getName();
 	}
 }

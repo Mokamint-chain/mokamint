@@ -19,21 +19,21 @@ package io.mokamint.node.api;
 import io.hotmoka.annotations.Immutable;
 
 /**
- * The address of a transaction inside a blockchain
- * (block hash and position inside the table of the transactions of that block).
+ * The address of a request inside a blockchain
+ * (block hash and position inside the table of the requests of that block).
  */
 @Immutable
-public interface TransactionAddress {
+public interface RequestAddress {
 
 	/**
-	 * Yields the hash of the block containing the transaction.
+	 * Yields the hash of the block containing the request.
 	 * 
-	 * @return the hash of the block containing the transaction
+	 * @return the hash of the block containing the request
 	 */
 	byte[] getBlockHash();
 
 	/**
-	 * Yields the progressive number of the transaction inside the table of the transactions inside the block.
+	 * Yields the progressive number of the request inside the table of the requests inside the block.
 	 *                    
 	 * @return the progressive number
 	 */

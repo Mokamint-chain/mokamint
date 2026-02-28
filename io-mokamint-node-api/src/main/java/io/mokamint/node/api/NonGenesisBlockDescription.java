@@ -22,7 +22,7 @@ import io.mokamint.nonce.api.Deadline;
 
 /**
  * The description of a non-genesis block of the Mokamint blockchain.
- * This is the header of a block, missing signature and transactions
+ * This is the header of a block, missing signature and requests
  * wrt an actual block.
  */
 @Immutable
@@ -43,9 +43,9 @@ public interface NonGenesisBlockDescription extends BlockDescription {
 	byte[] getHashOfPreviousBlock();
 
 	/**
-	 * Yields the hashing algorithm used for the transactions in the blocks.
+	 * Yields the hashing algorithm used for the requests in the blocks.
 	 * 
-	 * @return the hashing algorithm used for the transactions in the blocks
+	 * @return the hashing algorithm used for the requests in the blocks
 	 */
-	HashingAlgorithm getHashingForTransactions();
+	HashingAlgorithm getHashingForRequests();
 }

@@ -24,13 +24,13 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.Requests;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.WhisperTransactionMessage;
+import io.mokamint.node.messages.api.WhisperRequestMessage;
 import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
 
 /**
  * Implementation of the network message sent to whisper a transaction between whisperers.
  */
-public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements WhisperTransactionMessage {
+public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements WhisperRequestMessage {
 
 	/**
 	 * The whispered transaction.
@@ -77,11 +77,11 @@ public class WhisperTransactionMessageImpl extends AbstractRpcMessage implements
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof WhisperTransactionMessage wtm && super.equals(other) && transaction.equals(wtm.getWhispered());
+		return other instanceof WhisperRequestMessage wtm && super.equals(other) && transaction.equals(wtm.getWhispered());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return WhisperTransactionMessage.class.getName();
+		return WhisperRequestMessage.class.getName();
 	}
 }

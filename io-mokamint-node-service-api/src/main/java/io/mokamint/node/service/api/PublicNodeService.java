@@ -84,24 +84,24 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String GET_MEMPOOL_PORTION_ENDPOINT = "/get_mempool_portion";
 
 	/**
-	 * The network endpoint path where {@link PublicNode#getTransaction(byte[])} is published.
+	 * The network endpoint path where {@link PublicNode#getRequest(byte[])} is published.
 	 */
-	String GET_TRANSACTION_ENDPOINT = "/get_transaction";
+	String GET_REQUEST_ENDPOINT = "/get_request";
 
 	/**
-	 * The network endpoint path where {@link PublicNode#getTransactionRepresentation(byte[])} is published.
+	 * The network endpoint path where {@link PublicNode#getRequestRepresentation(byte[])} is published.
 	 */
-	String GET_TRANSACTION_REPRESENTATION_ENDPOINT = "/get_transaction_representation";
+	String GET_REQUEST_REPRESENTATION_ENDPOINT = "/get_request_representation";
 
 	/**
-	 * The network endpoint path where {@link PublicNode#getTransactionAddress(byte[])} is published.
+	 * The network endpoint path where {@link PublicNode#getRequestAddress(byte[])} is published.
 	 */
-	String GET_TRANSACTION_ADDRESS_ENDPOINT = "/get_transaction_address";
+	String GET_REQUEST_ADDRESS_ENDPOINT = "/get_request_address";
 
 	/**
-	 * The network endpoint path where {@link PublicNode#add(io.mokamint.node.api.Transaction)} is published.
+	 * The network endpoint path where {@link PublicNode#add(io.mokamint.node.api.Request)} is published.
 	 */
-	String ADD_TRANSACTION_ENDPOINT = "/add_transaction";
+	String ADD_REQUEST_ENDPOINT = "/add_request";
 
 	/**
 	 * The network endpoint path used to whisper a peer between a public node service
@@ -116,10 +116,10 @@ public interface PublicNodeService extends WebSocketServer, Whisperer {
 	String WHISPER_BLOCK_ENDPOINT = "/whisper_block";
 
 	/**
-	 * The network endpoint path used to whisper a transaction between a public node service
+	 * The network endpoint path used to whisper a request between a public node service
 	 * and its connected remotes.
 	 */
-	String WHISPER_TRANSACTION_ENDPOINT = "/whisper_transaction";
+	String WHISPER_REQUEST_ENDPOINT = "/whisper_request";
 
 	/**
 	 * Yields the URI under which this service is seen from the outside, if this

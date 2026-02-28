@@ -21,16 +21,16 @@ import java.util.Optional;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.GetTransactionResultMessage;
+import io.mokamint.node.messages.api.GetRequestResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
 
 /**
- * The JSON representation of a {@link GetTransactionResultMessage}.
+ * The JSON representation of a {@link GetRequestResultMessage}.
  */
-public abstract class GetTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetTransactionResultMessage> {
+public abstract class GetTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestResultMessage> {
 	private final String transaction;
 
-	protected GetTransactionResultMessageJson(GetTransactionResultMessage message) {
+	protected GetTransactionResultMessageJson(GetRequestResultMessage message) {
 		super(message);
 
 		this.transaction = message.get().map(Request::toBase64String).orElse(null);
@@ -41,12 +41,12 @@ public abstract class GetTransactionResultMessageJson extends AbstractRpcMessage
 	}
 
 	@Override
-	public GetTransactionResultMessage unmap() throws InconsistentJsonException {
+	public GetRequestResultMessage unmap() throws InconsistentJsonException {
 		return new GetTransactionResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionResultMessage.class.getName();
+		return GetRequestResultMessage.class.getName();
 	}
 }

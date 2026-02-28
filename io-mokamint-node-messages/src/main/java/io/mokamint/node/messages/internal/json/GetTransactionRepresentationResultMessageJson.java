@@ -19,16 +19,16 @@ package io.mokamint.node.messages.internal.json;
 import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
-import io.mokamint.node.messages.api.GetTransactionRepresentationResultMessage;
+import io.mokamint.node.messages.api.GetRequestRepresentationResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionRepresentationResultMessageImpl;
 
 /**
- * The JSON representation of a {@link GetTransactionRepresentationResultMessage}.
+ * The JSON representation of a {@link GetRequestRepresentationResultMessage}.
  */
-public abstract class GetTransactionRepresentationResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetTransactionRepresentationResultMessage> {
+public abstract class GetTransactionRepresentationResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestRepresentationResultMessage> {
 	private final String representation;
 
-	protected GetTransactionRepresentationResultMessageJson(GetTransactionRepresentationResultMessage message) {
+	protected GetTransactionRepresentationResultMessageJson(GetRequestRepresentationResultMessage message) {
 		super(message);
 
 		this.representation = message.get().orElse(null);
@@ -39,12 +39,12 @@ public abstract class GetTransactionRepresentationResultMessageJson extends Abst
 	}
 
 	@Override
-	public GetTransactionRepresentationResultMessage unmap() {
+	public GetRequestRepresentationResultMessage unmap() {
 		return new GetTransactionRepresentationResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionRepresentationResultMessage.class.getName();
+		return GetRequestRepresentationResultMessage.class.getName();
 	}
 }

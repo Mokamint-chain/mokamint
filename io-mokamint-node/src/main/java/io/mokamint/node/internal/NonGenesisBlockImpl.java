@@ -43,23 +43,23 @@ import io.mokamint.node.internal.json.BlockJson;
 public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBlockDescription, NonGenesisBlockImpl> implements NonGenesisBlock {
 
 	/**
-	 * The transactions inside this block.
+	 * The requests inside this block.
 	 */
-	private final Request[] transactions;
+	private final Request[] requests;
 
 	/**
 	 * Creates a new non-genesis block with the given description. It adds a signature to the resulting block,
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
-	 * @param transactions the transactions in the block
+	 * @param requests the requests in the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Request> transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		this(description, transactions.map(Objects::requireNonNull).toArray(Request[]::new), stateId, privateKey);
+	public NonGenesisBlockImpl(NonGenesisBlockDescription description, Stream<Request> requests, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		this(description, requests.map(Objects::requireNonNull).toArray(Request[]::new), stateId, privateKey);
 	}
 
 	/**
@@ -67,17 +67,17 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * by using the signature algorithm in the prolog of the deadline and the given private key.
 	 * 
 	 * @param description the description
-	 * @param transactions the transactions in the block
+	 * @param requests the requests in the block
 	 * @param stateId the identifier of the state of the application at the end of this block
 	 * @param privateKey the private key for signing the block
 	 * @throws SignatureException if the signature of the block failed
 	 * @throws InvalidKeyException if the private key is invalid
 	 */
-	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Request[] transactions, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
-		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(transactions));
+	private NonGenesisBlockImpl(NonGenesisBlockDescription description, Request[] requests, byte[] stateId, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
+		super(description, stateId, privateKey, block -> block.toByteArrayWithoutSignature(requests));
 	
-		this.transactions = transactions;
-		ensureTransactionsAreNotRepeated();
+		this.requests = requests;
+		ensureRequestsAreNotRepeated();
 	}
 
 	/**
@@ -90,23 +90,23 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, BlockJson json) throws InconsistentJsonException {
 		super(description, json);
 
-		var txs = json.getTransactions();
-		if (txs == null)
-			throw new InconsistentJsonException("transactions cannot be null");
+		var reqs = json.getRequests();
+		if (reqs == null)
+			throw new InconsistentJsonException("requests cannot be null");
 
-		var txsAsArray = txs.toArray(String[]::new);
+		var reqsAsArray = reqs.toArray(String[]::new);
 
-		this.transactions = new Request[txsAsArray.length];
-		for (int pos = 0; pos < txsAsArray.length; pos++) {
-			String txBase64 = txsAsArray[pos];
-			if (txBase64 == null)
-				throw new InconsistentJsonException("transactions cannot hold a null element");
+		this.requests = new Request[reqsAsArray.length];
+		for (int pos = 0; pos < reqsAsArray.length; pos++) {
+			String reqBase64 = reqsAsArray[pos];
+			if (reqBase64 == null)
+				throw new InconsistentJsonException("requests cannot hold a null element");
 
-			transactions[pos] = Requests.of(Base64.fromBase64String(txBase64, InconsistentJsonException::new));
+			requests[pos] = Requests.of(Base64.fromBase64String(reqBase64, InconsistentJsonException::new));
 		}
 		
 		try {
-			ensureTransactionsAreNotRepeated();
+			ensureRequestsAreNotRepeated();
 		}
 		catch (IllegalArgumentException e) {
 			throw new InconsistentJsonException(e);
@@ -124,21 +124,21 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	protected NonGenesisBlockImpl(NonGenesisBlockDescription description, UnmarshallingContext context) throws IOException {
 		super(description, context);
 
-		this.transactions = context.readLengthAndArray(Requests::from, Request[]::new);;
+		this.requests = context.readLengthAndArray(Requests::from, Request[]::new);;
 
 		try {
-			ensureTransactionsAreNotRepeated();
+			ensureRequestsAreNotRepeated();
 		}
 		catch (IllegalArgumentException e) {
 			throw new IOException(e);
 		}
 	}
 
-	private void ensureTransactionsAreNotRepeated() throws IllegalArgumentException {
-		var transactions = Stream.of(this.transactions).sorted().toArray(Request[]::new);
-		for (int pos = 0; pos < transactions.length - 1; pos++)
-			if (transactions[pos].equals(transactions[pos + 1]))
-				throw new IllegalArgumentException("Repeated transaction");
+	private void ensureRequestsAreNotRepeated() throws IllegalArgumentException {
+		var requests = Stream.of(this.requests).sorted().toArray(Request[]::new);
+		for (int pos = 0; pos < requests.length - 1; pos++)
+			if (requests[pos].equals(requests[pos + 1]))
+				throw new IllegalArgumentException("Repeated request");
 
 	}
 
@@ -148,45 +148,45 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	}
 
 	@Override
-	public Stream<Request> getTransactions() {
-		return Stream.of(transactions);
+	public Stream<Request> getRequests() {
+		return Stream.of(requests);
 	}
 
 	@Override
-	public int getTransactionsCount() {
-		return transactions.length;
+	public int getRequestsCount() {
+		return requests.length;
 	}
 
 	@Override
-	public Request getTransaction(int progressive) {
-		if (progressive < 0 || progressive >= transactions.length)
+	public Request getRequest(int progressive) {
+		if (progressive < 0 || progressive >= requests.length)
 			throw new IndexOutOfBoundsException(progressive);
 
-		return transactions[progressive];
+		return requests[progressive];
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		return other instanceof NonGenesisBlock ongb && super.equals(other)
-			&& Arrays.equals(transactions, other instanceof NonGenesisBlockImpl ongbi ? ongbi.transactions : ongb.getTransactions().toArray(Request[]::new)); // optimization
+			&& Arrays.equals(requests, other instanceof NonGenesisBlockImpl ongbi ? ongbi.requests : ongb.getRequests().toArray(Request[]::new)); // optimization
 	}
 
 	@Override
 	public void into(MarshallingContext context) throws IOException {
 		super.into(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(requests);
 	}
 
 	@Override
 	public void intoWithoutConfigurationData(MarshallingContext context) throws IOException {
 		super.intoWithoutConfigurationData(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(requests);
 	}
 
 	@Override
 	protected void intoWithoutSignature(MarshallingContext context) throws IOException {
 		super.intoWithoutSignature(context);
-		context.writeLengthAndArray(transactions);
+		context.writeLengthAndArray(requests);
 	}
 
 	@Override
@@ -194,17 +194,17 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		super.populate(builder);
 		builder.append("\n");
 	
-		if (transactions.length == 0)
+		if (requests.length == 0)
 			builder.append("* 0 transactions");
-		else if (transactions.length == 1)
+		else if (requests.length == 1)
 			builder.append("* 1 transaction:");
 		else
-			builder.append("* " + transactions.length + " transactions:");
+			builder.append("* " + requests.length + " transactions:");
 	
 		int n = 0;
-		var hashingForTransactions = getDescription().getHashingForTransactions();
+		var hashingForTransactions = getDescription().getHashingForRequests();
 	
-		for (var transaction: transactions)
+		for (var transaction: requests)
 			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hashingForTransactions) + " (" + hashingForTransactions + ")");
 	}
 

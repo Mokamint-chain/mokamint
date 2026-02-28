@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,21 +16,15 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import java.util.Optional;
+
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.hotmoka.websockets.beans.api.ResultMessage;
 import io.mokamint.node.api.PublicNode;
-import io.mokamint.node.api.Request;
 
 /**
- * The network message corresponding to the {@link PublicNode#add(io.mokamint.node.api.Request)} method.
+ * The network message corresponding to the result of the {@link PublicNode#getRequestRepresentation(byte[])} method.
  */
 @Immutable
-public interface AddTransactionMessage extends RpcMessage {
-
-	/**
-	 * Yields the transaction parameter of the method.
-	 * 
-	 * @return the parameter
-	 */
-	Request getTransaction();
+public interface GetRequestRepresentationResultMessage extends ResultMessage<Optional<String>> {
 }

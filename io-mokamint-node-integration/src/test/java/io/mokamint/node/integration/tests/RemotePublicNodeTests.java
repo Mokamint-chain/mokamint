@@ -66,7 +66,7 @@ import io.mokamint.node.NodeInfos;
 import io.mokamint.node.PeerInfos;
 import io.mokamint.node.Peers;
 import io.mokamint.node.TaskInfos;
-import io.mokamint.node.TransactionAddresses;
+import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.Requests;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.ClosedNodeException;
@@ -76,7 +76,7 @@ import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.Request;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.Whisperer;
-import io.mokamint.node.messages.AddTransactionResultMessages;
+import io.mokamint.node.messages.AddRequestResultMessages;
 import io.mokamint.node.messages.GetBlockDescriptionResultMessages;
 import io.mokamint.node.messages.GetBlockResultMessages;
 import io.mokamint.node.messages.GetChainInfoResultMessages;
@@ -88,12 +88,12 @@ import io.mokamint.node.messages.GetMempoolPortionResultMessages;
 import io.mokamint.node.messages.GetMinerInfosResultMessages;
 import io.mokamint.node.messages.GetPeerInfosResultMessages;
 import io.mokamint.node.messages.GetTaskInfosResultMessages;
-import io.mokamint.node.messages.GetTransactionAddressResultMessages;
-import io.mokamint.node.messages.GetTransactionRepresentationResultMessages;
-import io.mokamint.node.messages.GetTransactionResultMessages;
+import io.mokamint.node.messages.GetRequestAddressResultMessages;
+import io.mokamint.node.messages.GetRequestRepresentationResultMessages;
+import io.mokamint.node.messages.GetRequestResultMessages;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
-import io.mokamint.node.messages.api.AddTransactionMessage;
+import io.mokamint.node.messages.api.AddRequestMessage;
 import io.mokamint.node.messages.api.GetBlockDescriptionMessage;
 import io.mokamint.node.messages.api.GetBlockMessage;
 import io.mokamint.node.messages.api.GetChainInfoMessage;
@@ -437,11 +437,11 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		var plotKeyPair = ed25519.getKeyPair();
 		var prolog = Prologs.of("octopus", ed25519, nodeKeyPair.getPublic(), ed25519, plotKeyPair.getPublic(), new byte[0]);
 		var deadline = Deadlines.of(prolog, 13, value, Challenges.of(11, generationSignature, hashingForDeadlines, hashingForGenerations));
-		var transaction1 = Requests.of(new byte[] { 13, 17, 23, 31 });
-		var transaction2 = Requests.of(new byte[] { 5, 6, 7 });
-		var transaction3 = Requests.of(new byte[] {});
+		var request1 = Requests.of(new byte[] { 13, 17, 23, 31 });
+		var request2 = Requests.of(new byte[] { 5, 6, 7 });
+		var request3 = Requests.of(new byte[] {});
 		var block1 = Blocks.of(BlockDescriptions.of(13, BigInteger.TEN, 1234L, 1100L, BigInteger.valueOf(13011973), deadline, hashingOfPreviousBlock, 4000, 20000, hashingForBlocks, HashingAlgorithms.sha256()),
-			Stream.of(transaction1, transaction2, transaction3),
+			Stream.of(request1, request2, request3),
 			new byte[0], nodeKeyPair.getPrivate());
 		var hash = new byte[] { 67, 56, 43 };
 
@@ -673,25 +673,25 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("add(Transaction) works")
-	public void addTransactionWorks() throws Exception {
-		var transaction1 = Requests.of(new byte[] { 1, 2, 3, 4 });
-		var transaction2 = new AtomicReference<Request>();
+	@DisplayName("add(Request) works")
+	public void addRequestWorks() throws Exception {
+		var request1 = Requests.of(new byte[] { 1, 2, 3, 4 });
+		var request2 = new AtomicReference<Request>();
 
 		class MyServer extends PublicTestServer {
 
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 
 			@Override
-			protected void onAddTransaction(AddTransactionMessage message, Session session) {
-				transaction2.set(message.getTransaction());
-				sendObjectAsync(session, AddTransactionResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()), RuntimeException::new);
+			protected void onAddTransaction(AddRequestMessage message, Session session) {
+				request2.set(message.getRequest());
+				sendObjectAsync(session, AddRequestResultMessages.of(MempoolEntries.of(new byte[] { 1 , 2 }, 13L), message.getId()), RuntimeException::new);
 			}
 		};
 
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			remote.add(transaction1);
-			assertEquals(transaction1, transaction2.get());
+			remote.add(request1);
+			assertEquals(request1, request2.get());
 		}
 	}
 
@@ -706,7 +706,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			private MyServer() throws NoSuchAlgorithmException, FailedDeploymentException, InterruptedException, TimeoutException {}
 
 			@Override
-			protected void onAddTransaction(AddTransactionMessage message, Session session) {
+			protected void onAddTransaction(AddRequestMessage message, Session session) {
 				sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
 		};
@@ -846,12 +846,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionResultMessages.of(Optional.of(tx1), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestResultMessages.of(Optional.of(tx1), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var tx2 = remote.getTransaction(hash);
+			var tx2 = remote.getRequest(hash);
 			assertEquals(tx1, tx2.get());
 		}
 	}
@@ -868,12 +868,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransaction(GetTransactionMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var tx = remote.getTransaction(hash);
+			var tx = remote.getRequest(hash);
 			assertTrue(tx.isEmpty());
 		}
 	}
@@ -891,12 +891,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.of(representation1), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.of(representation1), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var representation2 = remote.getTransactionRepresentation(hash);
+			var representation2 = remote.getRequestRepresentation(hash);
 			assertEquals(representation1, representation2.get());
 		}
 	}
@@ -913,12 +913,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionRepresentation(GetTransactionRepresentationMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionRepresentationResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestRepresentationResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var representation = remote.getTransactionRepresentation(hash);
+			var representation = remote.getRequestRepresentation(hash);
 			assertTrue(representation.isEmpty());
 		}
 	}
@@ -941,7 +941,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var exception = assertThrows(RequestRejectedException.class, () -> remote.getTransactionRepresentation(hash));
+			var exception = assertThrows(RequestRejectedException.class, () -> remote.getRequestRepresentation(hash));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}
@@ -949,7 +949,7 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("getTransactionAddress() works if the transaction exists")
 	public void getTransactionAddressWorksIfTransactionExists() throws Exception {
-		var address1 = TransactionAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
+		var address1 = RequestAddresses.of(new byte[] { 13, 1, 19, 73 }, 42);
 		byte[] hash = { 67, 56, 43 };
 	
 		class MyServer extends PublicTestServer {
@@ -959,12 +959,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.of(address1), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.of(address1), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var address2 = remote.getTransactionAddress(hash);
+			var address2 = remote.getRequestAddress(hash);
 			assertEquals(address1, address2.get());
 		}
 	}
@@ -981,12 +981,12 @@ public class RemotePublicNodeTests extends AbstractLoggedTests {
 			@Override
 			protected void onGetTransactionAddress(GetTransactionAddressMessage message, Session session) {
 				if (Arrays.equals(message.getHash(), hash))
-					sendObjectAsync(session, GetTransactionAddressResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
+					sendObjectAsync(session, GetRequestAddressResultMessages.of(Optional.empty(), message.getId()), RuntimeException::new);
 			}
 		};
 	
 		try (var service = new MyServer(); var remote = RemotePublicNodes.of(URI, TIME_OUT)) {
-			var address = remote.getTransactionAddress(hash);
+			var address = remote.getRequestAddress(hash);
 			assertTrue(address.isEmpty());
 		}
 	}

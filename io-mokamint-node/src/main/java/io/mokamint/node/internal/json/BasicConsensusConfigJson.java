@@ -43,7 +43,7 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		this.hashingForDeadlines = config.getHashingForDeadlines().getName();
 		this.hashingForGenerations = config.getHashingForGenerations().getName();
 		this.hashingForBlocks = config.getHashingForBlocks().getName();
-		this.hashingForTransactions = config.getHashingForTransactions().getName();
+		this.hashingForTransactions = config.getHashingForRequests().getName();
 		this.signatureForBlocks = config.getSignatureForBlocks().getName();
 		this.signatureForDeadlines = config.getSignatureForDeadlines().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();

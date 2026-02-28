@@ -82,7 +82,7 @@ import io.mokamint.node.api.PeerRejectedException;
 import io.mokamint.node.api.PortionRejectedException;
 import io.mokamint.node.api.TaskInfo;
 import io.mokamint.node.api.Request;
-import io.mokamint.node.api.TransactionAddress;
+import io.mokamint.node.api.RequestAddress;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.api.WhisperMessage;
 import io.mokamint.node.api.Whisperable;
@@ -95,10 +95,10 @@ import io.mokamint.node.local.api.LocalNodeConfig;
 import io.mokamint.node.local.internal.Mempool.TransactionEntry;
 import io.mokamint.node.messages.WhisperBlockMessages;
 import io.mokamint.node.messages.WhisperPeerMessages;
-import io.mokamint.node.messages.WhisperTransactionMessages;
+import io.mokamint.node.messages.WhisperRequestMessages;
 import io.mokamint.node.messages.api.WhisperBlockMessage;
 import io.mokamint.node.messages.api.WhisperPeerMessage;
-import io.mokamint.node.messages.api.WhisperTransactionMessage;
+import io.mokamint.node.messages.api.WhisperRequestMessage;
 import io.mokamint.node.service.api.PublicNodeService;
 import io.mokamint.nonce.api.Deadline;
 
@@ -212,7 +212,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	/**
 	 * The queue of the whispered transactions to process.
 	 */
-	private final BlockingQueue<WhisperedInfo<WhisperTransactionMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
+	private final BlockingQueue<WhisperedInfo<WhisperRequestMessage>> whisperedTransactionsQueue = new ArrayBlockingQueue<>(1000);
 
 	/**
 	 * The queue of blocks to publish.
@@ -424,7 +424,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 				whisperedPeersQueue.offer(new WhisperedInfo<>(wpm, seen, description, true));
 			else if (message instanceof WhisperBlockMessage wbm && alreadyWhispered.add(message.getWhispered()))
 				whisperedBlocksQueue.offer(new WhisperedInfo<>(wbm, seen, description, true));
-			else if (message instanceof WhisperTransactionMessage wtm && alreadyWhispered.add(message.getWhispered()))
+			else if (message instanceof WhisperRequestMessage wtm && alreadyWhispered.add(message.getWhispered()))
 				whisperedTransactionsQueue.offer(new WhisperedInfo<>(wtm, seen, description, true));
 	}
 
@@ -546,7 +546,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<Request> getTransaction(byte[] hash) throws ClosedNodeException {
+	public Optional<Request> getRequest(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			try {
 				return blockchain.getTransaction(hash);
@@ -558,7 +558,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<String> getTransactionRepresentation(byte[] hash) throws RequestRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
+	public Optional<String> getRequestRepresentation(byte[] hash) throws RequestRejectedException, ClosedNodeException, TimeoutException, InterruptedException {
 		try (var scope = mkScope()) {
 			Optional<Request> maybeTransaction = blockchain.getTransaction(hash);
 			if (maybeTransaction.isEmpty())
@@ -575,7 +575,7 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	}
 
 	@Override
-	public Optional<TransactionAddress> getTransactionAddress(byte[] hash) throws ClosedNodeException {
+	public Optional<RequestAddress> getRequestAddress(byte[] hash) throws ClosedNodeException {
 		try (var scope = mkScope()) {
 			try {
 				return blockchain.getTransactionAddress(hash);
@@ -903,8 +903,8 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 */
 	private void whisperWithoutAddition(Request transaction) {
 		if (alreadyWhispered.add(transaction)) {
-			var whisperTransactionMessage = WhisperTransactionMessages.of(transaction, UUID.randomUUID().toString());
-			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(config.getHashingForTransactions()), false));
+			var whisperTransactionMessage = WhisperRequestMessages.of(transaction, UUID.randomUUID().toString());
+			whisperedTransactionsQueue.offer(new WhisperedInfo<>(whisperTransactionMessage, isThis, "transaction " + transaction.getHexHash(config.getHashingForRequests()), false));
 		}
 	}
 

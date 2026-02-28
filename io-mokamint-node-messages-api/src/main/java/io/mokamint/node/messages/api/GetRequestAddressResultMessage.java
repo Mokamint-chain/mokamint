@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@ limitations under the License.
 
 package io.mokamint.node.messages.api;
 
+import java.util.Optional;
+
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.websockets.beans.api.RpcMessage;
-import io.mokamint.node.api.Request;
-import io.mokamint.node.api.WhisperMessage;
+import io.hotmoka.websockets.beans.api.ResultMessage;
+import io.mokamint.node.api.PublicNode;
+import io.mokamint.node.api.RequestAddress;
 
 /**
- * The network message sent to whisper a transaction between whisperers.
+ * The network message corresponding to the result of the {@link PublicNode#getRequestAddress(byte[])} method.
  */
 @Immutable
-public interface WhisperTransactionMessage extends RpcMessage, WhisperMessage<Request> {
+public interface GetRequestAddressResultMessage extends ResultMessage<Optional<RequestAddress>> {
 }

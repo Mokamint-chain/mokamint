@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,32 +18,33 @@ package io.mokamint.node.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.messages.api.GetTransactionAddressMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressMessageJson;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.messages.api.WhisperRequestMessage;
+import io.mokamint.node.messages.internal.WhisperTransactionMessageImpl;
+import io.mokamint.node.messages.internal.json.WhisperTransactionMessageJson;
 
 /**
- * A provider of {@link GetTransactionAddressMessage}.
+ * A provider of {@link WhisperRequestMessage}.
  */
-public final class GetTransactionAddressMessages {
+public final class WhisperRequestMessages {
 
-	private GetTransactionAddressMessages() {}
+	private WhisperRequestMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionAddressMessage}.
+	 * Yields a {@link WhisperRequestMessage}.
 	 * 
-	 * @param hash the {@code hash} parameter of the message
+	 * @param transaction the whispered transaction
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionAddressMessage of(byte[] hash, String id) {
-		return new GetTransactionAddressMessageImpl(hash, id);
+	public static WhisperRequestMessage of(Request transaction, String id) {
+		return new WhisperTransactionMessageImpl(transaction, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionAddressMessage, Json> {
+	public static class Encoder extends MappedEncoder<WhisperRequestMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -56,7 +57,7 @@ public final class GetTransactionAddressMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionAddressMessage, Json> {
+	public static class Decoder extends MappedDecoder<WhisperRequestMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -69,14 +70,14 @@ public final class GetTransactionAddressMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionAddressMessageJson {
+    public static class Json extends WhisperTransactionMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionAddressMessage message) {
+    	public Json(WhisperRequestMessage message) {
     		super(message);
     	}
     }

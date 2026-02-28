@@ -28,7 +28,7 @@ import io.mokamint.node.messages.api.GetTransactionMessage;
 import io.mokamint.node.messages.internal.json.GetTransactionMessageJson;
 
 /**
- * Implementation of the network message corresponding to the {@link PublicNode#getTransaction(byte[])} method of a node.
+ * Implementation of the network message corresponding to the {@link PublicNode#getRequest(byte[])} method of a node.
  */
 public class GetTransactionMessageImpl extends AbstractRpcMessage implements GetTransactionMessage {
 	private final byte[] hash;

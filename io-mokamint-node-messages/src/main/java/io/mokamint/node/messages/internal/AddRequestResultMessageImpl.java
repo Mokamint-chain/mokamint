@@ -22,13 +22,13 @@ import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.messages.api.AddTransactionResultMessage;
-import io.mokamint.node.messages.internal.json.AddTransactionResultMessageJson;
+import io.mokamint.node.messages.api.AddRequestResultMessage;
+import io.mokamint.node.messages.internal.json.AddRequestResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the {@link PublicNode#add(io.mokamint.node.api.Transaction)} method.
  */
-public class AddTransactionResultMessageImpl extends AbstractRpcMessage implements AddTransactionResultMessage {
+public class AddRequestResultMessageImpl extends AbstractRpcMessage implements AddRequestResultMessage {
 
 	/**
 	 * The result of the call.
@@ -41,7 +41,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param result the result of the call
 	 * @param id the identifier of the message
 	 */
-	public AddTransactionResultMessageImpl(MempoolEntry result, String id) {
+	public AddRequestResultMessageImpl(MempoolEntry result, String id) {
 		super(id);
 
 		this.result = Objects.requireNonNull(result, "result cannot be null");
@@ -53,7 +53,7 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public AddTransactionResultMessageImpl(AddTransactionResultMessageJson json) throws InconsistentJsonException {
+	public AddRequestResultMessageImpl(AddRequestResultMessageJson json) throws InconsistentJsonException {
 		super(json.getId());
 
 		var result = json.getResult();
@@ -65,12 +65,12 @@ public class AddTransactionResultMessageImpl extends AbstractRpcMessage implemen
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof AddTransactionResultMessage atrm && super.equals(other) && result.equals(atrm.get());
+		return other instanceof AddRequestResultMessage atrm && super.equals(other) && result.equals(atrm.get());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return AddTransactionResultMessage.class.getName();
+		return AddRequestResultMessage.class.getName();
 	}
 
 	@Override

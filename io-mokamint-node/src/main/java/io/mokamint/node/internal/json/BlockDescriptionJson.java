@@ -55,7 +55,7 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		this.targetBlockCreationTime = description.getTargetBlockCreationTime();
 		this.oblivion = description.getOblivion();
 		this.hashingForBlocks = description.getHashingForBlocks().getName();
-		this.hashingForTransactions = description.getHashingForTransactions().getName();
+		this.hashingForTransactions = description.getHashingForRequests().getName();
 
 		if (description instanceof GenesisBlockDescription gbd) {
 			this.startDateTimeUTC = ISO_LOCAL_DATE_TIME.format(gbd.getStartDateTimeUTC());

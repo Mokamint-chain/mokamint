@@ -16,37 +16,34 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.Optional;
-
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.Request;
-import io.mokamint.node.messages.api.GetTransactionResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionResultMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionResultMessageJson;
+import io.mokamint.node.messages.api.GetTransactionAddressMessage;
+import io.mokamint.node.messages.internal.GetTransactionAddressMessageImpl;
+import io.mokamint.node.messages.internal.json.GetTransactionAddressMessageJson;
 
 /**
- * A provider of {@link GetTransactionResultMessage}.
+ * A provider of {@link GetTransactionAddressMessage}.
  */
-public final class GetTransactionResultMessages {
+public final class GetRequestAddressMessages {
 
-	private GetTransactionResultMessages() {}
+	private GetRequestAddressMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionResultMessage}.
+	 * Yields a {@link GetTransactionAddressMessage}.
 	 * 
-	 * @param transaction the transaction in the result, if any
+	 * @param hash the {@code hash} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionResultMessage of(Optional<Request> transaction, String id) {
-		return new GetTransactionResultMessageImpl(transaction, id);
+	public static GetTransactionAddressMessage of(byte[] hash, String id) {
+		return new GetTransactionAddressMessageImpl(hash, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<GetTransactionAddressMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -59,7 +56,7 @@ public final class GetTransactionResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<GetTransactionAddressMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -72,14 +69,14 @@ public final class GetTransactionResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionResultMessageJson {
+    public static class Json extends GetTransactionAddressMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionResultMessage message) {
+    	public Json(GetTransactionAddressMessage message) {
     		super(message);
     	}
     }

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2023 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,37 +16,35 @@ limitations under the License.
 
 package io.mokamint.node.messages;
 
-import java.util.Optional;
-
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.node.api.TransactionAddress;
-import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
-import io.mokamint.node.messages.internal.GetTransactionAddressResultMessageImpl;
-import io.mokamint.node.messages.internal.json.GetTransactionAddressResultMessageJson;
+import io.mokamint.node.api.Request;
+import io.mokamint.node.messages.api.AddRequestMessage;
+import io.mokamint.node.messages.internal.AddRequestMessageImpl;
+import io.mokamint.node.messages.internal.json.AddRequestMessageJson;
 
 /**
- * A provider of {@link GetTransactionAddressResultMessage}.
+ * A provider of {@link AddRequestMessage}.
  */
-public final class GetTransactionAddressResultMessages {
+public final class AddRequestMessages {
 
-	private GetTransactionAddressResultMessages() {}
+	private AddRequestMessages() {}
 
 	/**
-	 * Yields a {@link GetTransactionAddressResultMessage}.
+	 * Yields a {@link AddRequestMessage}.
 	 * 
-	 * @param address the address of the transaction in the result, if any
+	 * @param transaction the {@code transaction} parameter of the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static GetTransactionAddressResultMessage of(Optional<TransactionAddress> address, String id) {
-		return new GetTransactionAddressResultMessageImpl(address, id);
+	public static AddRequestMessage of(Request transaction, String id) {
+		return new AddRequestMessageImpl(transaction, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<GetTransactionAddressResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<AddRequestMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -59,7 +57,7 @@ public final class GetTransactionAddressResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<GetTransactionAddressResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<AddRequestMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -72,14 +70,14 @@ public final class GetTransactionAddressResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends GetTransactionAddressResultMessageJson {
+    public static class Json extends AddRequestMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(GetTransactionAddressResultMessage message) {
+    	public Json(AddRequestMessage message) {
     		super(message);
     	}
     }

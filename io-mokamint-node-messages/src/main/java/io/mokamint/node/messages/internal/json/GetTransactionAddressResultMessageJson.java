@@ -20,33 +20,33 @@ import java.util.Optional;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.node.TransactionAddresses;
-import io.mokamint.node.messages.api.GetTransactionAddressResultMessage;
+import io.mokamint.node.RequestAddresses;
+import io.mokamint.node.messages.api.GetRequestAddressResultMessage;
 import io.mokamint.node.messages.internal.GetTransactionAddressResultMessageImpl;
 
 /**
- * The JSON representation of a {@link GetTransactionAddressResultMessage}.
+ * The JSON representation of a {@link GetRequestAddressResultMessage}.
  */
-public abstract class GetTransactionAddressResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetTransactionAddressResultMessage> {
-	private final TransactionAddresses.Json address;
+public abstract class GetTransactionAddressResultMessageJson extends AbstractRpcMessageJsonRepresentation<GetRequestAddressResultMessage> {
+	private final RequestAddresses.Json address;
 
-	protected GetTransactionAddressResultMessageJson(GetTransactionAddressResultMessage message) {
+	protected GetTransactionAddressResultMessageJson(GetRequestAddressResultMessage message) {
 		super(message);
 
-		this.address = message.get().map(TransactionAddresses.Json::new).orElse(null);
+		this.address = message.get().map(RequestAddresses.Json::new).orElse(null);
 	}
 
-	public Optional<TransactionAddresses.Json> getAddress() {
+	public Optional<RequestAddresses.Json> getAddress() {
 		return Optional.ofNullable(address);
 	}
 
 	@Override
-	public GetTransactionAddressResultMessage unmap() throws InconsistentJsonException {
+	public GetRequestAddressResultMessage unmap() throws InconsistentJsonException {
 		return new GetTransactionAddressResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return GetTransactionAddressResultMessage.class.getName();
+		return GetRequestAddressResultMessage.class.getName();
 	}
 }

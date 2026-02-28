@@ -33,26 +33,26 @@ import io.mokamint.nonce.api.Deadline;
 /**
  * An application for the Mokamint blockchain. It specifies the application layer
  * of a blockchain. Mokamint applications are the run-time support to filter
- * the transactions reaching a node and to execute sequential groups
- * of transactions, those inside a block of the blockchain. In particular,
- * a node executes the transactions inside a block at a given <code>height</code>,
+ * the requests reaching a node and to execute sequential groups
+ * of requests, those inside a block of the blockchain. In particular,
+ * a node executes the requests inside a block at a given <code>height</code>,
  * having a given <code>deadline</code>,
  * starting from the state whose identifier is <code>initialStateId</code> (which is
  * typically that at the end of the previous block), at a moment <code>when</code>,
  * by calling the API of its application as follows:
  * 
  * <ul>
- * <li> <code>groupId = beginBlock(height, when, initialStateId);</code>
- * <li> for each transaction <code>tx</code> in the block, do:
+ * <li> <code>scopeId = beginBlock(height, when, initialStateId);</code>
+ * <li> for each request <code>req</code> in the block, do:
  * <ul>
- * <li> <code>checkTransaction(tx);</code>
- * <li> <code>deliverTransaction(tx, groupId);</code>
+ * <li> <code>checkRequest(req);</code>
+ * <li> <code>executeTransaction(req, scopeId);</code>
  * </ul>
- * <li> <code>finalStateId = endBlock(groupId, deadline);</code>
- * <li> <code>commitBlock(groupId);</code>
+ * <li> <code>finalStateId = endBlock(scopeId, deadline);</code>
+ * <li> <code>commitBlock(scopeId);</code>
  * </ul>
  * 
- * This commits the final state at the end of the execution of all transactions,
+ * This commits the final state at the end of the execution of all requests,
  * whose identifier is <code>finalStateId</code>. That is, that state will be recoverable
  * in the future, from <code>finalStateId</code>, if required by the node.
  * 
@@ -63,24 +63,24 @@ import io.mokamint.nonce.api.Deadline;
  * 
  * <br>
  * 
- * The execution of a group of transactions is identified by a numerical <code>groupId</code>,
+ * The execution of a group of requests is identified by a numerical <code>scopeId</code>,
  * that should be unique among all currently ongoing executions. This is because the application
- * might be required to run more groups of transactions, concurrently, and each of those
- * executions must be identified by a different <code>groupId</code>. After the execution of
- * <code>commitBlock(groupId)</code> or <code>abortBlock(groupId)</code>, that
- * <code>groupId</code> may be recycled for a subsequent execution.
+ * might be required to run more groups of requests, concurrently, and each of those
+ * executions must be identified by a different <code>scopeId</code>. After the execution of
+ * <code>commitBlock(scopeId)</code> or <code>abortBlock(scopeId)</code>, that
+ * <code>scopeId</code> may be recycled for a subsequent execution.
  * 
  * <br>
  * 
  * The implementation of all these methods must be deterministic. The execution of a group
- * of transactions can depend only on <code>height</code>, <code>deadline</code>,
+ * of requests can depend only on <code>height</code>, <code>deadline</code>,
  * <code>initialStateId</code> and <code>when</code>.
  * 
  * <br>
  * 
  * The method {@link #checkRequest(Request)} does not receive the identifier of the
  * group execution, since it performs a context-independent (and typically, consequently, superficial)
- * check, that is applied also as a filter before adding transactions to the mempool of a node.
+ * check, that is applied also as a filter before adding requests to the mempool of a node.
  * Method {@link #executeTransaction(int, Request)} subsequently performs a more thorough consistency
  * check later, that considers the context of its execution (for instance, the state where the check is
  * performed). This is why both these methods can throw a {@link RequestRejectedException}.
@@ -165,13 +165,13 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	/**
 	 * Yields a string representation of the request, that can be used to print
 	 * or process its structure. This can be everything, possibly, but not necessarily, JSON.
-	 * It is expected (but not required) that if a transaction passes the
+	 * It is expected (but not required) that if a request passes the
 	 * {@link #checkRequest(Request)} test without throwing a {@link RequestRejectedException},
 	 * then {@link #getRepresentation(Request)} will not throw that exception either.
 	 * 
 	 * @param request the request
-	 * @return the representation of {@code transaction}
-	 * @throws RequestRejectedException if the representation of the transaction cannot be computed
+	 * @return the representation of {@code request}
+	 * @throws RequestRejectedException if the representation of the request cannot be computed
 	 * @throws ClosedApplicationException if the application is already closed
 	 * @throws TimeoutException if no answer arrives before a time window
 	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
@@ -179,7 +179,7 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	String getRepresentation(Request request) throws RequestRejectedException, ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
-	 * Yields the identifier of the state of this application when it starts, before any transaction
+	 * Yields the identifier of the state of this application when it starts, before any request
 	 * has been executed. This is typically the hash of the empty state of the application.
 	 * 
 	 * @return the identifier of the state of this application when it starts
@@ -212,7 +212,7 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	 * Executes another transaction inside the scope of execution of requests identified by {@code scopeId}.
 	 * This means that the request will be semantically checked and then executed.
 	 * If the semantical check fails, an exception is thrown instead. Semantically checked means that
-	 * the transaction could be completed verified in the context of execution.
+	 * the transaction could be completely verified in the context of execution.
 	 * This is then a thorough, context-dependent check, must stronger, in general, than the
 	 * check performed by {@link #checkRequest(Request)}.
 	 * 
