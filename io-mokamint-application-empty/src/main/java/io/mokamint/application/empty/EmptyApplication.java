@@ -36,7 +36,7 @@ import io.mokamint.nonce.api.Deadline;
  * the creation of new Mokamint chains.
  */
 @Name("Empty")
-@Description("A stateless blockchain, accepting all transactions, useful for experiments")
+@Description("A stateless application, accepting all transactions")
 public class EmptyApplication extends AbstractApplication {
 	private final AtomicInteger nextId = new AtomicInteger();
 

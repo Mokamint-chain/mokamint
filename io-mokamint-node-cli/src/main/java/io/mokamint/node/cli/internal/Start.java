@@ -208,51 +208,53 @@ public class Start extends AbstractCommand {
 				throw new CommandException("The key of the node could not be encoded!", e);
 			}
 
-			System.out.print("Starting a local node... ");
+			try (var app = mkApplication()) {
+				System.out.print("Starting a local node... ");
 
-			try (var app = mkApplication(); var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
-				System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+				try (var node = this.node = LocalNodes.of(config, keyPair, app, init)) {
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
-				if (plots.size() >= 1) {
-					if (plots.size() == 1)
-						System.out.print("Starting a local miner with 1 plot... ");
-					else
-						System.out.print("Starting a local miner with " + plots.size() + " plots... ");
-
-					io.mokamint.application.api.Info appInfo;
-
-					try {
-						appInfo = app.getInfo();
-					}
-					catch (TimeoutException e) {
-						throw new ApplicationTimeoutException(e);
-					}
-
-					try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plots.toArray(Plot[]::new))) {
-						if (node.add(miner).isPresent()) {
-							System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-							publishPublicAndRestrictedNodeServices(0);
-						}
+					if (plots.size() >= 1) {
+						if (plots.size() == 1)
+							System.out.print("Starting a local miner with 1 plot... ");
 						else
-							throw new CommandException("The miner has not been added!");
+							System.out.print("Starting a local miner with " + plots.size() + " plots... ");
+
+						io.mokamint.application.api.Info appInfo;
+
+						try {
+							appInfo = app.getInfo();
+						}
+						catch (TimeoutException e) {
+							throw new ApplicationTimeoutException(e);
+						}
+
+						try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plots.toArray(Plot[]::new))) {
+							if (node.add(miner).isPresent()) {
+								System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+								publishPublicAndRestrictedNodeServices(0);
+							}
+							else
+								throw new CommandException("The miner has not been added!");
+						}
+						catch (ClosedNodeException e) {
+							throw new CommandException("The node is already closed!", e);
+						}
 					}
-					catch (ClosedNodeException e) {
-						throw new CommandException("The node is already closed!", e);
-					}
+					else
+						publishPublicAndRestrictedNodeServices(0);
 				}
-				else
-					publishPublicAndRestrictedNodeServices(0);
+				catch (ApplicationTimeoutException e) {
+					throw new CommandException("The application timed out!", e);
+				}
+				catch (ClosedApplicationException e) {
+					throw new CommandException("The application is already unexpectedly closed!", e);
+				}
 			}
 			catch (InterruptedException e) {
 				// unexpected: who could interrupt this process?
 				Thread.currentThread().interrupt();
 				throw new CommandException("Unexpected interruption!", e);
-			}
-			catch (ApplicationTimeoutException e) {
-				throw new CommandException("The application timed out!", e);
-			}
-			catch (ClosedApplicationException e) {
-				throw new CommandException("The application is already unexpectedly closed!", e);
 			}
 		}
 

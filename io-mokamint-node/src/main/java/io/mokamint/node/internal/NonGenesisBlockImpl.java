@@ -195,17 +195,17 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 		builder.append("\n");
 	
 		if (requests.length == 0)
-			builder.append("* 0 transactions");
+			builder.append("* 0 requests");
 		else if (requests.length == 1)
-			builder.append("* 1 transaction:");
+			builder.append("* 1 request:");
 		else
-			builder.append("* " + requests.length + " transactions:");
+			builder.append("* " + requests.length + " requests:");
 	
 		int n = 0;
-		var hashingForTransactions = getDescription().getHashingForRequests();
+		var hashingForRequests = getDescription().getHashingForRequests();
 	
-		for (var transaction: requests)
-			builder.append("\n * #" + n++ + ": " + transaction.getHexHash(hashingForTransactions) + " (" + hashingForTransactions + ")");
+		for (var request: requests)
+			builder.append("\n * #" + n++ + ": " + request.getHexHash(hashingForRequests) + " (" + hashingForRequests + ")");
 	}
 
 	@Override
@@ -218,10 +218,10 @@ public non-sealed class NonGenesisBlockImpl extends AbstractBlock<NonGenesisBloc
 	 * 
 	 * @return the marshalled bytes
 	 */
-	private byte[] toByteArrayWithoutSignature(Request[] transactions) {
+	private byte[] toByteArrayWithoutSignature(Request[] requests) {
 		try (var baos = new ByteArrayOutputStream(); var context = createMarshallingContext(baos)) {
 			super.intoWithoutSignature(context);
-			context.writeLengthAndArray(transactions);
+			context.writeLengthAndArray(requests);
 			context.flush();
 			return baos.toByteArray();
 		}

@@ -96,6 +96,7 @@ public class RestrictedNodeServiceImpl extends AbstractRPCWebSocketServer implem
 
 	@Override
 	protected void closeResources() {
+		super.closeResources();
 		node.removeOnCloseHandler(this_close);
 		LOGGER.info(logPrefix + "closed");
 	}

@@ -51,6 +51,11 @@
       <artifactId>io-mokamint-application-empty</artifactId>
       <version>${mokamint.version}</version>	
 	</dependency>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-parity</artifactId>
+      <version>${mokamint.version}</version>	
+	</dependency>
   </dependencies>
 
   <build>
