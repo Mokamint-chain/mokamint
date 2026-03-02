@@ -19,14 +19,17 @@ package io.mokamint.application.empty;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Request;
 import io.mokamint.nonce.api.Deadline;
@@ -84,8 +87,11 @@ public class EmptyApplication extends AbstractApplication {
 	}
 
 	@Override
-	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) throws ClosedApplicationException {
+	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) throws ClosedApplicationException, UnknownStateException {
 		try (var scope = mkScope()) {
+			if (!Arrays.equals(STATE_ID, stateId))
+				throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
+
 			return nextId.getAndIncrement();
 		}
 	}

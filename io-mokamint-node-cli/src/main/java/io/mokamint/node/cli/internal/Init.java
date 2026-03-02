@@ -59,8 +59,8 @@ import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "start", description = "Start an already initialized node.")
-public class Start extends AbstractCommand {
+@Command(name = "init", description = "Initialize a new node.")
+public class Init extends AbstractCommand {
 
 	@Parameters(index = "0", description = "the plot files to use for mining")
 	private Path[] plots;
@@ -92,7 +92,10 @@ public class Start extends AbstractCommand {
 	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
 
-	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
+	@Option(names = "--exit-after-initialization", description = "exit immediately after the initialization of the new blockchain node", defaultValue="false")
+	private boolean exitAfterInitialization;
+
+	private final static Logger LOGGER = Logger.getLogger(Init.class.getName());
 
 	@Override
 	protected void execute() throws CommandException {
@@ -134,24 +137,24 @@ public class Start extends AbstractCommand {
 			}
 			catch (NoSuchAlgorithmException e) {
 				Arrays.fill(password, ' ');
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to an unknown hashing algorithm!", e);
+				throw new CommandException("The configuration file \"" + Init.this.config + "\" refers to an unknown hashing algorithm!", e);
 			}
 			catch (FileNotFoundException e) {
 				Arrays.fill(password, ' ');
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" does not exist!", e);
+				throw new CommandException("The configuration file \"" + Init.this.config + "\" does not exist!", e);
 			}
 			catch (URISyntaxException e) {
 				Arrays.fill(password, ' ');
-				throw new CommandException("The configuration file \"" + Start.this.config + "\" refers to a URI with wrong syntax!", e);
+				throw new CommandException("The configuration file \"" + Init.this.config + "\" refers to a URI with wrong syntax!", e);
 			}
 
 			String passwordAsString;
 			try {
 				passwordAsString = new String(password);
-				this.keyPair = Entropies.load(Start.this.keyPair).keys(passwordAsString, config.getSignatureForBlocks());
+				this.keyPair = Entropies.load(Init.this.keyPair).keys(passwordAsString, config.getSignatureForBlocks());
 			}
 			catch (IOException e) {
-				throw new CommandException("Cannot read the key pair from file " + Start.this.keyPair + "!", e);
+				throw new CommandException("Cannot read the key pair from file " + Init.this.keyPair + "!", e);
 			}
 			finally {
 				passwordAsString = null;
@@ -168,8 +171,8 @@ public class Start extends AbstractCommand {
 		 * @throws CommandException if something erroneous must be logged and the user must be informed
 		 */
 		private void loadPlotsStartNodeOpenLocalMinerAndPublishNodeServices(int pos) throws CommandException {
-			if (Start.this.plots != null && pos < Start.this.plots.length) {
-				var path = Start.this.plots[pos];
+			if (Init.this.plots != null && pos < Init.this.plots.length) {
+				var path = Init.this.plots[pos];
 				System.out.print("Loading " + path + "... ");
 				try (var plot = Plots.load(path)) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
@@ -208,7 +211,7 @@ public class Start extends AbstractCommand {
 			try (var app = mkApplication()) {
 				System.out.print("Starting a local node... ");
 
-				try (var node = this.node = LocalNodes.of(config, keyPair, app, false)) {
+				try (var node = this.node = LocalNodes.of(config, keyPair, app, true)) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
 					if (plots.size() >= 1) {
@@ -285,7 +288,7 @@ public class Start extends AbstractCommand {
 					publishRestrictedNodeServices(pos + 1);
 				}
 			}
-			else
+			else if (!exitAfterInitialization)
 				waitForKeyPress();
 		}
 

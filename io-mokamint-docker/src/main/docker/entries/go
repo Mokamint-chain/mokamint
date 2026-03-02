@@ -1,0 +1,27 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+BOLD_GREEN='\033[1;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+APPLICATION=${APPLICATION:-"Empty"}
+
+echo -e "${BOLD_GREEN}Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-init and then init.${NC}"
+echo -e "   ${BLUE}APPLICATION${NC}=${RED}\"$APPLICATION\"${NC}"
+echo -e "    ${BLUE}VISIBLE_AS${NC}=${RED}${VISIBLE_AS}${NC}"
+
+if [ ! -z "$VISIBLE_AS" ]
+then
+      VISIBLE_AS="--visible-as ${VISIBLE_AS}"
+fi
+
+mokamint-node-print-logs start \
+	mokamint/plot.plot \
+	--keys=mokamint/node.pem \
+	--application=${APPLICATION} \
+	--password \
+	--config=mokamint/mokamint_config.toml \
+	--public-port=8030 \
+	--restricted-port=8031 \
+	$VISIBLE_AS

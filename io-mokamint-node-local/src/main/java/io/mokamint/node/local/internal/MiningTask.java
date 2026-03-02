@@ -143,7 +143,8 @@ public class MiningTask implements Task {
 				Thread.sleep(5000L);
 			}
 			catch (UnknownStateException e) {
-				LOGGER.log(Level.SEVERE, "the state information at the head of the blockchain is not available", e);
+				LOGGER.log(Level.SEVERE, "mining: the state information at the head of the blockchain is unknown to the application: " + e.getMessage());
+				Thread.sleep(5000L);
 			}
 		}
 	}

@@ -28,13 +28,14 @@ import io.mokamint.node.cli.internal.Applications;
 import io.mokamint.node.cli.internal.Chain;
 import io.mokamint.node.cli.internal.Config;
 import io.mokamint.node.cli.internal.Info;
+import io.mokamint.node.cli.internal.Init;
 import io.mokamint.node.cli.internal.Keys;
 import io.mokamint.node.cli.internal.Mempool;
 import io.mokamint.node.cli.internal.Miners;
 import io.mokamint.node.cli.internal.Peers;
+import io.mokamint.node.cli.internal.Requests;
 import io.mokamint.node.cli.internal.Start;
 import io.mokamint.node.cli.internal.Tasks;
-import io.mokamint.node.cli.internal.Requests;
 import picocli.CommandLine.Command;
 
 /**
@@ -54,6 +55,7 @@ import picocli.CommandLine.Command;
 		Chain.class,
 		Config.class,
 		Info.class,
+		Init.class,
 		Keys.class,
 		Mempool.class,
 		Miners.class,

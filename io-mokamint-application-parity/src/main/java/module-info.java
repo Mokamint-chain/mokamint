@@ -24,4 +24,5 @@ module io.mokamint.application.parity {
     requires io.mokamint.application;
     requires transitive io.mokamint.nonce.api;
     requires transitive io.mokamint.node.api;
+    requires io.hotmoka.crypto;
 }

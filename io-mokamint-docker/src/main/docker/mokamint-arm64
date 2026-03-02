@@ -34,17 +34,17 @@ RUN echo "#!/bin/bash" > mokamint-application \
 
 # add /home/mokamint to the classpath in order to find the logging properties file that prints logs on the screen:
 # that will replace the logging properties file embedded in the jars
-RUN echo java -Djava.util.logging.config.file=logging.properties --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.application.cli/io.mokamint.application.cli.MokamintApplication \"\$@\" >> mokamint-application-print-logs \
+RUN echo java -Djava.util.logging.config.file=logging.properties --add-modules org.glassfish.tyrus.container.grizzly.server --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.application.cli/io.mokamint.application.cli.MokamintApplication \"\$@\" >> mokamint-application-print-logs \
   && chmod a+x mokamint-application-print-logs \
-  && echo java --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.application.cli/io.mokamint.application.cli.MokamintApplication \"\$@\" >> mokamint-application \
+  && echo java --add-modules org.glassfish.tyrus.container.grizzly.server --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.application.cli/io.mokamint.application.cli.MokamintApplication \"\$@\" >> mokamint-application \
   && chmod a+x mokamint-application \
-  && echo java -Djava.util.logging.config.file=logging.properties --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.miner.cli/io.mokamint.miner.cli.MokamintMiner \"\$@\" >> mokamint-miner-print-logs \
+  && echo java -Djava.util.logging.config.file=logging.properties --add-modules org.glassfish.tyrus.container.grizzly.server --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.miner.cli/io.mokamint.miner.cli.MokamintMiner \"\$@\" >> mokamint-miner-print-logs \
   && chmod a+x mokamint-miner-print-logs \
-  && echo java --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.miner.cli/io.mokamint.miner.cli.MokamintMiner \"\$@\" >> mokamint-miner \
+  && echo java --add-modules org.glassfish.tyrus.container.grizzly.server --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.miner.cli/io.mokamint.miner.cli.MokamintMiner \"\$@\" >> mokamint-miner \
   && chmod a+x mokamint-miner \
-  && echo java -Djava.util.logging.config.file=logging.properties --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.node.cli/io.mokamint.node.cli.MokamintNode \"\$@\" >> mokamint-node-print-logs \
+  && echo java -Djava.util.logging.config.file=logging.properties --add-modules org.glassfish.tyrus.container.grizzly.server,org.glassfish.tyrus.container.grizzly.client --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.node.cli/io.mokamint.node.cli.MokamintNode \"\$@\" >> mokamint-node-print-logs \
   && chmod a+x mokamint-node-print-logs \
-  && echo java --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.node.cli/io.mokamint.node.cli.MokamintNode \"\$@\" >> mokamint-node \
+  && echo java --add-modules org.glassfish.tyrus.container.grizzly.server,org.glassfish.tyrus.container.grizzly.client --module-path /modules/explicit_or_automatic --class-path \"/modules/unnamed/*\" --module io.mokamint.node.cli/io.mokamint.node.cli.MokamintNode \"\$@\" >> mokamint-node \
   && chmod a+x mokamint-node \
   && echo java -Djava.util.logging.config.file=logging.properties --module-path /modules/explicit_or_automatic --class-path \"/home/mokamint/:/modules/unnamed/*\" --module io.mokamint.plotter.cli/io.mokamint.plotter.cli.MokamintPlotter \"\$@\" >> mokamint-plotter-print-logs \
   && chmod a+x mokamint-plotter-print-logs \
@@ -53,7 +53,7 @@ RUN echo java -Djava.util.logging.config.file=logging.properties --module-path /
 
 # install the control scripts
 COPY src/main/docker/entries/* ./
-RUN chmod 755 info && chmod 755 config-miner && chmod 755 mine
+RUN chmod 755 info && chmod 755 config-miner && chmod 755 mine && chmod 755 config-new && chmod 755 init && chmod 755 go && chmod 755 config-clone
 
 USER mokamint
 WORKDIR /home/mokamint
@@ -61,8 +61,8 @@ WORKDIR /home/mokamint
 # install the logging configuration that prints logs on the screen
 COPY --chown=mokamint src/main/resources/logging.properties logging.properties
 
-# create the directories for the miner configuration, that might be bound to some volume
-RUN mkdir miner_configuration
+# create the directories for the chain and the configuration, that might be bound to some volumes
+RUN mkdir chain && mkdir mokamint
 
 # by default, print an info message
 CMD ["info"]

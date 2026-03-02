@@ -1,0 +1,24 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+BOLD_GREEN='\033[1;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+APPLICATION=${APPLICATION:-"Empty"}
+
+echo -e "${BOLD_GREEN}Initializing a node for a brand new blockchain, whose configuration has been created with config-new.${NC}"
+echo
+echo -e "                 ${BLUE}APPLICATION${NC}=${RED}\"$APPLICATION\"${NC}"
+echo
+
+# we remove the contents of chain directory
+rm -rf chain/*
+
+mokamint-node-print-logs init \
+	mokamint/plot.plot \
+	--application=${APPLICATION} \
+	--keys=mokamint/node.pem \
+	--exit-after-initialization \
+	--password \
+	--config=mokamint/mokamint_config.toml

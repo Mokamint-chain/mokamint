@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import io.hotmoka.crypto.Hex;
+import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.UnknownScopeIdException;
 import io.mokamint.application.api.UnknownStateException;
@@ -54,7 +55,7 @@ public class BlockVerification {
 	/**
 	 * The Xodus transaction during which verification occurs.
 	 */
-	private final io.hotmoka.xodus.env.Transaction txn;
+	private final Transaction txn;
 
 	/**
 	 * The configuration of {@link #node}.
@@ -104,7 +105,7 @@ public class BlockVerification {
 	 * @throws MisbehavingApplicationException  if the application is misbehaving
 	 * @throws ClosedApplicationException if the application is already closed
 	 */
-	BlockVerification(io.hotmoka.xodus.env.Transaction txn, LocalNodeImpl node, LocalNodeConfig config, Block block, Optional<Block> previous, Mode mode) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
+	BlockVerification(Transaction txn, LocalNodeImpl node, LocalNodeConfig config, Block block, Optional<Block> previous, Mode mode) throws VerificationException, InterruptedException, ApplicationTimeoutException, ClosedApplicationException, MisbehavingApplicationException {
 		this.txn = txn;
 		this.node = node;
 		this.mode = mode;

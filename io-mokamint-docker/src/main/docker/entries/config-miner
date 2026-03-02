@@ -15,7 +15,7 @@ BOLD_GREEN='\033[1;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-MINER_PUBLIC_SERVICE_URI=${MINER_PUBLIC_SERVICE_URI:-ws://panarea.hotmoka.io:8025}
+MINER_PUBLIC_SERVICE_URI=${MINER_PUBLIC_SERVICE_URI:-ws://lipari.hotmoka.io:8025}
 PUBLIC_KEY_MINER_BASE58=${PUBLIC_KEY_MINER_BASE58:-""}
 PLOT_SIZE=${PLOT_SIZE:-1000}
 EXTRA=${EXTRA:-""}
@@ -28,8 +28,8 @@ echo -e " ${BLUE}PUBLIC_KEY_MINER_BASE58${NC}=${RED}\"$PUBLIC_KEY_MINER_BASE58\"
 echo -e "                   ${BLUE}EXTRA${NC}=${RED}$EXTRA${NC}"
 echo
 
-echo -n "Cleaning the directory miner_configuration... "
-rm -rf miner_configuration/*
+echo -n "Cleaning the directory mokamint... "
+rm -rf mokamint/*
 echo -e "${RED}done${NC}"
 
 echo -n "Asking the mining specification to $MINER_PUBLIC_SERVICE_URI... "
@@ -42,5 +42,5 @@ PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58=$(echo $MINER_SPECIFICATION | python3 -c "i
 echo -e "${RED}done${NC}"
 
 echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for chain id \"${CHAIN_ID}\", public key for signing blocks ${PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58} (${SIGNATURE_FOR_BLOCKS}, base58), public key for signing deadlines ${PUBLIC_KEY_MINER_BASE58} (${SIGNATURE_FOR_DEADLINES}, base58), hashing algorithm ${HASHING_FOR_DEADLINES}, extra \"${EXTRA}\"..."
-mokamint-plotter create miner_configuration/plot.plot 0 $PLOT_SIZE "$CHAIN_ID" $PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58 $PUBLIC_KEY_MINER_BASE58 --hashing=$HASHING_FOR_DEADLINES --signature-of-node=$SIGNATURE_FOR_BLOCKS --signature-of-plot=$SIGNATURE_FOR_DEADLINES --extra "$EXTRA"
+mokamint-plotter create mokamint/plot.plot 0 $PLOT_SIZE "$CHAIN_ID" $PUBLIC_KEY_FOR_SIGNING_BLOCKS_BASE58 $PUBLIC_KEY_MINER_BASE58 --hashing=$HASHING_FOR_DEADLINES --signature-of-node=$SIGNATURE_FOR_BLOCKS --signature-of-plot=$SIGNATURE_FOR_DEADLINES --extra "$EXTRA"
 echo -e "${RED}done${NC}"

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.ClosedApplicationException;
@@ -113,7 +114,7 @@ public class ParityApplication extends AbstractApplication {
 			else if (Arrays.equals(ODD_STATE_ID, stateId))
 				currentStates.put(scopeId, ODD_STATE_ID);
 			else
-				throw new UnknownStateException();
+				throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
 
 			return scopeId;
 		}
