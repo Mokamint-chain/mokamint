@@ -116,6 +116,14 @@ public interface ConsensusConfig<C extends ConsensusConfig<C,B>, B extends Conse
 	int getOblivion();
 
 	/**
+	 * Determines if requests can be repeated. Normally, this is forbidden,
+	 * because it allows to replay requests even though they are signed.
+	 * 
+	 * @return true if and only if requests can be repeated
+	 */
+	boolean allowsRepeatedRequests();
+
+	/**
 	 * Yields a toml representation of this configuration.
 	 * 
 	 * @return the toml representation, as a string

@@ -16,6 +16,8 @@ limitations under the License.
 
 package io.mokamint.node.local.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
@@ -135,6 +137,54 @@ public class RequestsInclusionTests extends AbstractLoggedTests {
 	}
 
 	@Test
+	@DisplayName("repeated request added to the node gets rejected")
+	public void repeatedRequestAddedToNodeGetsRejected(@TempDir Path chain) throws Exception {
+		var req = Requests.of(new byte[] { 42, 13, 17 });
+		var config = mkConfig(chain);
+
+		class TestNode extends NodeWithLocalMiner {
+
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
+				super(config, init);
+			}
+		}
+
+		try (var miningNode = new TestNode(config, true)) {
+			miningNode.add(req);
+
+			try {
+				miningNode.add(req);
+			}
+			catch (RequestRejectedException e) {
+				assertTrue(e.getMessage().startsWith("Repeated request"));
+				return;
+			}
+
+			fail("No " + RequestRejectedException.class.getSimpleName() + " has been thrown");
+		}
+	}
+
+	@Test
+	@DisplayName("repeated request added to the node is accepted is the node allows it")
+	public void repeatedRequestAddedToNodeGetsAccepted(@TempDir Path chain) throws Exception {
+		var req = Requests.of(new byte[] { 42, 13, 17 });
+		var config = mkConfig(chain);
+		config = config.toBuilder().setAllowsRepeatedRequests(true).build();
+
+		class TestNode extends NodeWithLocalMiner {
+
+			private TestNode(LocalNodeConfig config, boolean init) throws ClosedNodeException, IOException, InterruptedException, ClosedApplicationException, ApplicationTimeoutException {
+				super(config, init);
+			}
+		}
+
+		try (var miningNode = new TestNode(config, true)) {
+			miningNode.add(req);
+			miningNode.add(req);
+		}
+	}
+
+	@Test
 	@Timeout(20)
 	@DisplayName("requests added to the mempool get eventually added to the blockchain")
 	public void requestsAddedToMempoolEventuallyReachBlockchain(@TempDir Path chain) throws Exception {
@@ -144,8 +194,8 @@ public class RequestsInclusionTests extends AbstractLoggedTests {
 			int length = random.nextInt(10, 1000);
 			var bytes = new byte[length];
 			random.nextBytes(bytes);
-			var tx = Requests.of(bytes);
-			allRequests.add(tx);
+			var req = Requests.of(bytes);
+			allRequests.add(req);
 		}
 		var allIncluded = new Semaphore(0);
 		var config = mkConfig(chain);

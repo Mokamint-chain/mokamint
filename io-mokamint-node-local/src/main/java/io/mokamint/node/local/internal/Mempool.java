@@ -176,17 +176,18 @@ public class Mempool {
 		var entry = mkRequestEntry(request);
 		int maxSize = config.getMempoolSize();
 		int maxBlockSize = config.getMaxBlockSize();
-		int txSize;
+		var allowsRepeatedRequests = config.allowsRepeatedRequests();
+		int reqSize;
 
 		synchronized (mempool) {
-			if (base.isPresent() && blockchain.getRequestAddress(base.get(), entry.hash).isPresent())
+			if (!allowsRepeatedRequests && base.isPresent() && blockchain.getRequestAddress(base.get(), entry.hash).isPresent())
 				// the request was already in blockchain
 				throw new RequestRejectedException("Repeated request " + entry);
-			else if (mempool.contains(entry))
+			else if (!allowsRepeatedRequests && mempool.contains(entry))
 				// the request was already in the mempool
 				throw new RequestRejectedException("Repeated request " + entry);
-			else if ((txSize = request.size()) > maxBlockSize)
-				throw new RequestRejectedException("Cannot add request " + entry + ": it is too large (" + txSize + " bytes against a maximum block size of " + maxBlockSize + ")");
+			else if ((reqSize = request.size()) > maxBlockSize)
+				throw new RequestRejectedException("Cannot add request " + entry + ": it is too large (" + reqSize + " bytes against a maximum block size of " + maxBlockSize + ")");
 			else if (mempool.size() >= maxSize)
 				throw new RequestRejectedException("Cannot add request " + entry + ": all " + maxSize + " slots of the mempool are full");
 			else
