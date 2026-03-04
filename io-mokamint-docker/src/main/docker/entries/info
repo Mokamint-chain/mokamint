@@ -29,3 +29,33 @@ echo -e "    ${BLUE}MINER_PUBLIC_SERVICE_URI:${NC} the URI of an already existin
 echo
 echo "  For instance:"
 echo -e "  ${BOLD_CYAN}docker run --log-driver local -it -e MINER_PUBLIC_SERVICE_URI=ws://lipari.hotmoka.io:8025 -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION mine${NC}"
+echo
+echo -e "* ${RED}config-new:${NC}   create the configuration directory of the first node of a brand new blockchain, with a local miner"
+echo -e "    ${BLUE}CHAIN_ID:${NC} the chain identifier of the blockchain"
+echo -e "    ${BLUE}PLOT_SIZE:${NC} the number of nonces of the plot that the node will use for mining"
+echo -e "    ${BLUE}PUBLIC_KEY_MINER_BASE58:${NC} the Base58-encoded public key that will identify the miner in the blockchain"
+echo -e "    ${BLUE}TARGET_BLOCK_CREATION_TIME:${NC} the milliseconds between two successive blocks (on average)"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run -it -e PUBLIC_KEY_MINER_BASE58=E4hbKgLjoen1sRNRmyPC59jgkjifCCUxjmGCAPnnSwvQ -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION config-new${NC}"
+echo
+echo -e "* ${RED}config-clone:${NC} create the configuration directory of a new node of an existing blockchain, with a local miner"
+echo -e "    ${BLUE}MOKAMINT_PUBLIC_SERVICE_URI:${NC} the URI of an already existing node of the blockchain"
+echo -e "    ${BLUE}PLOT_SIZE:${NC} the number of nonces of the plot that the node will use for mining"
+echo -e "    ${BLUE}PUBLIC_KEY_MINER_BASE58:${NC} the Base58-encoded public key that will identify the miner in the blockchain"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run -it -e MOKAMINT_PUBLIC_SERVICE_URI=ws://....cloned url...:8030 -e PUBLIC_KEY_MINER_BASE58=E4hbKgLjoen1sRNRmyPC59jgkjifCCUxjmGCAPnnSwvQ -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION config-clone${NC}"
+echo
+echo -e "* ${RED}init:${NC}         initialize a node for a brand new blockchain, whose configuration has been created with config-new"
+echo -e "    ${BLUE}APPLICATION:${NC} the name of the application to run on top of Mokamint"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run -it -e APPLICATION=Parity -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION init${NC}"
+echo
+echo -e "* ${RED}go:${NC}           start a node of a blockchain, whose configuration has been created with config-clone or with config-new and then init"
+echo -e "    ${BLUE}APPLICATION:${NC} the name of the application to run on top of Mokamint"
+echo -e "    ${BLUE}VISIBLE_AS:${NC} a URI that the external world can use to contact the new node"
+echo
+echo "  For instance:"
+echo -e "  ${BOLD_CYAN}docker run --log-driver local -dit -e APPLICATION=Parity -p 8025:8025 -p 8030:8030 -p 8031:8031 -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION go${NC}"
