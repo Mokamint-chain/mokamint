@@ -23,6 +23,26 @@ arrives to add 13 to _v_ again, then the parity of _v_ becomes 0 again, because 
 yields an even value. Note that this application is normally meant to be run over a blockchain that allows
 repeated requests (such as adding 13 twice, as in this example).
 
+Below, instructions are reported about the creation of a blockchain of two nodes and the execution of
+transactions on that blockchain. The docker tool is used, so that experiments can be more easily reproduced,
+without having to install Mokamint.
+
+## Start a brand new blockchain, by spawning its first node
+
+### Configure the node: `config-new`
+
+### Initialize the node: `init`
+
+### Run the node: `go`
+
+## Join an existing blockchain, by spawning a new node that clones an existing node
+
+### Configure the node: `config-clone`
+
+### Run the node: `go`
+
+## Further information
+
 &nbsp;
 
 <p align="center"><img width="100" src="../pics/CC_license.png" alt="This documentation is licensed under a Creative Commons Attribution 4.0 International License"></p><p align="center">This document is licensed under a Creative Commons Attribution 4.0 International License.</p>
