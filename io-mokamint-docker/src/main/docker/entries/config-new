@@ -24,6 +24,7 @@ TARGET_BLOCK_CREATION_TIME=${TARGET_BLOCK_CREATION_TIME:-10000}
 
 echo -e "${BOLD_GREEN}I will use the following parameters for the creation of the configuration directory of a proof of space Mokamint node:${NC}"
 echo
+echo -e "    ${BLUE}ALLOWS_REPEATED_REQUESTS${NC}=${RED}$ALLOWS_REPEATED_REQUESTS${NC}"
 echo -e "                    ${BLUE}CHAIN_ID${NC}=${RED}\"$CHAIN_ID\"${NC}"
 echo -e "                   ${BLUE}PLOT_SIZE${NC}=${RED}$PLOT_SIZE${NC}"
 echo -e "     ${BLUE}PUBLIC_KEY_MINER_BASE58${NC}=${RED}\"$PUBLIC_KEY_MINER_BASE58\"${NC}"
@@ -49,6 +50,10 @@ echo -n "Creating the Mokamint configuration file... "
 echo "dir = \"chain\"" > mokamint/mokamint_config.toml
 echo "chain_id = \"${CHAIN_ID}\"" >> mokamint/mokamint_config.toml
 echo "target_block_creation_time = ${TARGET_BLOCK_CREATION_TIME}" >> mokamint/mokamint_config.toml
+if [ ! -z "$ALLOWS_REPEATED_REQUESTS" ]
+then
+		echo "allows_repeated_requests = ${ALLOWS_REPEATED_REQUESTS}" >> mokamint/mokamint_config.toml      
+fi
 echo -e "${RED}done${NC}"
 
 echo "Creating a plot file for the miner, containing ${PLOT_SIZE} nonces, for the chain id \"${CHAIN_ID}\", for a node with public key ${PUBLIC_KEY_NODE_BASE58} (ed25519, base58), for a miner with public key ${PUBLIC_KEY_MINER_BASE58} (ed25519, base58)..."
