@@ -5,7 +5,23 @@
 [![Docker Hub](https://img.shields.io/docker/pulls/mokamint/mokamint.svg?label=Docker%20Hub%20Pulls)](https://hub.docker.com/u/mokamint)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-A simple parity application running on top of the Mokamint proof of space engine.
+# Parity
+
+A simple parity application running on top of the Mokamint proof of space engine
+
+## Introduction
+
+This parity application for Mokamint is a minimal example about the definition of an application
+running on top of the Mokamint proof of space engine. It implements an application with only two states: 0 and 1.
+They represents the parity of an integer value _v_: 0 means even and 1 means odd.
+The value of _v_ is assumed to be initially 0 when the blockchain starts.
+Transactions are additions of an integer constant to _v_. For instance, if the parity of _v_ is currently 0
+(ie., _v_ is even) and a request arrives to the blockchain, to add 13 to _v_, then the parity of _v_ becomes 1, because
+0 (even) plus 13 (which is odd) yields an odd value. If later, a request arrives to add 6 to _v_, then the parity
+of _v_ remains 1 (odd), because 1 (odd) plus 6 (which is even) yields an odd value. If, finally, a request
+arrives to add 13 to _v_ again, then the parity of _v_ becomes 0 again, because 1 (odd) plus 13 (which is odd)
+yields an even value. Note that this application is normally meant to be run over a blockchain that allows
+repeated requests (such as adding 13 twice, as in this example).
 
 &nbsp;
 
