@@ -40,6 +40,11 @@
       <version>${io.hotmoka.cli.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.hotmoka.crypto</groupId>
+      <artifactId>io-hotmoka-crypto-cli</artifactId>
+      <version>${io.hotmoka.crypto.version}</version>
+    </dependency>
+    <dependency>
       <groupId>jakarta.websocket</groupId>
       <artifactId>jakarta.websocket-client-api</artifactId>
       <version>2.1.0</version>

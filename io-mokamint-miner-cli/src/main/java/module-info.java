@@ -25,6 +25,7 @@ module io.mokamint.miner.cli {
     requires io.mokamint.miner.service;
     requires io.mokamint.plotter;
     requires io.mokamint.constants;
+    requires io.mokamint.nonce.api;
     requires io.hotmoka.cli;
     requires io.hotmoka.crypto;
     requires io.hotmoka.crypto.cli;
@@ -33,5 +34,4 @@ module io.mokamint.miner.cli {
 
     requires com.google.gson;
 	requires java.logging;
-	requires io.mokamint.nonce.api;
 }
