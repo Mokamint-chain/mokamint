@@ -71,6 +71,9 @@ public class MiningTask implements Task {
 		catch (ClosedDatabaseException e) {
 			LOGGER.warning("mining: exiting since the database has been closed: " + e.getMessage());
 		}
+		catch (ClosedApplicationException e) {
+			LOGGER.warning("mining: exiting since the application has been closed: " + e.getMessage());
+		}
 		catch (SignatureException e) {
 			LOGGER.warning("mining: exiting since the signature of the mined block failed: " + e.getMessage());
 		}
@@ -113,7 +116,7 @@ public class MiningTask implements Task {
 			blockMiner.add(entry);
 	}
 
-	private void mineOverHead() throws ClosedDatabaseException, InterruptedException, TaskRejectedExecutionException, InvalidKeyException, SignatureException, ClosedNodeException {
+	private void mineOverHead() throws ClosedDatabaseException, InterruptedException, TaskRejectedExecutionException, InvalidKeyException, SignatureException, ClosedNodeException, ClosedApplicationException {
 		if (node.getBlockchain().isEmpty()) {
 			LOGGER.warning("mining: cannot mine on an empty blockchain, will retry later");
 			suspendUntilSomethingChanges();
@@ -138,7 +141,7 @@ public class MiningTask implements Task {
 				blockMiner = new BlockMiner(node);
 				blockMiner.mine();
 			}
-			catch (ApplicationTimeoutException | MisbehavingApplicationException | ClosedApplicationException e) {
+			catch (ApplicationTimeoutException | MisbehavingApplicationException e) {
 				LOGGER.warning("mining: there is an application problem: I will wait five seconds and then try again: " + e.getMessage());
 				Thread.sleep(5000L);
 			}

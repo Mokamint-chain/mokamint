@@ -7,7 +7,7 @@ NC='\033[0m' # No Color
 
 APPLICATION=${APPLICATION:-"Empty"}
 
-echo -e "${BOLD_GREEN}Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-init and then init.${NC}"
+echo -e "${BOLD_GREEN}Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.${NC}"
 echo -e "   ${BLUE}APPLICATION${NC}=${RED}\"$APPLICATION\"${NC}"
 echo -e "    ${BLUE}VISIBLE_AS${NC}=${RED}${VISIBLE_AS}${NC}"
 
