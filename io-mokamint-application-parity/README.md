@@ -20,8 +20,7 @@ Transactions are additions of an integer constant to _v_. For instance, if the p
 0 (even) plus 13 (which is odd) yields an odd value. If, later, a request arrives to add 6 to _v_, then the parity
 of _v_ remains 1 (odd), because 1 (odd) plus 6 (which is even) yields an odd value. If, finally, a request
 arrives to add 13 to _v_ again, then the parity of _v_ becomes 0 again, because 1 (odd) plus 13 (which is odd)
-yields an even value. Note that this application is normally meant to be run over a blockchain that allows
-repeated requests (such as adding 13 twice, as in this example).
+yields an even value.
 
 Below, instructions are reported about the creation of a blockchain of two nodes and the execution of
 transactions on that blockchain. The docker tool is used, so that experiments can be more easily reproduced,
@@ -90,10 +89,9 @@ We use two volumes: `chain` will contain the actual blockchain data and
 By using volumes, we can share that information across successive invocations of docker:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" -e ALLOWS_REPEATED_REQUESTS=true mokamint/mokamint:1.7.0 config-new
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" mokamint/mokamint:1.7.0 config-new
 I will use the following parameters for the creation of the configuration directory of a proof of space Mokamint node:
 
-    ALLOWS_REPEATED_REQUESTS=true
                     CHAIN_ID="panda"
                    PLOT_SIZE=1000
      PUBLIC_KEY_MINER_BASE58="3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2"
@@ -301,19 +299,20 @@ mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full
 ```
 
 Let us send a request to add 13 now. Requests, for the Parity application, are represented
-as four bytes, standing for the two-complement, 32 bits representation of an integer. Moreover,
-in Mokamint, requests are sent in Base64 format. In bash, you can encode 13 (hexadecimal 0x0000000d) in Base64
-as follows:
+as four bytes, standing for the two-complement, 32 bits representation of an integer, followed by
+a progressive byte used to distinguish repeated requests. Moreover,
+in Mokamint, requests are sent in Base64 format. In bash, you can encode 13 (hexadecimal 0x0000000d),
+followed by a 0 progressive, in Base64 as follows:
 
 ```console
-mokamint@a0c6917c3bc3:~$ echo -ne "\x00\x00\x00\x0d" | base64
-AAAADQ==
+mokamint@a0c6917c3bc3:~$ echo -ne "\x00\x00\x00\x0d\x00" | base64
+AAAADQA=
 ```
 
 You can then send that payload as a request to Mokamint, as follows:
 
 ```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d" | base64)
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d\x00" | base64)
 ```
 
 Wait until a next block gets minted. We have programmed this blockchain to
@@ -330,7 +329,7 @@ mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
 Send a request to add 6 now:
 
 ```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x06" | base64)
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x06\x00" | base64)
 ```
 
 Wait, again, until a next block gets created and then check the state again. It should still be odd, since
@@ -341,10 +340,11 @@ mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
 * final state id: 01
 ```
 
-Finally, send again a request to add 13:
+Finally, send again a request to add 13. Note that you must specify a progressive value of 1,
+to distinguish this request from the previous one for adding 13 as well:
 
 ```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d" | base64)
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d\x01" | base64)
 ```
 
 Wait, again, until a next block gets created and then check the state again. It should still be back to even now, since
@@ -354,9 +354,6 @@ we added an odd value to the odd state:
 mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
 * final state id: 00
 ```
-
-Note that the repeated request to add 13 has been accepted since we initially configured the
-blockchain with the option `ALLOWS_REPEATED_REQUESTS=true`.
 
 ## Further information
 

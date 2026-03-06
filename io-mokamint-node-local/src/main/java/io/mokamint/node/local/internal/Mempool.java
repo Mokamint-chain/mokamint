@@ -176,14 +176,13 @@ public class Mempool {
 		var entry = mkRequestEntry(request);
 		int maxSize = config.getMempoolSize();
 		int maxBlockSize = config.getMaxBlockSize();
-		var allowsRepeatedRequests = config.allowsRepeatedRequests();
 		int reqSize;
 
 		synchronized (mempool) {
-			if (!allowsRepeatedRequests && base.isPresent() && blockchain.getRequestAddress(base.get(), entry.hash).isPresent())
+			if (base.isPresent() && blockchain.getRequestAddress(base.get(), entry.hash).isPresent())
 				// the request was already in blockchain
 				throw new RequestRejectedException("Repeated request " + entry);
-			else if (!allowsRepeatedRequests && mempool.contains(entry))
+			else if (mempool.contains(entry))
 				// the request was already in the mempool
 				throw new RequestRejectedException("Repeated request " + entry);
 			else if ((reqSize = request.size()) > maxBlockSize)

@@ -108,12 +108,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 	public final int oblivion;
 
 	/**
-	 * True if and only if requests can be repeated. Normally, this is false,
-	 * because it allows to replay requests even though they are signed.
-	 */
-	public final boolean allowsRepeatedRequests;
-
-	/**
 	 * Full constructor for the builder pattern.
 	 * 
 	 * @param builder the builder where information is extracted from
@@ -130,7 +124,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		this.maxBlockSize = builder.maxBlockSize;
 		this.maxRequestSize = builder.maxRequestSize;
 		this.oblivion = builder.oblivion;
-		this.allowsRepeatedRequests = builder.allowsRepeatedRequests;
 	}
 
 	@Override
@@ -145,14 +138,12 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			hashingForGenerations.equals(otherConfig.hashingForGenerations) &&
 			hashingForBlocks.equals(otherConfig.hashingForBlocks) &&
 			signatureForBlocks.equals(otherConfig.getSignatureForBlocks()) &&
-			signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines()) &&
-			allowsRepeatedRequests == otherConfig.allowsRepeatedRequests;
+			signatureForDeadlines.equals(otherConfig.getSignatureForDeadlines());
 	}
 
 	@Override
 	public int hashCode() {
-		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(maxRequestSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion
-				^ Boolean.hashCode(allowsRepeatedRequests);
+		return chainId.hashCode() ^ Long.hashCode(maxBlockSize) ^ Long.hashCode(maxRequestSize) ^ Long.hashCode(targetBlockCreationTime) ^ oblivion;
 	}
 
 	@Override
@@ -203,10 +194,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		sb.append("# the rapidity of changes of the acceleration for the block creation time\n");
 		sb.append("# between 0 (no change) and 100,000 (maximally fast change)\n");
 		sb.append("oblivion = " + oblivion + "\n");
-		sb.append("\n");
-		sb.append("# true if and only if requests can be repeated;\n");
-		sb.append("# this should normally be false, since otherwise requests can be replayed\n");
-		sb.append("allows_repeated_requests = " + allowsRepeatedRequests + "\n");
 
 		return sb.toString();
 	}
@@ -266,11 +253,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		return oblivion;
 	}
 
-	@Override
-	public boolean allowsRepeatedRequests() {
-		return allowsRepeatedRequests;
-	}
-
 	/**
 	 * The builder of a configuration object.
 	 * 
@@ -288,7 +270,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 		private int maxBlockSize = 1_000_000; // 1 megabyte
 		private int maxRequestSize = 500_000; // 500K
 		private int oblivion = 20_000;
-		private boolean allowsRepeatedRequests = false;
 
 		protected ConsensusConfigBuilderImpl() throws NoSuchAlgorithmException {
 			setHashingForDeadlines(HashingAlgorithms.shabal256());
@@ -352,10 +333,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			var oblivion = toml.getLong("oblivion");
 			if (oblivion != null)
 				setOblivion(oblivion);
-
-			var allowsRepeatedRequests = toml.getBoolean("allows_repeated_requests");
-			if (allowsRepeatedRequests != null)
-				setAllowsRepeatedRequests(allowsRepeatedRequests);
 		}
 
 		/**
@@ -375,7 +352,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 			this.maxBlockSize = config.getMaxBlockSize();
 			this.maxRequestSize = config.getMaxRequestSize();
 			this.oblivion = config.getOblivion();
-			this.allowsRepeatedRequests = config.allowsRepeatedRequests();
 		}
 
 		/**
@@ -399,7 +375,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				setTargetBlockCreationTime(json.getTargetBlockCreationTime());
 				setMaxBlockSize(json.getMaxBlockSize());
 				setOblivion(json.getOblivion());
-				setAllowsRepeatedRequests(json.allowsRepeatedRequests());
 			}
 			catch (NullPointerException | IllegalArgumentException e) {
 				throw new InconsistentJsonException(e.getMessage());
@@ -533,12 +508,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				throw new IllegalArgumentException("oblivion must be between 0 and 100,000 (inclusive)");
 
 			this.oblivion = (int) oblivion;
-			return getThis();
-		}
-
-		@Override
-		public B setAllowsRepeatedRequests(boolean allowsRepeatedRequests) {
-			this.allowsRepeatedRequests = allowsRepeatedRequests;
 			return getThis();
 		}
 

@@ -31,7 +31,6 @@ echo "  For instance:"
 echo -e "  ${BOLD_CYAN}docker run --log-driver local -it -e MINER_PUBLIC_SERVICE_URI=ws://lipari.hotmoka.io:8025 -v mokamint:/home/mokamint/mokamint mokamint/mokamint:VERSION mine${NC}"
 echo
 echo -e "* ${RED}config-new:${NC}   create the configuration directory of the first node of a brand new blockchain, with a local miner"
-echo -e "    ${BLUE}ALLOWS_REPEATED_REQUESTS:${NC} true if and only if the blockchain must allow repeated identical requests"
 echo -e "    ${BLUE}CHAIN_ID:${NC} the chain identifier of the blockchain"
 echo -e "    ${BLUE}PLOT_SIZE:${NC} the number of nonces of the plot that the node will use for mining"
 echo -e "    ${BLUE}PUBLIC_KEY_MINER_BASE58:${NC} the Base58-encoded public key that will identify the miner in the blockchain"

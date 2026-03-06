@@ -37,7 +37,6 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 	private final int targetBlockCreationTime;
 	private final int maxBlockSize;
 	private final int oblivion;
-	private final boolean allowsRepeatedRequests;
 
 	protected BasicConsensusConfigJson(ConsensusConfig<?,?> config) {
 		this.chainId = config.getChainId();
@@ -50,7 +49,6 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.maxBlockSize = config.getMaxBlockSize();
 		this.oblivion = config.getOblivion();
-		this.allowsRepeatedRequests = config.allowsRepeatedRequests();
 	}
 
 	public String getChainId() {
@@ -91,10 +89,6 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 
 	public int getOblivion() {
 		return oblivion;
-	}
-
-	public boolean allowsRepeatedRequests() {
-		return allowsRepeatedRequests;
 	}
 
 	@Override

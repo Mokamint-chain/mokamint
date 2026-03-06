@@ -38,8 +38,6 @@ import io.mokamint.node.api.Request;
 import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.nonce.api.Deadline;
 
-// echo -ne "\0\0\0\0" | base64
-
 /**
  * A minimal Mokamint application. It keeps truck of the parity of an integer value.
  * It is meant to exemplify the definition of a minimal application without database.
@@ -86,7 +84,7 @@ public class ParityApplication extends AbstractApplication {
 	@Override
 	public void checkRequest(Request request) throws ClosedApplicationException, RequestRejectedException {
 		try (var scope = mkScope()) {
-			// we just check that it is possible to extract a four bytes int from the request
+			// we check if it is possible to extract an int followed by a progressive byte
 			extractInt(request);
 		}
 	}
@@ -180,8 +178,8 @@ public class ParityApplication extends AbstractApplication {
 	}
 
 	private static int extractInt(Request request) throws RequestRejectedException {
-		if (request.getNumberOfBytes() != 4)
-			throw new RequestRejectedException("A request must contain a four byte two-complement int");
+		if (request.getNumberOfBytes() != 5)
+			throw new RequestRejectedException("A request must contain a four byte two-complement int followed by a progressive byte to distinguish repeated requests");
 
 		byte[] bytes = request.getBytes();
 		byte b1 = bytes[0];

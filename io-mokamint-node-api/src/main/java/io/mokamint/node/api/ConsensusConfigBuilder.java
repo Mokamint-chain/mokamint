@@ -122,15 +122,6 @@ public interface ConsensusConfigBuilder<C extends ConsensusConfig<C,B>, B extend
 	B setOblivion(int oblivion);
 
 	/**
-	 * Sets if repeated requests are allowed. Normally, this should be false,
-	 * since otherwise requests can be replayed.
-	 * 
-	 * @param allowsRepeatedRequests true if and only if requests can be repeated
-	 * @return this builder
-	 */
-	B setAllowsRepeatedRequests(boolean allowsRepeatedRequests);
-
-	/**
 	 * Builds the configuration.
 	 * 
 	 * @return the configuration
