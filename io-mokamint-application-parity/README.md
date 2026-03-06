@@ -280,6 +280,84 @@ mokamint@e41eda9afd3b:~$ exit
 
 ## Send requests to the network
 
+Assuming that you have both nodes running in your machine, inside containers `mokamint` and `mokamint2`,
+we show now how to send requests to the network. You can run the following commands inside either container.
+In our examples, we will use `mokamint`.
+
+Enter that container then:
+
+```console
+$ docker exec -it mokamint /bin/bash
+mokamint@a0c6917c3bc3:~$
+```
+
+First check that the application state is 0 (even), since no requests have been executed up to now:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full
+[...]
+* final state id: 00
+[...]
+```
+
+Let us send a request to add 13 now. Requests, for the Parity application, are represented
+as four bytes, standing for the two-complement, 32 bits representation of an integer. Moreover,
+in Mokamint, requests are sent in Base64 format. In bash, you can encode 13 (hexadecimal 0x0000000d) in Base64
+as follows:
+
+```console
+mokamint@a0c6917c3bc3:~$ echo -ne "\x00\x00\x00\x0d" | base64
+AAAADQ==
+```
+
+You can then send that payload as a request to Mokamint, as follows:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d" | base64)
+```
+
+Wait until a next block gets minted. We have programmed this blockchain to
+create a block every 20 seconds, but the actual time may vary significantly,
+since the blockchain has only two nodes with very little total mining power.
+In any case, a new block will be minted eventually, and you will then be able to check
+that the state of the application has changed to odd:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
+* final state id: 01
+```
+
+Send a request to add 6 now:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x06" | base64)
+```
+
+Wait, again, until a next block gets created and then check the state again. It should still be odd, since
+we added an even value to the odd state:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
+* final state id: 01
+```
+
+Finally, send again a request to add 13:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d" | base64)
+```
+
+Wait, again, until a next block gets created and then check the state again. It should still be back to even now, since
+we added an odd value to the odd state:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
+* final state id: 00
+```
+
+Note that the repeated request to add 13 has been accepted since we initially configured the
+blockchain with the option `ALLOWS_REPEATED_REQUESTS=true`.
+
 ## Further information
 
 You can see all options of the docker scripts by executing:
