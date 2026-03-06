@@ -106,11 +106,31 @@ Creating a plot file for the miner, containing 1000 nonces, for the chain id "pa
 done
 ```
 
-Note that the public key of the miner is inserted in base58. The target block creation time, in milliseconds, is the average time between the creation of two successive blocks. The chain identifier identifies the new network. Repeated requests will be allowed in this new blockchain, which is sensible since requests in the Parity application are not distinguished by a progressive nonce.
+Note that the public key of the miner is inserted in base58 format. The target block creation time, in milliseconds, is the average time between the creation of two successive blocks. The chain identifier identifies the new network. Repeated requests will be allowed in this new blockchain, which is sensible since requests in the Parity application are not distinguished by a progressive nonce.
 
 The script above prompts for the password of the key pair used for signing the new blocks. Enter your chosen password here, possibly distinct from that chosen for the miner, or just leave it blank. The script has configured the node and created a plot file for its miner.
 
 ### Initialize the node: `init`
+
+The initialization of the node consists in the execution of a few initial transactions that create the genesis block.
+You can do this with:
+
+```console
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Parity mokamint/mokamint:1.7.0 init
+Initializing a node for a brand new blockchain, whose configuration has been created with config-new.
+
+                 APPLICATION="Parity"
+
+Enter value for --password (the password of the key pair of the node): 
+Loading mokamint/plot.plot... done.
+The path "chain" already exists! Will restart the node from the current content of "chain".
+If you want to start a blockchain from scratch, stop this process, delete "chain" and start again a node with --init.
+Creating the Parity application... done.
+[... many log messages follow ...]
+```
+
+When prompted, use the password that you have chosen above for the node.
+Do not worry about the warning about the chain directory, this is perfectly fine.
 
 ### Run the node: `go`
 
