@@ -25,9 +25,9 @@ import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.node.api.ChainInfo;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.cli.ChainInfoOutputs;
 import io.mokamint.node.cli.api.chain.ChainInfoOutput;
-import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
 import io.mokamint.node.cli.internal.chain.json.ChainInfoOutputJson;
 import io.mokamint.node.remote.api.RemotePublicNode;
 

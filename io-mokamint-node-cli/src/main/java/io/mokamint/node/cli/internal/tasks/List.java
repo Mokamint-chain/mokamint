@@ -24,7 +24,7 @@ import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.TaskInfo;
-import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;

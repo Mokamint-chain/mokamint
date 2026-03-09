@@ -25,6 +25,7 @@ import io.hotmoka.cli.AbstractRpcCommand;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.cli.AbstractRestrictedRpcCommand.RpcCommandBody;
 import io.mokamint.node.remote.RemoteRestrictedNodes;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import picocli.CommandLine.Option;
@@ -33,7 +34,7 @@ import picocli.CommandLine.Option;
  * Shared code among the command that connect to a remote Mokamint node and perform Rpc calls
  * to the restricted API of the node.
  */
-public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<RemoteRestrictedNode> {
+public abstract class AbstractRestrictedRpcCommandImpl extends AbstractRpcCommand<RemoteRestrictedNode> {
 
 	@Option(names = "--restricted-uri", description = "the network URI where the restricted API of the node is published", defaultValue = "ws://localhost:8031")
 	private URI restrictedUri;
@@ -44,7 +45,7 @@ public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<Re
 	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
 	private boolean json;
 
-	protected AbstractRestrictedRpcCommand() {}
+	protected AbstractRestrictedRpcCommandImpl() {}
 
 	/**
 	 * Yields the URI of the restricted API of the remote service.
@@ -99,24 +100,5 @@ public abstract class AbstractRestrictedRpcCommand extends AbstractRpcCommand<Re
 		};
 
 		execute(RemoteRestrictedNodes::of, body, restrictedUri);
-	}
-
-	/**
-	 * The body of the command.
-	 */
-	protected interface RpcCommandBody {
-
-		/**
-		 * Runs the body of the command.
-		 * 
-		 * @param remote the remote object
-		 * @throws TimeoutException if the command timeouts
-		 * @throws InterruptedException if the command was interrupted while waiting
-		 * @throws ClosedNodeException if the remote node is already closed
-		 * @throws MisbehavingNodeException if the remote node is misbehaving
-		 * @throws CommandException if something erroneous must be logged and the user must be informed;
-		 *                          throw this is the user provided a wrong argument to the command
-		 */
-		void run(RemoteRestrictedNode remote) throws TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException, CommandException;
 	}
 }

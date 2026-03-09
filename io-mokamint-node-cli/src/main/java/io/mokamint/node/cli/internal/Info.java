@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.NodeInfos;
 import io.mokamint.node.api.ClosedNodeException;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;

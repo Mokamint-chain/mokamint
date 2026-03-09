@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.Peers;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
+import io.mokamint.node.cli.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;

@@ -179,8 +179,6 @@ public class BitcoinApplication extends AbstractApplication {
 			trie = trie.put(publicKeyOfPeer, balanceOfPeer.add(ONE_HUNDRED));
 			trie = trie.put(publicKeyOfMiner, balanceOfMiner.add(ONE_HUNDRED));
 
-			System.out.println(trie.get(publicKeyOfPeer) + ", " + trie.get(publicKeyOfMiner));
-
 			return trie.getRoot();
 		}
 	}

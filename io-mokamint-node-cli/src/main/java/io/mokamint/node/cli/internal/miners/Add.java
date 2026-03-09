@@ -23,7 +23,7 @@ import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.MinerInfos;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.MinerInfo;
-import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
+import io.mokamint.node.cli.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;

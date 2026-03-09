@@ -14,69 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.internal;
+package io.mokamint.node.cli;
 
-import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
-import io.hotmoka.cli.AbstractRpcCommandWithJsonOutput;
 import io.hotmoka.cli.CommandException;
 import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.remote.RemotePublicNodes;
+import io.mokamint.node.cli.internal.AbstractPublicRpcCommandImpl;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import picocli.CommandLine.Option;
 
 /**
  * Shared code among the commands that connect to a remote and perform Rpc calls
  * to the public API of the remote.
  */
-public abstract class AbstractPublicRpcCommand extends AbstractRpcCommandWithJsonOutput<RemotePublicNode> {
-
-	@Option(names = { "--uri", "--public-uri" }, description = "the network URI where the public API of the service is published", defaultValue = "ws://localhost:8030")
-	private URI publicUri;
+public abstract class AbstractPublicRpcCommand extends AbstractPublicRpcCommandImpl {
 
 	protected AbstractPublicRpcCommand() {}
 
 	/**
-	 * Yields the URI of the public API of the remote service.
-	 * 
-	 * @return the URI
-	 */
-	protected final URI publicUri() {
-		return publicUri;
-	}
-
-	/**
-	 * Opens a remote node connected to the public uri of the remote service and runs the given command body.
-	 * 
-	 * @param what the body
-	 * @throws CommandException if something erroneous must be logged and the user must be informed
-	 */
-	protected void execute(RpcCommandBody what) throws CommandException {
-		var body = new io.hotmoka.cli.RpcCommandBody<RemotePublicNode>() {
-
-			@Override
-			public void run(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException {
-				try {
-					what.run(remote);
-				}
-				catch (ClosedNodeException e) {
-					throw new CommandException("The node is already closed", e);
-				}
-				catch (MisbehavingNodeException e) {
-					throw new CommandException("The node is misbehaving", e);
-				}
-			}
-		};
-
-		execute(RemotePublicNodes::of, body, publicUri);
-	}
-
-	/**
 	 * The body of the command.
 	 */
-	protected interface RpcCommandBody {
+	public interface RpcCommandBody {
 
 		/**
 		 * Runs the body of the command.

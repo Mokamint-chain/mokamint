@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,32 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.cli.internal.requests;
+package io.mokamint.application.bitcoin.cli.internal.requests;
 
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import io.hotmoka.cli.CommandException;
-import io.hotmoka.crypto.Base64;
-import io.hotmoka.crypto.Base64ConversionException;
-import io.mokamint.node.MempoolEntries;
-import io.mokamint.node.Requests;
-import io.mokamint.node.api.ApplicationTimeoutException;
+import io.mokamint.node.MisbehavingNodeException;
 import io.mokamint.node.api.ClosedNodeException;
-import io.mokamint.node.api.MempoolEntry;
-import io.mokamint.node.api.RequestRejectedException;
 import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
-import jakarta.websocket.EncodeException;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Parameters;
 
-@Command(name = "add", description = "Add a request to the mempool of a node.")
-public class Add extends AbstractPublicRpcCommand {
+public class SendImpl extends AbstractPublicRpcCommand {
 
-	@Parameters(description = "the Base64-encoded bytes of the request to add")
-	private String tx;
+	private final static Logger LOGGER = Logger.getLogger(SendImpl.class.getName());
 
-	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
+	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException, MisbehavingNodeException {
+		//if (from < -1L)
+			//throw new CommandException("from cannot be smaller than -1!");
+
+		//var info = remote.getChainInfo();
+	}
+
+	//@Parameters(description = "the Base64-encoded bytes of the request to add")
+	//private String tx;
+
+	/*private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
 		MempoolEntry info = addRequest(remote);
 
 		if (json()) {
@@ -67,7 +67,7 @@ public class Add extends AbstractPublicRpcCommand {
 		catch (RequestRejectedException e) {
 			throw new CommandException("The request has been rejected: " + e.getMessage(), e);
 		}
-	}
+	}*/
 
 	@Override
 	protected void execute() throws CommandException {

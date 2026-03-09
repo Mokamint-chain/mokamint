@@ -32,7 +32,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.GenesisBlockDescription;
 import io.mokamint.node.api.NonGenesisBlockDescription;
 import io.mokamint.node.api.PortionRejectedException;
-import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;

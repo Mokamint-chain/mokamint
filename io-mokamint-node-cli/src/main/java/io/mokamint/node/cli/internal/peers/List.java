@@ -28,7 +28,7 @@ import io.hotmoka.exceptions.UncheckConsumer;
 import io.hotmoka.websockets.api.FailedDeploymentException;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.PeerInfo;
-import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.RemotePublicNodes;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import picocli.CommandLine.Command;

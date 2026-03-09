@@ -23,7 +23,7 @@ import io.hotmoka.crypto.Hex;
 import io.mokamint.node.RequestAddresses;
 import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.RequestAddress;
-import io.mokamint.node.cli.internal.AbstractPublicRpcCommand;
+import io.mokamint.node.cli.AbstractPublicRpcCommand;
 import io.mokamint.node.remote.api.RemotePublicNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;

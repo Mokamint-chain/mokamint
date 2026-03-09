@@ -40,7 +40,7 @@ module io.mokamint.node.cli {
 	requires io.mokamint.application.api;
 	requires io.mokamint.miner.local;
 	requires io.mokamint.miner.remote;
-	requires io.mokamint.node.remote;
+	requires transitive io.mokamint.node.remote;
 	requires io.mokamint.plotter;
 	requires io.hotmoka.cli;
 	requires io.mokamint.application;

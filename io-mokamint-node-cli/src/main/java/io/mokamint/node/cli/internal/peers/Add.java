@@ -26,7 +26,7 @@ import io.mokamint.node.api.ClosedNodeException;
 import io.mokamint.node.api.ClosedPeerException;
 import io.mokamint.node.api.PeerInfo;
 import io.mokamint.node.api.PeerRejectedException;
-import io.mokamint.node.cli.internal.AbstractRestrictedRpcCommand;
+import io.mokamint.node.cli.AbstractRestrictedRpcCommand;
 import io.mokamint.node.remote.api.RemoteRestrictedNode;
 import jakarta.websocket.EncodeException;
 import picocli.CommandLine.Command;

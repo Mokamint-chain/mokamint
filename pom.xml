@@ -116,6 +116,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-application-empty</module>
       <module>io-mokamint-application-parity</module>
       <module>io-mokamint-application-bitcoin</module>
+      <module>io-mokamint-application-bitcoin-cli</module>
       <module>io-mokamint-constants</module>
     </modules>
 
