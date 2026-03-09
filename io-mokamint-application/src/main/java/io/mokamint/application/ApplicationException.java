@@ -14,23 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.node.local;
+package io.mokamint.application;
 
 /**
- * An exception stating that a local Mokamint node was not able to perform an operation.
+ * An exception stating that an application was not able to perform an operation.
  * This is a bug in the code of the node or a limit of the system. For instance,
  * it might occur because a database is corrupted, or a cryptographic algorithm is not available
  * or because a file cannot be accessed. Therefore, this exception is not meant to be caught.
  */
 @SuppressWarnings("serial")
-public class LocalNodeException extends RuntimeException {
+public class ApplicationException extends RuntimeException {
 
 	/**
 	 * Creates a new exception with the given message.
 	 * 
 	 * @param message the message
 	 */
-	public LocalNodeException(String message) {
+	public ApplicationException(String message) {
 		super(message);
 	}
 
@@ -39,7 +39,7 @@ public class LocalNodeException extends RuntimeException {
 	 * 
 	 * @param cause the cause
 	 */
-	public LocalNodeException(Throwable cause) {
+	public ApplicationException(Throwable cause) {
 		super(cause);
 	}
 
@@ -49,7 +49,7 @@ public class LocalNodeException extends RuntimeException {
 	 * @param message the message
 	 * @param cause the cause
 	 */
-	public LocalNodeException(String message, Throwable cause) {
+	public ApplicationException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }

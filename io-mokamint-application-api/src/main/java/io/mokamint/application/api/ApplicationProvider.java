@@ -14,16 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements a minimal Mokamint application that keeps track of the parity of an integer value.
- */
-module io.mokamint.application.parity {
-	exports io.mokamint.application.parity;
-	provides io.mokamint.application.api.ApplicationProvider with io.mokamint.application.parity.ParityApplicationProvider;
+package io.mokamint.application.api;
 
-    requires io.mokamint.application;
-    requires transitive io.mokamint.application.api;
-    requires transitive io.mokamint.nonce.api;
-    requires transitive io.mokamint.node.api;
-    requires io.hotmoka.crypto;
+import java.nio.file.Path;
+
+import io.hotmoka.annotations.ThreadSafe;
+
+/**
+ * A provider of a Mokamint application.
+ */
+@ThreadSafe
+public interface ApplicationProvider {
+
+	/**
+	 * Yields the application.
+	 * 
+	 * @param workingDir the directory where the application can store its data
+	 * @return the application
+	 */
+	Application get(Path workingDir);
 }

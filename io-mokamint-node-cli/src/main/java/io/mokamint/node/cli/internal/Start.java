@@ -314,7 +314,7 @@ public class Start extends AbstractCommand {
 				System.out.print("Creating the " + application + " application... ");
 
 				try {
-					app = Applications.load(application);
+					app = Applications.load(application, config.getDir());
 				}
 				catch (ApplicationNotFoundException e) {
 					throw new CommandException("The application " + application + " has not beend found", e);

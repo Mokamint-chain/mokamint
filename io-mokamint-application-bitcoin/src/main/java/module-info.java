@@ -15,15 +15,17 @@ limitations under the License.
 */
 
 /**
- * This module implements a minimal Mokamint application that keeps track of the parity of an integer value.
+ * This module implements a Mokamint application functionally equivalent to the kernel of Bitcoin.
  */
-module io.mokamint.application.parity {
-	exports io.mokamint.application.parity;
-	provides io.mokamint.application.api.ApplicationProvider with io.mokamint.application.parity.ParityApplicationProvider;
+module io.mokamint.application.bitcoin {
+	exports io.mokamint.application.bitcoin;
+	provides io.mokamint.application.api.ApplicationProvider with io.mokamint.application.bitcoin.BitcoinApplicationProvider;
 
     requires io.mokamint.application;
-    requires transitive io.mokamint.application.api;
     requires transitive io.mokamint.nonce.api;
     requires transitive io.mokamint.node.api;
+    requires io.hotmoka.patricia;
+    requires io.hotmoka.xodus;
     requires io.hotmoka.crypto;
+    requires java.logging;
 }

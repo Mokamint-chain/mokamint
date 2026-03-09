@@ -31,5 +31,5 @@ module io.mokamint.application {
 	// classes without the no-args constructor
 	requires jdk.unsupported;
 
-	uses io.mokamint.application.api.Application;
+	uses io.mokamint.application.api.ApplicationProvider;
 }

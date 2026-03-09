@@ -16,10 +16,12 @@ limitations under the License.
 
 package io.mokamint.application;
 
+import java.nio.file.Path;
 import java.util.ServiceLoader.Provider;
 import java.util.stream.Stream;
 
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.internal.ApplicationLoader;
 
 /**
@@ -33,12 +35,13 @@ public abstract class Applications {
 	 * Loads from the module path the application with the given name.
 	 * 
 	 * @param name the name of the required application
+	 * @param workingDir the directory where the application can store its data, if any
 	 * @return the application
 	 * @throws ApplicationNotFoundException if there is no application with the given name
-	 *                                      or if there is more than one
+	 *                                      or if there are more than one
 	 */
-	public static Application load(String name) throws ApplicationNotFoundException {
-		return ApplicationLoader.load(name);
+	public static Application load(String name, Path workingDir) throws ApplicationNotFoundException {
+		return ApplicationLoader.load(name, workingDir);
 	}
 
 	/**
@@ -46,7 +49,7 @@ public abstract class Applications {
 	 * 
 	 * @return the providers
 	 */
-	public static Stream<Provider<Application>> available() {
+	public static Stream<Provider<ApplicationProvider>> available() {
 		return ApplicationLoader.available();
 	}
 }

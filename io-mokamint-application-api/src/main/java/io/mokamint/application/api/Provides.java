@@ -14,16 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * This module implements an empty Mokamint application.
- */
-module io.mokamint.application.empty {
-	exports io.mokamint.application.empty;
-	provides io.mokamint.application.api.ApplicationProvider with io.mokamint.application.empty.EmptyApplicationProvider;
+package io.mokamint.application.api;
 
-    requires io.mokamint.application;
-    requires transitive io.mokamint.application.api;
-    requires transitive io.mokamint.nonce.api;
-    requires transitive io.mokamint.node.api;
-    requires io.hotmoka.crypto;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/**
+ * An annotation for application providers, stating which application type they provide.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Provides {
+
+	/**
+	 * Yields the type of the application provided by the provider.
+	 * 
+	 * @return the type of the application provided by the provider
+	 */
+	public Class<? extends Application> value();
 }

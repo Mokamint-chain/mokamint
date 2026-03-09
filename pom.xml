@@ -34,6 +34,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <io.hotmoka.marshalling.version>1.4.8</io.hotmoka.marshalling.version>
       <io.hotmoka.exceptions.version>1.6.0</io.hotmoka.exceptions.version>
       <io.hotmoka.xodus.version>1.4.9</io.hotmoka.xodus.version>
+      <io.hotmoka.patricia.version>1.12.0</io.hotmoka.patricia.version>
       <io.hotmoka.testing.version>1.4.1</io.hotmoka.testing.version>
     </properties>
 
@@ -102,18 +103,19 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <module>io-mokamint-plotter</module>
       <module>io-mokamint-plotter-cli-api</module>
       <module>io-mokamint-plotter-cli</module>
+      <module>io-mokamint-application-api</module>
+      <module>io-mokamint-application</module>
       <module>io-mokamint-application-messages-api</module>
       <module>io-mokamint-application-messages</module>
       <module>io-mokamint-application-service-api</module>
       <module>io-mokamint-application-service</module>
-      <module>io-mokamint-application-api</module>
-      <module>io-mokamint-application</module>
       <module>io-mokamint-application-remote-api</module>
       <module>io-mokamint-application-remote</module>
       <module>io-mokamint-application-integration</module>
       <module>io-mokamint-application-cli</module>
       <module>io-mokamint-application-empty</module>
       <module>io-mokamint-application-parity</module>
+      <module>io-mokamint-application-bitcoin</module>
       <module>io-mokamint-constants</module>
     </modules>
 

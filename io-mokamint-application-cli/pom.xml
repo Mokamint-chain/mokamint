@@ -61,6 +61,11 @@
       <artifactId>io-mokamint-application-parity</artifactId>
       <version>${mokamint.version}</version>	
 	</dependency>
+	<dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-bitcoin</artifactId>
+      <version>${mokamint.version}</version>	
+	</dependency>
   </dependencies>
 
   <build>
@@ -111,7 +116,16 @@
             <configuration>
               <outputDirectory>${project.basedir}/modules/unnamed</outputDirectory>
               <includeArtifactIds>
-                none
+				annotations,
+                commons-compress,
+                kotlin-stdlib,
+                kotlin-stdlib-common,
+                slf4j-api,
+                slf4j-nop,
+                xodus-compress,
+                xodus-environment,
+                xodus-openAPI,
+                xodus-utils
               </includeArtifactIds>
             </configuration>
           </execution>
@@ -125,6 +139,16 @@
               <outputDirectory>${project.basedir}/modules/explicit_or_automatic</outputDirectory>
               <excludeArtifactIds>
                 <!-- we exclude all unnamed modules -->
+                annotations,
+                commons-compress,
+                kotlin-stdlib,
+                kotlin-stdlib-common,
+                slf4j-api,
+                slf4j-nop,
+                xodus-compress,
+                xodus-environment,
+                xodus-openAPI,
+                xodus-utils
               </excludeArtifactIds>
             </configuration>
           </execution>

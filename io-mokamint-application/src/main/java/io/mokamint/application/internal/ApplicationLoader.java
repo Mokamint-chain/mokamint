@@ -16,6 +16,7 @@ limitations under the License.
 
 package io.mokamint.application.internal;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
@@ -24,7 +25,9 @@ import java.util.stream.Stream;
 
 import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.api.Name;
+import io.mokamint.application.api.Provides;
 
 /**
  * A loader of an application from the module path.
@@ -33,13 +36,15 @@ public class ApplicationLoader {
 
 	/**
 	 * Loads from the module path the application with the given name.
-	 * 
+	 *
+	 * @param name the name of the application to load
+	 * @param workingDir the directory where the application can store its data, if any
 	 * @return the application
 	 * @throws ApplicationNotFoundException if there is no application with the given name
 	 *                                      or if there is more than one
 	 */
-	public static Application load(String name) throws ApplicationNotFoundException {
-		List<Provider<Application>> providers = available()
+	public static Application load(String name, Path workingDir) throws ApplicationNotFoundException {
+		List<Provider<ApplicationProvider>> providers = available()
 			.filter(app -> provides(name, app))
 			.collect(Collectors.toList());
 
@@ -48,7 +53,7 @@ public class ApplicationLoader {
 		else if (providers.size() > 1)
 			throw new ApplicationNotFoundException("There is more than one provider for application " + name);
 
-		return providers.get(0).get();
+		return providers.get(0).get().get(workingDir);
 	}
 
 	/**
@@ -56,12 +61,16 @@ public class ApplicationLoader {
 	 * 
 	 * @return the providers
 	 */
-	public static Stream<Provider<Application>> available() {
-		return ServiceLoader.load(Application.class).stream();
+	public static Stream<Provider<ApplicationProvider>> available() {
+		return ServiceLoader.load(ApplicationProvider.class).stream();
 	}
 
-	private static boolean provides(String name, ServiceLoader.Provider<Application> provider) {
-		Name ann = provider.type().getAnnotation(Name.class);
+	private static boolean provides(String name, ServiceLoader.Provider<ApplicationProvider> provider) {
+		Provides providedApplication = provider.type().getAnnotation(Provides.class);
+		if (providedApplication == null)
+			return false;
+
+		Name ann = providedApplication.value().getAnnotation(Name.class);
 		return ann != null && name.equals(ann.value());
 	}
 }

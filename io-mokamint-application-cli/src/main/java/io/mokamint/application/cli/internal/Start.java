@@ -19,6 +19,7 @@ package io.mokamint.application.cli.internal;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +30,7 @@ import io.mokamint.application.ApplicationNotFoundException;
 import io.mokamint.application.Applications;
 import io.mokamint.application.service.ApplicationServices;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Parameters;
 
@@ -43,13 +45,16 @@ public class Start extends AbstractCommand {
 	@Parameters(index = "1", description = "the port number where the service to the application will be published", defaultValue = "8050")
 	private int port;
 
+	@Option(names = "--dir", description = "the directory where the application can store its data, if any", defaultValue = "application")
+	private Path dir;
+
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
 	@Override
 	protected void execute() throws CommandException {
 		System.out.print("Publishing a service for application " + application + " at ws://localhost:" + port + "... ");
 
-		try (var app = Applications.load(application); var service = ApplicationServices.open(app, port)) {
+		try (var app = Applications.load(application, dir); var service = ApplicationServices.open(app, port)) {
 			System.out.println(Ansi.AUTO.string("@|blue done.|@"));
 
 			try (var reader = new BufferedReader(new InputStreamReader(System.in))) {

@@ -17,6 +17,7 @@ limitations under the License.
 package io.mokamint.application.cli.internal;
 
 import java.util.ServiceLoader.Provider;
+import java.util.logging.Logger;
 
 import io.hotmoka.cli.AbstractCommand;
 import io.hotmoka.cli.AbstractRow;
@@ -24,9 +25,10 @@ import io.hotmoka.cli.AbstractTable;
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.cli.Table;
 import io.mokamint.application.Applications;
-import io.mokamint.application.api.Application;
+import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
+import io.mokamint.application.api.Provides;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
@@ -38,6 +40,8 @@ public class List extends AbstractCommand {
 
 	@Option(names = "--json", description = "print the output in JSON", defaultValue = "false")
 	private boolean json;
+
+	private final static Logger LOGGER = Logger.getLogger(List.class.getName());
 
 	@Override
 	protected void execute() throws CommandException {
@@ -95,13 +99,18 @@ public class List extends AbstractCommand {
 			Applications.available().forEach(this::add);
 		}
 
-		private void add(Provider<Application> provider) {
-			var type = provider.type();
-			Name annName = type.getAnnotation(Name.class);
-			String name = annName != null ? annName.value() : "---";
-			Description annDescription = type.getAnnotation(Description.class);
-			String description = annDescription != null ? annDescription.value() : "---";
-			add(new Row(name, type.getName(), description));
+		private void add(Provider<ApplicationProvider> provider) {
+			Provides providedApplication = provider.type().getAnnotation(Provides.class);
+			if (providedApplication == null)
+				LOGGER.warning("Application provider " + provider.type() + " does not specify which application type it provides: missing @" + Provides.class.getSimpleName());
+			else {
+				var type = providedApplication.value();
+				Name annName = type.getAnnotation(Name.class);
+				String name = annName != null ? annName.value() : "---";
+				Description annDescription = type.getAnnotation(Description.class);
+				String description = annDescription != null ? annDescription.value() : "---";
+				add(new Row(name, type.getName(), description));
+			}
 		}
 	}
 }
