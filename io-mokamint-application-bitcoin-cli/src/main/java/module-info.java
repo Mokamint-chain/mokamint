@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,5 @@ module io.mokamint.application.bitcoin.cli {
 	requires io.hotmoka.cli;
 	requires io.hotmoka.crypto;
 
-	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate classes without the no-args constructor
- 	//requires jdk.unsupported;
 	requires java.logging;
 }
