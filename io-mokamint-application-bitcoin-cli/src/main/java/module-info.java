@@ -26,11 +26,13 @@ module io.mokamint.application.bitcoin.cli {
 	opens io.mokamint.application.bitcoin.cli.internal.requests to info.picocli;
 
 	requires io.mokamint.constants;
+	requires io.mokamint.application.bitcoin;
 	requires io.mokamint.node.cli;
 	requires io.mokamint.node;
 	requires io.mokamint.node.remote.api;
 	requires io.hotmoka.cli;
 	requires io.hotmoka.crypto;
+	requires io.hotmoka.websockets.beans;
 
 	requires java.logging;
 }

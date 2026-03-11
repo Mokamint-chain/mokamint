@@ -20,6 +20,7 @@ limitations under the License.
 module io.mokamint.node.cli {
 	exports io.mokamint.node.cli;
 	exports io.mokamint.node.cli.chain;
+	exports io.mokamint.node.cli.converters;
 
 	// needed to inject CLI options or JSON serialization
 	opens io.mokamint.node.cli.internal to info.picocli;
