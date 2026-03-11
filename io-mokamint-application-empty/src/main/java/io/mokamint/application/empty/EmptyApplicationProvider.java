@@ -21,8 +21,16 @@ import java.nio.file.Path;
 import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.api.Provides;
 
+/**
+ * A provider for the Empty application.
+ */
 @Provides(EmptyApplication.class)
 public class EmptyApplicationProvider implements ApplicationProvider {
+
+	/**
+	 * Builds a provider for the Empty application.
+	 */
+	public EmptyApplicationProvider() {}
 
 	@Override
 	public EmptyApplication get(Path workingDir) {

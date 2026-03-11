@@ -21,8 +21,16 @@ import java.nio.file.Path;
 import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.api.Provides;
 
+/**
+ * A provider for the Bitcoin application.
+ */
 @Provides(BitcoinApplication.class)
 public class BitcoinApplicationProvider implements ApplicationProvider {
+
+	/**
+	 * Builds a provider for the Bitcoin application.
+	 */
+	public BitcoinApplicationProvider() {}
 
 	@Override
 	public BitcoinApplication get(Path workingDir) {

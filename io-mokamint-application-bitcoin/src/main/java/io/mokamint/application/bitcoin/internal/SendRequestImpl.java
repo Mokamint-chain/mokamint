@@ -27,7 +27,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Objects;
 
+import io.hotmoka.crypto.Base58;
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.SignatureAlgorithms;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.marshalling.AbstractMarshallable;
@@ -49,6 +52,11 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 	private final PublicKey publicKeyOfSender;
 
 	/**
+	 * The base58 encoding of {@link #publicKeyOfSender}.
+	 */
+	private final String publicKeyOfSenderBase58;
+
+	/**
 	 * The amount of coins to send.
 	 */
 	private final BigInteger amount;
@@ -57,6 +65,16 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 	 * The public key of the receiver.
 	 */
 	private final PublicKey publicKeyOfReceiver;
+
+	/**
+	 * The base58 encoding of {@link #publicKeyOfReceiver}.
+	 */
+	private final String publicKeyOfReceiverBase58;
+
+	/**
+	 * A progressive nonce used to distinguish repeated requests.
+	 */
+	private final long nonce;
 
 	/**
 	 * The signature of the request.
@@ -75,16 +93,18 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 	 * @param keysOfSender the key pair of the sender, for the ed25519 signature algorithm
 	 * @param amount the amount of coins to send
 	 * @param publicKeyOfReceiver the public key of the receiver, for the ed25519 signature algorithm
+	 * @param nonce a progressive nonce used to distinguish repeated requests
 	 * @throws InvalidKeyException if one of the keys is invalid for the ed25519 signature algorithm
 	 * @throws SignatureException if the request could not be signed
 	 */
-	public SendRequestImpl(KeyPair keysOfSender, BigInteger amount, PublicKey publicKeyOfReceiver) throws InvalidKeyException, SignatureException {
+	public SendRequestImpl(KeyPair keysOfSender, BigInteger amount, PublicKey publicKeyOfReceiver, long nonce) throws InvalidKeyException, SignatureException {
 		this.publicKeyOfSender = keysOfSender.getPublic();
-		this.amount = amount;
+		this.amount = Objects.requireNonNull(amount);
 		this.publicKeyOfReceiver = publicKeyOfReceiver;
-		// we enforce the validity of the public keys
-		ed25519.encodingOf(publicKeyOfSender);
-		ed25519.encodingOf(publicKeyOfReceiver);
+		// the following enforces the validity of the public keys
+		this.publicKeyOfSenderBase58 = Base58.toBase58String(ed25519.encodingOf(publicKeyOfSender));
+		this.publicKeyOfReceiverBase58 = Base58.toBase58String(ed25519.encodingOf(publicKeyOfReceiver));
+		this.nonce = nonce;
 		this.signature = ed25519.getSigner(keysOfSender.getPrivate(), SendRequestImpl::toByteArrayWithoutSignature).sign(this);
 	}
 
@@ -111,9 +131,14 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 		int signatureLength = ed25519.length().getAsInt();
 
 		try {
-			this.publicKeyOfSender = ed25519.publicKeyFromEncoding(context.readBytes(publicKeyLength, "Expected " + publicKeyLength + " bytes for the public key of the sender"));
+			byte[] publicKeyOfSenderEncoding = context.readBytes(publicKeyLength, "Expected " + publicKeyLength + " bytes for the public key of the sender");
+			this.publicKeyOfSender = ed25519.publicKeyFromEncoding(publicKeyOfSenderEncoding);
+			this.publicKeyOfSenderBase58 = Base58.toBase58String(publicKeyOfSenderEncoding);
 			this.amount = context.readBigInteger();
-			this.publicKeyOfReceiver = ed25519.publicKeyFromEncoding(context.readBytes(publicKeyLength, "Expected " + publicKeyLength + " bytes for the public key of the receiver"));
+			byte[] publicKeyOfReceiverEncoding = context.readBytes(publicKeyLength, "Expected " + publicKeyLength + " bytes for the public key of the receiver");
+			this.publicKeyOfReceiver = ed25519.publicKeyFromEncoding(publicKeyOfReceiverEncoding);
+			this.publicKeyOfReceiverBase58 = Base58.toBase58String(publicKeyOfReceiverEncoding);
+			this.nonce = context.readLong();
 			this.signature = context.readBytes(signatureLength, "Expected " + signatureLength + " bytes for the signature");
 			ed25519.getVerifier(publicKeyOfSender, SendRequestImpl::toByteArrayWithoutSignature).verify(this, signature);
 		}
@@ -132,11 +157,11 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 	 * @throws IOException if marshalling failed
 	 */
 	private void intoWithoutSignature(MarshallingContext context) throws IOException {
-		this.toByteArray();
 		try {
 			context.writeBytes(ed25519.encodingOf(publicKeyOfSender));
 			context.writeBigInteger(amount);
 			context.writeBytes(ed25519.encodingOf(publicKeyOfReceiver));
+			context.writeLong(nonce);
 		}
 		catch (InvalidKeyException e) {
 			// the two constructors enforce the validity of the keys, therefore this should be impossible
@@ -160,9 +185,33 @@ public class SendRequestImpl extends AbstractMarshallable implements SendRequest
 	}
 
 	@Override
+	public long getNonce() {
+		return nonce;
+	}
+
+	@Override
 	public void into(MarshallingContext context) throws IOException {
 		intoWithoutSignature(context);
 		context.writeBytes(signature);
+	}
+
+	@Override
+	public String toString() {
+		return publicKeyOfSenderBase58 + " sends " + amount + " to " + publicKeyOfReceiverBase58 + " with nonce = " + nonce + " and signature = " + Hex.toHexString(signature);
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof SendRequest sr
+				&& publicKeyOfSender.equals(sr.getPublicKeyOfSender())
+				&& publicKeyOfReceiver.equals(sr.getPublicKeyOfReceiver())
+				&& amount.equals(sr.getAmount())
+				&& nonce == sr.getNonce();
+	}
+
+	@Override
+	public int hashCode() {
+		return publicKeyOfSender.hashCode() ^ publicKeyOfReceiver.hashCode() ^ amount.hashCode() ^ Long.hashCode(nonce);
 	}
 
 	/**

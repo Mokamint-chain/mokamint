@@ -37,18 +37,20 @@ public interface SendRequest extends Marshallable {
 	 * @param keysOfSender the key pair of the sender, for the ed25519 signature algorithm
 	 * @param amount the amount of coins to send
 	 * @param publicKeyOfReceiver the public key of the receiver, for the ed25519 signature algorithm
+	 * @param nonce a progressive nonce used to distinguish repeated requests
 	 * @return the request
 	 * @throws InvalidKeyException if one of the keys is invalid for the ed25519 signature algorithm
 	 * @throws SignatureException if the request could not be signed
 	 */
-	static SendRequest of(KeyPair keysOfSender, BigInteger amount, PublicKey publicKeyOfReceiver) throws InvalidKeyException, SignatureException {
-		return new SendRequestImpl(keysOfSender, amount, publicKeyOfReceiver);
+	static SendRequest of(KeyPair keysOfSender, BigInteger amount, PublicKey publicKeyOfReceiver, long nonce) throws InvalidKeyException, SignatureException {
+		return new SendRequestImpl(keysOfSender, amount, publicKeyOfReceiver, nonce);
 	}
 
 	/**
 	 * Reconstructs a request from the given marshalled bytes.
 	 * 
 	 * @param bytes the marshalled bytes
+	 * @return the unmarshalled request
 	 * @throws IOException if unmarshalling from {@code bytes} fails
 	 */
 	static SendRequest from(byte[] bytes) throws IOException {
@@ -75,4 +77,20 @@ public interface SendRequest extends Marshallable {
 	 * @return the amount of coins to send
 	 */
 	BigInteger getAmount();
+
+	/**
+	 * Yields the progressive nonce used to distinguish repeated requests.
+	 * 
+	 * @return the progressive nonce used to distinguish repeated requests
+	 */
+	long getNonce();
+
+	@Override
+	boolean equals(Object obj);
+
+	@Override
+	int hashCode();
+
+	@Override
+	String toString();
 }

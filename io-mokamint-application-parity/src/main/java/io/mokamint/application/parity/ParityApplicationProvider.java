@@ -21,8 +21,16 @@ import java.nio.file.Path;
 import io.mokamint.application.api.ApplicationProvider;
 import io.mokamint.application.api.Provides;
 
+/**
+ * A provider for the Parity application.
+ */
 @Provides(ParityApplication.class)
 public class ParityApplicationProvider implements ApplicationProvider {
+
+	/**
+	 * Builds a provider for the Parity application.
+	 */
+	public ParityApplicationProvider() {}
 
 	@Override
 	public ParityApplication get(Path workingDir) {

@@ -76,6 +76,8 @@ public class BitcoinApplication extends AbstractApplication {
 
 	/**
 	 * Creates a Bitcoin application.
+	 * 
+	 * @param workingDir the directory where the database of the application will be stored
 	 */
 	public BitcoinApplication(Path workingDir) {
 		this.env = new Environment(workingDir.resolve("state").toString());
