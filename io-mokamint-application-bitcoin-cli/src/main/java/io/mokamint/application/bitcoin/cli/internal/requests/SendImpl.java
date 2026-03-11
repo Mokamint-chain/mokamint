@@ -23,7 +23,6 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 
 import io.hotmoka.cli.CommandException;
 import io.hotmoka.crypto.SignatureAlgorithms;
@@ -60,15 +59,12 @@ public class SendImpl extends AbstractPublicRpcCommand {
 	@Option(names = { "--password", "--password-of-sender" }, description = "the password of the key pair of the sender", interactive = true, defaultValue = "")
 	private char[] passwordOfSender;
 
-	private final static Logger LOGGER = Logger.getLogger(SendImpl.class.getName());
-
 	private void body(RemotePublicNode remote) throws CommandException, TimeoutException, InterruptedException, ClosedNodeException {
 		String passwordOfSenderAsString;
 		try {
 			passwordOfSenderAsString = new String(passwordOfSender);
 			var keyPair = keyPairOfSender.keys(passwordOfSenderAsString, SignatureAlgorithms.ed25519());
 			var sr = SendRequest.of(keyPair, amount, publicKeyOfReceiver, nonce);
-			System.out.println(sr);
 			MempoolEntry entry = addRequest(remote, sr);
 
 			if (json()) {
@@ -97,21 +93,6 @@ public class SendImpl extends AbstractPublicRpcCommand {
 		}
 	}
 
-	/*private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {
-		MempoolEntry info = addRequest(remote);
-
-		if (json()) {
-			try {
-				System.out.println(new MempoolEntries.Encoder().encode(info));
-			}
-			catch (EncodeException e) {
-				throw new CommandException("Cannot encode a mempool entry at \"" + publicUri() + "\" in JSON format!", e);
-			}
-		}
-		else
-			System.out.println(info);
-	}
-*/
 	private MempoolEntry addRequest(RemotePublicNode remote, SendRequest sendRequest) throws TimeoutException, InterruptedException, ClosedNodeException, CommandException {
 		try {
 			return remote.add(Requests.of(sendRequest.toByteArray()));
