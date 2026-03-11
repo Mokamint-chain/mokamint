@@ -18,6 +18,7 @@ package io.mokamint.application.bitcoin;
 
 import static java.math.BigInteger.ZERO;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.PublicKey;
@@ -59,7 +60,7 @@ import io.mokamint.nonce.api.Deadline;
 public class BitcoinApplication extends AbstractApplication {
 	private final AtomicInteger nextId = new AtomicInteger();
 
-	private static record State(TrieOfKeys trie, Transaction txn) {};
+	private static record State(TrieOfKeys trie, Transaction txn, long height) {};
 
 	/**
 	 * A map from each scope identifier to the current state of that scope identifier.
@@ -123,8 +124,9 @@ public class BitcoinApplication extends AbstractApplication {
 	@Override
 	public void checkRequest(Request request) throws ClosedApplicationException, RequestRejectedException {
 		try (var scope = mkScope()) {
-			// we check if it is possible to extract an int followed by a progressive byte
-			//extractInt(request);
+			// if the signature is invalid, then parse() throws a RequestRejectedException below
+			if (parse(request).getAmount().compareTo(BigInteger.ZERO) <= 0)
+				throw new RequestRejectedException("The sent amount must be positive");
 		}
 	}
 
@@ -150,7 +152,7 @@ public class BitcoinApplication extends AbstractApplication {
 			txn = env.beginTransaction();
 			TrieOfKeys trie = mkTrie(txn, stateId);
 			int scopeId = nextId.getAndIncrement();
-			currentStates.put(scopeId, new State(trie, txn));
+			setCurrentStateFor(scopeId, new State(trie, txn, height));
 
 			return scopeId;
 		}
@@ -163,14 +165,32 @@ public class BitcoinApplication extends AbstractApplication {
 	@Override
 	public void executeTransaction(int scopeId, Request request) throws ClosedApplicationException, RequestRejectedException, UnknownScopeIdException {
 		try (var scope = mkScope()) {
-			//currentStates.put(scopeId, null);
+			State state = getCurrentStateFor(scopeId);
+			SendRequest sendRequest = parse(request);
+			TrieOfKeys trie = state.trie;
+			var publicKeyOfSender = sendRequest.getPublicKeyOfSender();
+			var amount = sendRequest.getAmount();
+			var publicKeyOfReceiver = sendRequest.getPublicKeyOfReceiver();
+
+			var balanceOfSender = trie.get(publicKeyOfSender).orElse(ZERO);
+			if (balanceOfSender.compareTo(amount) < 0)
+				throw new RequestRejectedException("The sender is too poor to send " + amount + " coins");
+
+			var balanceOfReceiver = trie.get(publicKeyOfReceiver).orElse(ZERO);
+
+			trie = trie.put(publicKeyOfSender, balanceOfSender.subtract(amount));
+			trie = trie.put(publicKeyOfReceiver, balanceOfReceiver.add(amount));
+
+			LOGGER.info("bitcoin: " + sendRequest);
+
+			setCurrentStateFor(scopeId, new State(trie, state.txn, state.height));
 		}
 	}
 
 	@Override
 	public byte[] endBlock(int scopeId, Deadline deadline) throws ClosedApplicationException, UnknownScopeIdException {
 		try (var scope = mkScope()) {
-			// we reward the peer and the miner that created the block
+			// we must reward the peer and the miner that created the block
 			State state = getCurrentStateFor(scopeId);
 			var prolog = deadline.getProlog();
 			PublicKey publicKeyOfPeer = prolog.getPublicKeyForSigningBlocks();
@@ -178,8 +198,17 @@ public class BitcoinApplication extends AbstractApplication {
 			BigInteger balanceOfPeer = trie.get(publicKeyOfPeer).orElse(ZERO);
 			PublicKey publicKeyOfMiner = prolog.getPublicKeyForSigningDeadlines();
 			BigInteger balanceOfMiner = trie.get(publicKeyOfMiner).orElse(ZERO);
-			trie = trie.put(publicKeyOfPeer, balanceOfPeer.add(ONE_HUNDRED));
-			trie = trie.put(publicKeyOfMiner, balanceOfMiner.add(ONE_HUNDRED));
+
+			// we implement a reward decreasing with the time
+			BigInteger reward = ONE_HUNDRED.subtract(BigInteger.valueOf(state.height / 10L));
+			// we do not allow negative rewards
+			if (reward.signum() > 0) {
+				LOGGER.info("bitcoin: rewarding " + reward + " to " + prolog.getPublicKeyForSigningBlocksBase58() + " and " + prolog.getPublicKeyForSigningDeadlinesBase58());
+				// we add the reward to the keys of the peer and miner
+				trie = trie.put(publicKeyOfPeer, balanceOfPeer.add(reward));
+				trie = trie.put(publicKeyOfMiner, balanceOfMiner.add(reward));
+				setCurrentStateFor(scopeId, new State(trie, state.txn, state.height));
+			}
 
 			return trie.getRoot();
 		}
@@ -210,20 +239,27 @@ public class BitcoinApplication extends AbstractApplication {
 	@Override
 	public String getRepresentation(Request request) throws ClosedApplicationException, RequestRejectedException {
 		try (var scope = mkScope()) {
-			return ""; //add " + extractInt(request);
+			return parse(request).toString();
 		}
 	}
 
 	@Override
 	public void keepFrom(LocalDateTime start) throws ClosedApplicationException {
-		try (var scope = mkScope()) {} // no garbage collection is needed
+		try (var scope = mkScope()) {} // garbage collection is not implemented
 	}
 
 	@Override
 	public void publish(Block block) throws ClosedApplicationException {
-		try (var scope = mkScope()) {} // no events get published
+		try (var scope = mkScope()) {} // there are no events to publish
 	}
 
+	/**
+	 * Yields the state for the given scope identifier, if any.
+	 * 
+	 * @param scopeId the scope identifier
+	 * @return the state for {@code scopeId}
+	 * @throws UnknownScopeIdException if no state is available for {@code scopeId}
+	 */
 	private State getCurrentStateFor(int scopeId) throws UnknownScopeIdException {
 		var currentState = currentStates.get(scopeId);
 		if (currentState == null)
@@ -232,16 +268,30 @@ public class BitcoinApplication extends AbstractApplication {
 			return currentState;
 	}
 
-	/*private static int extractInt(Request request) throws RequestRejectedException {
-		if (request.getNumberOfBytes() != 5)
-			throw new RequestRejectedException("A request must contain a four byte two-complement int followed by a progressive byte to distinguish repeated requests");
+	/**
+	 * Sets the state for the given scope identifier.
+	 * 
+	 * @param scopeId the scope identifier
+	 * @param state the state to set
+	 */
+	private void setCurrentStateFor(int scopeId, State state) {
+		currentStates.put(scopeId, state);
+	}
 
-		byte[] bytes = request.getBytes();
-		byte b1 = bytes[0];
-	    byte b2 = bytes[1];
-	    byte b3 = bytes[2];
-	    byte b4 = bytes[3];
-
-	    return ((0xFF & b1) << 24) | ((0xFF & b2) << 16) | ((0xFF & b3) << 8) | (0xFF & b4);
-	}*/
+	/**
+	 * Parses the request bytes arrived to Mokamint into an actual request for
+	 * sending coins between two public keys, if possible.
+	 * 
+	 * @param request the request containing the bytes arrived to Mokamint
+	 * @return the bytes in {@code request}, parsed as a {@link SendRequest}
+	 * @throws RequestRejectedException if {@code request} cannot be parsed correctly
+	 */
+	private static SendRequest parse(Request request) throws RequestRejectedException {
+		try {
+			return SendRequest.from(request.getBytes());
+		}
+		catch (IOException e) {
+			throw new RequestRejectedException(e.getMessage());
+		}
+	}
 }
