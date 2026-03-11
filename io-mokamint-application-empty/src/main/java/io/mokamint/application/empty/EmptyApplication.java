@@ -134,4 +134,12 @@ public class EmptyApplication extends AbstractApplication {
 	public void publish(Block block) throws ClosedApplicationException {
 		try (var scope = mkScope()) {}
 	}
+
+	@Override
+	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException {
+		try (var scope = mkScope()) {
+			if (!Arrays.equals(STATE_ID, stateId))
+				throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
+		}
+	}
 }

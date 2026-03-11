@@ -253,6 +253,11 @@ public class BitcoinApplication extends AbstractApplication {
 		try (var scope = mkScope()) {} // there are no events to publish
 	}
 
+	@Override
+	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException {
+		// TODO implement this
+	}
+
 	/**
 	 * Yields the state for the given scope identifier, if any.
 	 * 

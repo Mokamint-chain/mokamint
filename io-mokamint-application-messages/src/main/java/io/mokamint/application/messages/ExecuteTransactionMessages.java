@@ -18,31 +18,34 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.CheckTransactionResultMessage;
-import io.mokamint.application.messages.internal.CheckTransactionResultMessageImpl;
-import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
+import io.mokamint.application.messages.api.ExecuteTransactionMessage;
+import io.mokamint.application.messages.internal.ExecuteExecuteMessageImpl;
+import io.mokamint.application.messages.internal.json.ExecuteTransactionMessageJson;
+import io.mokamint.node.api.Request;
 
 /**
- * A provider of {@link CheckTransactionResultMessage}.
+ * A provider of {@link ExecuteTransactionMessage}.
  */
-public abstract class CheckTransactionResultMessages {
+public abstract class ExecuteTransactionMessages {
 
-	private CheckTransactionResultMessages() {}
+	private ExecuteTransactionMessages() {}
 
 	/**
-	 * Yields a {@link CheckTransactionResultMessage}.
+	 * Yields a {@link ExecuteTransactionMessage}.
 	 * 
+	 * @param groupId the identifier of the group of transactions in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static CheckTransactionResultMessage of(String id) {
-		return new CheckTransactionResultMessageImpl(id);
+	public static ExecuteTransactionMessage of(int groupId, Request request, String id) {
+		return new ExecuteExecuteMessageImpl(groupId, request, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<CheckTransactionResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<ExecuteTransactionMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -55,7 +58,7 @@ public abstract class CheckTransactionResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<CheckTransactionResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<ExecuteTransactionMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +71,14 @@ public abstract class CheckTransactionResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends CheckTransactionResultMessageJson {
+    public static class Json extends ExecuteTransactionMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(CheckTransactionResultMessage message) {
+    	public Json(ExecuteTransactionMessage message) {
     		super(message);
     	}
     }

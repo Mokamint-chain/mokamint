@@ -1,5 +1,5 @@
 /*
-Copyright 2026 Fausto Spoto
+Copyright 2024 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.bitcoin.cli.requests;
+package io.mokamint.application.messages.api;
 
-import io.mokamint.application.bitcoin.cli.internal.requests.SendImpl;
-import picocli.CommandLine.Command;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.RpcMessage;
+import io.mokamint.application.api.Application;
 
 /**
- * The send coins command of the Bitcoin application.
+ * The network message corresponding to the {@link Application#setHead(byte[])} method.
  */
-@Command(name = "send", description = "Send coins from a key to another key.")
-public class Send extends SendImpl {
+@Immutable
+public interface SetHeadMessage extends RpcMessage {
 
 	/**
-	 * Creates the CLI command.
+	 * Yields the state identifier in the message.
+	 * 
+	 * @return the state identifier
 	 */
-	public Send() {}
+	byte[] getStateId();
 }

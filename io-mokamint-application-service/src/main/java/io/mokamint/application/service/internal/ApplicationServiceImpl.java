@@ -37,12 +37,12 @@ import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckDeadlineMessages;
 import io.mokamint.application.messages.CheckDeadlineResultMessages;
-import io.mokamint.application.messages.CheckTransactionMessages;
-import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CheckRequestMessages;
+import io.mokamint.application.messages.CheckRequestResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
-import io.mokamint.application.messages.DeliverTransactionMessages;
-import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.ExecuteTransactionMessages;
+import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
@@ -59,12 +59,14 @@ import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.PublishMessages;
 import io.mokamint.application.messages.PublishResultMessages;
+import io.mokamint.application.messages.SetHeadMessages;
+import io.mokamint.application.messages.SetHeadResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckDeadlineMessage;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.CheckRequestMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
 import io.mokamint.application.messages.api.GetInfoMessage;
@@ -73,6 +75,7 @@ import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.PublishMessage;
+import io.mokamint.application.messages.api.SetHeadMessage;
 import io.mokamint.application.service.api.ApplicationService;
 import io.mokamint.node.api.RequestRejectedException;
 import jakarta.websocket.EndpointConfig;
@@ -116,13 +119,14 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		this.logPrefix = "application service(ws://localhost:" + port + "): ";
 
 		startContainer("", port,
-				CheckDeadlineEndpoint.config(this), CheckTransactionEndpoint.config(this),
+				CheckDeadlineEndpoint.config(this), CheckRequestEndpoint.config(this),
 				GetInfoEndpoint.config(this), GetBalanceEndpoint.config(this),
 				GetPriorityEndpoint.config(this), GetRepresentationEndpoint.config(this),
 				GetInitialStateIdEndpoint.config(this), BeginBlockEndpoint.config(this),
-				DeliverTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
+				ExecuteTransactionEndpoint.config(this), EndBlockEndpoint.config(this),
 				CommitBlockEndpoint.config(this), AbortBlockEndpoint.config(this),
-				KeepFromEndpoint.config(this), PublishEndpoint.config(this)
+				KeepFromEndpoint.config(this), PublishEndpoint.config(this),
+				SetHeadEndpoint.config(this)
 		);
 
 		// if the application gets closed, then this service will be closed as well
@@ -145,9 +149,9 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		try {
 			switch (message) {
 			case CheckDeadlineMessage cdm -> sendObjectAsync(session, CheckDeadlineResultMessages.of(application.checkDeadline(cdm.getDeadline()), id));
-			case CheckTransactionMessage ctm -> {
+			case CheckRequestMessage ctm -> {
 				application.checkRequest(ctm.getRequest());
-				sendObjectAsync(session, CheckTransactionResultMessages.of(id));
+				sendObjectAsync(session, CheckRequestResultMessages.of(id));
 			}
 			case GetInfoMessage gim -> sendObjectAsync(session, GetInfoResultMessages.of(application.getInfo(), id));
 			case GetBalanceMessage gbm -> sendObjectAsync(session, GetBalanceResultMessages.of(application.getBalance(gbm.getSignature(), gbm.getPublicKey()), id));
@@ -155,9 +159,13 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 			case GetRepresentationMessage grm -> sendObjectAsync(session, GetRepresentationResultMessages.of(application.getRepresentation(grm.getTransaction()), id));
 			case GetInitialStateIdMessage gism -> sendObjectAsync(session, GetInitialStateIdResultMessages.of(application.getInitialStateId(), id));
 			case BeginBlockMessage bbm -> sendObjectAsync(session, BeginBlockResultMessages.of(application.beginBlock(bbm.getHeight(), bbm.getWhen(), bbm.getStateId()), id));
-			case DeliverTransactionMessage dtm -> {
+			case SetHeadMessage shm -> {
+				application.setHead(shm.getStateId());
+				sendObjectAsync(session, SetHeadResultMessages.of(id));
+			}
+			case ExecuteTransactionMessage dtm -> {
 				application.executeTransaction(dtm.getGroupId(), dtm.getRequest());
-				sendObjectAsync(session, DeliverTransactionResultMessages.of(id));
+				sendObjectAsync(session, ExecuteTransactionResultMessages.of(id));
 			}
 			case EndBlockMessage ebm -> sendObjectAsync(session, EndBlockResultMessages.of(application.endBlock(ebm.getGroupId(), ebm.getDeadline()), id));
 			case CommitBlockMessage cbm -> {
@@ -241,22 +249,22 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		}
 	}
 
-	protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + CHECK_TRANSACTION_ENDPOINT + " request");
+	protected void onCheckRequest(CheckRequestMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + CHECK_REQUEST_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
-	public static class CheckTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+	public static class CheckRequestEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (CheckTransactionMessage message) -> server.onCheckTransaction(message, session));
+			addMessageHandler(session, (CheckRequestMessage message) -> server.onCheckRequest(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, CheckTransactionEndpoint.class, CHECK_TRANSACTION_ENDPOINT,
-				CheckTransactionMessages.Decoder.class, CheckTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, CheckRequestEndpoint.class, CHECK_REQUEST_ENDPOINT,
+				CheckRequestMessages.Decoder.class, CheckRequestResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -335,22 +343,22 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 		}
 	}
 
-	protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
-		LOGGER.info(logPrefix + "received a " + DELIVER_TRANSACTION_ENDPOINT + " request");
+	protected void onExecuteTransaction(ExecuteTransactionMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + EXECUTE_TRANSACTION_ENDPOINT + " request");
 		scheduleRequest(session, message);
 	};
 
-	public static class DeliverTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+	public static class ExecuteTransactionEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
 
 		@Override
 	    public void onOpen(Session session, EndpointConfig config) {
 			var server = getServer();
-			addMessageHandler(session, (DeliverTransactionMessage message) -> server.onDeliverTransaction(message, session));
+			addMessageHandler(session, (ExecuteTransactionMessage message) -> server.onExecuteTransaction(message, session));
 	    }
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
-			return simpleConfig(server, DeliverTransactionEndpoint.class, DELIVER_TRANSACTION_ENDPOINT,
-				DeliverTransactionMessages.Decoder.class, DeliverTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
+			return simpleConfig(server, ExecuteTransactionEndpoint.class, EXECUTE_TRANSACTION_ENDPOINT,
+				ExecuteTransactionMessages.Decoder.class, ExecuteTransactionResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 
@@ -444,6 +452,24 @@ public class ApplicationServiceImpl extends AbstractRPCWebSocketServer implement
 
 		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
 			return simpleConfig(server, PublishEndpoint.class, PUBLISH_ENDPOINT, PublishMessages.Decoder.class, PublishResultMessages.Encoder.class);
+		}
+	}
+
+	protected void onSetHead(SetHeadMessage message, Session session) {
+		LOGGER.info(logPrefix + "received a " + SET_HEAD_ENDPOINT + " request");
+		scheduleRequest(session, message);
+	};
+
+	public static class SetHeadEndpoint extends AbstractServerEndpoint<ApplicationServiceImpl> {
+
+		@Override
+	    public void onOpen(Session session, EndpointConfig config) {
+			var server = getServer();
+			addMessageHandler(session, (SetHeadMessage message) -> server.onSetHead(message, session));
+	    }
+
+		private static ServerEndpointConfig config(ApplicationServiceImpl server) {
+			return simpleConfig(server, SetHeadEndpoint.class, SET_HEAD_ENDPOINT, SetHeadMessages.Decoder.class, SetHeadResultMessages.Encoder.class, ExceptionMessages.Encoder.class);
 		}
 	}
 }

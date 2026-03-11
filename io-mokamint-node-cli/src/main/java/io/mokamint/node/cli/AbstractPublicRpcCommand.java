@@ -30,6 +30,9 @@ import io.mokamint.node.remote.api.RemotePublicNode;
  */
 public abstract class AbstractPublicRpcCommand extends AbstractPublicRpcCommandImpl {
 
+	/**
+	 * Builds the Rpc command.
+	 */
 	protected AbstractPublicRpcCommand() {}
 
 	/**

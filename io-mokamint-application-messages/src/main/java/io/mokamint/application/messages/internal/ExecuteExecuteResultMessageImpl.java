@@ -20,22 +20,22 @@ import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
-import io.mokamint.application.messages.internal.json.DeliverTransactionResultMessageJson;
+import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
+import io.mokamint.application.messages.internal.json.ExecuteTransactionResultMessageJson;
 import io.mokamint.node.api.Request;
 
 /**
  * Implementation of the network message corresponding to the result of the
  * {@link Application#executeTransaction(Request, int)} method.
  */
-public class DeliverTransactionResultMessageImpl extends AbstractVoidResultMessage implements DeliverTransactionResultMessage {
+public class ExecuteExecuteResultMessageImpl extends AbstractVoidResultMessage implements ExecuteTransactionResultMessage {
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param id the identifier of the message
 	 */
-	public DeliverTransactionResultMessageImpl(String id) {
+	public ExecuteExecuteResultMessageImpl(String id) {
 		this(id, IllegalArgumentException::new);
 	}
 
@@ -45,7 +45,7 @@ public class DeliverTransactionResultMessageImpl extends AbstractVoidResultMessa
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if {@¢ode json} is inconsistent
 	 */
-	public DeliverTransactionResultMessageImpl(DeliverTransactionResultMessageJson json) throws InconsistentJsonException {
+	public ExecuteExecuteResultMessageImpl(ExecuteTransactionResultMessageJson json) throws InconsistentJsonException {
 		this(json.getId(), InconsistentJsonException::new);
 	}
 
@@ -57,17 +57,17 @@ public class DeliverTransactionResultMessageImpl extends AbstractVoidResultMessa
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> DeliverTransactionResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> ExecuteExecuteResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof DeliverTransactionResultMessage && super.equals(other);
+		return other instanceof ExecuteTransactionResultMessage && super.equals(other);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return DeliverTransactionResultMessage.class.getName();
+		return ExecuteTransactionResultMessage.class.getName();
 	}
 }

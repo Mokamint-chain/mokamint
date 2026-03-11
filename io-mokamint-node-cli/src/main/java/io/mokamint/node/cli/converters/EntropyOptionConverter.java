@@ -29,6 +29,11 @@ import picocli.CommandLine.ITypeConverter;
  */
 public class EntropyOptionConverter implements ITypeConverter<Entropy> {
 
+	/**
+	 * Builds the converter.
+	 */
+	public EntropyOptionConverter() {}
+
 	@Override
 	public Entropy convert(String value) throws InvalidPathException, IOException {
 		return Entropies.load(Paths.get(value));

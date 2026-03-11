@@ -22,27 +22,25 @@ import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
-import io.mokamint.application.messages.internal.json.DeliverTransactionMessageJson;
+import io.mokamint.application.messages.api.CheckRequestMessage;
+import io.mokamint.application.messages.internal.json.CheckRequestMessageJson;
 import io.mokamint.node.Requests;
 import io.mokamint.node.api.Request;
 
 /**
- * Implementation of the network message corresponding to {@link Application#executeTransaction(Request, int)}.
+ * Implementation of the network message corresponding to {@link Application#checkRequest(Request)}.
  */
-public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements DeliverTransactionMessage {
+public class CheckRequestMessageImpl extends AbstractRpcMessage implements CheckRequestMessage {
 	private final Request request;
-	private final int groupId;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param groupId the identifier of the group of transactions in the message
-	 * @param request the transaction in the message
+	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 */
-	public DeliverTransactionMessageImpl(int groupId, Request request, String id) {
-		this(groupId, request, id, IllegalArgumentException::new);
+	public CheckRequestMessageImpl(Request request, String id) {
+		this(request, id, IllegalArgumentException::new);
 	}
 
 	/**
@@ -51,9 +49,8 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	 * @param json the JSON representation
 	 * @throws InconsistentJsonException if the JSON representation is inconsistent
 	 */
-	public DeliverTransactionMessageImpl(DeliverTransactionMessageJson json) throws InconsistentJsonException {
+	public CheckRequestMessageImpl(CheckRequestMessageJson json) throws InconsistentJsonException {
 		this(
-			json.getGroupId(),
 			Requests.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "request cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
 			json.getId(),
 			InconsistentJsonException::new
@@ -64,17 +61,15 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param <E> the exception to throw if some argument is illegal
-	 * @param groupId the identifier of the group of transactions in the message
 	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> DeliverTransactionMessageImpl(int groupId, Request request, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> CheckRequestMessageImpl(Request request, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 
-		this.groupId = groupId;
-		this.request = Objects.requireNonNull(request, "request cannot be null", onIllegalArgs);
+		this.request = Objects.requireNonNull(request, "transaction cannot be null", onIllegalArgs);
 	}
 
 	@Override
@@ -83,19 +78,12 @@ public class DeliverTransactionMessageImpl extends AbstractRpcMessage implements
 	}
 
 	@Override
-	public int getGroupId() {
-		return groupId;
-	}
-
-	@Override
 	public boolean equals(Object other) {
-		return other instanceof DeliverTransactionMessage dtm && super.equals(other)
-			&& request.equals(dtm.getRequest())
-			&& groupId == dtm.getGroupId();
+		return other instanceof CheckRequestMessage ctm && super.equals(other) && request.equals(ctm.getRequest());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return DeliverTransactionMessage.class.getName();
+		return CheckRequestMessage.class.getName();
 	}
 }

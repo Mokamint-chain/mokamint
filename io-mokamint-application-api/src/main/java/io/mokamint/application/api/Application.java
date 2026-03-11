@@ -304,6 +304,17 @@ public interface Application extends AutoCloseable, OnCloseHandlersContainer {
 	void publish(Block block) throws ClosedApplicationException, TimeoutException, InterruptedException;
 
 	/**
+	 * Takes note that the head of the current chain of the blockchain has been set to the given state identifier.
+	 * 
+	 * @param stateId the state identifier of the new head
+	 * @throws UnknownStateException if the application cannot find the state with identifier {@code stateId}
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws TimeoutException if no answer arrives before a time window
+	 * @throws InterruptedException if the current thread is interrupted while waiting for an answer to arrive
+	 */
+	void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException, TimeoutException, InterruptedException;
+
+	/**
 	 * Closes this application. After this closure, the methods of this application will throw
 	 * a {@link ClosedApplicationException}. An application cannot be reopened after being closed.
 	 */

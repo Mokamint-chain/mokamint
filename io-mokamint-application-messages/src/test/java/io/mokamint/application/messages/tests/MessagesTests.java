@@ -38,12 +38,12 @@ import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckDeadlineMessages;
 import io.mokamint.application.messages.CheckDeadlineResultMessages;
-import io.mokamint.application.messages.CheckTransactionMessages;
-import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CheckRequestMessages;
+import io.mokamint.application.messages.CheckRequestResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
-import io.mokamint.application.messages.DeliverTransactionMessages;
-import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.ExecuteTransactionMessages;
+import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
@@ -60,6 +60,8 @@ import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.PublishMessages;
 import io.mokamint.application.messages.PublishResultMessages;
+import io.mokamint.application.messages.SetHeadMessages;
+import io.mokamint.application.messages.SetHeadResultMessages;
 import io.mokamint.node.BlockDescriptions;
 import io.mokamint.node.Blocks;
 import io.mokamint.node.Requests;
@@ -102,36 +104,36 @@ public class MessagesTests extends AbstractLoggedTests {
 	@Test
 	@DisplayName("checkTransaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForCheckTransaction() throws Exception {
-		var checkTransactionMessage1 = CheckTransactionMessages.of(Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
-		String encoded = new CheckTransactionMessages.Encoder().encode(checkTransactionMessage1);
-		var checkTransactionMessage2 = new CheckTransactionMessages.Decoder().decode(encoded);
+		var checkTransactionMessage1 = CheckRequestMessages.of(Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
+		String encoded = new CheckRequestMessages.Encoder().encode(checkTransactionMessage1);
+		var checkTransactionMessage2 = new CheckRequestMessages.Decoder().decode(encoded);
 		assertEquals(checkTransactionMessage1, checkTransactionMessage2);
 	}
 
 	@Test
 	@DisplayName("checkTransaction result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForCheckTransactionResult() throws Exception {
-		var checkTransactionResultMessage1 = CheckTransactionResultMessages.of("id");
-		String encoded = new CheckTransactionResultMessages.Encoder().encode(checkTransactionResultMessage1);
-		var checkTransactionResultMessage2 = new CheckTransactionResultMessages.Decoder().decode(encoded);
+		var checkTransactionResultMessage1 = CheckRequestResultMessages.of("id");
+		String encoded = new CheckRequestResultMessages.Encoder().encode(checkTransactionResultMessage1);
+		var checkTransactionResultMessage2 = new CheckRequestResultMessages.Decoder().decode(encoded);
 		assertEquals(checkTransactionResultMessage1, checkTransactionResultMessage2);
 	}
 
 	@Test
 	@DisplayName("deliverTransaction messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeliverTransaction() throws Exception {
-		var deliverTransactionMessage1 = DeliverTransactionMessages.of(42, Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
-		String encoded = new DeliverTransactionMessages.Encoder().encode(deliverTransactionMessage1);
-		var deliverTransactionMessage2 = new DeliverTransactionMessages.Decoder().decode(encoded);
+		var deliverTransactionMessage1 = ExecuteTransactionMessages.of(42, Requests.of(new byte[] { 13, 1, 19, 73 }), "id");
+		String encoded = new ExecuteTransactionMessages.Encoder().encode(deliverTransactionMessage1);
+		var deliverTransactionMessage2 = new ExecuteTransactionMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionMessage1, deliverTransactionMessage2);
 	}
 
 	@Test
 	@DisplayName("deliverTransaction result messages are correctly encoded into Json and decoded from Json")
 	public void encodeDecodeWorksForDeliverTransactionResult() throws Exception {
-		var deliverTransactionResultMessage1 = DeliverTransactionResultMessages.of("id");
-		String encoded = new DeliverTransactionResultMessages.Encoder().encode(deliverTransactionResultMessage1);
-		var deliverTransactionResultMessage2 = new DeliverTransactionResultMessages.Decoder().decode(encoded);
+		var deliverTransactionResultMessage1 = ExecuteTransactionResultMessages.of("id");
+		String encoded = new ExecuteTransactionResultMessages.Encoder().encode(deliverTransactionResultMessage1);
+		var deliverTransactionResultMessage2 = new ExecuteTransactionResultMessages.Decoder().decode(encoded);
 		assertEquals(deliverTransactionResultMessage1, deliverTransactionResultMessage2);
 	}
 
@@ -385,5 +387,23 @@ public class MessagesTests extends AbstractLoggedTests {
 		String encoded = new GetBalanceResultMessages.Encoder().encode(getBalanceResultMessage1);
 		var getBalanceResultMessage2 = new GetBalanceResultMessages.Decoder().decode(encoded);
 		assertEquals(getBalanceResultMessage1, getBalanceResultMessage2);
+	}
+
+	@Test
+	@DisplayName("setHead messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForSetHead() throws Exception {
+		var setHeadMessage1 = SetHeadMessages.of(new byte[] { 13, 1, 19, 73 }, "id");
+		String encoded = new SetHeadMessages.Encoder().encode(setHeadMessage1);
+		var setHeadMessage2 = new SetHeadMessages.Decoder().decode(encoded);
+		assertEquals(setHeadMessage1, setHeadMessage2);
+	}
+
+	@Test
+	@DisplayName("setHead result messages are correctly encoded into Json and decoded from Json")
+	public void encodeDecodeWorksForSetHeadResult() throws Exception {
+		var setHeadResultMessage1 = SetHeadResultMessages.of("id");
+		String encoded = new SetHeadResultMessages.Encoder().encode(setHeadResultMessage1);
+		var setHeadResultMessage2 = new SetHeadResultMessages.Decoder().decode(encoded);
+		assertEquals(setHeadResultMessage1, setHeadResultMessage2);
 	}
 }

@@ -27,6 +27,11 @@ import io.hotmoka.crypto.api.SignatureAlgorithm;
  */
 public class ED25519PublicKeyOptionConverter extends PublicKeyOptionConverter {
 
+	/**
+	 * Builds the converter.
+	 */
+	public ED25519PublicKeyOptionConverter() {}
+
 	@Override
 	protected SignatureAlgorithm signature() throws NoSuchAlgorithmException {
 		return SignatureAlgorithms.ed25519();

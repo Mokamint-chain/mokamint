@@ -28,4 +28,5 @@ module io.mokamint.application.remote {
 	requires io.hotmoka.websockets.beans;
 	requires io.hotmoka.annotations;
 	requires java.logging;
+	requires io.mokamint.application.messages.api;
 }

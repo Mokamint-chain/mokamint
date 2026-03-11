@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,25 +18,25 @@ package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
-import io.mokamint.application.messages.internal.DeliverTransactionResultMessageImpl;
+import io.mokamint.application.messages.api.SetHeadResultMessage;
+import io.mokamint.application.messages.internal.SetHeadResultMessageImpl;
 
 /**
- * The JSON representation of a {@link DeliverTransactionResultMessage}.
+ * The JSON representation of a {@link SetHeadResultMessage}.
  */
-public abstract class DeliverTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<DeliverTransactionResultMessage> {
+public abstract class SetHeadResultMessageJson extends AbstractRpcMessageJsonRepresentation<SetHeadResultMessage> {
 
-	protected DeliverTransactionResultMessageJson(DeliverTransactionResultMessage message) {
+	protected SetHeadResultMessageJson(SetHeadResultMessage message) {
 		super(message);
 	}
 
 	@Override
-	public DeliverTransactionResultMessage unmap() throws InconsistentJsonException {
-		return new DeliverTransactionResultMessageImpl(this);
+	public SetHeadResultMessage unmap() throws InconsistentJsonException {
+		return new SetHeadResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return DeliverTransactionResultMessage.class.getName();
+		return SetHeadResultMessage.class.getName();
 	}
 }

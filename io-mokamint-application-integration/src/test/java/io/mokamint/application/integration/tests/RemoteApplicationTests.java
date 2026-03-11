@@ -50,9 +50,9 @@ import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.AbortBlockResultMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckDeadlineResultMessages;
-import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CheckRequestResultMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
-import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
 import io.mokamint.application.messages.GetInfoResultMessages;
@@ -61,12 +61,13 @@ import io.mokamint.application.messages.GetPriorityResultMessages;
 import io.mokamint.application.messages.GetRepresentationResultMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.PublishResultMessages;
+import io.mokamint.application.messages.SetHeadResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.CheckDeadlineMessage;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
+import io.mokamint.application.messages.api.CheckRequestMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
 import io.mokamint.application.messages.api.GetInfoMessage;
@@ -75,6 +76,7 @@ import io.mokamint.application.messages.api.GetPriorityMessage;
 import io.mokamint.application.messages.api.GetRepresentationMessage;
 import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.PublishMessage;
+import io.mokamint.application.messages.api.SetHeadMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.service.internal.ApplicationServiceImpl;
 import io.mokamint.node.BlockDescriptions;
@@ -142,7 +144,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("checkTransaction() works")
+	@DisplayName("checkRequest() works")
 	public void checkTransactionWorks() throws Exception {
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 
@@ -151,9 +153,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
+			protected void onCheckRequest(CheckRequestMessage message, Session session) {
 				if (transaction.equals(message.getRequest()))
-					sendObjectAsync(session, CheckTransactionResultMessages.of(message.getId()), RuntimeException::new);
+					sendObjectAsync(session, CheckRequestResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -166,8 +168,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("checkTransaction() works if it throws RejectedTransactionException")
-	public void checkTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
+	@DisplayName("checkRequest() works if it throws RejectedTransactionException")
+	public void checkRequestWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
 
@@ -176,7 +178,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onCheckTransaction(CheckTransactionMessage message, Session session) {
+			protected void onCheckRequest(CheckRequestMessage message, Session session) {
 				if (transaction.equals(message.getRequest()))
 					sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
@@ -414,8 +416,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("deliverTransaction() works")
-	public void deliverTransactionWorks() throws Exception {
+	@DisplayName("executeTransaction() works")
+	public void executeTransactionWorks() throws Exception {
 		var groupId = 42;
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 
@@ -424,9 +426,9 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+			protected void onExecuteTransaction(ExecuteTransactionMessage message, Session session) {
 				if (groupId == message.getGroupId() && transaction.equals(message.getRequest()))
-					sendObjectAsync(session, DeliverTransactionResultMessages.of(message.getId()), RuntimeException::new);
+					sendObjectAsync(session, ExecuteTransactionResultMessages.of(message.getId()), RuntimeException::new);
 			}
 		};
 
@@ -439,8 +441,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("deliverTransaction() works if it throws UnknownGroupIdException")
-	public void deliverTransactionWorksInCaseOfUnknownGroupIdException() throws Exception  {
+	@DisplayName("executeTransaction() works if it throws UnknownGroupIdException")
+	public void executeTransactionWorksInCaseOfUnknownGroupIdException() throws Exception  {
 		var groupId = 42;
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "unknown group id";
@@ -450,7 +452,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+			protected void onExecuteTransaction(ExecuteTransactionMessage message, Session session) {
 				if (groupId == message.getGroupId() && transaction.equals(message.getRequest()))
 					sendObjectAsync(session, ExceptionMessages.of(new UnknownScopeIdException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
@@ -463,8 +465,8 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("deliverTransaction() works if it throws RejectedTransactionException")
-	public void deliverTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
+	@DisplayName("executeTransaction() works if it throws RejectedTransactionException")
+	public void executeTransactionWorksInCaseOfRejectedTransactionException() throws Exception  {
 		var groupId = 42;
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
 		var exceptionMessage = "rejected";
@@ -474,7 +476,7 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 			private MyServer() throws FailedDeploymentException {}
 
 			@Override
-			protected void onDeliverTransaction(DeliverTransactionMessage message, Session session) {
+			protected void onExecuteTransaction(ExecuteTransactionMessage message, Session session) {
 				if (groupId == message.getGroupId() && transaction.equals(message.getRequest()))
 					sendObjectAsync(session, ExceptionMessages.of(new RequestRejectedException(exceptionMessage), message.getId()), RuntimeException::new);
 			}
@@ -641,6 +643,99 @@ public class RemoteApplicationTests extends AbstractLoggedTests {
 
 		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
 			var exception = assertThrows(UnknownScopeIdException.class, () -> remote.abortBlock(groupId));
+			assertEquals(exceptionMessage, exception.getMessage());
+		}
+	}
+
+	@Test
+	@DisplayName("setHead() works")
+	public void setHeadWorks() throws Exception {
+		byte[] stateId = { 13, 17, 42 };
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onSetHead(SetHeadMessage message, Session session) {
+				sendObjectAsync(session, SetHeadResultMessages.of(message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			remote.setHead(stateId);
+		}
+	}
+
+	@Test
+	@DisplayName("if setHead() is slow, it leads to a time-out")
+	public void setHeadWorksInCaseOfTimeout() throws Exception {
+		byte[] stateId = { 13, 17, 42};
+		var finished = new Semaphore(0);
+	
+		class MyServer extends PublicTestServer {
+	
+			private MyServer() throws FailedDeploymentException {}
+	
+			@Override
+			protected void onSetHead(SetHeadMessage message, Session session) {
+				try {
+					Thread.sleep(TIME_OUT * 4); // <----
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+	
+				sendObjectAsync(session, SetHeadResultMessages.of(message.getId()), RuntimeException::new);
+				finished.release();
+			}
+		};
+	
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.setHead(stateId));
+			// we wait, in order to avoid shutting down the server before the handler completes
+			finished.tryAcquire(1, TIME_OUT * 10, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	@Test
+	@DisplayName("setHead() ignores unexpected exceptions")
+	public void setHeadWorksInCaseOfUnexpectedException() throws Exception {
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onSetHead(SetHeadMessage message, Session session) {
+				sendObjectAsync(session, ExceptionMessages.of(new IllegalArgumentException(), message.getId()), RuntimeException::new);
+			}
+		};
+
+		byte[] stateId = { 13, 17, 42};
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			assertThrows(TimeoutException.class, () -> remote.setHead(stateId));
+		}
+	}
+
+	@Test
+	@DisplayName("setHead() works if it throws UnknownStateException")
+	public void setHeadWorksInCaseOfUnknownStateException() throws Exception  {
+		var stateId = new byte[] { 13, 1, 19, 73 };
+		var exceptionMessage = "unknown state";
+
+		class MyServer extends PublicTestServer {
+
+			private MyServer() throws FailedDeploymentException {}
+
+			@Override
+			protected void onSetHead(SetHeadMessage message, Session session) {
+				if (Arrays.equals(stateId, message.getStateId()))
+					sendObjectAsync(session, ExceptionMessages.of(new UnknownStateException(exceptionMessage), message.getId()), RuntimeException::new);
+			}
+		};
+
+		try (var service = new MyServer(); var remote = RemoteApplications.of(URI, TIME_OUT)) {
+			var exception = assertThrows(UnknownStateException.class, () -> remote.setHead(stateId));
 			assertEquals(exceptionMessage, exception.getMessage());
 		}
 	}

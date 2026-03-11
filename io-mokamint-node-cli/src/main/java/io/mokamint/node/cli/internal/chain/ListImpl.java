@@ -38,6 +38,9 @@ import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+/**
+ * Implementation of the chain list command of a Mokamint node.
+ */
 public class ListImpl extends AbstractPublicRpcCommand {
 
 	@Parameters(description = "the number of blocks that must be listed", defaultValue = "100")

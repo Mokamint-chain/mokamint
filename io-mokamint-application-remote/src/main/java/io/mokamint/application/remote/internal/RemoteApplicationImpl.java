@@ -19,9 +19,9 @@ package io.mokamint.application.remote.internal;
 import static io.mokamint.application.service.api.ApplicationService.ABORT_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_DEADLINE_ENDPOINT;
-import static io.mokamint.application.service.api.ApplicationService.CHECK_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.CHECK_REQUEST_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOCK_ENDPOINT;
-import static io.mokamint.application.service.api.ApplicationService.DELIVER_TRANSACTION_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.EXECUTE_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_BALANCE_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INFO_ENDPOINT;
@@ -30,6 +30,7 @@ import static io.mokamint.application.service.api.ApplicationService.GET_PRIORIT
 import static io.mokamint.application.service.api.ApplicationService.GET_REPRESENTATION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.KEEP_FROM_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.PUBLISH_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.SET_HEAD_ENDPOINT;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -57,12 +58,12 @@ import io.mokamint.application.messages.BeginBlockMessages;
 import io.mokamint.application.messages.BeginBlockResultMessages;
 import io.mokamint.application.messages.CheckDeadlineMessages;
 import io.mokamint.application.messages.CheckDeadlineResultMessages;
-import io.mokamint.application.messages.CheckTransactionMessages;
-import io.mokamint.application.messages.CheckTransactionResultMessages;
+import io.mokamint.application.messages.CheckRequestMessages;
+import io.mokamint.application.messages.CheckRequestResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
-import io.mokamint.application.messages.DeliverTransactionMessages;
-import io.mokamint.application.messages.DeliverTransactionResultMessages;
+import io.mokamint.application.messages.ExecuteTransactionMessages;
+import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
@@ -79,18 +80,20 @@ import io.mokamint.application.messages.KeepFromMessages;
 import io.mokamint.application.messages.KeepFromResultMessages;
 import io.mokamint.application.messages.PublishMessages;
 import io.mokamint.application.messages.PublishResultMessages;
+import io.mokamint.application.messages.SetHeadMessages;
+import io.mokamint.application.messages.SetHeadResultMessages;
 import io.mokamint.application.messages.api.AbortBlockMessage;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.api.CheckDeadlineMessage;
 import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
-import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.CheckRequestMessage;
+import io.mokamint.application.messages.api.CheckRequestResultMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
-import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
@@ -107,6 +110,8 @@ import io.mokamint.application.messages.api.KeepFromMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.messages.api.PublishMessage;
 import io.mokamint.application.messages.api.PublishResultMessage;
+import io.mokamint.application.messages.api.SetHeadMessage;
+import io.mokamint.application.messages.api.SetHeadResultMessage;
 import io.mokamint.application.remote.api.RemoteApplication;
 import io.mokamint.node.api.Block;
 import io.mokamint.node.api.Request;
@@ -147,17 +152,18 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
 		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
 		addSession(CHECK_DEADLINE_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
-		addSession(CHECK_TRANSACTION_ENDPOINT, uri, CheckTransactionEndpoint::new);
+		addSession(CHECK_REQUEST_ENDPOINT, uri, CheckRequestEndpoint::new);
 		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
 		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
 		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
 		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
-		addSession(DELIVER_TRANSACTION_ENDPOINT, uri, DeliverTransactionEndpoint::new);
+		addSession(EXECUTE_TRANSACTION_ENDPOINT, uri, ExecuteTransactionEndpoint::new);
 		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
 		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
 		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
 		addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
 		addSession(PUBLISH_ENDPOINT, uri, PublishEndpoint::new);
+		addSession(SET_HEAD_ENDPOINT, uri, SetHeadEndpoint::new);
 	}
 
 	@Override
@@ -170,19 +176,20 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	protected void notifyResult(RpcMessage message) {
 		switch (message) {
 		case CheckDeadlineResultMessage cperm -> onCheckDeadlineResult(cperm);
-		case CheckTransactionResultMessage ctrm -> onCheckTransactionResult(ctrm);
+		case CheckRequestResultMessage ctrm -> onCheckRequestResult(ctrm);
 		case GetBalanceResultMessage gbrm -> onGetBalanceResult(gbrm);
 		case GetInfoResultMessage girm -> onGetInfoResult(girm);
 		case GetPriorityResultMessage gprm -> onGetPriorityResult(gprm);
 		case GetRepresentationResultMessage grrm -> onGetRepresentationResult(grrm);
 		case GetInitialStateIdResultMessage gisirm -> onGetInitialStateIdResult(gisirm);
 		case BeginBlockResultMessage bbrm -> onBeginBlockResult(bbrm);
-		case DeliverTransactionResultMessage dtrm -> onDeliverTransactionResult(dtrm);
+		case ExecuteTransactionResultMessage dtrm -> onExecuteTransactionResult(dtrm);
 		case EndBlockResultMessage ebrm -> onEndBlockResult(ebrm);
 		case CommitBlockResultMessage cbrm -> onCommitBlockResult(cbrm);
 		case AbortBlockResultMessage abrm -> onAbortBlockResult(abrm);
 		case KeepFromResultMessage kfrm -> onKeepFromResult(kfrm);
 		case PublishResultMessage prm -> onPublishResult(prm);
+		case SetHeadResultMessage shrm -> onSetHeadResult(shrm);
 		default -> {
 			if (message != null && !(message instanceof ExceptionMessage)) {
 				LOGGER.warning("unexpected message of class " + message.getClass().getName());
@@ -244,6 +251,39 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	}
 
 	@Override
+	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException, TimeoutException, InterruptedException {
+		ensureIsOpen(ClosedApplicationException::new);
+		var id = nextId();
+		sendSetHead(stateId, id);
+		waitForResult(id, SetHeadResultMessage.class, UnknownStateException.class);
+	}
+
+	/**
+	 * Sends a {@link SetHeadMessage} to the application service.
+	 * 
+	 * @param stateId the identifier of the state set as head
+	 * @param id the identifier of the message
+	 */
+	protected void sendSetHead(byte[] stateId, String id) {
+		sendObjectAsync(SET_HEAD_ENDPOINT, SetHeadMessages.of(stateId, id));
+	}
+
+	/**
+	 * Hook called when a {@link SetHeadResultMessage} has been received.
+	 * 
+	 * @param message the message
+	 */
+	protected void onSetHeadResult(SetHeadResultMessage message) {}
+
+	private class SetHeadEndpoint extends Endpoint {
+
+		@Override
+		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return deployAt(uri, SetHeadResultMessages.Decoder.class, ExceptionMessages.Decoder.class, SetHeadMessages.Encoder.class);
+		}
+	}
+
+	@Override
 	public boolean checkDeadline(Deadline deadline) throws ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
@@ -281,31 +321,31 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
 		sendCheckTransaction(transaction, id);
-		waitForResult(id, CheckTransactionResultMessage.class, RequestRejectedException.class);
+		waitForResult(id, CheckRequestResultMessage.class, RequestRejectedException.class);
 	}
 
 	/**
-	 * Sends a {@link CheckTransactionMessage} to the application service.
+	 * Sends a {@link CheckRequestMessage} to the application service.
 	 * 
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
 	protected void sendCheckTransaction(Request transaction, String id) {
-		sendObjectAsync(CHECK_TRANSACTION_ENDPOINT, CheckTransactionMessages.of(transaction, id));
+		sendObjectAsync(CHECK_REQUEST_ENDPOINT, CheckRequestMessages.of(transaction, id));
 	}
 
 	/**
-	 * Hook called when a {@link CheckTransactionResultMessage} has been received.
+	 * Hook called when a {@link CheckRequestResultMessage} has been received.
 	 * 
 	 * @param message the message
 	 */
-	protected void onCheckTransactionResult(CheckTransactionResultMessage message) {}
+	protected void onCheckRequestResult(CheckRequestResultMessage message) {}
 
-	private class CheckTransactionEndpoint extends Endpoint {
+	private class CheckRequestEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, CheckTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckTransactionMessages.Encoder.class);
+			return deployAt(uri, CheckRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckRequestMessages.Encoder.class);
 		}
 	}
 
@@ -447,33 +487,33 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	public void executeTransaction(int groupId, Request transaction) throws RequestRejectedException, UnknownScopeIdException, ClosedApplicationException, TimeoutException, InterruptedException {
 		ensureIsOpen(ClosedApplicationException::new);
 		var id = nextId();
-		sendDeliverTransaction(groupId, transaction, id);
-		waitForResult(id, DeliverTransactionResultMessage.class, RequestRejectedException.class, UnknownScopeIdException.class);
+		sendExecuteTransaction(groupId, transaction, id);
+		waitForResult(id, ExecuteTransactionResultMessage.class, RequestRejectedException.class, UnknownScopeIdException.class);
 	}
 
 	/**
-	 * Sends a {@link DeliverTransactionMessage} to the application service.
+	 * Sends a {@link ExecuteTransactionMessage} to the application service.
 	 * 
 	 * @param groupId the group identifier in the message
 	 * @param transaction the transaction in the message
 	 * @param id the identifier of the message
 	 */
-	protected void sendDeliverTransaction(int groupId, Request transaction, String id) {
-		sendObjectAsync(DELIVER_TRANSACTION_ENDPOINT, DeliverTransactionMessages.of(groupId, transaction, id));
+	protected void sendExecuteTransaction(int groupId, Request transaction, String id) {
+		sendObjectAsync(EXECUTE_TRANSACTION_ENDPOINT, ExecuteTransactionMessages.of(groupId, transaction, id));
 	}
 
 	/**
-	 * Hook called when a {@link DeliverTransactionResultMessage} has been received.
+	 * Hook called when a {@link ExecuteTransactionResultMessage} has been received.
 	 * 
 	 * @param message the message
 	 */
-	protected void onDeliverTransactionResult(DeliverTransactionResultMessage message) {}
+	protected void onExecuteTransactionResult(ExecuteTransactionResultMessage message) {}
 
-	private class DeliverTransactionEndpoint extends Endpoint {
+	private class ExecuteTransactionEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, DeliverTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, DeliverTransactionMessages.Encoder.class);
+			return deployAt(uri, ExecuteTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, ExecuteTransactionMessages.Encoder.class);
 		}
 	}
 

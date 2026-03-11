@@ -18,25 +18,25 @@ package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckTransactionResultMessage;
-import io.mokamint.application.messages.internal.CheckTransactionResultMessageImpl;
+import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
+import io.mokamint.application.messages.internal.ExecuteExecuteResultMessageImpl;
 
 /**
- * The JSON representation of a {@link CheckTransactionResultMessage}.
+ * The JSON representation of a {@link ExecuteTransactionResultMessage}.
  */
-public abstract class CheckTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<CheckTransactionResultMessage> {
+public abstract class ExecuteTransactionResultMessageJson extends AbstractRpcMessageJsonRepresentation<ExecuteTransactionResultMessage> {
 
-	protected CheckTransactionResultMessageJson(CheckTransactionResultMessage message) {
+	protected ExecuteTransactionResultMessageJson(ExecuteTransactionResultMessage message) {
 		super(message);
 	}
 
 	@Override
-	public CheckTransactionResultMessage unmap() throws InconsistentJsonException {
-		return new CheckTransactionResultMessageImpl(this);
+	public ExecuteTransactionResultMessage unmap() throws InconsistentJsonException {
+		return new ExecuteExecuteResultMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckTransactionResultMessage.class.getName();
+		return ExecuteTransactionResultMessage.class.getName();
 	}
 }

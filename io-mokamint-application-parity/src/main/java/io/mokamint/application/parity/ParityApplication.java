@@ -169,6 +169,14 @@ public class ParityApplication extends AbstractApplication {
 		try (var scope = mkScope()) {} // no events get published
 	}
 
+	@Override
+	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException {
+		try (var scope = mkScope()) {
+			if (!Arrays.equals(EVEN_STATE_ID, stateId) && !Arrays.equals(ODD_STATE_ID, stateId))
+				throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
+		}
+	}
+
 	private byte[] getCurrentStateFor(int scopeId) throws UnknownScopeIdException {
 		var currentState = currentStates.get(scopeId);
 		if (currentState == null)

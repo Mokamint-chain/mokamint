@@ -52,9 +52,9 @@ import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.application.messages.api.AbortBlockResultMessage;
 import io.mokamint.application.messages.api.BeginBlockResultMessage;
 import io.mokamint.application.messages.api.CheckDeadlineResultMessage;
-import io.mokamint.application.messages.api.CheckTransactionResultMessage;
+import io.mokamint.application.messages.api.CheckRequestResultMessage;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
-import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
 import io.mokamint.application.messages.api.GetBalanceResultMessage;
 import io.mokamint.application.messages.api.GetInfoResultMessage;
@@ -63,6 +63,7 @@ import io.mokamint.application.messages.api.GetPriorityResultMessage;
 import io.mokamint.application.messages.api.GetRepresentationResultMessage;
 import io.mokamint.application.messages.api.KeepFromResultMessage;
 import io.mokamint.application.messages.api.PublishResultMessage;
+import io.mokamint.application.messages.api.SetHeadResultMessage;
 import io.mokamint.application.remote.RemoteApplications;
 import io.mokamint.application.remote.internal.RemoteApplicationImpl;
 import io.mokamint.application.service.ApplicationServices;
@@ -129,8 +130,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a checkTransaction() request reaches the service, it checks the transaction")
-	public void serviceCheckTransactionWorks() throws Exception {
+	@DisplayName("if a checkRequest() request reaches the service, it checks the transaction")
+	public void serviceCheckRequestWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
@@ -143,25 +144,25 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onCheckTransactionResult(CheckTransactionResultMessage message) {
+			protected void onCheckRequestResult(CheckRequestResultMessage message) {
 				if (ID.equals(message.getId()))
 					semaphore.release();
 			}
 
-			private void sendCheckTransaction() {
+			private void sendCheckRequest() {
 				sendCheckTransaction(transaction, ID);
 			}
 		}
 
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendCheckTransaction();
+			client.sendCheckRequest();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a checkTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceCheckTransactionRejectedTransactionWorks() throws Exception {
+	@DisplayName("if a checkRequest() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceCheckRequestRejectedTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
@@ -180,13 +181,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendCheckTransaction(Request request) {
+			private void sendCheckRequest(Request request) {
 				sendCheckTransaction(request, ID);
 			}
 		}
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendCheckTransaction(transaction);
+			client.sendCheckRequest(transaction);
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
@@ -493,8 +494,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a deliverTransaction() request reaches the service, it delivers the transaction in the application")
-	public void serviceDeliverTransactionWorks() throws Exception {
+	@DisplayName("if an executeTransaction() request reaches the service, it executes the transaction in the application")
+	public void serviceExecuteTransactionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
@@ -508,13 +509,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 			}
 
 			@Override
-			protected void onDeliverTransactionResult(DeliverTransactionResultMessage message) {
+			protected void onExecuteTransactionResult(ExecuteTransactionResultMessage message) {
 				if (ID.equals(message.getId()))
 					semaphore.release();
 			}
 
 			private void sendDeliverTransaction() {
-				sendDeliverTransaction(groupId, transaction, ID);
+				sendExecuteTransaction(groupId, transaction, ID);
 			}
 		}
 
@@ -525,8 +526,8 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 	}
 
 	@Test
-	@DisplayName("if a deliverTransaction() request reaches the service and the group id is unknown, it sends back an exception")
-	public void serviceDeliverTransactionUnknownGroupIdExceptionWorks() throws Exception {
+	@DisplayName("if an executeTransaction() request reaches the service and the group id is unknown, it sends back an exception")
+	public void serviceExecuteTransactionUnknownGroupIdExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
@@ -546,20 +547,20 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendDeliverTransaction() {
-				sendDeliverTransaction(groupId, transaction, ID);
+			private void sendExecuteTransaction() {
+				sendExecuteTransaction(groupId, transaction, ID);
 			}
 		}
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendDeliverTransaction();
+			client.sendExecuteTransaction();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
 
 	@Test
-	@DisplayName("if a deliverTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
-	public void serviceDeliverTransactionRejectedTransactionExceptionWorks() throws Exception {
+	@DisplayName("if an executeTransaction() request reaches the service and the transaction is rejected, it sends back an exception")
+	public void serviceExecuteTransactionRejectedTransactionExceptionWorks() throws Exception {
 		var semaphore = new Semaphore(0);
 		var app = mkApplication();
 		var transaction = Requests.of(new byte[] { 13, 1, 19, 73 });
@@ -579,13 +580,13 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 					semaphore.release();
 			}
 	
-			private void sendDeliverTransaction() {
-				sendDeliverTransaction(groupId, transaction, ID);
+			private void sendExecuteTransaction() {
+				sendExecuteTransaction(groupId, transaction, ID);
 			}
 		}
 	
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
-			client.sendDeliverTransaction();
+			client.sendExecuteTransaction();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}
@@ -831,6 +832,69 @@ public class ApplicationServiceTests extends AbstractLoggedTests {
 
 		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
 			client.sendKeepFrom();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a setHead() request reaches the service, the application gets informed")
+	public void serviceSetHeadWorks() throws Exception {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		var stateId = new byte[] { 13, 17, 42 };
+		doNothing().when(app).setHead(stateId);
+
+		class MyTestClient extends RemoteApplicationImpl {
+
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
+				super(URI, TIME_OUT);
+			}
+
+			@Override
+			protected void onSetHeadResult(SetHeadResultMessage message) {
+				if (ID.equals(message.getId()))
+					semaphore.release();
+			}
+
+			private void sendSetHead() {
+				sendSetHead(stateId, ID);
+			}
+		}
+
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendSetHead();
+			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
+	@DisplayName("if a setHead() request reaches the service and the state id is unknown, it sends back an exception")
+	public void serviceSetHeadUnknownStateExceptionWorks() throws Exception {
+		var semaphore = new Semaphore(0);
+		var app = mkApplication();
+		byte[] stateId = { 13, 1, 19, 73 };
+		String exceptionMessage = "unknown state";
+		doThrow(new UnknownStateException(exceptionMessage)).when(app).setHead(eq(stateId));
+	
+		class MyTestClient extends RemoteApplicationImpl {
+	
+			public MyTestClient() throws FailedDeploymentException, InterruptedException {
+				super(URI, TIME_OUT);
+			}
+	
+			@Override
+			protected void onException(ExceptionMessage message) {
+				if (ID.equals(message.getId()) && UnknownStateException.class.isAssignableFrom(message.getExceptionClass()) && exceptionMessage.equals(message.getMessage().get()))
+					semaphore.release();
+			}
+	
+			private void sendSetHead() {
+				sendSetHead(stateId, ID);
+			}
+		}
+	
+		try (var service = ApplicationServices.open(app, PORT); var client = new MyTestClient()) {
+			client.sendSetHead();
 			assertTrue(semaphore.tryAcquire(1, 1, TimeUnit.SECONDS));
 		}
 	}

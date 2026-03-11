@@ -38,6 +38,9 @@ import jakarta.websocket.EncodeException;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
 
+/**
+ * Implementation of the chain show command of a Mokamint node.
+ */
 public class ShowImpl extends AbstractPublicRpcCommand {
 
 	@ArgGroup(exclusive = true, multiplicity = "1")

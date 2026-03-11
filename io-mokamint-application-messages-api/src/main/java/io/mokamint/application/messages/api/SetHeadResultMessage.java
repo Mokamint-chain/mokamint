@@ -14,19 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package io.mokamint.application.bitcoin.cli.requests;
+package io.mokamint.application.messages.api;
 
-import io.mokamint.application.bitcoin.cli.internal.requests.SendImpl;
-import picocli.CommandLine.Command;
+import io.hotmoka.annotations.Immutable;
+import io.hotmoka.websockets.beans.api.VoidResultMessage;
+import io.mokamint.application.api.Application;
 
 /**
- * The send coins command of the Bitcoin application.
+ * The network message corresponding to the result of the
+ * {@link Application#setHead(byte[])} method.
  */
-@Command(name = "send", description = "Send coins from a key to another key.")
-public class Send extends SendImpl {
-
-	/**
-	 * Creates the CLI command.
-	 */
-	public Send() {}
+@Immutable
+public interface SetHeadResultMessage extends VoidResultMessage {
 }

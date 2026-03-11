@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,34 +16,35 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal.json;
 
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
-import io.mokamint.application.messages.internal.CheckTransactionMessageImpl;
+import io.mokamint.application.messages.api.SetHeadMessage;
+import io.mokamint.application.messages.internal.SetHeadMessageImpl;
 
 /**
- * The JSON representation of an {@link CheckTransactionMessage}.
+ * The JSON representation of an {@link SetHeadMessage}.
  */
-public abstract class CheckTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<CheckTransactionMessage> {
-	private final String transaction;
+public abstract class SetHeadMessageJson extends AbstractRpcMessageJsonRepresentation<SetHeadMessage> {
+	private final String stateId;
 
-	protected CheckTransactionMessageJson(CheckTransactionMessage message) {
+	protected SetHeadMessageJson(SetHeadMessage message) {
 		super(message);
 
-		this.transaction = message.getRequest().toBase64String();
+		this.stateId = Hex.toHexString(message.getStateId());
 	}
 
-	public String getTransaction() {
-		return transaction;
+	public String getStateId() {
+		return stateId;
 	}
 
 	@Override
-	public CheckTransactionMessage unmap() throws InconsistentJsonException {
-		return new CheckTransactionMessageImpl(this);
+	public SetHeadMessage unmap() throws InconsistentJsonException {
+		return new SetHeadMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckTransactionMessage.class.getName();
+		return SetHeadMessage.class.getName();
 	}
 }

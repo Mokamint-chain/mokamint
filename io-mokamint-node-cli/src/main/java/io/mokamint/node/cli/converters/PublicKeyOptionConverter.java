@@ -31,6 +31,11 @@ import picocli.CommandLine.ITypeConverter;
 public abstract class PublicKeyOptionConverter implements ITypeConverter<PublicKey> {
 
 	/**
+	 * Builds the converter.
+	 */
+	protected PublicKeyOptionConverter() {}
+
+	/**
 	 * Yields the signature algorithm to use for the public key.
 	 * 
 	 * @return the signature algorithm

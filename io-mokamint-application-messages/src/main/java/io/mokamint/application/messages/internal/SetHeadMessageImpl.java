@@ -16,42 +16,42 @@ limitations under the License.
 
 package io.mokamint.application.messages.internal;
 
-import io.hotmoka.crypto.Base64;
+import java.util.Arrays;
+
+import io.hotmoka.crypto.Hex;
 import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.exceptions.Objects;
 import io.hotmoka.websockets.beans.AbstractRpcMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
-import io.mokamint.application.messages.internal.json.CheckTransactionMessageJson;
-import io.mokamint.node.Requests;
-import io.mokamint.node.api.Request;
+import io.mokamint.application.messages.api.SetHeadMessage;
+import io.mokamint.application.messages.internal.json.SetHeadMessageJson;
 
 /**
- * Implementation of the network message corresponding to {@link Application#checkRequest(Request)}.
+ * Implementation of the network message corresponding to {@link Application#setHead(byte[])}.
  */
-public class CheckTransactionMessageImpl extends AbstractRpcMessage implements CheckTransactionMessage {
-	private final Request request;
+public class SetHeadMessageImpl extends AbstractRpcMessage implements SetHeadMessage {
+	private final byte[] stateId;
 
 	/**
 	 * Creates the message.
 	 * 
-	 * @param request the request in the message
+	 * @param stateId the state identifier in the message
 	 * @param id the identifier of the message
 	 */
-	public CheckTransactionMessageImpl(Request request, String id) {
-		this(request, id, IllegalArgumentException::new);
+	public SetHeadMessageImpl(byte[] stateId, String id) {
+		this(stateId, id, IllegalArgumentException::new);
 	}
 
 	/**
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param json the JSON representation
-	 * @throws InconsistentJsonException if the JSON representation is inconsistent
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public CheckTransactionMessageImpl(CheckTransactionMessageJson json) throws InconsistentJsonException {
+	public SetHeadMessageImpl(SetHeadMessageJson json) throws InconsistentJsonException {
 		this(
-			Requests.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "request cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
+			Hex.fromHexString(Objects.requireNonNull(json.getStateId(), "stateId cannot be null", InconsistentJsonException::new), InconsistentJsonException::new),
 			json.getId(),
 			InconsistentJsonException::new
 		);
@@ -61,29 +61,29 @@ public class CheckTransactionMessageImpl extends AbstractRpcMessage implements C
 	 * Creates a message from the given JSON representation.
 	 * 
 	 * @param <E> the exception to throw if some argument is illegal
-	 * @param request the request in the message
+	 * @param stateId the state identifier in the message
 	 * @param id the identifier of the message
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> CheckTransactionMessageImpl(Request request, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> SetHeadMessageImpl(byte[] stateId, String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 
-		this.request = Objects.requireNonNull(request, "transaction cannot be null", onIllegalArgs);
+		this.stateId = Objects.requireNonNull(stateId, "stateId cannot be null", onIllegalArgs).clone();
 	}
 
 	@Override
-	public Request getRequest() {
-		return request;
+	public byte[] getStateId() {
+		return stateId.clone();
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckTransactionMessage ctm && super.equals(other) && request.equals(ctm.getRequest());
+		return other instanceof SetHeadMessage bbm && super.equals(other) && Arrays.equals(stateId, bbm.getStateId());
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckTransactionMessage.class.getName();
+		return SetHeadMessage.class.getName();
 	}
 }

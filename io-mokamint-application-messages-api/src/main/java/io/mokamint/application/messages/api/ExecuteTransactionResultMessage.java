@@ -26,5 +26,5 @@ import io.mokamint.node.api.Request;
  * {@link Application#executeTransaction(int, Request)} method.
  */
 @Immutable
-public interface DeliverTransactionResultMessage extends VoidResultMessage {
+public interface ExecuteTransactionResultMessage extends VoidResultMessage {
 }

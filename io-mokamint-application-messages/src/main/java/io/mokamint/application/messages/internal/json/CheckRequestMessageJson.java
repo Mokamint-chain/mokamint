@@ -18,38 +18,32 @@ package io.mokamint.application.messages.internal.json;
 
 import io.hotmoka.websockets.beans.AbstractRpcMessageJsonRepresentation;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
-import io.mokamint.application.messages.internal.DeliverTransactionMessageImpl;
+import io.mokamint.application.messages.api.CheckRequestMessage;
+import io.mokamint.application.messages.internal.CheckRequestMessageImpl;
 
 /**
- * The JSON representation of an {@link DeliverTransactionMessage}.
+ * The JSON representation of an {@link CheckRequestMessage}.
  */
-public abstract class DeliverTransactionMessageJson extends AbstractRpcMessageJsonRepresentation<DeliverTransactionMessage> {
+public abstract class CheckRequestMessageJson extends AbstractRpcMessageJsonRepresentation<CheckRequestMessage> {
 	private final String transaction;
-	private final int groupId;
 
-	protected DeliverTransactionMessageJson(DeliverTransactionMessage message) {
+	protected CheckRequestMessageJson(CheckRequestMessage message) {
 		super(message);
 
 		this.transaction = message.getRequest().toBase64String();
-		this.groupId = message.getGroupId();
 	}
 
 	public String getTransaction() {
 		return transaction;
 	}
 
-	public int getGroupId() {
-		return groupId;
-	}
-
 	@Override
-	public DeliverTransactionMessage unmap() throws InconsistentJsonException {
-		return new DeliverTransactionMessageImpl(this);
+	public CheckRequestMessage unmap() throws InconsistentJsonException {
+		return new CheckRequestMessageImpl(this);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return DeliverTransactionMessage.class.getName();
+		return CheckRequestMessage.class.getName();
 	}
 }

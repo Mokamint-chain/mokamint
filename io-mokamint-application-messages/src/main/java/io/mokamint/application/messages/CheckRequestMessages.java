@@ -18,34 +18,33 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.DeliverTransactionMessage;
-import io.mokamint.application.messages.internal.DeliverTransactionMessageImpl;
-import io.mokamint.application.messages.internal.json.DeliverTransactionMessageJson;
+import io.mokamint.application.messages.api.CheckRequestMessage;
+import io.mokamint.application.messages.internal.CheckRequestMessageImpl;
+import io.mokamint.application.messages.internal.json.CheckRequestMessageJson;
 import io.mokamint.node.api.Request;
 
 /**
- * A provider of {@link DeliverTransactionMessage}.
+ * A provider of {@link CheckRequestMessage}.
  */
-public abstract class DeliverTransactionMessages {
+public abstract class CheckRequestMessages {
 
-	private DeliverTransactionMessages() {}
+	private CheckRequestMessages() {}
 
 	/**
-	 * Yields a {@link DeliverTransactionMessage}.
+	 * Yields a {@link CheckRequestMessage}.
 	 * 
-	 * @param groupId the identifier of the group of transactions in the message
 	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static DeliverTransactionMessage of(int groupId, Request request, String id) {
-		return new DeliverTransactionMessageImpl(groupId, request, id);
+	public static CheckRequestMessage of(Request request, String id) {
+		return new CheckRequestMessageImpl(request, id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<DeliverTransactionMessage, Json> {
+	public static class Encoder extends MappedEncoder<CheckRequestMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -58,7 +57,7 @@ public abstract class DeliverTransactionMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<DeliverTransactionMessage, Json> {
+	public static class Decoder extends MappedDecoder<CheckRequestMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -71,14 +70,14 @@ public abstract class DeliverTransactionMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends DeliverTransactionMessageJson {
+    public static class Json extends CheckRequestMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(DeliverTransactionMessage message) {
+    	public Json(CheckRequestMessage message) {
     		super(message);
     	}
     }

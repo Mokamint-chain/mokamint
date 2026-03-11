@@ -44,7 +44,7 @@ public interface ApplicationService extends WebSocketServer {
 	/**
 	 * The network endpoint path where {@link Application#checkRequest(Request)} is published.
 	 */
-	String CHECK_TRANSACTION_ENDPOINT = "/check_transaction";
+	String CHECK_REQUEST_ENDPOINT = "/check_request";
 
 	/**
 	 * The network endpoint path where {@link Application#getPriority(Request)} is published.
@@ -69,7 +69,7 @@ public interface ApplicationService extends WebSocketServer {
 	/**
 	 * The network endpoint path where {@link Application#executeTransaction(int, Request)} is published.
 	 */
-	String DELIVER_TRANSACTION_ENDPOINT = "/deliver_transaction";
+	String EXECUTE_TRANSACTION_ENDPOINT = "/execute_transaction";
 
 	/**
 	 * The network endpoint path where {@link Application#endBlock(int, io.mokamint.nonce.api.Deadline)} is published.
@@ -95,6 +95,11 @@ public interface ApplicationService extends WebSocketServer {
 	 * The network endpoint path where {@link Application#publish(io.mokamint.node.api.Block)} is published.
 	 */
 	String PUBLISH_ENDPOINT = "/publish";
+
+	/**
+	 * The network endpoint path where {@link Application#setHead(byte[])} is published.
+	 */
+	String SET_HEAD_ENDPOINT = "/set_head";
 
 	@Override
 	void close() throws InterruptedException;

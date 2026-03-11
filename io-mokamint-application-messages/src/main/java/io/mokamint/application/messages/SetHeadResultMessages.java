@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,33 +18,31 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.CheckTransactionMessage;
-import io.mokamint.application.messages.internal.CheckTransactionMessageImpl;
-import io.mokamint.application.messages.internal.json.CheckTransactionMessageJson;
-import io.mokamint.node.api.Request;
+import io.mokamint.application.messages.api.SetHeadResultMessage;
+import io.mokamint.application.messages.internal.SetHeadResultMessageImpl;
+import io.mokamint.application.messages.internal.json.SetHeadResultMessageJson;
 
 /**
- * A provider of {@link CheckTransactionMessage}.
+ * A provider of {@link SetHeadResultMessage}.
  */
-public abstract class CheckTransactionMessages {
+public abstract class SetHeadResultMessages {
 
-	private CheckTransactionMessages() {}
+	private SetHeadResultMessages() {}
 
 	/**
-	 * Yields a {@link CheckTransactionMessage}.
+	 * Yields a {@link SetHeadResultMessage}.
 	 * 
-	 * @param request the request in the message
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static CheckTransactionMessage of(Request request, String id) {
-		return new CheckTransactionMessageImpl(request, id);
+	public static SetHeadResultMessage of(String id) {
+		return new SetHeadResultMessageImpl(id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<CheckTransactionMessage, Json> {
+	public static class Encoder extends MappedEncoder<SetHeadResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -57,7 +55,7 @@ public abstract class CheckTransactionMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<CheckTransactionMessage, Json> {
+	public static class Decoder extends MappedDecoder<SetHeadResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -70,14 +68,14 @@ public abstract class CheckTransactionMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends CheckTransactionMessageJson {
+    public static class Json extends SetHeadResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(CheckTransactionMessage message) {
+    	public Json(SetHeadResultMessage message) {
     		super(message);
     	}
     }

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Fausto Spoto
+Copyright 2026 Fausto Spoto
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,32 +20,31 @@ import io.hotmoka.exceptions.ExceptionSupplierFromMessage;
 import io.hotmoka.websockets.beans.AbstractVoidResultMessage;
 import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.mokamint.application.api.Application;
-import io.mokamint.application.messages.api.CheckTransactionResultMessage;
-import io.mokamint.application.messages.internal.json.CheckTransactionResultMessageJson;
-import io.mokamint.node.api.Request;
+import io.mokamint.application.messages.api.SetHeadResultMessage;
+import io.mokamint.application.messages.internal.json.SetHeadResultMessageJson;
 
 /**
  * Implementation of the network message corresponding to the result of the
- * {@link Application#checkRequest(Request)} method.
+ * {@link Application#setHead(byte[])} method.
  */
-public class CheckTransactionResultMessageImpl extends AbstractVoidResultMessage implements CheckTransactionResultMessage {
+public class SetHeadResultMessageImpl extends AbstractVoidResultMessage implements SetHeadResultMessage {
 
 	/**
 	 * Creates the message.
 	 * 
 	 * @param id the identifier of the message
 	 */
-	public CheckTransactionResultMessageImpl(String id) {
+	public SetHeadResultMessageImpl(String id) {
 		this(id, IllegalArgumentException::new);
 	}
 
 	/**
-	 * Creates a message from the given JSON representation.
+	 * Creates a message from its JSON representation.
 	 * 
 	 * @param json the JSON representation
-	 * @throws InconsistentJsonException if {@code json} is illegal
+	 * @throws InconsistentJsonException if {@code json} is inconsistent
 	 */
-	public CheckTransactionResultMessageImpl(CheckTransactionResultMessageJson json) throws InconsistentJsonException {
+	public SetHeadResultMessageImpl(SetHeadResultMessageJson json) throws InconsistentJsonException {
 		this(json.getId(), InconsistentJsonException::new);
 	}
 
@@ -57,17 +56,17 @@ public class CheckTransactionResultMessageImpl extends AbstractVoidResultMessage
 	 * @param onIllegalArgs the provider of the exception to throw if some argument is illegal
 	 * @throws E if some argument is illegal
 	 */
-	private <E extends Exception> CheckTransactionResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
+	private <E extends Exception> SetHeadResultMessageImpl(String id, ExceptionSupplierFromMessage<? extends E> onIllegalArgs) throws E {
 		super(id, onIllegalArgs);
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof CheckTransactionResultMessage && super.equals(other);
+		return other instanceof SetHeadResultMessage && super.equals(other);
 	}
 
 	@Override
 	protected String getExpectedType() {
-		return CheckTransactionResultMessage.class.getName();
+		return SetHeadResultMessage.class.getName();
 	}
 }

@@ -31,6 +31,9 @@ import io.mokamint.node.cli.api.chain.ChainInfoOutput;
 import io.mokamint.node.cli.internal.chain.json.ChainInfoOutputJson;
 import io.mokamint.node.remote.api.RemotePublicNode;
 
+/**
+ * Implementation of the chain info command of a Mokamint node.
+ */
 public class InfoImpl extends AbstractPublicRpcCommand {
 
 	private void body(RemotePublicNode remote) throws TimeoutException, InterruptedException, CommandException, ClosedNodeException {

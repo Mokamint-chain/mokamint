@@ -22,10 +22,10 @@ import io.mokamint.application.api.Application;
 import io.mokamint.node.api.Request;
 
 /**
- * The network message corresponding to the {@link Application#executeTransaction(int, Request)} method.
+ * The network message corresponding to the {@link Application#checkRequest(Request)} method.
  */
 @Immutable
-public interface DeliverTransactionMessage extends RpcMessage {
+public interface CheckRequestMessage extends RpcMessage {
 
 	/**
 	 * Yields the request in the message.
@@ -33,11 +33,4 @@ public interface DeliverTransactionMessage extends RpcMessage {
 	 * @return the request
 	 */
 	Request getRequest();
-
-	/**
-	 * Yields the execution scope identifier in the message.
-	 * 
-	 * @return the execution scope identifier
-	 */
-	int getGroupId();
 }

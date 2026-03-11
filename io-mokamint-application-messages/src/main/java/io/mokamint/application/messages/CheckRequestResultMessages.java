@@ -18,31 +18,31 @@ package io.mokamint.application.messages;
 
 import io.hotmoka.websockets.beans.MappedDecoder;
 import io.hotmoka.websockets.beans.MappedEncoder;
-import io.mokamint.application.messages.api.DeliverTransactionResultMessage;
-import io.mokamint.application.messages.internal.DeliverTransactionResultMessageImpl;
-import io.mokamint.application.messages.internal.json.DeliverTransactionResultMessageJson;
+import io.mokamint.application.messages.api.CheckRequestResultMessage;
+import io.mokamint.application.messages.internal.CheckRequestResultMessageImpl;
+import io.mokamint.application.messages.internal.json.CheckRequestResultMessageJson;
 
 /**
- * A provider of {@link DeliverTransactionResultMessage}.
+ * A provider of {@link CheckRequestResultMessage}.
  */
-public abstract class DeliverTransactionResultMessages {
+public abstract class CheckRequestResultMessages {
 
-	private DeliverTransactionResultMessages() {}
+	private CheckRequestResultMessages() {}
 
 	/**
-	 * Yields a {@link DeliverTransactionResultMessage}.
+	 * Yields a {@link CheckRequestResultMessage}.
 	 * 
 	 * @param id the identifier of the message
 	 * @return the message
 	 */
-	public static DeliverTransactionResultMessage of(String id) {
-		return new DeliverTransactionResultMessageImpl(id);
+	public static CheckRequestResultMessage of(String id) {
+		return new CheckRequestResultMessageImpl(id);
 	}
 
 	/**
 	 * Gson encoder.
 	 */
-	public static class Encoder extends MappedEncoder<DeliverTransactionResultMessage, Json> {
+	public static class Encoder extends MappedEncoder<CheckRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new encoder.
@@ -55,7 +55,7 @@ public abstract class DeliverTransactionResultMessages {
 	/**
 	 * Gson decoder.
 	 */
-	public static class Decoder extends MappedDecoder<DeliverTransactionResultMessage, Json> {
+	public static class Decoder extends MappedDecoder<CheckRequestResultMessage, Json> {
 
 		/**
 		 * Creates a new decoder.
@@ -68,14 +68,14 @@ public abstract class DeliverTransactionResultMessages {
 	/**
      * Json representation.
      */
-    public static class Json extends DeliverTransactionResultMessageJson {
+    public static class Json extends CheckRequestResultMessageJson {
 
     	/**
     	 * Creates the Json representation for the given message.
     	 * 
     	 * @param message the message
     	 */
-    	public Json(DeliverTransactionResultMessage message) {
+    	public Json(CheckRequestResultMessage message) {
     		super(message);
     	}
     }
