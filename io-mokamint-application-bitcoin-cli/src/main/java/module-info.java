@@ -32,7 +32,5 @@ module io.mokamint.application.bitcoin.cli {
 	requires io.hotmoka.cli;
 	requires io.hotmoka.crypto;
 
-	// this makes sun.misc.Unsafe accessible, so that Gson can instantiate classes without the no-args constructor
- 	//requires jdk.unsupported;
 	requires java.logging;
 }
