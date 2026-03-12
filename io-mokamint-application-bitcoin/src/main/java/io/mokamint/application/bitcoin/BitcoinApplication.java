@@ -93,11 +93,19 @@ public class BitcoinApplication extends AbstractApplication {
 		}
 		finally {
 			try {
-				env.close();
-				LOGGER.log(Level.INFO, "bitcoin: closed the state database");
+				synchronized (stateAtHeadLock) {
+					if (this.stateAtHead != null)
+						this.stateAtHead.txn.abort();
+				}
 			}
-			catch (ExodusException e) {
-				LOGGER.log(Level.SEVERE, "bitcoin: failed to close the Exodus environment", e);
+			finally {
+				try {
+					env.close();
+					LOGGER.log(Level.INFO, "bitcoin: closed the state database");
+				}
+				catch (ExodusException e) {
+					LOGGER.log(Level.SEVERE, "bitcoin: failed to close the Exodus environment", e);
+				}
 			}
 		}
 	}
@@ -109,7 +117,12 @@ public class BitcoinApplication extends AbstractApplication {
 	@Override
 	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
-			return Optional.empty(); // balances have no meaning for this application
+			synchronized (stateAtHeadLock) {
+				if (stateAtHead != null)
+					return stateAtHead.trie().get(publicKey);
+			}
+
+			return Optional.empty();
 		}
 	}
 
@@ -253,9 +266,29 @@ public class BitcoinApplication extends AbstractApplication {
 		try (var scope = mkScope()) {} // there are no events to publish
 	}
 
+	private final Object stateAtHeadLock = new Object();
+	private State stateAtHead;
+
 	@Override
 	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException {
-		// TODO implement this
+		Transaction txn = null;
+
+		try (var scope = mkScope()) {
+			txn = env.beginReadonlyTransaction();
+			TrieOfKeys trie = mkTrie(txn, stateId);
+			var stateAtHead = new State(trie, txn, 0L);
+
+			synchronized (stateAtHeadLock) {
+				if (this.stateAtHead != null)
+					this.stateAtHead.txn.abort();
+
+				this.stateAtHead = stateAtHead;
+			}
+		}
+		catch (UnknownKeyException e) {
+			txn.abort();
+			throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
+		}
 	}
 
 	/**

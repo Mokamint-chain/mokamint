@@ -53,6 +53,7 @@ import io.mokamint.application.AbstractApplication;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Info;
+import io.mokamint.application.api.UnknownStateException;
 import io.mokamint.miner.MiningSpecifications;
 import io.mokamint.miner.api.Miner;
 import io.mokamint.miner.api.MiningSpecification;
@@ -1028,8 +1029,22 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 	 *                      the last element of this list is the new head of the blockchain; very often, this list
 	 *                      contains only one element: the head; however, there might be history changes, in which
 	 *                      case the list is longer than a single element; in any case, this list is never empty
+	 * @throws InterruptedException if the current thread gets interrupted before completing the operation
+	 * @throws ApplicationTimeoutException if the application is unresponsive
+	 * @throws ClosedApplicationException if the application is already closed
+	 * @throws MisbehavingApplicationException if the application is misbehaving
 	 */
-	protected void onHeadChanged(Deque<Block> pathToNewHead) {
+	protected void onHeadChanged(Deque<Block> pathToNewHead) throws MisbehavingApplicationException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
+		try {
+			app.setHead(pathToNewHead.getLast().getStateId());
+		}
+		catch (UnknownStateException e) {
+			throw new MisbehavingApplicationException(e.getMessage());
+		}
+		catch (TimeoutException e) {
+			throw new ApplicationTimeoutException(e);
+		}
+
 		// it is not essential to publish the blocks immediately, therefore
 		// we use a queue, in order to avoid delaying this hook
 		pathToNewHead.forEach(block -> {

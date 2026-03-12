@@ -712,7 +712,7 @@ public class Blockchain extends AbstractAutoCloseableWithLock<ClosedDatabaseExce
 			return this;
 		}
 
-		private void informNode() {
+		private void informNode() throws MisbehavingApplicationException, ClosedApplicationException, ApplicationTimeoutException, InterruptedException {
 			blocksToAddAmongOrphans.forEach(orphans::add);
 			blocksToRemoveFromOrphans.forEach(orphans::remove);
 			blocksAdded.forEach(node::onAdded);

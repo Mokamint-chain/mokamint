@@ -69,10 +69,6 @@ public class Start extends AbstractCommand {
 		catch (ApplicationNotFoundException e) {
 			throw new CommandException("The application " + application + " has not been found", e);
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new CommandException("The application service has been interrupted", e);
-		}
 		catch (FailedDeploymentException e) {
 			throw new CommandException("Cannot deploy the service at port " + port);
 		}

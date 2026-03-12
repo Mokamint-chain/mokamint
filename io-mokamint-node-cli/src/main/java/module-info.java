@@ -47,6 +47,7 @@ module io.mokamint.node.cli {
 	requires io.mokamint.application;
 	requires io.mokamint.application.remote;
 	requires io.mokamint.node.service;
+	requires io.mokamint.application.service;
 	requires io.hotmoka.crypto;
 	requires io.hotmoka.crypto.cli;
 	requires io.hotmoka.exceptions;

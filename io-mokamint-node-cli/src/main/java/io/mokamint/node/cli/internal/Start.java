@@ -43,6 +43,7 @@ import io.mokamint.application.Applications;
 import io.mokamint.application.api.Application;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.remote.RemoteApplications;
+import io.mokamint.application.service.ApplicationServices;
 import io.mokamint.miner.local.LocalMiners;
 import io.mokamint.node.api.ApplicationTimeoutException;
 import io.mokamint.node.api.ClosedNodeException;
@@ -91,6 +92,9 @@ public class Start extends AbstractCommand {
 
 	@Option(names = "--restricted-port", description = "network ports where the restricted API of the node will be published")
 	private int[] restrictedPorts;
+
+	@Option(names = "--application-port", description = "network ports where the application API of the node will be published")
+	private int[] applicationPorts;
 
 	private final static Logger LOGGER = Logger.getLogger(Start.class.getName());
 
@@ -229,7 +233,7 @@ public class Start extends AbstractCommand {
 						try (var miner = LocalMiners.of(appInfo.getName(), appInfo.getDescription(), (_signature, _publicKey) -> Optional.empty(), plots.toArray(Plot[]::new))) {
 							if (node.add(miner).isPresent()) {
 								System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-								publishPublicAndRestrictedNodeServices(0);
+								publishPublicAndRestrictedNodeServicesAndApplicationServices(0);
 							}
 							else
 								throw new CommandException("The miner has not been added!");
@@ -239,7 +243,7 @@ public class Start extends AbstractCommand {
 						}
 					}
 					else
-						publishPublicAndRestrictedNodeServices(0);
+						publishPublicAndRestrictedNodeServicesAndApplicationServices(0);
 				}
 				catch (ApplicationTimeoutException e) {
 					throw new CommandException("The application timed out!", e);
@@ -255,34 +259,51 @@ public class Start extends AbstractCommand {
 			}
 		}
 
-		private void publishPublicAndRestrictedNodeServices(int pos) throws CommandException, InterruptedException {
+		private void publishPublicAndRestrictedNodeServicesAndApplicationServices(int pos) throws CommandException, InterruptedException {
 			if (pos < publicPorts.length) {
 				System.out.print("Opening a public node service at port " + publicPorts[pos] + " of localhost... ");
 				try (var service = PublicNodeServices.open(node, publicPorts[pos], broadcastInterval, node.getConfig().getWhisperingMemorySize(), Optional.ofNullable(visibleAs))) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-					publishPublicAndRestrictedNodeServices(pos + 1);
+					publishPublicAndRestrictedNodeServicesAndApplicationServices(pos + 1);
 				}
 				catch (ClosedNodeException | TimeoutException | FailedDeploymentException e) {
 					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
 					LOGGER.warning("cannot deploy a node service at port " + publicPorts[pos] + ": " + e.getMessage());
-					publishPublicAndRestrictedNodeServices(pos + 1);
+					publishPublicAndRestrictedNodeServicesAndApplicationServices(pos + 1);
 				}
 			}
 			else
-				publishRestrictedNodeServices(0);
+				publishRestrictedNodeServicesAndApplicationServices(0);
 		}
 
-		private void publishRestrictedNodeServices(int pos) throws CommandException {
+		private void publishRestrictedNodeServicesAndApplicationServices(int pos) throws CommandException {
 			if (pos < restrictedPorts.length) {
 				System.out.print("Opening a restricted node service at port " + restrictedPorts[pos] + " of localhost... ");
 				try (var service = RestrictedNodeServices.open(node, restrictedPorts[pos])) {
 					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
-					publishRestrictedNodeServices(pos + 1);
+					publishRestrictedNodeServicesAndApplicationServices(pos + 1);
 				}
 				catch (FailedDeploymentException e) {
 					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
 					LOGGER.warning("cannot deploy a node service at port " + restrictedPorts[pos] + ": " + e.getMessage());
-					publishRestrictedNodeServices(pos + 1);
+					publishRestrictedNodeServicesAndApplicationServices(pos + 1);
+				}
+			}
+			else
+				publishApplicationServices(0);
+		}
+
+		private void publishApplicationServices(int pos) throws CommandException {
+			if (pos < applicationPorts.length) {
+				System.out.print("Opening an application service at port " + applicationPorts[pos] + " of localhost... ");
+				try (var service = ApplicationServices.open(node.getApplication(), applicationPorts[pos])) {
+					System.out.println(Ansi.AUTO.string("@|blue done.|@"));
+					publishApplicationServices(pos + 1);
+				}
+				catch (FailedDeploymentException e) {
+					System.out.println(Ansi.AUTO.string("@|red deployment failed: " + e.getMessage() + "|@"));
+					LOGGER.warning("cannot deploy an application service at port " + applicationPorts[pos] + ": " + e.getMessage());
+					publishApplicationServices(pos + 1);
 				}
 			}
 			else

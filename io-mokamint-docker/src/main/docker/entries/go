@@ -24,4 +24,5 @@ mokamint-node-print-logs start \
 	--config=mokamint/mokamint_config.toml \
 	--public-port=8030 \
 	--restricted-port=8031 \
+	--application-port=8050 \
 	$VISIBLE_AS

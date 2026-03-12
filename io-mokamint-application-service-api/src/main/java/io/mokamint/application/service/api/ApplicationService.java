@@ -102,5 +102,5 @@ public interface ApplicationService extends WebSocketServer {
 	String SET_HEAD_ENDPOINT = "/set_head";
 
 	@Override
-	void close() throws InterruptedException;
+	void close();
 }
