@@ -50,7 +50,7 @@ public class SendImpl extends AbstractPublicRpcCommand {
 	@Parameters(index = "1", description = "the amount of coins to send")
 	private BigInteger amount;
 
-	@Parameters(index = "2", description = "the ed25519 key pair of the receiver", paramLabel = "<base58 string>", converter = ED25519PublicKeyOptionConverter.class)
+	@Parameters(index = "2", description = "the ed25519 public key of the receiver", paramLabel = "<base58 string>", converter = ED25519PublicKeyOptionConverter.class)
 	private PublicKey publicKeyOfReceiver;
 
 	@Option(names = "--nonce", description = "the progressive nonce to distinguish repeated requests", defaultValue = "0")

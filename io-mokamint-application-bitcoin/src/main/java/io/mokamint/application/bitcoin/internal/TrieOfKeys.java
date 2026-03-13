@@ -1,3 +1,19 @@
+/*
+Copyright 2026 Fausto Spoto
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.mokamint.application.bitcoin.internal;
 
 import java.math.BigInteger;
@@ -29,14 +45,14 @@ public class TrieOfKeys extends AbstractPatriciaTrie<PublicKey, BigInteger, Trie
 	 * @throws UnknownKeyException if {@code root} cannot be found in the trie
 	 */
 	public TrieOfKeys(KeyValueStore store, byte[] root) throws UnknownKeyException {
-		super(store, root, mkHasherOfPublicKeys(), mkSHA256(), new byte[32], BigInteger::toByteArray, BigInteger::new);
+		super(store, root, hasherOfPublicKeys(), sha256(), new byte[32], BigInteger::toByteArray, BigInteger::new);
 	}
 
 	private TrieOfKeys(TrieOfKeys cloned, byte[] root) throws UnknownKeyException {
 		super(cloned, root);
 	}
 
-	private static HashingAlgorithm mkSHA256() {
+	private static HashingAlgorithm sha256() {
 		try {
 			return HashingAlgorithms.sha256();
 		}
@@ -54,8 +70,8 @@ public class TrieOfKeys extends AbstractPatriciaTrie<PublicKey, BigInteger, Trie
 		}
 	}
 
-	private static Hasher<PublicKey> mkHasherOfPublicKeys() {
-		return mkSHA256().getHasher(publicKey -> {
+	private static Hasher<PublicKey> hasherOfPublicKeys() {
+		return sha256().getHasher(publicKey -> {
 			try {
 				return ed25519().encodingOf(publicKey);
 			}

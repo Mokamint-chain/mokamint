@@ -57,14 +57,14 @@ public class MokamintBitcoin extends AbstractCLI {
 	}
 
 	/**
-	 * Runs the {@code chain info} command with the given arguments.
+	 * Runs the {@code requests send} command with the given arguments.
 	 * 
 	 * @param args the arguments
 	 * @return what the tool has written into the standard output
 	 * @throws IOException if the construction of the return value failed
 	 */
-	public static String chainInfo(String args) throws IOException {
-		return run("chain info " + args);
+	public static String requestsSend(String args) throws IOException {
+		return run("requests send " + args);
 	}
 
 	/**
