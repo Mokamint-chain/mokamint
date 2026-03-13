@@ -1,26 +1,25 @@
 <p align="center"><img width="320" src="../pics/mokamint_logo.png" alt="Mokamint logo"></p>
 
 [![Java-Build Action Status](https://github.com/Mokamint-chain/mokamint/actions/workflows/java_build.yml/badge.svg)](https://github.com/Mokamint-chain/mokamint/actions)
-[![Maven Central](https://img.shields.io/maven-central/v/io.mokamint/io-mokamint-application-parity.svg?label=Maven%20Central)](https://central.sonatype.com/search?smo=true&q=g:io.mokamint/io-mokamint-application-parity)
+[![Maven Central](https://img.shields.io/maven-central/v/io.mokamint/io-mokamint-application-bitcoin.svg?label=Maven%20Central)](https://central.sonatype.com/search?smo=true&q=g:io.mokamint/io-mokamint-application-bitcoin)
 [![Docker Hub](https://img.shields.io/docker/pulls/mokamint/mokamint.svg?label=Docker%20Hub%20Pulls)](https://hub.docker.com/u/mokamint)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-# Parity
+# Bitcoin
 
-A simple parity application running on top of the Mokamint proof of space engine
+An application running on top of the Mokamint proof of space engine, functionally equivalent to Bitcoin.
 
 ## Introduction
 
-This parity application for Mokamint is a minimal example of definition of an application
-running on top of the Mokamint proof of space engine. It implements an application with only two states: 0 and 1.
-They represent the parity of an integer value _v_: 0 means even and 1 means odd.
-The value of _v_ is assumed to be 0 when the blockchain starts.
-Transactions are additions of an integer constant to _v_. For instance, if the parity of _v_ is currently 0
-(ie., _v_ is even) and a request arrives to the blockchain, to add 13 to _v_, then the parity of _v_ becomes 1, because
-0 (even) plus 13 (which is odd) yields an odd value. If, later, a request arrives to add 6 to _v_, then the parity
-of _v_ remains 1 (odd), because 1 (odd) plus 6 (which is even) yields an odd value. If, finally, a request
-arrives to add 13 to _v_ again, then the parity of _v_ becomes 0 again, because 1 (odd) plus 13 (which is odd)
-yields an even value.
+This Bitcoin application for Mokamint is an example of definition of an application
+running on top of the Mokamint proof of space engine. It implements an application functionally equivalent
+to Bitcoin. Namely, the application keeps a map from each public key to a balance.
+It implements only one kind of requests, for sending coins from an origin public key to
+a destination public key. Requests must be signed by the sender, with its private key.
+The amount of coins sent at each request must be positive and the sender must be rich
+enough to send such coins. The application implements a decreasing rewarding schema:
+the balance of the public key for the peer and the miner that contribute to the creation of a block
+are increased by an amount of coins that becomes smaller and smaller with the time, until it reaches zero.
 
 Below, instructions are reported about the creation of a blockchain of two nodes and the execution of
 transactions on that blockchain. The docker tool is used, so that experiments can be more easily reproduced,
@@ -110,7 +109,7 @@ done
 Note that the public key of the miner is inserted in base58 format. The target block creation time, in milliseconds, is the average time between the creation of two successive blocks. The chain identifier identifies the new network.
 The plot size is the space used by your node for mining:
 the larger, the more blocks will be created by your node, but also more disk space will be allocated for mining.
-Repeated requests will be allowed in this new blockchain, which is sensible since requests in the Parity application are not distinguished by a progressive nonce.
+Repeated requests will be allowed in this new blockchain, which is sensible since requests in the Bitcoin application are not distinguished by a progressive nonce.
 
 The script above prompts for the password of the key pair used for signing the new blocks. Enter your chosen password here, possibly distinct from that chosen for the miner, or just leave it blank.
 The key pair of the node will be kept inside the container. This key pair identifies the node and will be used to sign the blocks that the node will create. It must remain inside the container, although you may want to extract a copy from the container to your local host.
@@ -122,16 +121,16 @@ The script has configured the node and created a plot file for its miner.
 The initialization of the node consists in the creation of the genesis block. You can do this with:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Parity mokamint/mokamint:1.7.0 init
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Bitcoin mokamint/mokamint:1.7.0 init
 Initializing a node for a brand new blockchain, whose configuration has been created with config-new.
 
-                 APPLICATION="Parity"
+                 APPLICATION="Bitcoin"
 
 Enter value for --password (the password of the key pair of the node): 
 Loading mokamint/plot.plot... done.
 The path "chain" already exists! Will restart the node from the current content of "chain".
 If you want to start a blockchain from scratch, stop this process, delete "chain" and start again a node with --init.
-Creating the Parity application... done.
+Creating the Bitcoin application... done.
 [... log messages follow ...]
 ```
 
@@ -144,15 +143,15 @@ After configuring the node, you can run it with the `go` script. It will require
 the password chosen for the node:
 
 ```console
-$ docker run -it --rm --name mokamint -e APPLICATION=Parity -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.0 go
+$ docker run -it --rm --name mokamint -e APPLICATION=Bitcoin -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.0 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
-   APPLICATION="Parity"
+   APPLICATION="Bitcoin"
     VISIBLE_AS=
 Enter value for --password (the password of the key pair of the node): 
 Loading mokamint/plot.plot... done.
 The path "chain" already exists! Will restart the node from the current content of "chain".
 If you want to start a blockchain from scratch, stop this process, delete "chain" and start again a node with --init.
-Creating the Parity application... done.
+Creating the Bitcoin application... done.
 [... log messages follow ...]
 ```
 
@@ -238,13 +237,13 @@ it will start contributing to the blockchain itself:
 ```console
 $ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8050:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.0 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
-   APPLICATION="Parity"
+   APPLICATION="Bitcoin"
     VISIBLE_AS=
 Enter value for --password (the password of the key pair of the node): 
 Loading mokamint/plot.plot... done.
 The path "chain" already exists! Will restart the node from the current content of "chain".
 If you want to start a blockchain from scratch, stop this process, delete "chain" and start again a node with --init.
-Creating the Parity application... done.
+Creating the Bitcoin application... done.
 [... log messages follow ...]
 ```
 
@@ -289,72 +288,6 @@ Enter that container then:
 ```console
 $ docker exec -it mokamint /bin/bash
 mokamint@a0c6917c3bc3:~$
-```
-
-First check that the application state is 0 (even), since no requests have been executed up to now:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full
-[...]
-* final state id: 00
-[...]
-```
-
-Let us send a request to add 13 now. Requests, for the Parity application, are represented
-as four bytes, standing for the two-complement, 32 bits representation of an integer, followed by
-a progressive byte used to distinguish repeated requests. Moreover,
-in Mokamint, requests are sent in Base64 format. In bash, you can encode 13 (hexadecimal 0x0000000d),
-followed by a 0 progressive, in Base64 as follows:
-
-```console
-mokamint@a0c6917c3bc3:~$ echo -ne "\x00\x00\x00\x0d\x00" | base64
-AAAADQA=
-```
-
-You can then send that payload as a request to Mokamint, as follows:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d\x00" | base64)
-```
-
-Wait until a next block gets minted. We have programmed this blockchain to
-create a block every 20 seconds, but the actual time may vary significantly,
-since the blockchain has only two nodes with very little total mining power.
-In any case, a new block will be minted eventually, and you will then be able to check
-that the state of the application has changed to odd:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
-* final state id: 01
-```
-
-Send a request to add 6 now:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x06\x00" | base64)
-```
-
-Wait, again, until a next block gets created and then check the state again. It should still be odd, since
-we added an even value to the odd state:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
-* final state id: 01
-```
-
-Finally, send again a request to add 13. Note that you must specify a progressive value of 1,
-to distinguish this request from the previous one for adding 13 as well:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node requests add $(echo -ne "\x00\x00\x00\x0d\x01" | base64)
-```
-
-Wait, again, until a next block gets created and then check the state again. It should still be back to even now, since
-we added an odd value to the odd state:
-
-```console
-mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
-* final state id: 00
 ```
 
 ## Further information
