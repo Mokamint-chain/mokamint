@@ -27,6 +27,7 @@ module io.mokamint.application.bitcoin {
     requires io.hotmoka.patricia;
     requires io.hotmoka.xodus;
     requires io.hotmoka.crypto;
+    requires io.hotmoka.annotations;
     requires io.hotmoka.marshalling;
     requires java.logging;
 }

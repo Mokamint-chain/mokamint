@@ -35,7 +35,7 @@ import picocli.CommandLine.Option;
 @Command(name = "info", description = "Show information about an application.")
 public class Info extends AbstractRpcCommand<RemoteApplication> {
 
-	@Option(names = "--uri", description = "the network URI where the application's API is published", defaultValue = "ws://localhost:8032")
+	@Option(names = "--uri", description = "the network URI where the application's API is published", defaultValue = "ws://localhost:8050")
 	private URI uri;
 
 	@Option(names = "--redirection", paramLabel = "<path>", description = "the path where the output must be redirected, if any; if missing, the output is printed to the standard output")

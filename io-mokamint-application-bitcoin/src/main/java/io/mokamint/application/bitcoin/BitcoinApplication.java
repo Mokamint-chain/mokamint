@@ -30,14 +30,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.hotmoka.annotations.GuardedBy;
 import io.hotmoka.crypto.Hex;
 import io.hotmoka.crypto.api.SignatureAlgorithm;
 import io.hotmoka.patricia.api.UnknownKeyException;
+import io.hotmoka.xodus.ByteIterable;
 import io.hotmoka.xodus.ExodusException;
 import io.hotmoka.xodus.env.Environment;
 import io.hotmoka.xodus.env.Store;
 import io.hotmoka.xodus.env.Transaction;
 import io.mokamint.application.AbstractApplication;
+import io.mokamint.application.ApplicationException;
 import io.mokamint.application.api.ClosedApplicationException;
 import io.mokamint.application.api.Description;
 import io.mokamint.application.api.Name;
@@ -71,9 +74,25 @@ public class BitcoinApplication extends AbstractApplication {
 
 	private final Store storeOfState;
 
+	private final Object stateAtHeadLock = new Object();
+
+	@GuardedBy("stateAtHeadLock")
+	private State stateAtHead;
+
 	private final static Logger LOGGER = Logger.getLogger(BitcoinApplication.class.getName());
 
+	/**
+	 * The key used to store, inside {@code storeOfState},
+	 * the state identifier of the head of the best chain.
+	 */
+	private final static ByteIterable STATE_ID_OF_HEAD_KEY = ByteIterable.fromBytes("state id of head".getBytes());
+
 	private final static BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
+
+	/**
+	 * Tries use an empty array to represent the empty trie.
+	 */
+	private final static byte[] INITIAL_STATE_ID = new byte[32];
 
 	/**
 	 * Creates a Bitcoin application.
@@ -84,45 +103,26 @@ public class BitcoinApplication extends AbstractApplication {
 		this.env = new Environment(workingDir.resolve("state").toString());
 		this.storeOfState = env.computeInTransaction(txn -> env.openStoreWithoutDuplicatesWithPrefixing("state", txn));
 		LOGGER.log(Level.INFO, "bitcoin: opened the state database");
-	}
 
-	@Override
-	protected void closeResources() {
+		byte[] stateIdOfHead = Optional.ofNullable(env.computeInReadonlyTransaction(t -> storeOfState.get(t, STATE_ID_OF_HEAD_KEY)))
+				.map(ByteIterable::getBytes)
+				.orElse(INITIAL_STATE_ID);
+
 		try {
-			super.closeResources();
+			setStateAtHead(stateIdOfHead);
 		}
-		finally {
-			try {
-				synchronized (stateAtHeadLock) {
-					if (this.stateAtHead != null)
-						this.stateAtHead.txn.abort();
-				}
-			}
-			finally {
-				try {
-					env.close();
-					LOGGER.log(Level.INFO, "bitcoin: closed the state database");
-				}
-				catch (ExodusException e) {
-					LOGGER.log(Level.SEVERE, "bitcoin: failed to close the Exodus environment", e);
-				}
-			}
+		catch (UnknownStateException e) {
+			// if the saved state is not available, the database must have been corrupted
+			throw new ApplicationException(e.getMessage());
 		}
-	}
-
-	private TrieOfKeys mkTrie(Transaction txn, byte[] root) throws UnknownKeyException {
-		return new TrieOfKeys(new KeyValueStoreOnXodus(storeOfState, txn), root);
 	}
 
 	@Override
 	public Optional<BigInteger> getBalance(SignatureAlgorithm signature, PublicKey publicKey) throws ClosedApplicationException {
 		try (var scope = mkScope()) {
 			synchronized (stateAtHeadLock) {
-				if (stateAtHead != null)
-					return stateAtHead.trie().get(publicKey);
+				return stateAtHead.trie().get(publicKey).or(() -> Optional.of(ZERO));
 			}
-
-			return Optional.empty();
 		}
 	}
 
@@ -153,7 +153,7 @@ public class BitcoinApplication extends AbstractApplication {
 	@Override
 	public byte[] getInitialStateId() throws ClosedApplicationException {
 		try (var scope = mkScope()) {
-			return new byte[32]; // tries use an empty array to represent the empty trie
+			return INITIAL_STATE_ID.clone();
 		}
 	}
 
@@ -266,24 +266,58 @@ public class BitcoinApplication extends AbstractApplication {
 		try (var scope = mkScope()) {} // there are no events to publish
 	}
 
-	private final Object stateAtHeadLock = new Object();
-	private State stateAtHead;
-
 	@Override
 	public void setHead(byte[] stateId) throws UnknownStateException, ClosedApplicationException {
+		try (var scope = mkScope()) {
+			setStateAtHead(stateId);
+		}
+	}
+
+	@Override
+	protected void closeResources() {
+		try {
+			super.closeResources();
+		}
+		finally {
+			try {
+				synchronized (stateAtHeadLock) {
+					if (this.stateAtHead != null)
+						this.stateAtHead.txn.abort();
+				}
+			}
+			finally {
+				try {
+					env.close();
+					LOGGER.log(Level.INFO, "bitcoin: closed the state database");
+				}
+				catch (ExodusException e) {
+					LOGGER.log(Level.SEVERE, "bitcoin: failed to close the Exodus environment", e);
+				}
+			}
+		}
+	}
+
+	private TrieOfKeys mkTrie(Transaction txn, byte[] root) throws UnknownKeyException {
+		return new TrieOfKeys(new KeyValueStoreOnXodus(storeOfState, txn), root);
+	}
+
+	private void setStateAtHead(byte[] stateId) throws UnknownStateException {
 		Transaction txn = null;
 
-		try (var scope = mkScope()) {
+		try {
 			txn = env.beginReadonlyTransaction();
 			TrieOfKeys trie = mkTrie(txn, stateId);
+			env.executeInTransaction(t -> storeOfState.put(t, STATE_ID_OF_HEAD_KEY, ByteIterable.fromBytes(stateId)));
 			var stateAtHead = new State(trie, txn, 0L);
-
+			
 			synchronized (stateAtHeadLock) {
 				if (this.stateAtHead != null)
 					this.stateAtHead.txn.abort();
-
+			
 				this.stateAtHead = stateAtHead;
 			}
+
+			LOGGER.info("bitcoin: set state at head to " + Hex.toHexString(stateId));
 		}
 		catch (UnknownKeyException e) {
 			txn.abort();
