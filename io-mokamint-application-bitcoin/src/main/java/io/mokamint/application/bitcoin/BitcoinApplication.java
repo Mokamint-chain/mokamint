@@ -238,8 +238,10 @@ public class BitcoinApplication extends AbstractApplication {
 
 			// check if the sender has enough coins to send
 			var balanceOfSender = trie.get(publicKeyOfSender).orElse(ZERO);
-			if (balanceOfSender.compareTo(amount) < 0)
+			if (balanceOfSender.compareTo(amount) < 0) {
+				LOGGER.warning("bitcoin: request rejected since the sender is too poor to send " + sendRequest.getAmount() + " coins");
 				throw new RequestRejectedException("The sender is too poor to send " + amount + " coins");
+			}
 
 			var balanceOfReceiver = trie.get(publicKeyOfReceiver).orElse(ZERO);
 

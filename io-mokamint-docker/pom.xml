@@ -44,6 +44,13 @@
       <version>${mokamint.version}</version>
     </dependency>
 
+    <!-- we make mokamint-bitcoin available in the container -->
+    <dependency>
+      <groupId>io.mokamint</groupId>
+      <artifactId>io-mokamint-application-bitcoin-cli</artifactId>
+      <version>${mokamint.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>

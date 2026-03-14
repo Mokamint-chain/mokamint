@@ -73,14 +73,6 @@ In another shell, you can transfer that key pair to your local machine:
 $ docker cp mokamint:/home/mokamint/miner.pem .
 Successfully copied 2.05kB.
 ```
-At this point, inside the container, give commands to
-delete the key pair and exit the container:
-
-```console
-mokamint@afbef35bce14:~$ rm miner.pem
-mokamint@afbef35bce14:~$ exit
-$
-```
 
 You can configure the node now, specifying the public key of the miner.
 We use two volumes: `chain` will contain the actual blockchain data and
@@ -235,7 +227,7 @@ You can run the second node now. It will start by synchronizing from the first n
 it will start contributing to the blockchain itself:
 
 ```console
-$ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8050:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.0 go
+$ docker run -it --rm --name mokamint2 -e APPLICATION=Bitcoin -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8051:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.0 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Bitcoin"
     VISIBLE_AS=
@@ -252,7 +244,7 @@ The command above allows connections to the ports:
 * 8026: this is the port where mining services can connect by default; mining services help your node produce new blocks; note that this requires to open a remote miner in your node, listening at port 8026;
 * 8032: this is the port where Mokamint can be reached for public queries, by default;
 * 8033: this is the port where Mokamint can be reached for restricted operations, by default; note the we have restricted its access to localhost only, since we do not want our Mokamint node to be freely reconfigured remotely;
-* 8050: this is the port where the Bitcoin application can be reached.
+* 8051: this is the port where the Bitcoin application can be reached.
 
 You can leave the container execute in the background by entering ctrl+p, ctrl+q, as always in docker.
 
@@ -288,6 +280,112 @@ Enter that container then:
 ```console
 $ docker exec -it mokamint /bin/bash
 mokamint@a0c6917c3bc3:~$
+```
+
+In the Bitcoin application, the only way for a key to collect some coins is either by mining or by receiving
+coins from another key that already has some coins. Out network has two peers, each has a key for the peer itself
+and a key for the miner bound to the peer. Let us check that the latter are actually receiving coins. The miner
+of the first peer, in our example, has public key `3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2`. We can
+check its balance as follows:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-application balance 3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2
+4407
+```
+
+This means that the miner of the first peer has received 4407 coins up to now, as reward for its contribution
+to the construction of new blocks. If you wait a minute and try again, you should see that the balance of the same key
+has increased, because more blocks have been created:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-application balance 3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2
+5064
+```
+
+The Bitcoin application rewards the peer and the miner that contribute to the creation of a new block with 100
+coins each, initially, but this amounts decreases with the time, reaching zero eventually. This behavior
+simulates the halving mechanism of the actual Bitcoin blockchain.
+
+Let us create two new key pairs now, for Alice and Bob:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-node keys create --name alice.pem
+The new key pair has been written into "alice.pem":
+* public key: Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2 (ed25519, base58)
+* public key: vVgwTlrpP+aAOKRJ1XK4szA96Od0YgSIwc8OgX+nRqM= (ed25519, base64)
+* Tendermint-like address: 43667186FE78C1F0FCCDBC6B05DCF225581E03C2
+mokamint@a0c6917c3bc3:~$ mokamint-node keys create --name bob.pem
+The new key pair has been written into "bob.pem":
+* public key: 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe (ed25519, base58)
+* public key: T7dNQilP0PK6riTcHS/muQ/oCYHdaG98U3mGhu4PYjM= (ed25519, base64)
+* Tendermint-like address: 963533B85681FF4C4D6F0B1667B49B1AF651A429
+```
+
+You can verify that neither Alice nor Bob has any coins at the moment:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-application balance Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2
+0
+mokamint@a0c6917c3bc3:~$ mokamint-application balance 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
+0
+```
+
+Let us hence send some coins from the miner of the first peer to Alice:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send miner.pem 1000 Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2
+f3da171152606825e994e30eb67b7fc1984674dbb21cf0dc1d313230d5dc77a0 with priority 0
+```
+
+Wait some time (one minute should be enough) until the request gets processed and check that Alice has received the 1000 coins:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-application balance Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2
+1000
+```
+
+Let us send some coins now, from Alice to Bob:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send alice.pem 42 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
+5fbf33e0459b60bd8078761b9682fc0710693170d82eabce3ae6e5f0a9320daa with priority 0
+```
+
+Wait some time until the request gets processed and check that Bob has received the 42 coins, deducted from Alice's balance:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-application balance Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2
+958
+mokamint@a0c6917c3bc3:~$ mokamint-application balance 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
+42
+```
+
+Try to send a negative amount of coins now:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send alice.pem -2 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
+The request has been rejected: The sent amount must be positive
+```
+
+In another shell, filter the logs of the `mokamint` container:
+
+```console
+$ docker logs -f mokamint | grep bitcoin
+```
+
+Come back to the container and try to send a large amount of coins from Alice to Bob, actually larger than the 958 coins
+that Alice has in her availability:
+
+```console
+mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send alice.pem 123456 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
+76a3349aa48633749ab194ca0db8439c0a676005c59636b7b85376b15c4d4be7 with priority 0
+```
+
+The request has been accepted by the application, but its execution will fail, as you can verify in the logs: eventually, the following
+message will appear:
+
+```console
+[2026-03-14 17:57:35] [WARNING] bitcoin: request rejected since the sender is too poor to send 123456 coins
 ```
 
 ## Further information

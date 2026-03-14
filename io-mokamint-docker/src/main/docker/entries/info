@@ -11,6 +11,7 @@ echo -e "* ${RED}mokamint-application:${NC} a manager of Mokamint applications"
 echo -e "* ${RED}mokamint-miner:${NC}       a manager of Mokamint miners"
 echo -e "* ${RED}mokamint-node:${NC}        a manager of Mokamint nodes"
 echo -e "* ${RED}mokamint-plotter:${NC}     a manager of Mokamint plot files"
+echo -e "* ${RED}mokamint-bitcoin:${NC}     a manager of Mokamint Bitcoin applications"
 echo
 echo -e "${BOLD_GREEN}Moreover, the following commands and options are available inside this container:${NC}"
 echo -e "* ${RED}info:${NC}         print this information message"
