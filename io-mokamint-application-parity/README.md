@@ -57,7 +57,7 @@ The first thing to do is to create a key pair for the miner of the new node that
 You can do this by running the container and the `mokamint-node` command inside it:
 
 ```console
-$ docker run -it --rm --name mokamint mokamint/mokamint:1.7.0 /bin/bash
+$ docker run -it --rm --name mokamint mokamint/mokamint:1.7.1 /bin/bash
 mokamint@92d112f5a7c5:~$ mokamint-node keys create --name miner.pem --password
 Enter value for --password (the password that will be needed later to use the key pair): 
 The new key pair has been written into "miner.pem":
@@ -89,7 +89,7 @@ We use two volumes: `chain` will contain the actual blockchain data and
 By using volumes, we can share that information across successive invocations of docker:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" mokamint/mokamint:1.7.0 config-new
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" mokamint/mokamint:1.7.1 config-new
 I will use the following parameters for the creation of the configuration directory of a proof of space Mokamint node:
 
                     CHAIN_ID="panda"
@@ -122,7 +122,7 @@ The script has configured the node and created a plot file for its miner.
 The initialization of the node consists in the creation of the genesis block. You can do this with:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Parity mokamint/mokamint:1.7.0 init
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Parity mokamint/mokamint:1.7.1 init
 Initializing a node for a brand new blockchain, whose configuration has been created with config-new.
 
                  APPLICATION="Parity"
@@ -144,7 +144,7 @@ After configuring the node, you can run it with the `go` script. It will require
 the password chosen for the node:
 
 ```console
-$ docker run -it --rm --name mokamint -e APPLICATION=Parity -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.0 go
+$ docker run -it --rm --name mokamint -e APPLICATION=Parity -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.1 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Parity"
     VISIBLE_AS=
@@ -213,7 +213,7 @@ Specify two more volumes `chain2` and `mokamint2`. When prompted, insert your pr
 key pair of the node (or leave it blank):
 
 ```console
-$ docker run -it --rm -e PUBLIC_KEY_MINER_BASE58=CBSW5keMkZ5wuupC4S4c1KbtbWzdsAzbeNseY3E9v5o4 -e MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.0 config-clone
+$ docker run -it --rm -e PUBLIC_KEY_MINER_BASE58=CBSW5keMkZ5wuupC4S4c1KbtbWzdsAzbeNseY3E9v5o4 -e MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.1 config-clone
 Going to create the configuration directory of a proof of space Mokamint node, with the following parameters:
 
  MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030
@@ -236,7 +236,7 @@ You can run the second node now. It will start by synchronizing from the first n
 it will start contributing to the blockchain itself:
 
 ```console
-$ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8050:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.0 go
+$ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8050:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.1 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Parity"
     VISIBLE_AS=
@@ -362,7 +362,7 @@ mokamint@a0c6917c3bc3:~$ mokamint-node chain show head --full | grep state
 You can see all options of the docker scripts by executing:
 
 ```console
-$ docker run -it --rm mokamint/mokamint:1.7.0 info
+$ docker run -it --rm mokamint/mokamint:1.7.1 info
 ```
 
 &nbsp;
