@@ -33,6 +33,16 @@ that implement different applications:
     <a href="https://github.com/Hotmoka/hotmoka/releases">a large tutorial</a> on the development of smart contracts with Hotmoka.</li>
 </ul>
 
+## Docker images
+
+Some docker images of Mokamint are available on <a href="https://hub.docker.com/u/mokamint">DockerHub</a>.
+
+## Mining for a Mokamint blockchain
+
+It is possible to mine for an existing Mokamint-based blockchain network (for instance, for the mainnet or testnet of Hotmoka).
+For that, one can use the docker image of Mokamint (see <a href="https://hub.docker.com/r/mokamint/mokamint">its documentation</a>)
+or the Mokaminter app for Android, available on <a href="https://play.google.com/store/apps/details?id=io.mokamint.android.mokaminter">Google Play</a>.
+
 ## Further information
 
 The theory underlying the proof of space consensus of Mokamint has been published
