@@ -188,10 +188,19 @@ public class BitcoinApplication extends AbstractApplication {
 		}
 	}
 
+	private final static BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
+
 	@Override
-	public long getPriority(Request request) throws ClosedApplicationException {
+	public long getPriority(Request request) throws ClosedApplicationException, RequestRejectedException {
 		try (var scope = mkScope()) {
-			return 0L; // all requests have the same priority
+			BigInteger amount = parse(request).getAmount();
+			// we avoid overflows of BigInteger into long
+			if (amount.compareTo(MAX_LONG) > 0)
+				return Long.MAX_VALUE;
+			else if (amount.signum() < 0)
+				return 0L;
+			else
+				return amount.longValue();
 		}
 	}
 
@@ -211,7 +220,7 @@ public class BitcoinApplication extends AbstractApplication {
 			// inside a new database transaction that can later be used
 			// in {@code executeTransaction()} to modify the database
 			txn = env.beginTransaction();
-			TrieOfKeys trie = mkTrie(txn, stateId); // if the state is unknown, it throws an UnknownKeyException
+			TrieOfKeys trie = checkOutAt(txn, stateId); // if the state is unknown, it throws an UnknownKeyException
 			int scopeId = nextId.getAndIncrement(); // create a new, unique scope identifier
 			setCurrentStateFor(scopeId, new State(trie, txn, height)); // bind the scope identifier to the new state
 
@@ -381,7 +390,7 @@ public class BitcoinApplication extends AbstractApplication {
 	 * @return the resulting trie
 	 * @throws UnknownKeyException if {@code root} is unknown in the database
 	 */
-	private TrieOfKeys mkTrie(Transaction txn, byte[] root) throws UnknownKeyException {
+	private TrieOfKeys checkOutAt(Transaction txn, byte[] root) throws UnknownKeyException {
 		return new TrieOfKeys(new KeyValueStoreOnXodus(storeOfState, txn), root);
 	}
 
@@ -392,7 +401,7 @@ public class BitcoinApplication extends AbstractApplication {
 			// the state at the head of the blockchain is only used to implement
 			// {@code getBalance()} and is therefore enough to create a read-only database transaction
 			txn = env.beginReadonlyTransaction();
-			TrieOfKeys trie = mkTrie(txn, stateId);
+			TrieOfKeys trie = checkOutAt(txn, stateId);
 
 			// store the new state identifier in the database, so that the state at the head of the blockchain
 			// can be recovered if the application is turned off and later on again

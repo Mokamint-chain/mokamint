@@ -106,15 +106,13 @@ public class ParityApplication extends AbstractApplication {
 	@Override
 	public int beginBlock(long height, LocalDateTime creationStartDateTime, byte[] stateId) throws ClosedApplicationException, UnknownStateException {
 		try (var scope = mkScope()) {
-			int scopeId = nextId.getAndIncrement();
-			if (Arrays.equals(EVEN_STATE_ID, stateId))
-				currentStates.put(scopeId, EVEN_STATE_ID);
-			else if (Arrays.equals(ODD_STATE_ID, stateId))
-				currentStates.put(scopeId, ODD_STATE_ID);
+			if (Arrays.equals(EVEN_STATE_ID, stateId) || Arrays.equals(ODD_STATE_ID, stateId)) {
+				int scopeId = nextId.getAndIncrement();
+				currentStates.put(scopeId, stateId.clone());
+				return scopeId;
+			}
 			else
 				throw new UnknownStateException("Unknown state id: " + Hex.toHexString(stateId));
-
-			return scopeId;
 		}
 	}
 
