@@ -90,6 +90,28 @@ public class MokamintNode extends AbstractCLI {
 	}
 
 	/**
+	 * Runs the {@code miners ls} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String minersLs(String args) throws IOException {
+		return run("miners ls " + args);
+	}
+
+	/**
+	 * Runs the {@code peers ls} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String peersLs(String args) throws IOException {
+		return run("peers ls " + args);
+	}
+
+	/**
 	 * Runs the {@code keys create} command with the given arguments.
 	 * 
 	 * @param args the arguments
