@@ -74,7 +74,7 @@ public class InfoImpl extends AbstractPublicRpcCommand {
 
 		@Override
 		public String toString() {
-			return chainInfo.toString();
+			return chainInfo + "\n";
 		}
 	}
 }

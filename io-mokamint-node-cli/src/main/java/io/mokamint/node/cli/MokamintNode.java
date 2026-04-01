@@ -90,6 +90,39 @@ public class MokamintNode extends AbstractCLI {
 	}
 
 	/**
+	 * Runs the {@code chain show} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String chainShow(String args) throws IOException {
+		return run("chain show " + args);
+	}
+
+	/**
+	 * Runs the {@code chain ls} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String chainLs(String args) throws IOException {
+		return run("chain ls " + args);
+	}
+
+	/**
+	 * Runs the {@code config show} command with the given arguments.
+	 * 
+	 * @param args the arguments
+	 * @return what the tool has written into the standard output
+	 * @throws IOException if the construction of the return value failed
+	 */
+	public static String configShow(String args) throws IOException {
+		return run("config show " + args);
+	}
+
+	/**
 	 * Runs the {@code miners ls} command with the given arguments.
 	 * 
 	 * @param args the arguments
