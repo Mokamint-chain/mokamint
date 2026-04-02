@@ -34,7 +34,7 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
       <io.hotmoka.marshalling.version>1.4.8</io.hotmoka.marshalling.version>
       <io.hotmoka.exceptions.version>1.6.0</io.hotmoka.exceptions.version>
       <io.hotmoka.xodus.version>1.4.9</io.hotmoka.xodus.version>
-      <io.hotmoka.patricia.version>1.12.0</io.hotmoka.patricia.version>
+      <io.hotmoka.patricia.version>1.12.2</io.hotmoka.patricia.version>
       <io.hotmoka.testing.version>1.4.1</io.hotmoka.testing.version>
     </properties>
 

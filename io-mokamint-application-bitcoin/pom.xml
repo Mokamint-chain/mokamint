@@ -20,7 +20,7 @@
       <version>${mokamint.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.hotmoka</groupId>
+      <groupId>io.hotmoka.patricia</groupId>
       <artifactId>io-hotmoka-patricia</artifactId>
       <version>${io.hotmoka.patricia.version}</version>
     </dependency>
