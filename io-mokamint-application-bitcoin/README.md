@@ -56,7 +56,7 @@ The first thing to do is to create a key pair for the miner of the new node that
 You can do this by running the container and the `mokamint-node` command inside it:
 
 ```console
-$ docker run -it --rm --name mokamint mokamint/mokamint:1.7.1 /bin/bash
+$ docker run -it --rm --name mokamint mokamint/mokamint:1.7.2 /bin/bash
 mokamint@92d112f5a7c5:~$ mokamint-node keys create --name miner.pem --password
 Enter value for --password (the password that will be needed later to use the key pair): 
 The new key pair has been written into "miner.pem":
@@ -80,7 +80,7 @@ We use two volumes: `chain` will contain the actual blockchain data and
 By using volumes, we can share that information across successive invocations of docker:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" mokamint/mokamint:1.7.1 config-new
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e PUBLIC_KEY_MINER_BASE58=3ExG53CrXsAsnrbxWgkBNNpME4F3YK7mho4R6RXqhoW2 -e TARGET_BLOCK_CREATION_TIME=20000 -e PLOT_SIZE=1000 -e CHAIN_ID="panda" mokamint/mokamint:1.7.2 config-new
 I will use the following parameters for the creation of the configuration directory of a proof of space Mokamint node:
 
                     CHAIN_ID="panda"
@@ -113,7 +113,7 @@ The script has configured the node and created a plot file for its miner.
 The initialization of the node consists in the creation of the genesis block. You can do this with:
 
 ```console
-$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Bitcoin mokamint/mokamint:1.7.1 init
+$ docker run -it --rm -v chain:/home/mokamint/chain -v mokamint:/home/mokamint/mokamint -e APPLICATION=Bitcoin mokamint/mokamint:1.7.2 init
 Initializing a node for a brand new blockchain, whose configuration has been created with config-new.
 
                  APPLICATION="Bitcoin"
@@ -135,7 +135,7 @@ After configuring the node, you can run it with the `go` script. It will require
 the password chosen for the node:
 
 ```console
-$ docker run -it --rm --name mokamint -e APPLICATION=Bitcoin -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.1 go
+$ docker run -it --rm --name mokamint -e APPLICATION=Bitcoin -p 8025:8025 -p 8030:8030 -p 127.0.0.1:8031:8031 -p 8050:8050 -v mokamint:/home/mokamint/mokamint -v chain:/home/mokamint/chain mokamint/mokamint:1.7.2 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Bitcoin"
     VISIBLE_AS=
@@ -204,7 +204,7 @@ Specify two more volumes `chain2` and `mokamint2`. When prompted, insert your pr
 key pair of the node (or leave it blank):
 
 ```console
-$ docker run -it --rm -e PUBLIC_KEY_MINER_BASE58=CBSW5keMkZ5wuupC4S4c1KbtbWzdsAzbeNseY3E9v5o4 -e MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.1 config-clone
+$ docker run -it --rm -e PUBLIC_KEY_MINER_BASE58=CBSW5keMkZ5wuupC4S4c1KbtbWzdsAzbeNseY3E9v5o4 -e MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.2 config-clone
 Going to create the configuration directory of a proof of space Mokamint node, with the following parameters:
 
  MOKAMINT_PUBLIC_SERVICE_URI=ws://172.17.0.1:8030
@@ -227,7 +227,7 @@ You can run the second node now. It will start by synchronizing from the first n
 it will start contributing to the blockchain itself:
 
 ```console
-$ docker run -it --rm --name mokamint2 -e APPLICATION=Bitcoin -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8051:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.1 go
+$ docker run -it --rm --name mokamint2 -e APPLICATION=Bitcoin -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8051:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.2 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Bitcoin"
     VISIBLE_AS=
@@ -334,7 +334,7 @@ Let us hence send some coins from the miner of the first peer to Alice:
 
 ```console
 mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send miner.pem 1000 Dk83sCmYJCPX4fPQshupKvzFERAYEymN7ESGGGfEdji2
-f3da171152606825e994e30eb67b7fc1984674dbb21cf0dc1d313230d5dc77a0 with priority 0
+f3da171152606825e994e30eb67b7fc1984674dbb21cf0dc1d313230d5dc77a0 with priority 1000
 ```
 
 Wait some time (one minute should be enough) until the request gets processed and check that Alice has received the 1000 coins:
@@ -348,7 +348,7 @@ Let us send some coins now, from Alice to Bob:
 
 ```console
 mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send alice.pem 42 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
-5fbf33e0459b60bd8078761b9682fc0710693170d82eabce3ae6e5f0a9320daa with priority 0
+5fbf33e0459b60bd8078761b9682fc0710693170d82eabce3ae6e5f0a9320daa with priority 42
 ```
 
 Wait some time until the request gets processed and check that Bob has received the 42 coins, deducted from Alice's balance:
@@ -378,7 +378,7 @@ that Alice has in her availability:
 
 ```console
 mokamint@a0c6917c3bc3:~$ mokamint-bitcoin requests send alice.pem 123456 6NBKdNRCJGFLnkKnmtLXyhF3VB7cWwrHPW7ZL2X7EeEe
-76a3349aa48633749ab194ca0db8439c0a676005c59636b7b85376b15c4d4be7 with priority 0
+76a3349aa48633749ab194ca0db8439c0a676005c59636b7b85376b15c4d4be7 with priority 123456
 ```
 
 The request has been accepted by the application, but its execution will fail, as you can verify in the logs: eventually, the following
@@ -393,7 +393,7 @@ message will appear:
 You can see all options of the docker scripts by executing:
 
 ```console
-$ docker run -it --rm mokamint/mokamint:1.7.1 info
+$ docker run -it --rm mokamint/mokamint:1.7.2 info
 ```
 
 &nbsp;
