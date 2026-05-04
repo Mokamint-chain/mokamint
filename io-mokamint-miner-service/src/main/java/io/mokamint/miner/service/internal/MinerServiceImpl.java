@@ -88,9 +88,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		this.miner = miner;
 		this.logPrefix = "miner service working for " + uri + ": ";
 
-		addSession(MINING_ENDPOINT, uri, MiningEndpoint::new);
-		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
-		addSession(GET_MINING_SPECIFICATION_ENDPOINT, uri, GetMiningSpecificationEndpoint::new);
+		addSessions(uri, MiningEndpoint::new, GetBalanceEndpoint::new, GetMiningSpecificationEndpoint::new);
 
 		LOGGER.info(logPrefix + "bound");
 	}
@@ -180,6 +178,11 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
 		}
+
+		@Override
+		public String segment() {
+			return GET_MINING_SPECIFICATION_ENDPOINT;
+		}
 	}
 
 	private class GetBalanceEndpoint extends Endpoint {
@@ -187,6 +190,11 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);		
+		}
+
+		@Override
+		public String segment() {
+			return GET_BALANCE_ENDPOINT;
 		}
 	}
 
@@ -266,6 +274,11 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 		@Override
 		public void onOpen(Session session, EndpointConfig config) {
 			addMessageHandler(session, (Challenge challenge) -> requestDeadline(session, challenge));
+		}
+
+		@Override
+		public String segment() {
+			return MINING_ENDPOINT;
 		}
 	}
 }

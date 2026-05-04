@@ -83,10 +83,7 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 
 		this.logPrefix = "restricted remote(" + uri + "): ";
 
-		addSession(ADD_PEER_ENDPOINT, uri, AddPeerEndpoint::new);
-		addSession(REMOVE_PEER_ENDPOINT, uri, RemovePeerEndpoint::new);
-		addSession(OPEN_MINER_ENDPOINT, uri, OpenMinerEndpoint::new);
-		addSession(REMOVE_MINER_ENDPOINT, uri, RemoveMinerEndpoint::new);
+		addSessions(uri, AddPeerEndpoint::new, RemovePeerEndpoint::new, OpenMinerEndpoint::new, RemoveMinerEndpoint::new);
 	}
 
 	@Override
@@ -167,6 +164,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return ADD_PEER_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -182,6 +184,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, RemovePeerResultMessages.Decoder.class, RemovePeerMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return REMOVE_PEER_ENDPOINT;
 		}
 	}
 
@@ -199,6 +206,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return OPEN_MINER_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -214,6 +226,11 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return REMOVE_MINER_ENDPOINT;
 		}
 	}
 }

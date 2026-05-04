@@ -21,8 +21,8 @@ import static io.mokamint.application.service.api.ApplicationService.BEGIN_BLOCK
 import static io.mokamint.application.service.api.ApplicationService.CHECK_DEADLINE_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.CHECK_REQUEST_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.COMMIT_BLOCK_ENDPOINT;
-import static io.mokamint.application.service.api.ApplicationService.EXECUTE_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.END_BLOCK_ENDPOINT;
+import static io.mokamint.application.service.api.ApplicationService.EXECUTE_TRANSACTION_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_BALANCE_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INFO_ENDPOINT;
 import static io.mokamint.application.service.api.ApplicationService.GET_INITIAL_STATE_ID_ENDPOINT;
@@ -62,10 +62,10 @@ import io.mokamint.application.messages.CheckRequestMessages;
 import io.mokamint.application.messages.CheckRequestResultMessages;
 import io.mokamint.application.messages.CommitBlockMessages;
 import io.mokamint.application.messages.CommitBlockResultMessages;
-import io.mokamint.application.messages.ExecuteTransactionMessages;
-import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.EndBlockMessages;
 import io.mokamint.application.messages.EndBlockResultMessages;
+import io.mokamint.application.messages.ExecuteTransactionMessages;
+import io.mokamint.application.messages.ExecuteTransactionResultMessages;
 import io.mokamint.application.messages.GetBalanceMessages;
 import io.mokamint.application.messages.GetBalanceResultMessages;
 import io.mokamint.application.messages.GetInfoMessages;
@@ -92,10 +92,10 @@ import io.mokamint.application.messages.api.CheckRequestMessage;
 import io.mokamint.application.messages.api.CheckRequestResultMessage;
 import io.mokamint.application.messages.api.CommitBlockMessage;
 import io.mokamint.application.messages.api.CommitBlockResultMessage;
-import io.mokamint.application.messages.api.ExecuteTransactionMessage;
-import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
 import io.mokamint.application.messages.api.EndBlockMessage;
 import io.mokamint.application.messages.api.EndBlockResultMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionMessage;
+import io.mokamint.application.messages.api.ExecuteTransactionResultMessage;
 import io.mokamint.application.messages.api.GetBalanceMessage;
 import io.mokamint.application.messages.api.GetBalanceResultMessage;
 import io.mokamint.application.messages.api.GetInfoMessage;
@@ -149,21 +149,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 
 		this.logPrefix = "application remote(" + uri + "): ";
 
-		addSession(GET_BALANCE_ENDPOINT, uri, GetBalanceEndpoint::new);
-		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(CHECK_DEADLINE_ENDPOINT, uri, CheckPrologExtraEndpoint::new);
-		addSession(CHECK_REQUEST_ENDPOINT, uri, CheckRequestEndpoint::new);
-		addSession(GET_PRIORITY_ENDPOINT, uri, GetPriorityEndpoint::new);
-		addSession(GET_REPRESENTATION_ENDPOINT, uri, GetRepresentationEndpoint::new);
-		addSession(GET_INITIAL_STATE_ID_ENDPOINT, uri, GetInitialStateIdEndpoint::new);
-		addSession(BEGIN_BLOCK_ENDPOINT, uri, BeginBlockEndpoint::new);
-		addSession(EXECUTE_TRANSACTION_ENDPOINT, uri, ExecuteTransactionEndpoint::new);
-		addSession(END_BLOCK_ENDPOINT, uri, EndBlockEndpoint::new);
-		addSession(COMMIT_BLOCK_ENDPOINT, uri, CommitBlockEndpoint::new);
-		addSession(ABORT_BLOCK_ENDPOINT, uri, AbortBlockEndpoint::new);
-		addSession(KEEP_FROM_ENDPOINT, uri, KeepFromEndpoint::new);
-		addSession(PUBLISH_ENDPOINT, uri, PublishEndpoint::new);
-		addSession(SET_HEAD_ENDPOINT, uri, SetHeadEndpoint::new);
+		addSessions(uri, GetBalanceEndpoint::new, GetInfoEndpoint::new, CheckDeadlineEndpoint::new,
+				CheckRequestEndpoint::new, GetPriorityEndpoint::new, GetRepresentationEndpoint::new,
+				GetInitialStateIdEndpoint::new, BeginBlockEndpoint::new, ExecuteTransactionEndpoint::new,
+				EndBlockEndpoint::new, CommitBlockEndpoint::new, AbortBlockEndpoint::new, KeepFromEndpoint::new,
+				PublishEndpoint::new, SetHeadEndpoint::new);
 	}
 
 	@Override
@@ -248,6 +238,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_BALANCE_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -281,6 +276,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, SetHeadResultMessages.Decoder.class, ExceptionMessages.Decoder.class, SetHeadMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return SET_HEAD_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -308,11 +308,16 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 */
 	protected void onCheckDeadlineResult(CheckDeadlineResultMessage message) {}
 
-	private class CheckPrologExtraEndpoint extends Endpoint {
+	private class CheckDeadlineEndpoint extends Endpoint {
 
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, CheckDeadlineResultMessages.Decoder.class, CheckDeadlineMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return CHECK_DEADLINE_ENDPOINT;
 		}
 	}
 
@@ -347,6 +352,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, CheckRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckRequestMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return CHECK_REQUEST_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -379,6 +389,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetPriorityResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPriorityMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return GET_PRIORITY_ENDPOINT;
 		}
 	}
 
@@ -413,6 +428,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRepresentationMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_REPRESENTATION_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -444,6 +464,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetInitialStateIdResultMessages.Decoder.class, GetInitialStateIdMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return GET_INITIAL_STATE_ID_ENDPOINT;
 		}
 	}
 
@@ -481,6 +506,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, BeginBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, BeginBlockMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return BEGIN_BLOCK_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -514,6 +544,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, ExecuteTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, ExecuteTransactionMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return EXECUTE_TRANSACTION_ENDPOINT;
 		}
 	}
 
@@ -549,6 +584,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, EndBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, EndBlockMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return END_BLOCK_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -581,6 +621,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, CommitBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CommitBlockMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return COMMIT_BLOCK_ENDPOINT;
 		}
 	}
 
@@ -615,6 +660,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return ABORT_BLOCK_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -647,6 +697,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, KeepFromResultMessages.Decoder.class, KeepFromMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return KEEP_FROM_ENDPOINT;
 		}
 	}
 
@@ -681,6 +736,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, PublishResultMessages.Decoder.class, PublishMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return PUBLISH_ENDPOINT;
+		}
 	}
 
 	@Override
@@ -712,6 +772,11 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 		@Override
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		}
+
+		@Override
+		public String segment() {
+			return GET_INFO_ENDPOINT;
 		}
 	}
 }

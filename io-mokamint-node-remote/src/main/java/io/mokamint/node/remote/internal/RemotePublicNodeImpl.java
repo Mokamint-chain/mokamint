@@ -203,24 +203,12 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		this.alreadyWhispered = Memories.of(whisperedMessagesSize);
 		this.peersAlreadyWhispered = Memories.of(whisperedMessagesSize);
 
-		addSession(GET_PEER_INFOS_ENDPOINT, uri, GetPeerInfosEndpoint::new);
-		addSession(GET_MINER_INFOS_ENDPOINT, uri, GetMinerInfosEndpoint::new);
-		addSession(GET_TASK_INFOS_ENDPOINT, uri, GetTaskInfosEndpoint::new);
-		addSession(GET_BLOCK_ENDPOINT, uri, GetBlockEndpoint::new);
-		addSession(GET_BLOCK_DESCRIPTION_ENDPOINT, uri, GetBlockDescriptionEndpoint::new);
-		addSession(GET_CONFIG_ENDPOINT, uri, GetConfigEndpoint::new);
-		addSession(GET_CHAIN_INFO_ENDPOINT, uri, GetChainInfoEndpoint::new);
-		addSession(GET_CHAIN_PORTION_ENDPOINT, uri, GetChainPortionEndpoint::new);
-		addSession(GET_INFO_ENDPOINT, uri, GetInfoEndpoint::new);
-		addSession(GET_REQUEST_REPRESENTATION_ENDPOINT, uri, GetRequestRepresentationEndpoint::new);
-		addSession(GET_REQUEST_ADDRESS_ENDPOINT, uri, GetRequestAddressEndpoint::new);
-		addSession(GET_REQUEST_ENDPOINT, uri, GetRequestEndpoint::new);
-		addSession(GET_MEMPOOL_INFO_ENDPOINT, uri, GetMempoolInfoEndpoint::new);
-		addSession(GET_MEMPOOL_PORTION_ENDPOINT, uri, GetMempoolPortionEndpoint::new);
-		addSession(ADD_REQUEST_ENDPOINT, uri, AddRequestEndpoint::new);
-		addSession(WHISPER_PEER_ENDPOINT, uri, WhisperPeerEndpoint::new);
-		addSession(WHISPER_BLOCK_ENDPOINT, uri, WhisperBlockEndpoint::new);
-		addSession(WHISPER_REQUEST_ENDPOINT, uri, WhisperRequestEndpoint::new);
+		addSessions(uri, GetPeerInfosEndpoint::new, GetMinerInfosEndpoint::new, GetTaskInfosEndpoint::new,
+				GetBlockEndpoint::new, GetBlockDescriptionEndpoint::new, GetConfigEndpoint::new,
+				GetChainInfoEndpoint::new, GetChainPortionEndpoint::new, GetInfoEndpoint::new,
+				GetRequestRepresentationEndpoint::new, GetRequestAddressEndpoint::new, GetRequestEndpoint::new,
+				GetMempoolInfoEndpoint::new, GetMempoolPortionEndpoint::new, AddRequestEndpoint::new,
+				WhisperPeerEndpoint::new, WhisperBlockEndpoint::new, WhisperRequestEndpoint::new);
 
 		try {
 			this.hashingForRequests = getConfig().getHashingForRequests();
@@ -570,6 +558,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_PEER_INFOS_ENDPOINT;
+		};
 	}
 
 	private class GetMinerInfosEndpoint extends Endpoint {
@@ -578,6 +571,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_MINER_INFOS_ENDPOINT;
+		};
 	}
 
 	private class GetTaskInfosEndpoint extends Endpoint {
@@ -586,6 +584,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_TASK_INFOS_ENDPOINT;
+		};
 	}
 
 	private class GetBlockEndpoint extends Endpoint {
@@ -594,6 +597,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_BLOCK_ENDPOINT;
+		};
 	}
 
 	private class GetBlockDescriptionEndpoint extends Endpoint {
@@ -602,6 +610,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_BLOCK_DESCRIPTION_ENDPOINT;
+		};
 	}
 
 	private class GetConfigEndpoint extends Endpoint {
@@ -610,6 +623,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_CONFIG_ENDPOINT;
+		};
 	}
 
 	private class GetChainInfoEndpoint extends Endpoint {
@@ -618,6 +636,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_CHAIN_INFO_ENDPOINT;
+		};
 	}
 
 	private class GetChainPortionEndpoint extends Endpoint {
@@ -626,6 +649,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_CHAIN_PORTION_ENDPOINT;
+		};
 	}
 
 	private class GetInfoEndpoint extends Endpoint {
@@ -634,6 +662,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_INFO_ENDPOINT;
+		};
 	}
 
 	private class GetRequestEndpoint extends Endpoint {
@@ -642,6 +675,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetRequestResultMessages.Decoder.class, GetRequestMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_REQUEST_ENDPOINT;
+		};
 	}
 
 	private class GetRequestRepresentationEndpoint extends Endpoint {
@@ -650,6 +688,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetRequestRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRequestRepresentationMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_REQUEST_REPRESENTATION_ENDPOINT;
+		};
 	}
 
 	private class GetRequestAddressEndpoint extends Endpoint {
@@ -658,6 +701,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetRequestAddressResultMessages.Decoder.class, GetRequestAddressMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_REQUEST_ADDRESS_ENDPOINT;
+		};
 	}
 
 	private class GetMempoolInfoEndpoint extends Endpoint {
@@ -666,6 +714,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_MEMPOOL_INFO_ENDPOINT;
+		};
 	}
 
 	private class GetMempoolPortionEndpoint extends Endpoint {
@@ -674,6 +727,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return GET_MEMPOOL_PORTION_ENDPOINT;
+		};
 	}
 
 	private class AddRequestEndpoint extends Endpoint {
@@ -682,6 +740,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, AddRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddRequestMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return ADD_REQUEST_ENDPOINT;
+		};
 	}
 
 	private class WhisperPeerEndpoint extends Endpoint {
@@ -695,6 +758,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return WHISPER_PEER_ENDPOINT;
+		};
 	}
 
 	private class WhisperBlockEndpoint extends Endpoint {
@@ -708,6 +776,11 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return WHISPER_BLOCK_ENDPOINT;
+		};
 	}
 
 	private class WhisperRequestEndpoint extends Endpoint {
@@ -721,5 +794,10 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
 			return deployAt(uri, WhisperRequestMessages.Decoder.class, WhisperRequestMessages.Encoder.class);
 		}
+
+		@Override
+		public String segment() {
+			return WHISPER_REQUEST_ENDPOINT;
+		};
 	}
 }
