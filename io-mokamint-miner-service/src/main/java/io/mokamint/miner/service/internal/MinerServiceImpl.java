@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.security.PublicKey;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
@@ -175,8 +176,8 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class GetMiningSpecificationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetMiningSpecificationResultMessages.Decoder.class, GetMiningSpecificationMessages.Encoder.class);		
 		}
 
 		@Override
@@ -188,8 +189,8 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class GetBalanceEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);		
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);		
 		}
 
 		@Override
@@ -267,8 +268,8 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	private class MiningEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, Challenges.Decoder.class, Deadlines.Encoder.class);
 		}
 
 		@Override

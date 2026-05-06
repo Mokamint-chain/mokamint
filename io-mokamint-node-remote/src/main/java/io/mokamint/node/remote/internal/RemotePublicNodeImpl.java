@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -555,8 +556,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetPeerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetPeerInfosResultMessages.Decoder.class, GetPeerInfosMessages.Encoder.class);
 		}
 
 		@Override
@@ -568,8 +569,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMinerInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetMinerInfosResultMessages.Decoder.class, GetMinerInfosMessages.Encoder.class);
 		}
 
 		@Override
@@ -581,8 +582,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetTaskInfosEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetTaskInfosResultMessages.Decoder.class, GetTaskInfosMessages.Encoder.class);
 		}
 
 		@Override
@@ -594,8 +595,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetBlockResultMessages.Decoder.class, GetBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -607,8 +608,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetBlockDescriptionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetBlockDescriptionResultMessages.Decoder.class, GetBlockDescriptionMessages.Encoder.class);
 		}
 
 		@Override
@@ -620,8 +621,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetConfigEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetConfigResultMessages.Decoder.class, GetConfigMessages.Encoder.class);
 		}
 
 		@Override
@@ -633,8 +634,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetChainInfoResultMessages.Decoder.class, GetChainInfoMessages.Encoder.class);
 		}
 
 		@Override
@@ -646,8 +647,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetChainPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetChainPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetChainPortionMessages.Encoder.class);
 		}
 
 		@Override
@@ -659,8 +660,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 
 		@Override
@@ -672,8 +673,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetRequestEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetRequestResultMessages.Decoder.class, GetRequestMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetRequestResultMessages.Decoder.class, GetRequestMessages.Encoder.class);
 		}
 
 		@Override
@@ -685,8 +686,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetRequestRepresentationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetRequestRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRequestRepresentationMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetRequestRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRequestRepresentationMessages.Encoder.class);
 		}
 
 		@Override
@@ -698,8 +699,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetRequestAddressEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetRequestAddressResultMessages.Decoder.class, GetRequestAddressMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetRequestAddressResultMessages.Decoder.class, GetRequestAddressMessages.Encoder.class);
 		}
 
 		@Override
@@ -711,8 +712,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMempoolInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetMempoolInfoResultMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetMempoolInfoResultMessages.Decoder.class, GetMempoolInfoMessages.Encoder.class);
 		}
 
 		@Override
@@ -724,8 +725,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class GetMempoolPortionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetMempoolPortionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetMempoolPortionMessages.Encoder.class);
 		}
 
 		@Override
@@ -737,8 +738,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 	private class AddRequestEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, AddRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddRequestMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, AddRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddRequestMessages.Encoder.class);
 		}
 
 		@Override
@@ -755,8 +756,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, WhisperPeerMessages.Decoder.class, WhisperPeerMessages.Encoder.class);
 		}
 
 		@Override
@@ -773,8 +774,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, WhisperBlockMessages.Decoder.class, WhisperBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -791,8 +792,8 @@ public class RemotePublicNodeImpl extends AbstractRemoteNode implements RemotePu
 		}
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, WhisperRequestMessages.Decoder.class, WhisperRequestMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, WhisperRequestMessages.Decoder.class, WhisperRequestMessages.Encoder.class);
 		}
 
 		@Override

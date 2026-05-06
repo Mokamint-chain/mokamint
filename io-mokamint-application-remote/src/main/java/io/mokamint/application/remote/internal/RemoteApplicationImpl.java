@@ -38,6 +38,7 @@ import java.net.URI;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
@@ -235,8 +236,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetBalanceEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetBalanceResultMessages.Decoder.class, GetBalanceMessages.Encoder.class);
 		}
 
 		@Override
@@ -273,8 +274,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class SetHeadEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, SetHeadResultMessages.Decoder.class, ExceptionMessages.Decoder.class, SetHeadMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, SetHeadResultMessages.Decoder.class, ExceptionMessages.Decoder.class, SetHeadMessages.Encoder.class);
 		}
 
 		@Override
@@ -311,8 +312,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CheckDeadlineEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, CheckDeadlineResultMessages.Decoder.class, CheckDeadlineMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, CheckDeadlineResultMessages.Decoder.class, CheckDeadlineMessages.Encoder.class);
 		}
 
 		@Override
@@ -349,8 +350,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CheckRequestEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, CheckRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckRequestMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, CheckRequestResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CheckRequestMessages.Encoder.class);
 		}
 
 		@Override
@@ -387,8 +388,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetPriorityEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetPriorityResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPriorityMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetPriorityResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetPriorityMessages.Encoder.class);
 		}
 
 		@Override
@@ -425,8 +426,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetRepresentationEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRepresentationMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetRepresentationResultMessages.Decoder.class, ExceptionMessages.Decoder.class, GetRepresentationMessages.Encoder.class);
 		}
 
 		@Override
@@ -462,8 +463,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetInitialStateIdEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetInitialStateIdResultMessages.Decoder.class, GetInitialStateIdMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetInitialStateIdResultMessages.Decoder.class, GetInitialStateIdMessages.Encoder.class);
 		}
 
 		@Override
@@ -503,8 +504,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class BeginBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, BeginBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, BeginBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, BeginBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, BeginBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -542,8 +543,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class ExecuteTransactionEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, ExecuteTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, ExecuteTransactionMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, ExecuteTransactionResultMessages.Decoder.class, ExceptionMessages.Decoder.class, ExecuteTransactionMessages.Encoder.class);
 		}
 
 		@Override
@@ -581,8 +582,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class EndBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, EndBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, EndBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, EndBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, EndBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -619,8 +620,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class CommitBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, CommitBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CommitBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, CommitBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, CommitBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -657,8 +658,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class AbortBlockEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, AbortBlockResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AbortBlockMessages.Encoder.class);
 		}
 
 		@Override
@@ -695,8 +696,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class KeepFromEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, KeepFromResultMessages.Decoder.class, KeepFromMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, KeepFromResultMessages.Decoder.class, KeepFromMessages.Encoder.class);
 		}
 
 		@Override
@@ -733,8 +734,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class PublishEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, PublishResultMessages.Decoder.class, PublishMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, PublishResultMessages.Decoder.class, PublishMessages.Encoder.class);
 		}
 
 		@Override
@@ -770,8 +771,8 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	private class GetInfoEndpoint extends Endpoint {
 
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, GetInfoResultMessages.Decoder.class, GetInfoMessages.Encoder.class);
 		}
 
 		@Override

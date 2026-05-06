@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
@@ -161,8 +162,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class AddPeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, AddPeerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, AddPeerMessages.Encoder.class);
 		}
 
 		@Override
@@ -182,8 +183,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class RemovePeerEndpoint extends Endpoint {
 	
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, RemovePeerResultMessages.Decoder.class, RemovePeerMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, RemovePeerResultMessages.Decoder.class, RemovePeerMessages.Encoder.class);
 		}
 
 		@Override
@@ -203,8 +204,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class OpenMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, OpenMinerResultMessages.Decoder.class, ExceptionMessages.Decoder.class, OpenMinerMessages.Encoder.class);
 		}
 
 		@Override
@@ -224,8 +225,8 @@ public class RemoteRestrictedNodeImpl extends AbstractRemoteNode implements Remo
 	private class RemoveMinerEndpoint extends Endpoint {
 		
 		@Override
-		protected Session deployAt(URI uri) throws FailedDeploymentException, InterruptedException {
-			return deployAt(uri, RemoveMinerResultMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
+		protected Future<Session> asyncDeployAt(URI uri) throws FailedDeploymentException, InterruptedException {
+			return asyncDeployAt(uri, RemoveMinerResultMessages.Decoder.class, RemoveMinerMessages.Encoder.class);
 		}
 
 		@Override
