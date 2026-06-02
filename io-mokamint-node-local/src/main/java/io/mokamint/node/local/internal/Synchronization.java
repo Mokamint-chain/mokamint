@@ -220,7 +220,7 @@ public class Synchronization {
 	}
 
 	private BlockNonContextualVerifier[] mkNonContextualVerifiers() {
-		return IntStream.range(0, 1 + Runtime.getRuntime().availableProcessors() / 2)
+		return IntStream.range(0, 1 + Runtime.getRuntime().availableProcessors())
 			.mapToObj(BlockNonContextualVerifier::new)
 			.toArray(BlockNonContextualVerifier[]::new);
 	}
@@ -393,7 +393,7 @@ public class Synchronization {
 		 * fully processed yet (added to blockchain or rejected): the goal is to avoid
 		 * the explosion of the queues.
 		 */
-		private final Semaphore queueHasSpace = new Semaphore(synchronizationGroupSize * 2);
+		private final Semaphore queueHasSpace = new Semaphore(synchronizationGroupSize * 4);
 
 		private Downloader(Peer peer) {
 			this.peer = peer;
@@ -450,7 +450,6 @@ public class Synchronization {
 					LOGGER.warning("sync: block downloading from " + peer + " stops because the database has been closed: " + e.getMessage());
 					wellBehavingDownloaders.remove(this);
 					ensureThatNotAllDownloadersHaveBeenDiscarded();
-					LOGGER.warning("sync: block downloading from " + peer + " stops because the database has been closed: " + e.getMessage());
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
