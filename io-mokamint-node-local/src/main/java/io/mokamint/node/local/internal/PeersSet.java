@@ -467,21 +467,33 @@ public class PeersSet implements AutoCloseable {
 	}
 
 	private void collectUnknownPeers(Peer peer, RemotePublicNode remote, Set<Peer> container) throws ClosedDatabaseException, InterruptedException {
-		synchronized (lock) {
-			if (peers.size() < config.getMaxPeers()) { // optimization
-				try {
-					Stream<PeerInfo> peerInfos = remote.getPeerInfos();
-					pardonBecauseReachable(peer);
+		int size;
 
+		synchronized (lock) {
+			size = peers.size();
+		}
+
+		if (size < config.getMaxPeers()) { // optimistic check to avoid the slow getPeerInfos()
+			Stream<PeerInfo> peerInfos;
+
+			try {
+				// this needn't be performed inside the lock and might be slow, so better outside the lock!
+				peerInfos = remote.getPeerInfos();
+			}
+			catch (TimeoutException | ClosedNodeException e) {
+				LOGGER.warning("peers: cannot contact " + peer + ": " + e.getMessage());
+				punishBecauseUnreachable(peer);
+				return;
+			}
+
+			synchronized (lock) {
+				pardonBecauseReachable(peer);
+
+				if (peers.size() < config.getMaxPeers()) // optimization, re-check to guarantee consistency on the max number of peers
 					peerInfos.filter(PeerInfo::isConnected)
 						.map(PeerInfo::getPeer)
 						.filter(not(peers::contains))
 						.forEach(container::add);
-				}
-				catch (TimeoutException | ClosedNodeException e) {
-					LOGGER.warning("peers: cannot contact " + peer + ": " + e.getMessage());
-					punishBecauseUnreachable(peer);
-				}
 			}
 		}
 	}
