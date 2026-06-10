@@ -196,7 +196,7 @@ public class PublicNodeServiceImpl extends AbstractRPCWebSocketServer implements
 	 * @throws TimeoutException if the creation of the service timed out
 	 */
 	public PublicNodeServiceImpl(PublicNode node, int port, int peerBroadcastInterval, int whisperedMessagesSize, Optional<URI> uri) throws InterruptedException, TimeoutException, FailedDeploymentException {
-		super(1000, 100);
+		super(1000, Runtime.getRuntime().availableProcessors() * 2);
 
 		this.node = node;
 		this.logPrefix = "public service(ws://localhost:" + port + "): ";
