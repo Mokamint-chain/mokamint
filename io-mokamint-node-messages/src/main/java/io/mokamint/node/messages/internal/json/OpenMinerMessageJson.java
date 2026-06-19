@@ -33,6 +33,11 @@ public abstract class OpenMinerMessageJson extends AbstractRpcMessageJsonReprese
 		this.port = message.getPort();
 	}
 
+	/**
+	 * Yields the port for the requested miner.
+	 * 
+	 * @return the port
+	 */
 	public int getPort() {
 		return port;
 	}

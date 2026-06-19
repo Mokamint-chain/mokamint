@@ -45,30 +45,69 @@ public abstract class MiningSpecificationJson implements JsonRepresentation<Mini
 		this.publicKeyForSigningBlocksBase58 = spec.getPublicKeyForSigningBlocksBase58();
 	}
 
+	/**
+	 * Yields the name of the chain.
+	 * 
+	 * @return the name of the chain
+	 */
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * Yields the description of the chain.
+	 * 
+	 * @return the description of the chain
+	 */
 	public String getDescription() {
 		return description;
 	}
 
+	/**
+	 * Yields the chain identifier.
+	 * 
+	 * @return the chain identifier
+	 */
 	public String getChainId() {
 		return chainId;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for deadlines.
+	 * 
+	 * @return the name of the hashing algorithm used for deadlines
+	 */
 	public String getHashingForDeadlines() {
 		return hashingForDeadlines;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm used for the key identifying the node
+	 * in the deadlines expected by a miner having this specification.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm used for the key identifying the plot
+	 * containing the deadlines expected by a miner having this specification.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForDeadlines() {
 		return signatureForDeadlines;
 	}
 
+	/**
+	 * Yields the Base58-encoded public key identifying the node in the deadlines
+	 * expected by a miner having this specification. This is a public key for the
+	 * {@link #getSignatureForBlocks()} algorithm.
+	 * 
+	 * @return the Base58-encoded public key
+	 */
 	public String getPublicKeyForSigningBlocksBase58() {
 		return publicKeyForSigningBlocksBase58;
 	}

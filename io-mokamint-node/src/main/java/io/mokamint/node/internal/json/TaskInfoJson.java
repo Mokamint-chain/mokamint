@@ -31,6 +31,11 @@ public abstract class TaskInfoJson implements JsonRepresentation<TaskInfo> {
 		this.description = info.getDescription();
 	}
 
+	/**
+	 * Yields the description of the task.
+	 * 
+	 * @return the description of the task
+	 */
 	public String getDescription() {
 		return description;
 	}

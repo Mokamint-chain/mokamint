@@ -34,10 +34,20 @@ public abstract class RequestAddressJson implements JsonRepresentation<RequestAd
 		this.progressive = address.getProgressive();
 	}
 
+	/**
+	 * Yields the hash of the block containing the request.
+	 * 
+	 * @return the hash of the block containing the request
+	 */
 	public String getBlockHash() {
 		return blockHash;
 	}
 
+	/**
+	 * Yields the progressive number of the request inside the table of the requests inside the block.
+	 *                    
+	 * @return the progressive number
+	 */
 	public int getProgressive() {
 		return progressive;
 	}

@@ -33,6 +33,11 @@ public abstract class WhisperRequestMessageJson extends AbstractRpcMessageJsonRe
 		this.request = message.getWhispered().toBase64String();
 	}
 
+	/**
+	 * Yields the whispered request.
+	 * 
+	 * @return the whispered request
+	 */
 	public String getRequest() {
 		return request;
 	}

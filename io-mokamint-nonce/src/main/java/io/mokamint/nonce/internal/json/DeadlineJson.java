@@ -44,22 +44,48 @@ public abstract class DeadlineJson implements JsonRepresentation<Deadline> {
 		this.extra = Hex.toHexString(deadline.getExtra());
 	}
 
+	/**
+	 * Yields the prolog that was used to create the nonce from which
+	 * this deadline has been generated.
+	 * 
+	 * @return the prolog
+	 */
 	public Prologs.Json getProlog() {
 		return prolog;
 	}
 
+	/**
+	 * Yields the progressive number of the nonce of the deadline.
+	 * 
+	 * @return the progressive number
+	 */
 	public long getProgressive() {
 		return progressive;
 	}
 
+	/**
+	 * Yields the value of the deadline.
+	 * 
+	 * @return the value
+	 */
 	public String getValue() {
 		return value;
 	}
 
+	/**
+	 * Yields the challenge this deadline responds to.
+	 * 
+	 * @return the challenge this deadline responds to
+	 */
 	public Challenges.Json getChallenge() {
 		return challenge;
 	}
 
+	/**
+	 * Yields the application-specific data of the deadline.
+	 * 
+	 * @return the application-specific data of the deadline
+	 */
 	public String getExtra() {
 		return extra;
 	}

@@ -42,7 +42,7 @@ public interface PeerInfo extends Comparable<PeerInfo> {
 	long getPoints();
 
 	/**
-	 * The connection status of the peer.
+	 * Yields the connection status of the peer.
 	 * 
 	 * @return true if and only if the node is connected to the peer
 	 */

@@ -36,6 +36,11 @@ public abstract class GetBalanceResultMessageJson extends AbstractRpcMessageJson
 		this.result = message.get().orElse(null);
 	}
 
+	/**
+	 * Yields the balance in the result of this message.
+	 * 
+	 * @return the balance in the result of this message
+	 */
 	public final Optional<BigInteger> getResult() {
 		return Optional.ofNullable(result);
 	}

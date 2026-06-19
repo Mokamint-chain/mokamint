@@ -34,6 +34,11 @@ public abstract class WhisperPeerMessageJson extends AbstractRpcMessageJsonRepre
 		this.peer = new Peers.Json(message.getWhispered());
 	}
 
+	/**
+	 * Yields the whispered peer.
+	 * 
+	 * @return the whispered peer
+	 */
 	public Peers.Json getPeer() {
 		return peer;
 	}

@@ -47,10 +47,20 @@ public abstract class GetBalanceMessageJson extends AbstractRpcMessageJsonRepres
 		return GetBalanceMessage.class.getName();
 	}
 
+	/**
+	 * Yields the name of the signature algorithm of the public key in this message.
+	 * 
+	 * @return the name of the signature algorithm of the public key in this message
+	 */
 	public String getSignature() {
 		return signature;
 	}
 
+	/**
+	 * Yields the Base58-encoded public key whose balance is required.
+	 * 
+	 * @return the Base58-encoded public key whose balance is required
+	 */
 	public String getPublicKey() {
 		return publicKey;
 	}

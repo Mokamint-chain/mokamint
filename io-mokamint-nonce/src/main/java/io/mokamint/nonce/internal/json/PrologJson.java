@@ -44,26 +44,64 @@ public abstract class PrologJson implements JsonRepresentation<Prolog> {
 		this.extra = Hex.toHexString(prolog.getExtra());
 	}
 
+	/**
+	 * Yields the chain identifier of the blockchain where the deadline is legal.
+	 * 
+	 * @return the chain identifier
+	 */
 	public String getChainId() {
 		return chainId;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm that nodes must use to sign blocks
+	 * having a deadline with this prolog, with the key {@link #getPublicKeyForSigningBlocks()}.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
+	/**
+	 * Yields the Base58-encoded public key that must be used to sign the blocks having
+	 * a deadline with this prolog.
+	 * 
+	 * @return the Base58-encoded public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForBlocks()}.
+	 */
 	public String getPublicKeyForSigningBlocks() {
 		return publicKeyForSigningBlocks;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm used by the keys that identify the miners.
+	 * The identifier of the miner of a deadline having this prolog
+	 * is the key {@link #getPublicKeyForSigningDeadlines()}. Application
+	 * might decide to actually sign deadlines with this algorithm, using the
+	 * extra field of the deadlines. In general, there is no need to actually sign the deadlines.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForDeadlines() {
 		return signatureForDeadlines;
 	}
 
+	/**
+	 * Yields the Base58-encoded public key that identifies the miner of a deadline having this prolog.
+	 * 
+	 * @return the Base58-encoded public key; this is guaranteed to be a valid key for
+	 *         {@link #getSignatureForDeadlines()}
+	 */
 	public String getPublicKeyForSigningDeadlines() {
 		return publicKeyForSigningDeadlines;
 	}
 
+	/**
+	 * Yields application-specific extra data in the prolog.
+	 * 
+	 * @return the extra data
+	 */
 	public String getExtra() {
 		return extra;
 	}

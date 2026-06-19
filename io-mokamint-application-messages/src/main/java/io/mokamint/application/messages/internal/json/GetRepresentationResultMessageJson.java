@@ -43,6 +43,11 @@ public abstract class GetRepresentationResultMessageJson extends AbstractRpcMess
 		return GetRepresentationResultMessage.class.getName();
 	}
 
+	/**
+	 * Yields the resulting representation contained in the message.
+	 * 
+	 * @return the resulting representation contained in the message
+	 */
 	public String getResult() {
 		return result;
 	}

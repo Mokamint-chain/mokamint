@@ -36,6 +36,11 @@ public abstract class WhisperBlockMessageJson extends AbstractRpcMessageJsonRepr
 		this.block = new Blocks.Json(message.getWhispered());
 	}
 
+	/**
+	 * Yields the whispered block.
+	 * 
+	 * @return the whispered block
+	 */
 	public Blocks.Json getBlock() {
 		return block;
 	}

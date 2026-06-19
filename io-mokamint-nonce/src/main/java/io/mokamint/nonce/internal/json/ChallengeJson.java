@@ -40,18 +40,38 @@ public abstract class ChallengeJson implements JsonRepresentation<Challenge> {
 		this.hashingForGenerations = challenge.getHashingForGenerations().getName();
 	}
 
+	/**
+	 * Yields the scoop number of the challenge.
+	 * 
+	 * @return the scoop number of the challenge
+	 */
 	public int getScoopNumber() {
 		return scoopNumber;
 	}
 
+	/**
+	 * Yields the generation signature of the challenge.
+	 * 
+	 * @return the generation signature of the challenge
+	 */
 	public String getGenerationSignature() {
 		return generationSignature;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for generating the deadline.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForDeadlines() {
 		return hashingForDeadlines;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the generation signature.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForGenerations() {
 		return hashingForGenerations;
 	}

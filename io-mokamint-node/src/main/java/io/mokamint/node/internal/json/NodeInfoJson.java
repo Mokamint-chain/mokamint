@@ -22,6 +22,7 @@ import io.hotmoka.websockets.beans.api.InconsistentJsonException;
 import io.hotmoka.websockets.beans.api.JsonRepresentation;
 import io.mokamint.node.Versions;
 import io.mokamint.node.api.NodeInfo;
+import io.mokamint.node.api.PublicNode;
 import io.mokamint.node.internal.NodeInfoImpl;
 
 /**
@@ -42,22 +43,49 @@ public abstract class NodeInfoJson implements JsonRepresentation<NodeInfo> {
 		this.maxMempoolPortionLength = info.getMaxMempoolPortionLength();
 	}
 
+	/**
+	 * Yields the version of the node.
+	 * 
+	 * @return the version
+	 */
 	public Versions.Json getVersion() {
 		return version;
 	}
 
+	/**
+	 * Yields the UUID (unique identifier) of the node.
+	 * 
+	 * @return the UUID
+	 */
 	public String getUuid() {
 		return uuid;
 	}
 
+	/**
+	 * Yields the date and time of the node.
+	 * 
+	 * @return the date and time of the node, in UTC
+	 */
 	public String getLocalDateTimeUTC() {
 		return localDateTimeUTC;
 	}
 
+	/**
+	 * Yields the maximal number of block hashes that can be fetched with a single
+	 * {@link PublicNode#getChainPortion(long, int)} call.
+	 * 
+	 * @return the maximal number of block hashes that can be fetched with a single call
+	 */
 	public int getMaxChainPortionLength() {
 		return maxChainPortionLength;
 	}
 
+	/**
+	 * Yields the maximal number of mempool elements that can be fetched with a single
+	 * {@link PublicNode#getMempoolPortion(int, int)} call.
+	 * 
+	 * @return the maximal number of mempool elements that can be fetched with a single call
+	 */
 	public int getMaxMempoolPortionLength() {
 		return maxMempoolPortionLength;
 	}

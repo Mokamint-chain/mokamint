@@ -33,6 +33,11 @@ public abstract class GetPriorityResultMessageJson extends AbstractRpcMessageJso
 		this.result = message.get();
 	}
 
+	/**
+	 * Yields the priority inside this message.
+	 * 
+	 * @return the priority inside this message
+	 */
 	public long getResult() {
 		return result;
 	}

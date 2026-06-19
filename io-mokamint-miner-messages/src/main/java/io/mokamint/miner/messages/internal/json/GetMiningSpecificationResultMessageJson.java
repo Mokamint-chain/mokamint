@@ -36,6 +36,11 @@ public abstract class GetMiningSpecificationResultMessageJson extends AbstractRp
 		this.result = new MiningSpecifications.Json(message.get());
 	}
 
+	/**
+	 * Yields the mining specification in the result of this message.
+	 * 
+	 * @return the mining specification in the result of this message
+	 */
 	public final MiningSpecifications.Json getResult() {
 		return result;
 	}

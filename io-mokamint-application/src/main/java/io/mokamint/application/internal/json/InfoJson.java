@@ -33,10 +33,20 @@ public abstract class InfoJson implements JsonRepresentation<Info> {
 		this.description = info.getDescription();
 	}
 
+	/**
+	 * Yields the name of the application.
+	 * 
+	 * @return the name of the application
+	 */
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * Yields the description of the application.
+	 * 
+	 * @return the description of the application
+	 */
 	public String getDescription() {
 		return description;
 	}

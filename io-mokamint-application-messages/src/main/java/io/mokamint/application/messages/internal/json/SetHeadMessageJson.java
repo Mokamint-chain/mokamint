@@ -34,6 +34,11 @@ public abstract class SetHeadMessageJson extends AbstractRpcMessageJsonRepresent
 		this.stateId = Hex.toHexString(message.getStateId());
 	}
 
+	/**
+	 * Yields the state identifier in the message.
+	 * 
+	 * @return the state identifier
+	 */
 	public String getStateId() {
 		return stateId;
 	}

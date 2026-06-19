@@ -45,18 +45,38 @@ public abstract class ShowOutputJson implements JsonRepresentation<ChainInfoOutp
 		return new ShowImpl.Output(this);
 	}
 
+	/**
+	 * Yields the prolog of the plot described by this output.
+	 * 
+	 * @return the prolog of the plot described by this output
+	 */
 	public Prologs.Json getProlog() {
 		return prolog;
 	}
 
+	/**
+	 * Yields the start of the plot described by this output.
+	 * 
+	 * @return the start of the plot described by this output
+	 */
 	public long getStart() {
 		return start;
 	}
 
+	/**
+	 * Yields the length of the plot described by this output.
+	 * 
+	 * @return the length of the plot described by this output
+	 */
 	public long getLength() {
 		return length;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used by the plot described by this output.
+	 * 
+	 * @return the name of the hashing algorithm used by the plot described by this output
+	 */
 	public String getHashing() {
 		return hashing;
 	}

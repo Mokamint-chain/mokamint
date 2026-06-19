@@ -36,14 +36,30 @@ public abstract class PeerInfoJson implements JsonRepresentation<PeerInfo> {
 		this.connected = info.isConnected();
 	}
 
+	/**
+	 * Yields the peer described by this information.
+	 * 
+	 * @return the peer
+	 */
 	public Peers.Json getPeer() {
 		return peer;
 	}
 
+	/**
+	 * Yields the points of the peer. They are an estimation of how much well the
+	 * peer behaved recently.
+	 *
+	 * @return the points; this should always be positive
+	 */
 	public long getPoints() {
 		return points;
 	}
 
+	/**
+	 * Yields the connection status of the peer.
+	 * 
+	 * @return true if and only if the node is connected to the peer
+	 */
 	public boolean isConnected() {
 		return connected;
 	}

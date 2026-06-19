@@ -92,7 +92,7 @@ public interface Prolog extends Marshallable {
 	String getPublicKeyForSigningDeadlinesBase58();
 
 	/**
-	 * Application-specific extra data in the prolog.
+	 * Yields application-specific extra data in the prolog.
 	 * 
 	 * @return the extra data
 	 */

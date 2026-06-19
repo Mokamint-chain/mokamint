@@ -36,6 +36,11 @@ public abstract class PublishMessageJson extends AbstractRpcMessageJsonRepresent
 		this.block = new Blocks.Json(message.getBlock());
 	}
 
+	/**
+	 * Yields the block in the message.
+	 * 
+	 * @return the block
+	 */
 	public Blocks.Json getBlock() {
 		return block;
 	}

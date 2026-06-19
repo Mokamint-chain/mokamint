@@ -699,11 +699,21 @@ public class LocalNodeImpl extends AbstractAutoCloseableWithLockAndOnCloseHandle
 		return keyPair;
 	}
 
-	protected LocalNodeConfig getConfigInternal() {
+	/**
+	 * Yields the local configuration of this node.
+	 * 
+	 * @return the local configuration of this node
+	 */
+	LocalNodeConfig getConfigInternal() {
 		return config;
 	}
 
-	protected void remove(RequestEntry requestEntry) {
+	/**
+	 * Removes the given request from the mempool of this node.
+	 * 
+	 * @param requestEntry the request entry to remove
+	 */
+	void remove(RequestEntry requestEntry) {
 		mempool.remove(requestEntry);
 	}
 

@@ -31,6 +31,11 @@ public abstract class PeerJson implements JsonRepresentation<Peer> {
 		this.uri = peer.getURI().toString();
 	}
 
+	/**
+	 * Yields the URI of this peer.
+	 * 
+	 * @return the URI of this peer
+	 */
 	public String getUri() {
 		return uri;
 	}

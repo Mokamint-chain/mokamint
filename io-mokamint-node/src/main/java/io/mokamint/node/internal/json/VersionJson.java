@@ -35,14 +35,29 @@ public abstract class VersionJson implements JsonRepresentation<Version> {
 		this.patch = version.getPatch();
 	}
 
+	/**
+	 * Yields the major version component.
+	 * 
+	 * @return the major version component
+	 */
 	public int getMajor() {
 		return major;
 	}
 
+	/**
+	 * Yields the minor version component.
+	 * 
+	 * @return the minor version component
+	 */
 	public int getMinor() {
 		return minor;
 	}
 
+	/**
+	 * Yields the patch version component.
+	 * 
+	 * @return the patch version component
+	 */
 	public int getPatch() {
 		return patch;
 	}

@@ -35,6 +35,11 @@ public abstract class KeepFromMessageJson extends AbstractRpcMessageJsonRepresen
 		this.start = ISO_LOCAL_DATE_TIME.format(message.getStart());
 	}
 
+	/**
+	 * Yields the the limit time, before which states can be garbage-collected, present in the message.
+	 * 
+	 * @return the limit time
+	 */
 	public String getStart() {
 		return start;
 	}

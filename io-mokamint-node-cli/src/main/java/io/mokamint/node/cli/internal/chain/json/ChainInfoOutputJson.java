@@ -37,6 +37,11 @@ public abstract class ChainInfoOutputJson implements JsonRepresentation<ChainInf
 		return new InfoImpl.Output(this);
 	}
 
+	/**
+	 * Yields the chain info payload inside this output.
+	 * 
+	 * @return the chain info payload inside this output
+	 */
 	public ChainInfos.Json getInfo() {
 		return chainInfo;
 	}

@@ -33,6 +33,11 @@ public abstract class GetPriorityMessageJson extends AbstractRpcMessageJsonRepre
 		this.transaction = message.getTransaction().toBase64String();
 	}
 
+	/**
+	 * Yields the transaction in the message.
+	 * 
+	 * @return the transaction
+	 */
 	public String getTransaction() {
 		return transaction;
 	}
