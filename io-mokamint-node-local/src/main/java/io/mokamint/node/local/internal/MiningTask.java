@@ -86,11 +86,11 @@ public class MiningTask implements Task {
 	 * Called when mining should be interrupted and restarted from the current head of the blockchain.
 	 */
 	public void restartFromCurrentHead() {
-		if (!node.isSynchronizing()) {
+		//if (!node.isSynchronizing()) {
 			var blockMiner = this.blockMiner;
 			if (blockMiner != null)
 				blockMiner.interrupt();
-		}
+		//}
 	}
 
 	/**
@@ -136,8 +136,12 @@ public class MiningTask implements Task {
 		}
 		else {
 			try {
+				var oldBlockMiner = blockMiner;
+				if (oldBlockMiner != null)
+					oldBlockMiner.interrupt();
+
 				// object construction must be separated from its execution, since this allows
-				// to have a reference trough which the block miner can be interrupted if the current head changes
+				// to have a reference through which the block miner can be interrupted if the current head changes
 				blockMiner = new BlockMiner(node);
 				blockMiner.mine();
 			}

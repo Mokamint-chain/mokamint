@@ -20,150 +20,152 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <maven.compiler.release>21</maven.compiler.release>
-      <mokamint.version>1.7.3</mokamint.version>
-      <io.hotmoka.annotations.version>1.4.1</io.hotmoka.annotations.version>
-      <io.hotmoka.crypto.version>1.5.5</io.hotmoka.crypto.version>
-      <io.hotmoka.closeables.version>1.5.0</io.hotmoka.closeables.version>
-      <io.hotmoka.websockets.version>1.8.0</io.hotmoka.websockets.version>
-      <io.hotmoka.cli.version>1.5.6</io.hotmoka.cli.version>
-      <io.hotmoka.marshalling.version>1.4.8</io.hotmoka.marshalling.version>
-      <io.hotmoka.exceptions.version>1.6.0</io.hotmoka.exceptions.version>
-      <io.hotmoka.xodus.version>1.4.9</io.hotmoka.xodus.version>
-      <io.hotmoka.patricia.version>1.12.3</io.hotmoka.patricia.version>
-      <io.hotmoka.testing.version>1.4.1</io.hotmoka.testing.version>
-    </properties>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.target>21</maven.compiler.target>
+    <mokamint.version>1.7.3</mokamint.version>
+    <io.hotmoka.annotations.version>1.4.1</io.hotmoka.annotations.version>
+    <io.hotmoka.crypto.version>1.5.5</io.hotmoka.crypto.version>
+    <io.hotmoka.closeables.version>1.5.0</io.hotmoka.closeables.version>
+    <io.hotmoka.websockets.version>1.8.0</io.hotmoka.websockets.version>
+    <io.hotmoka.cli.version>1.5.6</io.hotmoka.cli.version>
+    <io.hotmoka.marshalling.version>1.4.8</io.hotmoka.marshalling.version>
+    <io.hotmoka.exceptions.version>1.6.0</io.hotmoka.exceptions.version>
+    <io.hotmoka.xodus.version>1.4.9</io.hotmoka.xodus.version>
+    <io.hotmoka.patricia.version>1.12.3</io.hotmoka.patricia.version>
+    <io.hotmoka.testing.version>1.4.1</io.hotmoka.testing.version>
+  </properties>
 
-    <groupId>io.mokamint</groupId>
-    <artifactId>mokamint</artifactId>
-    <packaging>pom</packaging>
-    <version>parent</version>
+  <groupId>io.mokamint</groupId>
+  <artifactId>mokamint</artifactId>
+  <packaging>pom</packaging>
+  <version>parent</version>
+  <name>Mokamint</name>
+  <description>A generic proof-of-space blockchain engine.</description>
+  <url>https://github.com/Mokamint-chain/mokamint</url>
+
+  <organization>
+    <url>https://www.mokamint.io</url>
     <name>Mokamint</name>
-    <description>A generic proof-of-space blockchain engine.</description>
+  </organization>
+
+  <inceptionYear>2023</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Fausto Spoto</name>
+      <email>fausto.spoto@mokamint.io</email>
+      <organization>Mokamint</organization>
+      <organizationUrl>https://www.mokamint.io</organizationUrl>
+      <timezone>UTC+01:00</timezone>
+    </developer>
+  </developers>
+
+  <!-- specific profiles might add more modules to these -->
+  <modules>
+    <module>io-mokamint-node-api</module>
+    <module>io-mokamint-node</module>
+    <module>io-mokamint-node-local-api</module>
+    <module>io-mokamint-node-local</module>
+    <module>io-mokamint-node-service-api</module>
+    <module>io-mokamint-node-service</module>
+    <module>io-mokamint-node-messages-api</module>
+    <module>io-mokamint-node-messages</module>
+    <module>io-mokamint-node-remote-api</module>
+    <module>io-mokamint-node-remote</module>
+    <module>io-mokamint-node-integration</module>
+    <module>io-mokamint-node-cli-api</module>
+    <module>io-mokamint-node-cli</module>
+    <module>io-mokamint-miner-api</module>
+    <module>io-mokamint-miner</module>
+    <module>io-mokamint-miner-local-api</module>
+    <module>io-mokamint-miner-local</module>
+    <module>io-mokamint-miner-remote-api</module>
+    <module>io-mokamint-miner-remote</module>
+    <module>io-mokamint-miner-service-api</module>
+    <module>io-mokamint-miner-service</module>
+    <module>io-mokamint-miner-messages-api</module>
+    <module>io-mokamint-miner-messages</module>
+    <module>io-mokamint-miner-integration</module>
+    <module>io-mokamint-miner-cli</module>
+    <module>io-mokamint-nonce-api</module>
+    <module>io-mokamint-nonce</module>
+    <module>io-mokamint-plotter-api</module>
+    <module>io-mokamint-plotter</module>
+    <module>io-mokamint-plotter-cli-api</module>
+    <module>io-mokamint-plotter-cli</module>
+    <module>io-mokamint-application-api</module>
+    <module>io-mokamint-application</module>
+    <module>io-mokamint-application-messages-api</module>
+    <module>io-mokamint-application-messages</module>
+    <module>io-mokamint-application-service-api</module>
+    <module>io-mokamint-application-service</module>
+    <module>io-mokamint-application-remote-api</module>
+    <module>io-mokamint-application-remote</module>
+    <module>io-mokamint-application-integration</module>
+    <module>io-mokamint-application-cli</module>
+    <module>io-mokamint-application-empty</module>
+    <module>io-mokamint-application-parity</module>
+    <module>io-mokamint-application-bitcoin</module>
+    <module>io-mokamint-application-bitcoin-cli</module>
+    <module>io-mokamint-constants</module>
+  </modules>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
+  <scm>
+    <connection>scm:git:git://github.com/Mokamint-chain/mokamint.git</connection>
+    <developerConnection>scm:git:git@github.com:Mokamint-chain/mokamint.git</developerConnection>
     <url>https://github.com/Mokamint-chain/mokamint</url>
+    <tag>HEAD</tag>
+  </scm>
 
-    <organization>
-      <url>https://www.mokamint.io</url>
-      <name>Mokamint</name>
-    </organization>
-
-    <inceptionYear>2023</inceptionYear>
-
-    <licenses>
-      <license>
-        <name>The Apache License, Version 2.0</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      </license>
-    </licenses>
-
-    <developers>
-      <developer>
-        <name>Fausto Spoto</name>
-        <email>fausto.spoto@gmail.com</email>
-        <organization>Mokamint</organization>
-        <organizationUrl>https://www.mokamint.io</organizationUrl>
-        <timezone>UTC+01:00</timezone>
-      </developer>
-    </developers>
-
-    <!-- specific profiles might add more modules to these -->
-    <modules>
-      <module>io-mokamint-node-api</module>
-      <module>io-mokamint-node</module>
-      <module>io-mokamint-node-local-api</module>
-      <module>io-mokamint-node-local</module>
-      <module>io-mokamint-node-service-api</module>
-      <module>io-mokamint-node-service</module>
-      <module>io-mokamint-node-messages-api</module>
-      <module>io-mokamint-node-messages</module>
-      <module>io-mokamint-node-remote-api</module>
-      <module>io-mokamint-node-remote</module>
-      <module>io-mokamint-node-integration</module>
-      <module>io-mokamint-node-cli-api</module>
-      <module>io-mokamint-node-cli</module>
-      <module>io-mokamint-miner-api</module>
-      <module>io-mokamint-miner</module>
-      <module>io-mokamint-miner-local-api</module>
-      <module>io-mokamint-miner-local</module>
-      <module>io-mokamint-miner-remote-api</module>
-      <module>io-mokamint-miner-remote</module>
-      <module>io-mokamint-miner-service-api</module>
-      <module>io-mokamint-miner-service</module>
-      <module>io-mokamint-miner-messages-api</module>
-      <module>io-mokamint-miner-messages</module>
-      <module>io-mokamint-miner-integration</module>
-      <module>io-mokamint-miner-cli</module>
-      <module>io-mokamint-nonce-api</module>
-      <module>io-mokamint-nonce</module>
-      <module>io-mokamint-plotter-api</module>
-      <module>io-mokamint-plotter</module>
-      <module>io-mokamint-plotter-cli-api</module>
-      <module>io-mokamint-plotter-cli</module>
-      <module>io-mokamint-application-api</module>
-      <module>io-mokamint-application</module>
-      <module>io-mokamint-application-messages-api</module>
-      <module>io-mokamint-application-messages</module>
-      <module>io-mokamint-application-service-api</module>
-      <module>io-mokamint-application-service</module>
-      <module>io-mokamint-application-remote-api</module>
-      <module>io-mokamint-application-remote</module>
-      <module>io-mokamint-application-integration</module>
-      <module>io-mokamint-application-cli</module>
-      <module>io-mokamint-application-empty</module>
-      <module>io-mokamint-application-parity</module>
-      <module>io-mokamint-application-bitcoin</module>
-      <module>io-mokamint-application-bitcoin-cli</module>
-      <module>io-mokamint-constants</module>
-    </modules>
-
-    <distributionManagement>
-      <snapshotRepository>
-        <id>ossrh</id>
-        <url>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
-      </snapshotRepository>
-      <repository>
-        <id>ossrh</id>
-        <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
-      </repository>
-    </distributionManagement>
-
-    <scm>
-      <connection>scm:git:git://github.com/Mokamint-chain/mokamint.git</connection>
-      <developerConnection>scm:git:git@github.com:Mokamint-chain/mokamint.git</developerConnection>
-      <url>https://github.com/Mokamint-chain/mokamint</url>
-      <tag>HEAD</tag>
-    </scm>
-
-    <dependencies>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>5.9.2</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>5.9.2</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>5.3.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.hotmoka</groupId>
-        <artifactId>io-hotmoka-testing</artifactId>
-        <version>${io.hotmoka.testing.version}</version>
-        <scope>test</scope>
-      </dependency>
-    </dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>6.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>6.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.23.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.hotmoka</groupId>
+      <artifactId>io-hotmoka-testing</artifactId>
+      <version>${io.hotmoka.testing.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <profiles>
     <profile>
@@ -237,17 +239,32 @@ Note: submodules whose artifact must be deployed on Maven Central must activate 
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.1.0</version>
+        <configuration>
+          <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
+          <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
           <includes>
             <include>*.java</include>
           </includes>
           <!-- <forkCount>0</forkCount> this can be useful for testing, since the stack trace of the tests becomes available -->
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId> <!-- needed for using mockito as a Java agent -->
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
