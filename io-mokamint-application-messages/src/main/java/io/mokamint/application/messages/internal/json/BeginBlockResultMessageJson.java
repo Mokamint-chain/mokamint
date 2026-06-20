@@ -33,6 +33,11 @@ public abstract class BeginBlockResultMessageJson extends AbstractRpcMessageJson
 		this.result = message.get();
 	}
 
+	/**
+	 * Yields the identifier of the execution scope that is being started.
+	 * 
+	 * @return the identifier of the execution scope that is being started
+	 */
 	public int getResult() {
 		return result;
 	}

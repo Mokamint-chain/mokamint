@@ -34,10 +34,20 @@ public abstract class GetMempoolPortionMessageJson extends AbstractRpcMessageJso
 		this.count = message.getCount();
 	}
 
+	/**
+	 * Yields the {@code start} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
 	public int getStart() {
 		return start;
 	}
 
+	/**
+	 * Yields the {@code count} parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
 	public int getCount() {
 		return count;
 	}

@@ -51,42 +51,100 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		this.oblivion = config.getOblivion();
 	}
 
+	/**
+	 * Yields the chain identifier of the blockchain the node belongs to.
+	 * 
+	 * @return the chain identifier
+	 */
 	public String getChainId() {
 		return chainId;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for computing the deadlines, hence
+	 * also in the plot files used by the miners.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForDeadlines() {
 		return hashingForDeadlines;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for computing the next generation signature
+	 * and the new scoop number from the previous block.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForGenerations() {
 		return hashingForGenerations;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the identifying the blocks of
+	 * the Mokamint blockchain.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForBlocks() {
 		return hashingForBlocks;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the identifying the requests of
+	 * the Mokamint blockchain.
+	 * 
+	 * @return the name of the hashing algorithm
+	 */
 	public String getHashingForRequests() {
 		return hashingForTransactions;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm that nodes use to sign the blocks.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm that miners use to sign the deadlines.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForDeadlines() {
 		return signatureForDeadlines;
 	}
 
+	/**
+	 * Yields the target time interval, in milliseconds, between the creation of a block
+	 * and the creation of a next block.
+	 * 
+	 * @return the time interval
+	 */
 	public int getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
 	}
 
+	/**
+	 * Yields the maximal size of a block's requests table.
+	 * 
+	 * @return the maximal size (in bytes)
+	 */
 	public int getMaxBlockSize() {
 		return maxBlockSize;
 	}
 
+	// TODO: add getMaxRequestSize()
+
+	/**
+	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.
+	 * 
+	 * @return the rapidity of changes of acceleration. It is a value between 0
+	 *         (no acceleration change) to 100,000 (maximally fast change)
+	 */
 	public int getOblivion() {
 		return oblivion;
 	}

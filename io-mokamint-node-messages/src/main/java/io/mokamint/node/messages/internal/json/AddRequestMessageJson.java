@@ -33,6 +33,11 @@ public abstract class AddRequestMessageJson extends AbstractRpcMessageJsonRepres
 		this.request = message.getRequest().toBase64String();
 	}
 
+	/**
+	 * Yields the request parameter of the method.
+	 * 
+	 * @return the parameter
+	 */
 	public String getRequest() {
 		return request;
 	}

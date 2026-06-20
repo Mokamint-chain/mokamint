@@ -34,6 +34,11 @@ public abstract class GetMempoolInfoResultMessageJson extends AbstractRpcMessage
 		this.info = new MempoolInfos.Json(message.get());
 	}
 
+	/**
+	 * Yields the information about the mempool.
+	 * 
+	 * @return the information about the mempool
+	 */
 	public MempoolInfos.Json getInfo() {
 		return info;
 	}

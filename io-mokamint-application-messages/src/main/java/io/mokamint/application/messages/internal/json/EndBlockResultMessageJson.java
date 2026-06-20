@@ -34,6 +34,12 @@ public abstract class EndBlockResultMessageJson extends AbstractRpcMessageJsonRe
 		this.result = Hex.toHexString(message.get());
 	}
 
+	/**
+	 * Yields the identifier of the state resulting at the end of the group execution
+	 * of the requests, including eventual coinbase transactions added at its end.
+	 * 
+	 * @return the identifier of the stae, as a hexadecimal string
+	 */
 	public String getResult() {
 		return result;
 	}

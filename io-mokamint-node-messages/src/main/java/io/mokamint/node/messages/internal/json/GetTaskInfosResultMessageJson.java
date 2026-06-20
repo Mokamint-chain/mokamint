@@ -37,6 +37,11 @@ public abstract class GetTaskInfosResultMessageJson extends AbstractRpcMessageJs
 		this.tasks = message.get().map(TaskInfos.Json::new).toArray(TaskInfos.Json[]::new);
 	}
 
+	/**
+	 * Yields information about the current tasks.
+	 * 
+	 * @return information about the current tasks
+	 */
 	public Optional<Stream<TaskInfos.Json>> getTasks() {
 		return tasks == null ? Optional.empty() : Optional.of(Stream.of(tasks));
 	}

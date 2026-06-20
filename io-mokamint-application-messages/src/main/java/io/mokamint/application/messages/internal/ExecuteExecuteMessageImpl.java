@@ -54,7 +54,7 @@ public class ExecuteExecuteMessageImpl extends AbstractRpcMessage implements Exe
 	public ExecuteExecuteMessageImpl(ExecuteTransactionMessageJson json) throws InconsistentJsonException {
 		this(
 			json.getGroupId(),
-			Requests.of(Base64.fromBase64String(Objects.requireNonNull(json.getTransaction(), "request cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
+			Requests.of(Base64.fromBase64String(Objects.requireNonNull(json.getRequest(), "request cannot be null", InconsistentJsonException::new), InconsistentJsonException::new)),
 			json.getId(),
 			InconsistentJsonException::new
 		);

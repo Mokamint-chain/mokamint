@@ -34,6 +34,11 @@ public abstract class GetRequestRepresentationResultMessageJson extends Abstract
 		this.representation = message.get().orElse(null);
 	}
 
+	/**
+	 * Yields the representation in the message.
+	 * 
+	 * @return the representation in the message
+	 */
 	public Optional<String> getRepresentation() {
 		return Optional.ofNullable(representation);
 	}

@@ -37,6 +37,11 @@ public abstract class GetBlockResultMessageJson extends AbstractRpcMessageJsonRe
 		this.block = message.get().map(Blocks.Json::new).orElse(null);
 	}
 
+	/**
+	 * Yields the resulting block, if any.
+	 * 
+	 * @return the resulting block, if any
+	 */
 	public Optional<Blocks.Json> getBlock() {
 		return Optional.ofNullable(block);
 	}

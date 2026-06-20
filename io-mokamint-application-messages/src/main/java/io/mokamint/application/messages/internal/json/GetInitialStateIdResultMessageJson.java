@@ -34,6 +34,11 @@ public abstract class GetInitialStateIdResultMessageJson extends AbstractRpcMess
 		this.result = Hex.toHexString(message.get());
 	}
 
+	/**
+	 * Yields the resulting state id.
+	 * 
+	 * @return the resulting state id, as a hexadecimal string
+	 */
 	public String getResult() {
 		return result;
 	}

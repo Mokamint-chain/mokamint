@@ -38,18 +38,39 @@ public abstract class ChainInfoJson implements JsonRepresentation<ChainInfo> {
 		this.headStateId = info.getHeadStateId().map(Hex::toHexString).orElse(null);
 	}
 
+	/**
+	 * Yields the length of the chain (number of blocks from genesis to head).
+	 * Hence this is one more than the height of the head.
+	 * 
+	 * @return the length of the chain
+	 */
 	public long getLength() {
 		return length;
 	}
 
+	/**
+	 * Yields the hash of the genesis block of the chain, if any.
+	 * 
+	 * @return the hash, if any, as a hexadecimal string
+	 */
 	public String getGenesisHash() {
 		return genesisHash;
 	}
 
+	/**
+	 * Yields the hash of the head block of the chain, if any.
+	 * 
+	 * @return the hash, if any, as a hexadecimal hash
+	 */
 	public String getHeadHash() {
 		return headHash;
 	}
 
+	/**
+	 * Yields the state identifier of the head block of the chain, if any.
+	 * 
+	 * @return the state identifier, if any, as a hexadecimal string
+	 */
 	public String getHeadStateId() {
 		return headStateId;
 	}

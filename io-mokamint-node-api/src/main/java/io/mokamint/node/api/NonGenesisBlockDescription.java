@@ -17,7 +17,6 @@ limitations under the License.
 package io.mokamint.node.api;
 
 import io.hotmoka.annotations.Immutable;
-import io.hotmoka.crypto.api.HashingAlgorithm;
 import io.mokamint.nonce.api.Deadline;
 
 /**
@@ -41,11 +40,4 @@ public interface NonGenesisBlockDescription extends BlockDescription {
 	 * @return the reference to the previous block
 	 */
 	byte[] getHashOfPreviousBlock();
-
-	/**
-	 * Yields the hashing algorithm used for the requests in the blocks.
-	 * 
-	 * @return the hashing algorithm used for the requests in the blocks
-	 */
-	HashingAlgorithm getHashingForRequests();
 }

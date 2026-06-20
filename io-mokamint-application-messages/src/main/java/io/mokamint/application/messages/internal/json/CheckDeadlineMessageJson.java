@@ -36,6 +36,11 @@ public abstract class CheckDeadlineMessageJson extends AbstractRpcMessageJsonRep
 		this.deadline = new Deadlines.Json(message.getDeadline());
 	}
 
+	/**
+	 * Yields the deadline to check.
+	 * 
+	 * @return the deadline to check
+	 */
 	public Deadlines.Json getDeadline() {
 		return deadline;
 	}

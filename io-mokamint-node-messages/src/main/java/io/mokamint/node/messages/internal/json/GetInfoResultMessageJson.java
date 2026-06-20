@@ -34,6 +34,11 @@ public abstract class GetInfoResultMessageJson extends AbstractRpcMessageJsonRep
 		this.info = new NodeInfos.Json(message.get());
 	}
 
+	/**
+	 * Yields the node information.
+	 * 
+	 * @return the node information
+	 */
 	public NodeInfos.Json getInfo() {
 		return info;
 	}

@@ -34,6 +34,11 @@ public abstract class AddPeerMessageJson extends AbstractRpcMessageJsonRepresent
 		this.peer = new Peers.Json(message.getPeer());
 	}
 
+	/**
+	 * Yields the peer requested to add.
+	 * 
+	 * @return the peer
+	 */
 	public Peers.Json getPeer() {
 		return peer;
 	}

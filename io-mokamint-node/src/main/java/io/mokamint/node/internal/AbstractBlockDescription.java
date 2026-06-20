@@ -145,7 +145,7 @@ public abstract sealed class AbstractBlockDescription extends AbstractMarshallab
 
 		this.hashingForBlocks = HashingAlgorithms.of(hashingForBlocks);
 
-		String hashingForTransactions = json.getHashingForTransactions();
+		String hashingForTransactions = json.getHashingForRequests();
 		if (hashingForTransactions == null)
 			throw new InconsistentJsonException("hashingForTransactions cannot be null");
 

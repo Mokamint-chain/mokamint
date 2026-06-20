@@ -34,6 +34,11 @@ public abstract class GetChainInfoResultMessageJson extends AbstractRpcMessageJs
 		this.info = new ChainInfos.Json(message.get());
 	}
 
+	/**
+	 * Yields the resulting chain information.
+	 * 
+	 * @return the resulting chain information
+	 */
 	public ChainInfos.Json getInfo() {
 		return info;
 	}

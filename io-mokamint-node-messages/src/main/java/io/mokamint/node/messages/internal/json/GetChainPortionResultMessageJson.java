@@ -34,6 +34,11 @@ public abstract class GetChainPortionResultMessageJson extends AbstractRpcMessag
 		this.chain = new ChainPortions.Json(message.get());
 	}
 
+	/**
+	 * Yields the chain portion.
+	 * 
+	 * @return the chain portion
+	 */
 	public ChainPortions.Json getChain() {
 		return chain;
 	}

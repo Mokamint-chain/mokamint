@@ -44,18 +44,42 @@ public abstract class BlockJson implements JsonRepresentation<Block> {
 		this.signature = Hex.toHexString(block.getSignature());
 	}
 
+	/**
+	 * Yields the description of this block.
+	 * 
+	 * @return the description
+	 */
 	public BlockDescriptions.Json getDescription() {
 		return description;
 	}
 
+	/**
+	 * Yields the identifier of the state of the application at the end of the execution of the
+	 * transactions from the beginning of the blockchain to the end of this block.
+	 * 
+	 * @return the identifier of the state of the application, as a hexadecimal string
+	 */
 	public String getStateId() {
 		return stateId;
 	}
 
+	/**
+	 * Yields the signature of this block, computed from its hash by the node
+	 * that mined this block. This signature must have been computed with the
+	 * private key corresponding to the node's public key, which is inside the prolog
+	 * of the deadline for non-genesis blocks or inside the genesis blocks themselves.
+	 * 
+	 * @return the signature, as a hexadecimal string
+	 */
 	public String getSignature() {
 		return signature;
 	}
 
+	/**
+	 * Yields the requests inside this block.
+	 * 
+	 * @return the requests
+	 */
 	public Stream<String> getRequests() {
 		return transactions == null ? Stream.empty() : Stream.of(transactions);
 	}

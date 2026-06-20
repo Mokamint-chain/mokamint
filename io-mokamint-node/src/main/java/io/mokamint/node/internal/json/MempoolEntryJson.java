@@ -42,10 +42,20 @@ public abstract class MempoolEntryJson implements JsonRepresentation<MempoolEntr
 		this.priority = entry.getPriority();
 	}
 
+	/**
+	 * Yields the hash of the transaction in the entry.
+	 * 
+	 * @return the hash of the transaction, as a hexadecimal string
+	 */
 	public String getHash() {
 		return hash;
 	}
 
+	/**
+	 * Yields the priority of the transaction in the entry.
+	 * 
+	 * @return the priority
+	 */
 	public long getPriority() {
 		return priority;
 	}

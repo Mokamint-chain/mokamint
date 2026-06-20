@@ -34,6 +34,11 @@ public abstract class AddRequestResultMessageJson extends AbstractRpcMessageJson
 		this.result = new MempoolEntries.Json(message.get());
 	}
 
+	/**
+	 * Yields the mempool entry where the request has been added.
+	 * 
+	 * @return the mempool entry where the request has been added
+	 */
 	public MempoolEntries.Json getResult() {
 		return result;
 	}

@@ -34,6 +34,12 @@ public abstract class MempoolPortionJson implements JsonRepresentation<MempoolPo
 		this.entries = mempool.getEntries().map(MempoolEntries.Json::new).toArray(MempoolEntries.Json[]::new);
 	}
 
+	/**
+	 * Yields the information about the transactions of the sequential portion of the mempool, sorted
+	 * in increasing order of transaction priority.
+	 * 
+	 * @return the mempool entries containing the transactions
+	 */
 	public Stream<MempoolEntries.Json> getEntries() {
 		return entries == null ? Stream.empty() : Stream.of(entries);
 	}

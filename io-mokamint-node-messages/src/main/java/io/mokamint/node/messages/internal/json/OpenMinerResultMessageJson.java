@@ -36,6 +36,11 @@ public abstract class OpenMinerResultMessageJson extends AbstractRpcMessageJsonR
 		this.info = message.get().map(MinerInfos.Json::new).orElse(null);
 	}
 
+	/**
+	 * Yields the information about the opened miner.
+	 * 
+	 * @return the information about the opened miner, if it has been opened
+	 */
 	public Optional<MinerInfos.Json> getInfo() {
 		return Optional.ofNullable(info);
 	}

@@ -36,6 +36,11 @@ public abstract class GetRequestAddressResultMessageJson extends AbstractRpcMess
 		this.address = message.get().map(RequestAddresses.Json::new).orElse(null);
 	}
 
+	/**
+	 * Yields the address of the request, if already in blockchain.
+	 * 
+	 * @return the address of the request, if already in blockchain
+	 */
 	public Optional<RequestAddresses.Json> getAddress() {
 		return Optional.ofNullable(address);
 	}

@@ -37,6 +37,11 @@ public abstract class GetPeerInfosResultMessageJson extends AbstractRpcMessageJs
 		this.peers = message.get().map(PeerInfos.Json::new).toArray(PeerInfos.Json[]::new);
 	}
 
+	/**
+	 * Yields the information about the peers.
+	 * 
+	 * @return the information about the peers
+	 */
 	public Optional<Stream<PeerInfos.Json>> getPeers() {
 		return peers == null ? Optional.empty() : Optional.of(Stream.of(peers));
 	}

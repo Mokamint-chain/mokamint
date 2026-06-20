@@ -32,6 +32,11 @@ public abstract class RemoveMinerResultMessageJson extends AbstractRpcMessageJso
 		this.result = message.get();
 	}
 
+	/**
+	 * Yields the outcome of removing the miner.
+	 * 
+	 * @return the outcome of removing the miner (removed or not)
+	 */
 	public boolean getResult() {
 		return result;
 	}

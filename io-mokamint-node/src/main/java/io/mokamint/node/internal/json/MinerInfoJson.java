@@ -35,14 +35,30 @@ public abstract class MinerInfoJson implements JsonRepresentation<MinerInfo> {
 		this.description = info.getDescription();
 	}
 
+	/**
+	 * Yields the identifier of the miner.
+	 * 
+	 * @return the identifier of the miner
+	 */
 	public String getUuid() {
 		return uuid;
 	}
 
+	/**
+	 * Yields the points of the miner. They are an estimation of how much well the
+	 * miner behaved recently.
+	 *
+	 * @return the points; this should always be positive
+	 */
 	public long getPoints() {
 		return points;
 	}
 
+	/**
+	 * Yields a description of the miner.
+	 * 
+	 * @return the description
+	 */
 	public String getDescription() {
 		return description;
 	}

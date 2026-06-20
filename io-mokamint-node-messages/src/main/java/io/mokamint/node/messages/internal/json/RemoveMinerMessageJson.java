@@ -33,6 +33,11 @@ public abstract class RemoveMinerMessageJson extends AbstractRpcMessageJsonRepre
 		this.uuid = message.getUUID().toString();
 	}
 
+	/**
+	 * Yields the UUID of the peer to remove.
+	 * 
+	 * @return the UUID of the peer to remove
+	 */
 	public String getUUID() {
 		return uuid;
 	}

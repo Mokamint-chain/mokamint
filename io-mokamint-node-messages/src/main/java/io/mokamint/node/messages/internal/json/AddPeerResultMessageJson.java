@@ -36,6 +36,11 @@ public abstract class AddPeerResultMessageJson extends AbstractRpcMessageJsonRep
 		this.info = message.get().map(PeerInfos.Json::new).orElse(null);
 	}
 
+	/**
+	 * Yields the information about the added peer, if it has been added.
+	 * 
+	 * @return the information about the added peer, if it has been added
+	 */
 	public Optional<PeerInfos.Json> getInfo() {
 		return Optional.ofNullable(info);
 	}

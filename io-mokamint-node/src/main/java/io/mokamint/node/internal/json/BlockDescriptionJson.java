@@ -76,66 +76,150 @@ public abstract class BlockDescriptionJson implements JsonRepresentation<BlockDe
 		}
 	}
 
+	/**
+	 * Yields the height of the block, counting from 0 for the genesis block.
+	 * 
+	 * @return the height of the block
+	 */
 	public Long getHeight() {
 		return height;
 	}
 
+	/**
+	 * Yields the power of the block.
+	 * 
+	 * @return the power of the block
+	 */
 	public BigInteger getPower() {
 		return power;
 	}
 
+	/**
+	 * Yields the total waiting time, in milliseconds, from the genesis block
+	 * until the creation of the block.
+	 * 
+	 * @return the total waiting time
+	 */
 	public Long getTotalWaitingTime() {
 		return totalWaitingTime;
 	}
 
+	/**
+	 * Yields the weighted waiting time, in milliseconds, from the genesis block
+	 * until the creation of the block.
+	 * 
+	 * @return the weighted waiting time
+	 */
 	public Long getWeightedWaitingTime() {
 		return weightedWaitingTime;
 	}
 
+	/**
+	 * Yields the acceleration used for the creation of the block.
+	 * 
+	 * @return the acceleration used for the creation of the block
+	 */
 	public BigInteger getAcceleration() {
 		return acceleration;
 	}
 
+	/**
+	 * Yields the deadline computed for the block.
+	 * 
+	 * @return the deadline, if any; this might be {@code null}
+	 */
 	public Deadlines.Json getDeadline() {
 		return deadline;
 	}
 
+	/**
+	 * Yields the reference to the previous block.
+	 * 
+	 * @return the reference to the previous block, if any, as a hexadecimal string;
+	 *         this might be {@code null}
+	 */
 	public String getHashOfPreviousBlock() {
 		return hashOfPreviousBlock;
 	}
 
+	/**
+	 * The moment when the block has been mined. This is the moment
+	 * when the blockchain started.
+	 * 
+	 * @return the moment when the block has been mined
+	 */
 	public String getStartDateTimeUTC() {
 		return startDateTimeUTC;
 	}
 
+	/**
+	 * Yields the target creation time for the blocks.
+	 * 
+	 * @return the target creation time, in milliseconds
+	 */
 	public int getTargetBlockCreationTime() {
 		return targetBlockCreationTime;
 	}
 
+	/**
+	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.
+	 * 
+	 * @return the rapidity of changes of acceleration
+	 */
 	public int getOblivion() {
 		return oblivion;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the blocks.
+	 * 
+	 * @return the name of the hashing algorithm for the blocks
+	 */
 	public String getHashingForBlocks() {
 		return hashingForBlocks;
 	}
 
-	public String getHashingForTransactions() {
+	/**
+	 * Yields the name of the hashing algorithm used for the requests in the blocks.
+	 * 
+	 * @return the name of the hashing algorithm for the requests in the blocks
+	 */
+	public String getHashingForRequests() {
 		return hashingForTransactions;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the deadlines.
+	 * 
+	 * @return the name of the hashing algorithm for the deadlines
+	 */
 	public String getHashingForDeadlines() {
 		return hashingForDeadlines;
 	}
 
+	/**
+	 * Yields the name of the hashing algorithm used for the generation signatures.
+	 * 
+	 * @return the name of the hashing algorithm for the generation signatures
+	 */
 	public String getHashingForGenerations() {
 		return hashingForGenerations;
 	}
 
+	/**
+	 * Yields the name of the signature algorithm used for signing the blocks.
+	 * 
+	 * @return the name of the signature algorithm
+	 */
 	public String getSignatureForBlocks() {
 		return signatureForBlocks;
 	}
 
+	/**
+	 * Yields the public key used for signing the block, in Base58 format.
+	 * 
+	 * @return the Base58-encoded public key
+	 */
 	public String getPublicKey() {
 		return publicKey;
 	}

@@ -33,6 +33,11 @@ public abstract class CheckDeadlineResultMessageJson extends AbstractRpcMessageJ
 		this.result = message.get();
 	}
 
+	/**
+	 * Yields the result of the check.
+	 * 
+	 * @return the result of the check (checked or not)
+	 */
 	public boolean getResult() {
 		return result;
 	}

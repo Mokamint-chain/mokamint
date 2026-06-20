@@ -38,10 +38,20 @@ public abstract class EndBlockMessageJson extends AbstractRpcMessageJsonRepresen
 		this.groupId = message.getGroupId();
 	}
 
+	/**
+	 * Yields the deadline in the message.
+	 * 
+	 * @return the deadline
+	 */
 	public Deadlines.Json getDeadline() {
 		return deadline;
 	}
 
+	/**
+	 * Yields the transaction group identifier in the message.
+	 * 
+	 * @return the transaction group identifier
+	 */
 	public int getGroupId() {
 		return groupId;
 	}

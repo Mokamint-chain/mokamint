@@ -36,6 +36,11 @@ public abstract class GetConfigResultMessageJson extends AbstractRpcMessageJsonR
 		this.config = new BasicConsensusConfigBuilders.Json(message.get());
 	}
 
+	/**
+	 * Yields the configuration of the node.
+	 * 
+	 * @return the configuration of the node
+	 */
 	public BasicConsensusConfigBuilders.Json getConfig() {
 		return config;
 	}

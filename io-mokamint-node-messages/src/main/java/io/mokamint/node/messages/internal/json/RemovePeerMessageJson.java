@@ -34,6 +34,11 @@ public abstract class RemovePeerMessageJson extends AbstractRpcMessageJsonRepres
 		this.peer = new Peers.Json(message.getPeer());
 	}
 
+	/**
+	 * Yields the peer to remove.
+	 * 
+	 * @return the peer to remove
+	 */
 	public Peers.Json getPeer() {
 		return peer;
 	}

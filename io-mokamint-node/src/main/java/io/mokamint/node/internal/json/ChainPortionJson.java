@@ -34,6 +34,12 @@ public abstract class ChainPortionJson implements JsonRepresentation<ChainPortio
 		this.hashes = chain.getHashes().map(Hex::toHexString).toArray(String[]::new);
 	}
 
+	/**
+	 * Yields the hashes of the sequential portion of the chain, in increasing
+	 * order of height.
+	 * 
+	 * @return the hashes, as hexadecimal strings
+	 */
 	public Stream<String> getHashes() {
 		return hashes == null ? Stream.empty() : Stream.of(hashes);
 	}

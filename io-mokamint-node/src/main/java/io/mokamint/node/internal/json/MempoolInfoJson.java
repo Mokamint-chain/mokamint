@@ -35,6 +35,11 @@ public abstract class MempoolInfoJson implements JsonRepresentation<MempoolInfo>
 		this.size = info.getSize();
 	}
 
+	/**
+	 * Yields the size (number of entries) of the mempool.
+	 * 
+	 * @return the size of the mempool
+	 */
 	public long getSize() {
 		return size;
 	}

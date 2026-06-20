@@ -33,6 +33,11 @@ public abstract class CheckRequestMessageJson extends AbstractRpcMessageJsonRepr
 		this.transaction = message.getRequest().toBase64String();
 	}
 
+	/**
+	 * Yields the request to check.
+	 * 
+	 * @return the request to check
+	 */
 	public String getTransaction() {
 		return transaction;
 	}

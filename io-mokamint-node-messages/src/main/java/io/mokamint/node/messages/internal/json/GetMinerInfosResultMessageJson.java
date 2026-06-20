@@ -37,6 +37,11 @@ public abstract class GetMinerInfosResultMessageJson extends AbstractRpcMessageJ
 		this.miners = message.get().map(MinerInfos.Json::new).toArray(MinerInfos.Json[]::new);
 	}
 
+	/**
+	 * Yields the information about the miners.
+	 * 
+	 * @return the information about the miners
+	 */
 	public Optional<Stream<MinerInfos.Json>> getMiners() {
 		return miners == null ? Optional.empty() : Optional.of(Stream.of(miners));
 	}

@@ -34,6 +34,11 @@ public abstract class GetMempoolPortionResultMessageJson extends AbstractRpcMess
 		this.mempool = new MempoolPortions.Json(message.get());
 	}
 
+	/**
+	 * Yields the mempool portion.
+	 * 
+	 * @return the mempool portion
+	 */
 	public MempoolPortions.Json getMempool() {
 		return mempool;
 	}

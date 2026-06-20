@@ -40,14 +40,29 @@ public abstract class BeginBlockMessageJson extends AbstractRpcMessageJsonRepres
 		this.when = ISO_LOCAL_DATE_TIME.format(message.getWhen());
 	}
 
+	/**
+	 * Yields the block height in the message.
+	 * 
+	 * @return the block height
+	 */
 	public long getHeight() {
 		return height;
 	}
 
+	/**
+	 * Yields the state identifier in the message.
+	 * 
+	 * @return the state identifier, as a hexadecimal string
+	 */
 	public String getStateId() {
 		return stateId;
 	}
 
+	/**
+	 * Yields the time in the message.
+	 * 
+	 * @return the time
+	 */
 	public String getWhen() {
 		return when;
 	}

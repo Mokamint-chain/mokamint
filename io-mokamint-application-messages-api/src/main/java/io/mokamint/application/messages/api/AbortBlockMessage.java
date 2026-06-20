@@ -27,9 +27,9 @@ import io.mokamint.application.api.Application;
 public interface AbortBlockMessage extends RpcMessage {
 
 	/**
-	 * Yields the transaction group identifier in the message.
+	 * Yields the transaction scope identifier in the message.
 	 * 
-	 * @return the transaction group identifier
+	 * @return the transaction scope identifier
 	 */
 	int getGroupId();
 }

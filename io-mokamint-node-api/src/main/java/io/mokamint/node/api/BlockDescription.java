@@ -101,9 +101,9 @@ public interface BlockDescription extends Marshallable {
 	HashingAlgorithm getHashingForBlocks();
 
 	/**
-	 * Yields the hashing algorithm used for the transactions in the blocks.
+	 * Yields the hashing algorithm used for the requests in the blocks.
 	 * 
-	 * @return the hashing algorithm for the transactions in the blocks
+	 * @return the hashing algorithm for the requests in the blocks
 	 */
 	HashingAlgorithm getHashingForRequests();
 

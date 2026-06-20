@@ -36,6 +36,11 @@ public abstract class GetRequestResultMessageJson extends AbstractRpcMessageJson
 		this.request = message.get().map(Request::toBase64String).orElse(null);
 	}
 
+	/**
+	 * Yields the Base64-encoded request.
+	 * 
+	 * @return the Base64-encoded request
+	 */
 	public Optional<String> getRequest() {
 		return Optional.ofNullable(request);
 	}

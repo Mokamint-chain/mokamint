@@ -34,6 +34,11 @@ public abstract class GetRequestMessageJson extends AbstractRpcMessageJsonRepres
 		this.hash = Hex.toHexString(message.getHash());
 	}
 
+	/**
+	 * Yields the {@code hash} parameter of the method.
+	 * 
+	 * @return the parameter, as a hexadecimal string
+	 */
 	public String getHash() {
 		return hash;
 	}

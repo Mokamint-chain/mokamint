@@ -34,6 +34,11 @@ public abstract class GetInfoResultMessageJson extends AbstractRpcMessageJsonRep
 		this.result = new Infos.Json(message.get());
 	}
 
+	/**
+	 * Yields the resulting information about the application.
+	 * 
+	 * @return the resulting information about the application
+	 */
 	public final Infos.Json getResult() {
 		return result;
 	}

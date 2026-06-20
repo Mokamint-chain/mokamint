@@ -35,10 +35,20 @@ public abstract class ExecuteTransactionMessageJson extends AbstractRpcMessageJs
 		this.groupId = message.getGroupId();
 	}
 
-	public String getTransaction() {
+	/**
+	 * Yields the request in the message.
+	 * 
+	 * @return the request
+	 */
+	public String getRequest() {
 		return transaction;
 	}
 
+	/**
+	 * Yields the execution scope identifier in the message.
+	 * 
+	 * @return the execution scope identifier
+	 */
 	public int getGroupId() {
 		return groupId;
 	}

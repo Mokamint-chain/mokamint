@@ -33,6 +33,11 @@ public abstract class CommitBlockMessageJson extends AbstractRpcMessageJsonRepre
 		this.groupId = message.getGroupId();
 	}
 
+	/**
+	 * Yields the transaction scope identifier in the message.
+	 * 
+	 * @return the transaction scope identifier
+	 */
 	public int getGroupId() {
 		return groupId;
 	}

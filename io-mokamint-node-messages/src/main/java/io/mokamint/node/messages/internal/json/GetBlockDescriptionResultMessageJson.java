@@ -37,6 +37,11 @@ public abstract class GetBlockDescriptionResultMessageJson extends AbstractRpcMe
 		this.description = message.get().map(BlockDescriptions.Json::new).orElse(null);
 	}
 
+	/**
+	 * Yields the resulting description of the block.
+	 * 
+	 * @return the resulting description of the block, if any
+	 */
 	public Optional<BlockDescriptions.Json> getDescription() {
 		return Optional.ofNullable(description);
 	}

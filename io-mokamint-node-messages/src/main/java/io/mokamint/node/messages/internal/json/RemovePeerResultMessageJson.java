@@ -32,6 +32,11 @@ public abstract class RemovePeerResultMessageJson extends AbstractRpcMessageJson
 		this.result = message.get();
 	}
 
+	/**
+	 * Yields the outcome of removing the peer.
+	 * 
+	 * @return the outcome (removed or not)
+	 */
 	public boolean getResult() {
 		return result;
 	}
