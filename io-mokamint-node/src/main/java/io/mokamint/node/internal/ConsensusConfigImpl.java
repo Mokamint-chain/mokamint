@@ -377,7 +377,6 @@ public abstract class ConsensusConfigImpl<C extends ConsensusConfig<C,B>, B exte
 				int maxRequestSize = json.getMaxRequestSize();
 				if (maxRequestSize != 0) // TODO: remove this from version 1.8.0
 					setMaxRequestSize(json.getMaxRequestSize());
-				System.out.println(this.maxRequestSize);
 				setOblivion(json.getOblivion());
 			}
 			catch (NullPointerException | IllegalArgumentException e) {
