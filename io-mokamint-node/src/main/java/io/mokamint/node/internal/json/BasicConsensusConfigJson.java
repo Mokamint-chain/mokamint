@@ -36,6 +36,7 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 	private final String signatureForDeadlines;
 	private final int targetBlockCreationTime;
 	private final int maxBlockSize;
+	private final int maxRequestSize;
 	private final int oblivion;
 
 	protected BasicConsensusConfigJson(ConsensusConfig<?,?> config) {
@@ -48,6 +49,7 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		this.signatureForDeadlines = config.getSignatureForDeadlines().getName();
 		this.targetBlockCreationTime = config.getTargetBlockCreationTime();
 		this.maxBlockSize = config.getMaxBlockSize();
+		this.maxRequestSize = config.getMaxRequestSize();
 		this.oblivion = config.getOblivion();
 	}
 
@@ -137,7 +139,14 @@ public abstract class BasicConsensusConfigJson implements JsonRepresentation<Con
 		return maxBlockSize;
 	}
 
-	// TODO: add getMaxRequestSize()
+	/**
+	 * Yields the maximal size of a request.
+	 * 
+	 * @return the maximal size (in bytes)
+	 */
+	public int getMaxRequestSize() {
+		return maxRequestSize;
+	}
 
 	/**
 	 * Yields the rapidity of the changes of acceleration for the creation time of new blocks.
