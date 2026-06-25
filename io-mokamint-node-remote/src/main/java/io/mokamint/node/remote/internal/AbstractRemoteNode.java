@@ -34,6 +34,6 @@ abstract class AbstractRemoteNode extends AbstractRemote implements RemoteNode {
 	 *                beyond that threshold, a timeout exception is thrown
 	 */
 	protected AbstractRemoteNode(int timeout) {
-		super(timeout);
+		super(timeout, true);
 	}
 }

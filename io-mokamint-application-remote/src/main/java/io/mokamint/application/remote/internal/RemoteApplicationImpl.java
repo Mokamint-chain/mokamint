@@ -146,7 +146,7 @@ public class RemoteApplicationImpl extends AbstractRemote implements RemoteAppli
 	 * @throws InterruptedException if the deployment of the service has been interrupted
 	 */
 	public RemoteApplicationImpl(URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
-		super(timeout);
+		super(timeout, true);
 
 		this.logPrefix = "application remote(" + uri + "): ";
 

@@ -84,7 +84,7 @@ public class MinerServiceImpl extends AbstractRemote implements MinerService {
 	 * @throws InterruptedException if the deployment of the service has been interrupted
 	 */
 	public MinerServiceImpl(Optional<Miner> miner, URI uri, int timeout) throws FailedDeploymentException, InterruptedException {
-		super(timeout);
+		super(timeout, true);
 
 		this.miner = miner;
 		this.logPrefix = "miner service working for " + uri + ": ";
