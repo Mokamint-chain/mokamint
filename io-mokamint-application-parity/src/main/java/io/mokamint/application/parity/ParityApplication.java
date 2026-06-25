@@ -119,7 +119,8 @@ public class ParityApplication extends AbstractApplication {
 	@Override
 	public void executeTransaction(int scopeId, Request request) throws ClosedApplicationException, RequestRejectedException, UnknownScopeIdException {
 		try (var scope = mkScope()) {
-			currentStates.put(scopeId, (EVEN_STATE_ID == getCurrentStateFor(scopeId)) == (extractInt(request) % 2 == 0) ? EVEN_STATE_ID : ODD_STATE_ID);
+			var newState = ((Arrays.equals(EVEN_STATE_ID, getCurrentStateFor(scopeId))) == (extractInt(request) % 2 == 0)) ? EVEN_STATE_ID : ODD_STATE_ID;
+			currentStates.put(scopeId, newState);
 		}
 	}
 

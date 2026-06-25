@@ -236,7 +236,7 @@ You can run the second node now. It will start by synchronizing from the first n
 it will start contributing to the blockchain itself:
 
 ```console
-$ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8050:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.4 go
+$ docker run -it --rm --name mokamint2 -e APPLICATION=Parity -p 8026:8025 -p 8032:8030 -p 127.0.0.1:8033:8031 -p 8051:8050 -v mokamint2:/home/mokamint/mokamint -v chain2:/home/mokamint/chain mokamint/mokamint:1.7.4 go
 Starting an already configured node of a blockchain, whose configuration has been created with config-clone or with config-new and then init.
    APPLICATION="Parity"
     VISIBLE_AS=
@@ -253,7 +253,7 @@ The command above allows connections to the ports:
 * 8026: this is the port where mining services can connect by default; mining services help your node produce new blocks; note that this requires to open a remote miner in your node, listening at port 8026;
 * 8032: this is the port where Mokamint can be reached for public queries, by default;
 * 8033: this is the port where Mokamint can be reached for restricted operations, by default; note the we have restricted its access to localhost only, since we do not want our Mokamint node to be freely reconfigured remotely;
-* 8050: this is the port where the Bitcoin application can be reached.
+* 8051: this is the port where the Bitcoin application can be reached.
 
 You can leave the container execute in the background by entering ctrl+p, ctrl+q, as always in docker.
 
